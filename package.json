@@ -1,0 +1,77 @@
+{
+  "name": "pact-toolbox",
+  "version": "1.0.0",
+  "description": "",
+  "keywords": [],
+  "repository": "salamaashoush/pact-toolbox",
+  "author": "Salama Ashoush <salamaashoush@gmail.com>",
+  "license": "MIT",
+  "type": "module",
+  "main": "./src/index.ts",
+  "bin": {
+    "pact-toolbox": "./src/cli.ts"
+  },
+  "publishConfig": {
+    "access": "public",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": {
+          "types": "./dist/index.d.ts",
+          "default": "./dist/index.js"
+        },
+        "require": {
+          "types": "./dist/index.d.cts",
+          "default": "./dist/index.cjs"
+        }
+      }
+    },
+    "main": "./dist/index.cjs",
+    "module": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "files": [
+      "dist",
+      "bin",
+      "src"
+    ],
+    "bin": {
+      "design-sync": "./bin/pact-toolbox.mjs"
+    }
+  },
+  "scripts": {
+    "cli": "tsx src/cli.ts",
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "lint": "oxlint --import-plugin  -D all && prettier -c src",
+    "lint:fix": "oxlint --import-plugin  -D all --fix && prettier -c src -w",
+    "prepack": "pnpm run build",
+    "release": "pnpm test && pnpm publish",
+    "test": "vitest",
+    "test:types": "tsc --noEmit --skipLibCheck"
+  },
+  "dependencies": {
+    "@kadena/client": "^1.7.0",
+    "@kadena/cryptography-utils": "^0.4.2",
+    "@kadena/pactjs": "^0.4.2",
+    "citty": "^0.1.5",
+    "c12": "^1.6.1",
+    "consola": "^3.2.3",
+    "giget": "^1.2.1",
+    "tar": "^6.2.0",
+    "axios": "^1.6.5"
+  },
+  "devDependencies": {
+    "@kadena/pactjs-cli": "^1.7.0",
+    "@kadena/types": "^0.6.0",
+    "@types/node": "^20.11.4",
+    "prettier": "3.2.2",
+    "tsup": "^8.0.1",
+    "tsx": "^4.7.0",
+    "handlebars": "^4.7.8",
+    "typescript": "^5.3.3",
+    "@vitest/coverage-v8": "^1.2.0",
+    "vitest": "^1.2.0",
+    "oxlint": "^0.2.1",
+    "@types/tar": "^6.1.10"
+  }
+}
