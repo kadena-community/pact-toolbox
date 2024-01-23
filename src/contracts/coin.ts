@@ -48,9 +48,9 @@ export class CoinContract {
 
   async createAccount() {
     const keys = genKeyPair();
-    const account = `k:${keys.publicKey}`;
+    const account = `${keys.publicKey}`;
     const tx = this.client
-      .execution(`(coin.create-account "${account}" ${readKeyset('ks')})`)
+      .execution(`(coin.create-account "${account}" (read-keyset 'ks))`)
       .setMeta({ senderAccount: account })
       .addKeyset('ks', 'key-all', keys.publicKey)
       .addSigner(keys.publicKey)

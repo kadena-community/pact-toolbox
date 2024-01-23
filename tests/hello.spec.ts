@@ -12,11 +12,13 @@ describe('hello world', () => {
     env.stop();
   });
   it('should say hello', async () => {
-    const ks = env.client.getSigner('sender00');
-    const tx = env.client.execution('(hello-world.say-hello "Salama")').addSigner(ks.publicKey).createTransaction();
+    const signer = env.client.getSigner();
+    const tx = env.client
+      .execution('(free.hello-world.say-hello "Salama")')
+      .addSigner(signer.publicKey)
+      .createTransaction();
     const signedTX = await env.client.sign(tx);
     const s = await env.client.submitAndListen(signedTX);
-    console.log(s);
     expect(s, 'Hello, Salama!');
   });
 });

@@ -122,7 +122,7 @@ export const defaultPactConfig: PactConfig = {
   server: {
     port: 8080,
     logDir: '.pact-toolbox/logs',
-    persistDir: '.pact-toolbox/persist',
+    // persistDir: '.pact-toolbox/persist',
     verbose: true,
     pragmas: [],
     execConfig: ['DisablePact44', 'AllowReadInLocal'],

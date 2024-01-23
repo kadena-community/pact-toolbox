@@ -72,7 +72,7 @@ export default {
       await deployPactDependency(dep, client, {
         ...params,
         keysets: rootKeysets,
-        signer: signer || client.network.senderAccount,
+        signer: signer,
       });
       logger.success(`Deployed ${dep.name}`);
     }

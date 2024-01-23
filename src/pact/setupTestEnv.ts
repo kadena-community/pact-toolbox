@@ -10,7 +10,7 @@ export interface PactTestEnv {
   config: PactToolboxConfigObj;
 }
 export async function setupPactTestEnv(
-  configOverrides: PactToolboxConfig = {},
+  configOverrides?: PactToolboxConfig,
   client?: PactToolboxClient,
 ): Promise<PactTestEnv> {
   const config = await resolveConfig(configOverrides);
@@ -26,16 +26,12 @@ export async function setupPactTestEnv(
   logger.start('Starting Pact local server');
   const pactServer = await startPactLocalServer(config.pact, false, client);
   logger.success(`Pact local server started and listening on http://localhost:${config.pact.server?.port}`);
-  process.on('SIGINT', () => {
-    pactServer.kill();
-    process.exit();
-  });
+
   // close when unhandled promise rejection
-  process.on('unhandledRejection', (reason) => {
-    console.log('Unhandled Rejection at:', reason);
-    pactServer.kill();
-    process.exit();
-  });
+  // process.on('unhandledRejection', (reason) => {
+  //   console.log('Unhandled Rejection at:', reason);
+  //   pactServer.kill();
+  // });
 
   return {
     stop: () => {
