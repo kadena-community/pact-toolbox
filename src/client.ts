@@ -2,6 +2,7 @@ import {
   IClient,
   ICommand,
   IKeyPair,
+  ITransactionDescriptor,
   IUnsignedCommand,
   Pact,
   createClient,
@@ -10,13 +11,21 @@ import {
 } from '@kadena/client';
 import { readFile, stat } from 'node:fs/promises';
 import { join } from 'node:path';
-import { KeysetConfig, NetworkConfig, PactConfig, PactToolboxConfigObj } from './config';
-import { defaultMeta, defaultNetworks } from './defaults';
+import {
+  KeysetConfig,
+  NetworkConfig,
+  PactConfig,
+  PactToolboxConfigObj,
+  isDevNetworkConfig,
+  isPactServerNetworkConfig,
+} from './config';
+import { defaultMeta } from './defaults';
 import { getCmdDataOrFail } from './utils';
 
 export interface DeployContractParams {
   upgrade?: boolean;
   preflight?: boolean;
+  listen?: boolean;
   init?: boolean;
   namespace?: string;
   keysets?: Record<string, KeysetConfig>;
@@ -26,6 +35,11 @@ export interface DeployContractParams {
   skipSign?: boolean;
 }
 
+export interface LocalOptions {
+  preflight?: boolean;
+  signatureVerification?: boolean;
+}
+
 export class PactToolboxClient {
   private kdaClient: IClient;
   private networkConfig: NetworkConfig;
@@ -33,14 +47,19 @@ export class PactToolboxClient {
 
   constructor(private config: Required<PactToolboxConfigObj>) {
     const networkName = config.defaultNetwork || 'local';
-    const networkConfig = config.networks[networkName] ?? defaultNetworks[networkName] ?? {};
-    this.networkConfig = {
-      ...networkConfig,
-      name: networkName,
-    } as NetworkConfig;
+    this.networkConfig = config.networks[networkName];
     this.pactConfig = config.pact as Required<PactConfig>;
     this.kdaClient = createClient((args) =>
-      typeof this.networkConfig.rpcUrl === 'string' ? this.networkConfig.rpcUrl : this.networkConfig.rpcUrl(args),
+      typeof this.networkConfig.rpcUrl === 'string'
+        ? this.networkConfig.rpcUrl
+        : this.networkConfig.rpcUrl({
+            ...args,
+            port: isDevNetworkConfig(this.networkConfig)
+              ? this.networkConfig.containerConfig?.port
+              : isPactServerNetworkConfig(this.networkConfig)
+                ? this.networkConfig.serverConfig?.port
+                : undefined,
+          }),
     );
   }
 
@@ -87,13 +106,26 @@ export class PactToolboxClient {
     return getCmdDataOrFail<T>(res);
   }
 
-  async local<T>(tx: IUnsignedCommand | ICommand) {
-    const res = await this.kdaClient.local(tx);
+  async local<T>(tx: IUnsignedCommand | ICommand, options?: LocalOptions) {
+    const res = await this.kdaClient.local(tx, options);
     return getCmdDataOrFail<T>(res);
   }
 
   async preflight(tx: IUnsignedCommand | ICommand) {
     return this.kdaClient.preflight(tx);
+  }
+
+  async submit<T>(tx: ICommand | IUnsignedCommand) {
+    if (isSignedTransaction(tx)) {
+      return this.kdaClient.submit(tx);
+    } else {
+      throw new Error('Transaction must be signed');
+    }
+  }
+
+  async listen<T>(request: ITransactionDescriptor) {
+    const res = await this.kdaClient.listen(request);
+    return getCmdDataOrFail<T>(res);
   }
 
   async submitAndListen<T>(tx: ICommand | IUnsignedCommand) {
@@ -128,6 +160,7 @@ export class PactToolboxClient {
       signer = this.networkConfig.senderAccount,
       caps = [],
       skipSign = false,
+      listen = true,
     }: DeployContractParams = {},
   ) {
     const txBuilder = this.execution(code).addData('upgrade', upgrade).addData('init', init);
@@ -170,7 +203,7 @@ export class PactToolboxClient {
       }
     }
 
-    return this.submitAndListen(tx);
+    return listen ? this.submitAndListen(tx) : this.submit(tx);
   }
 
   async deployContract(contract: string, params?: DeployContractParams) {

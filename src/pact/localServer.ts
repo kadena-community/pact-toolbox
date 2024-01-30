@@ -1,10 +1,8 @@
-import { ChildProcessWithoutNullStreams, spawn } from 'child_process';
+import { spawn } from 'child_process';
 import { mkdir, writeFile } from 'fs/promises';
 import { join } from 'path';
-import { PactToolboxClient } from '../client';
-import { PactConfig, PactServerConfig } from '../config';
-import { logger } from '../logger';
-import { deployPreludes } from './deployPrelude';
+import { PactServerConfig, PactServerNetworkConfig } from '../config';
+import { ProcessWrapper } from '../types';
 
 export function configToYamlString(config: PactServerConfig) {
   let configString = `# This is a generated file, do not edit manually\n`;
@@ -35,18 +33,24 @@ export async function writePactServerConfig(config: PactServerConfig, format: 'y
 }
 
 export async function startPactLocalServer(
-  config: PactConfig = {},
+  networkConfig: PactServerNetworkConfig,
   logStdout: boolean = true,
-  client?: PactToolboxClient,
-): Promise<ChildProcessWithoutNullStreams> {
+): Promise<ProcessWrapper> {
+  const serverConfig = networkConfig?.serverConfig ?? {};
   // resolve preludes
-  const configPath = await writePactServerConfig(config.server as PactServerConfig, 'yaml');
+  const configPath = await writePactServerConfig(serverConfig as PactServerConfig, 'yaml');
   // a long running process
   const pactProcess = spawn('pact', ['-s', configPath], {
     cwd: process.cwd(),
     env: process.env,
   });
   return new Promise((resolve, reject) => {
+    const processWrapper = {
+      stop: async () => {
+        pactProcess.kill();
+      },
+      id: pactProcess.pid,
+    };
     pactProcess.on('error', (err) => {
       reject(err);
     });
@@ -55,13 +59,7 @@ export async function startPactLocalServer(
       const str = data.toString();
       if (logStdout) console.log(str);
       if (str.includes('[api] starting on port')) {
-        if (config.deployPreludes && client) {
-          logger.start('Deploying preludes');
-          deployPreludes(config, client).then(() => resolve(pactProcess));
-          logger.success('Deployed preludes');
-        } else {
-          resolve(pactProcess);
-        }
+        resolve(processWrapper);
       }
     });
 
@@ -77,9 +75,8 @@ export async function startPactLocalServer(
       console.log(`Pact: process exited with code ${code}`);
     });
 
-    process.on('SIGINT', () => {
-      pactProcess.kill('SIGINT');
-      process.exit(0);
+    process.on('exit', () => {
+      pactProcess.kill();
     });
   });
 }

@@ -40,17 +40,19 @@
   },
   "scripts": {
     "cli": "tsx src/cli.ts",
+    "playground": "tsx src/playground.ts",
     "build": "tsup",
     "dev": "tsup --watch",
     "lint": "oxlint --import-plugin  -D all && prettier -c src",
     "lint:fix": "oxlint --import-plugin  -D all --fix && prettier -c src -w",
     "prepack": "pnpm run build",
     "release": "pnpm test && pnpm publish",
-    "test": "vitest",
+    "test:watch": "vitest",
+    "test": "vitest run",
     "test:types": "tsc --noEmit --skipLibCheck"
   },
   "dependencies": {
-    "@kadena/client": "^1.7.0",
+    "@kadena/client": "^1.8.0",
     "@kadena/cryptography-utils": "^0.4.2",
     "@kadena/pactjs": "^0.4.2",
     "citty": "^0.1.5",
@@ -58,20 +60,23 @@
     "consola": "^3.2.3",
     "giget": "^1.2.1",
     "tar": "^6.2.0",
-    "axios": "^1.6.5"
+    "axios": "^1.6.7",
+    "dockerode": "^4.0.2",
+    "defu": "^6.1.4"
   },
   "devDependencies": {
-    "@kadena/pactjs-cli": "^1.7.0",
+    "@kadena/pactjs-cli": "^1.8.0",
     "@kadena/types": "^0.6.0",
-    "@types/node": "^20.11.4",
-    "prettier": "3.2.2",
+    "@types/node": "^20.11.11",
+    "prettier": "3.2.4",
     "tsup": "^8.0.1",
     "tsx": "^4.7.0",
     "handlebars": "^4.7.8",
     "typescript": "^5.3.3",
-    "@vitest/coverage-v8": "^1.2.0",
-    "vitest": "^1.2.0",
-    "oxlint": "^0.2.1",
-    "@types/tar": "^6.1.10"
+    "@vitest/coverage-v8": "^1.2.2",
+    "vitest": "^1.2.2",
+    "oxlint": "^0.2.6",
+    "@types/tar": "^6.1.11",
+    "@types/dockerode": "^3.3.23"
   }
 }

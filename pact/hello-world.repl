@@ -6,8 +6,6 @@
 })
 
 (load "hello-world.pact")
-
 (expect "should say hello world!" (free.hello-world.say-hello "world") "Hello, world!")
-
 (commit-tx)
 

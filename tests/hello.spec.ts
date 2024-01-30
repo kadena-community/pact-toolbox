@@ -4,12 +4,12 @@ import { PactTestEnv, setupPactTestEnv } from '../src/pact/setupTestEnv';
 describe('hello world', () => {
   let env: PactTestEnv;
   beforeAll(async () => {
-    env = await setupPactTestEnv();
+    env = await setupPactTestEnv('devnet');
     await env.client.deployContract('hello-world.pact');
-  });
+  }, 100000);
 
   afterAll(() => {
-    env.stop();
+    env?.stop();
   });
   it('should say hello', async () => {
     const signer = env.client.getSigner();
@@ -20,5 +20,5 @@ describe('hello world', () => {
     const signedTX = await env.client.sign(tx);
     const s = await env.client.submitAndListen(signedTX);
     expect(s, 'Hello, Salama!');
-  });
+  }, 1000000);
 });

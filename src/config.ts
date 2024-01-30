@@ -11,28 +11,44 @@ export interface KeysetConfig {
 export interface GetRpcUrlParams {
   chainId?: string;
   networkId?: string;
+  port?: string | number;
 }
 
 export interface Signer extends IKeyPair {
   address: string;
 }
 
-export interface Network {
+export interface CommonNetworkConfig {
   rpcUrl: string | ((params: GetRpcUrlParams) => string);
+  name?: string;
   senderAccount: string;
   signers: Signer[];
   keysets: Record<string, KeysetConfig>;
   gasLimit?: number;
   gasPrice?: number;
-  chainId: ChainId;
+  chainId?: ChainId;
   networkId: string;
   ttl?: number;
 }
-
-export interface NetworkConfig extends Required<Network> {
-  name: string;
+export interface DevNetworkConfig extends CommonNetworkConfig {
+  type: 'chainweb-devnet';
+  autoStart?: boolean;
+  containerConfig?: DevNetContainerConfig;
 }
-type PactExecConfigFlags =
+
+export interface PactServerNetworkConfig extends CommonNetworkConfig {
+  type: 'pact-server';
+  autoStart?: boolean;
+  serverConfig?: PactServerConfig;
+}
+
+export interface ChainwebNetworkConfig extends CommonNetworkConfig {
+  type: 'chainweb';
+}
+
+export type NetworkConfig = DevNetworkConfig | PactServerNetworkConfig | ChainwebNetworkConfig;
+
+export type PactExecConfigFlags =
   | 'AllowReadInLocal'
   | 'DisableHistoryInTransactionalMode'
   | 'DisableInlineMemCheck'
@@ -96,19 +112,25 @@ export interface PactServerConfig {
   gasRate?: number;
 }
 
+export interface DevNetContainerConfig {
+  port?: string | number;
+  volume?: string;
+  name?: string;
+  image?: string;
+  tag?: string;
+}
 export interface PactConfig {
   contractsDir?: string;
   version?: string;
   preludes?: ('kadena/chainweb' | 'kadena/marmalade-v2' | PactPrelude)[];
   downloadPreludes?: boolean;
   deployPreludes?: boolean;
-  server?: PactServerConfig;
 }
 
-export interface PactToolboxConfigObj {
-  defaultNetwork?: string;
-  networks?: Record<string, Network>;
-  pact?: PactConfig;
+export interface PactToolboxConfigObj<T extends Record<string, NetworkConfig> = Record<string, NetworkConfig>> {
+  defaultNetwork: keyof T;
+  networks: T;
+  pact: PactConfig;
 }
 
 export interface PactDependency {
@@ -137,17 +159,32 @@ export interface PactPrelude {
    */
   repl(client: PactToolboxClient): Promise<string>;
 }
-export type PactToolboxConfig = PactToolboxConfigObj | ((network: string) => PactToolboxConfigObj);
+export type PactToolboxConfig<T extends Record<string, NetworkConfig> = {}> =
+  | Partial<PactToolboxConfigObj<T>>
+  | ((network: string) => Partial<PactToolboxConfigObj<T>>);
 
-export async function resolveConfig(overrides?: PactToolboxConfig) {
-  const configResult = await loadConfig<PactToolboxConfig>({
+export async function resolveConfig(overrides?: Partial<PactToolboxConfigObj>) {
+  const configResult = await loadConfig<PactToolboxConfigObj>({
     name: 'pact-toolbox',
-    defaults: defaultConfig,
-    overrides,
+    overrides: overrides as PactToolboxConfigObj,
+    defaultConfig: defaultConfig as PactToolboxConfigObj,
   });
-  return configResult.config as Required<PactToolboxConfigObj>;
+  return configResult.config as PactToolboxConfigObj;
 }
 
-export function defineConfig<T>(config: PactToolboxConfig) {
+export function defineConfig<T extends Record<string, NetworkConfig> = Record<string, NetworkConfig>>(
+  config: PactToolboxConfig<T>,
+) {
   return config;
+}
+export function isPactServerNetworkConfig(config: NetworkConfig): config is PactServerNetworkConfig {
+  return config.type === 'pact-server';
+}
+
+export function isDevNetworkConfig(config: NetworkConfig): config is DevNetworkConfig {
+  return config.type === 'chainweb-devnet';
+}
+
+export function isChainwebNetworkConfig(config: NetworkConfig): config is ChainwebNetworkConfig {
+  return config.type === 'chainweb';
 }

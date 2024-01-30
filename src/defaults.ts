@@ -1,4 +1,13 @@
-import { KeysetConfig, Network, PactConfig, PactToolboxConfigObj, Signer } from './config';
+import { defu } from 'defu';
+import {
+  ChainwebNetworkConfig,
+  DevNetworkConfig,
+  KeysetConfig,
+  PactConfig,
+  PactServerConfig,
+  PactServerNetworkConfig,
+  Signer,
+} from './config';
 
 export const defaultSigners: Signer[] = [
   {
@@ -65,72 +74,104 @@ export const defaultKeysets: Record<string, KeysetConfig> = defaultSigners.reduc
 );
 
 export const defaultMeta = {
-  ttl: 28_800,
+  ttl: 30_000,
   gasLimit: 100_000,
   gasPrice: 0.000_000_01,
 };
 
-export const localPact: Network = {
-  rpcUrl: 'http://localhost:8080',
-  networkId: 'local',
-  signers: defaultSigners,
-  keysets: defaultKeysets,
-  chainId: '0',
-  senderAccount: 'sender00',
-  ...defaultMeta,
+export const defaultPactServerConfig: PactServerConfig = {
+  port: 8080,
+  logDir: '.pact-toolbox/logs',
+  // persistDir: '.pact-toolbox/persist',
+  verbose: true,
+  pragmas: [],
+  execConfig: ['DisablePact44', 'AllowReadInLocal'],
 };
 
-export const devNet: Network = {
-  rpcUrl: 'https://kdevnet.salamaashoush.com',
-  networkId: 'fast-development',
-  chainId: '1',
-  signers: defaultSigners,
-  keysets: defaultKeysets,
-  senderAccount: 'sender00',
-  ...defaultMeta,
+export const defaultDevNetContainer = {
+  port: 8080,
+  image: 'kadena/devnet',
+  tag: 'latest',
+  volume: 'kadena_devnet',
+  name: 'devnet',
 };
 
-export const testNet: Network = {
-  rpcUrl: 'https://testnet.chainweb.com',
-  networkId: 'testnet04',
-  chainId: '1',
-  signers: [],
-  keysets: {},
-  senderAccount: '',
-};
+export function createDefaultPactConfig(overrides?: Partial<PactConfig>): PactConfig {
+  const defaults = {
+    contractsDir: 'pact',
+    version: '4.10.0',
+    preludes: ['kadena/chainweb'],
+    deployPreludes: true,
+    downloadPreludes: false,
+  } as PactConfig;
+  return defu(overrides ?? {}, defaults) as PactConfig;
+}
 
-export const mainNet: Network = {
-  rpcUrl: 'https://mainnet.chainweb.com',
-  networkId: 'mainnet01',
-  chainId: '1',
-  signers: [],
-  keysets: {},
-  senderAccount: '',
-};
+export function createLocalNetworkConfig(overrides?: Partial<PactServerNetworkConfig>): PactServerNetworkConfig {
+  const defaults = {
+    type: 'pact-server',
+    rpcUrl: ({ port = 8080 }) => `http://localhost:${port}`,
+    networkId: 'local',
+    signers: defaultSigners,
+    keysets: defaultKeysets,
+    chainId: '0',
+    senderAccount: 'sender00',
+    autoStart: true,
+    serverConfig: defaultPactServerConfig,
+    ...defaultMeta,
+  } as PactServerNetworkConfig;
+  return defu(overrides ?? {}, defaults) as PactServerNetworkConfig;
+}
 
-export const defaultNetworks: Record<string, Network> = {
-  local: localPact,
-  devnet: devNet,
-};
+export function createDevNetNetworkConfig(overrides?: Partial<DevNetworkConfig>): DevNetworkConfig {
+  const defaults = {
+    type: 'chainweb-devnet',
+    rpcUrl: ({ port = 8080, chainId, networkId }) =>
+      `http://localhost:${port}/chainweb/0.0/${networkId}/chain/${chainId}/pact`,
+    networkId: 'fast-development',
+    chainId: '1',
+    signers: defaultSigners,
+    keysets: defaultKeysets,
+    senderAccount: 'sender00',
+    autoStart: true,
+    containerConfig: defaultDevNetContainer,
+    ...defaultMeta,
+  } as DevNetworkConfig;
+  return defu(overrides ?? {}, defaults) as DevNetworkConfig;
+}
 
-export const defaultPactConfig: PactConfig = {
-  contractsDir: 'pact',
-  version: '4.10.0',
-  preludes: ['kadena/chainweb'],
-  deployPreludes: true,
-  downloadPreludes: true,
-  server: {
-    port: 8080,
-    logDir: '.pact-toolbox/logs',
-    // persistDir: '.pact-toolbox/persist',
-    verbose: true,
-    pragmas: [],
-    execConfig: ['DisablePact44', 'AllowReadInLocal'],
-  },
-};
+export function createTestNetNetworkConfig(overrides?: Partial<ChainwebNetworkConfig>): ChainwebNetworkConfig {
+  const defaults = {
+    type: 'chainweb',
+    rpcUrl: ({ chainId, networkId }) => `https://testnet.chainweb.com/chainweb/0.0/${networkId}/chain/${chainId}/pact`,
+    networkId: 'testnet04',
+    chainId: '1',
+    signers: [],
+    keysets: {},
+    senderAccount: '',
+    ...defaultMeta,
+  } as ChainwebNetworkConfig;
 
-export const defaultConfig: PactToolboxConfigObj = {
+  return defu(overrides ?? {}, defaults) as ChainwebNetworkConfig;
+}
+
+export function createMainNetNetworkConfig(overrides?: Partial<ChainwebNetworkConfig>): ChainwebNetworkConfig {
+  const defaults = {
+    type: 'chainweb',
+    rpcUrl: ({ chainId, networkId }) => `https://mainnet.chainweb.com/chainweb/0.0/${networkId}/chain/${chainId}/pact`,
+    networkId: 'mainnet01',
+    chainId: '1',
+    signers: [],
+    keysets: {},
+    senderAccount: '',
+    ...defaultMeta,
+  } as ChainwebNetworkConfig;
+
+  return defu(overrides ?? {}, defaults) as ChainwebNetworkConfig;
+}
+
+export const defaultConfig = {
   defaultNetwork: 'local',
-  networks: defaultNetworks,
-  pact: defaultPactConfig,
+  networks: {},
+  pact: createDefaultPactConfig(),
 };

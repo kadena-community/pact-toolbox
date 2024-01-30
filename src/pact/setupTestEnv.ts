@@ -1,19 +1,24 @@
 import { PactToolboxClient } from '../client';
-import { PactToolboxConfig, PactToolboxConfigObj, resolveConfig } from '../config';
+import { PactToolboxConfigObj, isDevNetworkConfig, isPactServerNetworkConfig, resolveConfig } from '../config';
 import { logger } from '../logger';
+import { ProcessWrapper } from '../types';
+import { deployPreludes } from './deployPrelude';
+import { startDevNet } from './devnet';
 import { downloadPreludes } from './downloadPrelude';
 import { startPactLocalServer } from './localServer';
 
 export interface PactTestEnv {
   client: PactToolboxClient;
-  stop: () => void;
+  stop: () => Promise<void>;
   config: PactToolboxConfigObj;
 }
 export async function setupPactTestEnv(
-  configOverrides?: PactToolboxConfig,
+  configOverrides?: Partial<PactToolboxConfigObj> | string,
   client?: PactToolboxClient,
 ): Promise<PactTestEnv> {
-  const config = await resolveConfig(configOverrides);
+  const config = typeof configOverrides === 'object' ? await resolveConfig(configOverrides) : await resolveConfig();
+  const networkName = (typeof configOverrides === 'string' ? configOverrides : config.defaultNetwork) || 'local';
+  config.defaultNetwork = networkName;
   if (!client) {
     client = new PactToolboxClient(config);
   }
@@ -22,10 +27,30 @@ export async function setupPactTestEnv(
     await downloadPreludes(config.pact, client);
     logger.success('Downloaded preludes');
   }
-  // start local server
-  logger.start('Starting Pact local server');
-  const pactServer = await startPactLocalServer(config.pact, false, client);
-  logger.success(`Pact local server started and listening on http://localhost:${config.pact.server?.port}`);
+
+  const currentNetwork = config.networks[networkName];
+
+  if (!currentNetwork) {
+    logger.fatal(`Network ${networkName} not found in config`);
+  }
+
+  let processWrapper: ProcessWrapper | undefined;
+  if (isPactServerNetworkConfig(currentNetwork) && currentNetwork.autoStart) {
+    // start local server
+    processWrapper = await startPactLocalServer(currentNetwork, false);
+    logger.success(
+      `Pact local server started and listening on http://localhost:${currentNetwork.serverConfig?.port || 8080}`,
+    );
+    if (config.pact.deployPreludes) {
+      logger.start('Deploying preludes');
+      await deployPreludes(config.pact, client);
+      logger.success('Deployed preludes');
+    }
+  } else if (isDevNetworkConfig(currentNetwork) && currentNetwork.autoStart) {
+    // start devnet
+    processWrapper = await startDevNet(currentNetwork);
+    logger.success(`Devnet is ready and listening on http://localhost:${currentNetwork.containerConfig?.port || 8080}`);
+  }
 
   // close when unhandled promise rejection
   // process.on('unhandledRejection', (reason) => {
@@ -34,11 +59,7 @@ export async function setupPactTestEnv(
   // });
 
   return {
-    stop: () => {
-      if (!pactServer.killed) {
-        pactServer.kill();
-      }
-    },
+    stop: async () => processWrapper?.stop(),
     client,
     config,
   };

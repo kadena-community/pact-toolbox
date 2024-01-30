@@ -1,4 +1,6 @@
 import { GitInfo } from 'giget';
+import { exec } from 'node:child_process';
+import { promisify } from 'node:util';
 import { PactDependency } from '../config';
 const inputRegex = /^(?<provider>[\w-.]+):(?<repo>[\w.-]+\/[\w.-]+)(?<subdir>[^#]+)?#?(?<ref>[\w./-]+)?/;
 const providerShortcuts: Record<string, string> = {
@@ -32,3 +34,5 @@ export function preludeSpec(
     group,
   };
 }
+
+export const execAsync = promisify(exec);

@@ -1,14 +1,12 @@
 import axios from 'axios';
-import { exec } from 'node:child_process';
 import { createWriteStream } from 'node:fs';
 import { chmod, mkdir } from 'node:fs/promises';
 import { arch, homedir, platform, tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { promisify } from 'node:util';
 import tar from 'tar';
 import { logger } from '../logger';
+import { execAsync } from './utils';
 
-const execAsync = promisify(exec);
 const PACT_INSTALL_DIR = join(homedir(), '.local', 'bin');
 // pact --version returns something like "pact version 4.0.0"
 const PACT_VERSION_REGEX = /(\d+)\.(\d+)(?:\.(\d+))?(-[A-Za-z0-9]+)?/;
