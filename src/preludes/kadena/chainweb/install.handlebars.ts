@@ -1,5 +1,4 @@
-
-(env-exec-config ["DisablePact44", "DisablePact45"])
+export const template = `(env-exec-config ["DisablePact44", "DisablePact45"])
 (begin-tx "Load root contracts")
 (env-data { 
   'ns-admin-keyset: ["{{publicKey}}"],
@@ -29,5 +28,4 @@
 (commit-tx)
 
 (print "Loaded kadena/chainweb contracts.")
-
-
+`;

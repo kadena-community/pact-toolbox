@@ -1,5 +1,4 @@
-
-(begin-tx)
+export const template = `(begin-tx)
 (module test-keys GOVERNANCE
   (defcap GOVERNANCE () true)
   {{#each accounts as |account|}}
@@ -36,4 +35,4 @@
 (coin.coinbase "{{account.address}}" (describe-keyset "free.{{account.address}}-keyset") 1000000.0)
 {{/each}}
 (commit-tx)
-(print "Funded sender* accounts each with 1,000,000.0 KDA.")
+(print "Funded sender* accounts each with 1,000,000.0 KDA.")`;

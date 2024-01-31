@@ -4,10 +4,14 @@ import { readFile, writeFile } from 'fs/promises';
 import { addDevDependency, detectPackageManager } from 'nypm';
 import { join } from 'path';
 import { logger } from '../logger';
+import { createHelloWorld } from '../pact/helloTemplate';
 
-function defaultConfigTemplate() {
+function defaultConfigTemplate(contractDir: string) {
   return `{
     defaultNetwork: 'local',
+    pact: {
+      contractsDir: '${contractDir}',
+    },
     networks: {
       local: createLocalNetworkConfig({
         serverConfig: {
@@ -25,20 +29,20 @@ function defaultConfigTemplate() {
   }`;
 }
 
-export function generateCJSConfigTemplate() {
+export function generateCJSConfigTemplate(contractDir: string) {
   return `const {  createDevNetNetworkConfig, createLocalNetworkConfig, defineConfig } = require('pact-toolbox');
 
-module.exports = defineConfig(${defaultConfigTemplate()});`;
+module.exports = defineConfig(${defaultConfigTemplate(contractDir)});`;
 }
 
-export function generateESMConfigTemplate() {
+export function generateESMConfigTemplate(contractDir: string) {
   return `import { createDevNetNetworkConfig, createLocalNetworkConfig, defineConfig } from 'pact-toolbox';
 
-export default defineConfig(${defaultConfigTemplate()});`;
+export default defineConfig(${defaultConfigTemplate(contractDir)});`;
 }
 
-export function generateConfigTemplate(isCJS: boolean) {
-  return isCJS ? generateCJSConfigTemplate() : generateESMConfigTemplate();
+export function generateConfigTemplate(contractDir: string, isCJS: boolean) {
+  return isCJS ? generateCJSConfigTemplate(contractDir) : generateESMConfigTemplate(contractDir);
 }
 
 // Function to add a script to package.json
@@ -58,7 +62,7 @@ const npmScripts = {
   'pact:types': 'pact-toolbox types',
 };
 
-export default defineCommand({
+export const initCommand = defineCommand({
   meta: {
     name: 'init',
     description: 'Init design sync config',
@@ -69,11 +73,16 @@ export default defineCommand({
       description: 'path to cwd',
       default: process.cwd(),
     },
+    contractsDir: {
+      type: 'string',
+      description: 'path to contract folder',
+      default: 'pact',
+    },
   },
   async run({ args }) {
     const isCJS = typeof require !== 'undefined';
     const isTypescript = existsSync(`${args.cwd}/tsconfig.json`);
-    const template = generateConfigTemplate(isCJS);
+    const template = generateConfigTemplate(args.contractsDir, isCJS);
 
     const deps = ['pact-toolbox', '@kadena/client'];
     logger.start(`Installing dependencies ${deps.join(', ')} ...`);
@@ -95,6 +104,7 @@ export default defineCommand({
     } catch (e) {
       logger.warn(`Failed to add pact:* scripts to package.json at ${pkgJsonPath}, please add manually`);
     }
+    await createHelloWorld(join(args.cwd, args.contractsDir));
     logger.box(`You are ready to go!`);
   },
 });

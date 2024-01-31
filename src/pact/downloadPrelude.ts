@@ -1,5 +1,5 @@
 import { downloadTemplate } from 'giget';
-import { cp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { cp, mkdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { PactToolboxClient } from '../client';
@@ -60,7 +60,7 @@ export async function downloadPreludes(config: PactConfig, client: PactToolboxCl
   await mkdir(join(preludesDir, 'tools'), { recursive: true });
   await writeFile(
     join(preludesDir, 'tools/test-accounts.repl'),
-    renderTemplate(await readFile(join(__dirname, 'accounts.handlebars'), 'utf-8'), {
+    renderTemplate((await import('./accounts.handlebars')).template, {
       accounts: client.network.signers ?? [],
     }),
   );
@@ -68,7 +68,7 @@ export async function downloadPreludes(config: PactConfig, client: PactToolboxCl
   // write init repl
   await writeFile(
     join(preludesDir, 'init.repl'),
-    renderTemplate(await readFile(join(__dirname, 'init.handlebars'), 'utf-8'), {
+    renderTemplate((await import('./accounts.handlebars')).template, {
       preludes: preludes.map((p) => p.name),
       gasLimit: client.network.gasLimit || 1000000,
     }),

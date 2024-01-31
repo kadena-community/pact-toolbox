@@ -7,6 +7,7 @@ const main = defineCommand({
     version: '0.0.1',
   },
   subCommands: {
+    init: async () => (await import('./commands/init')).initCommand,
     install: async () => (await import('./commands/pact/install')).installCommand,
     start: async () => (await import('./commands/pact/start')).startCommand,
     upgrade: async () => (await import('./commands/pact/upgrade')).upgradeCommand,

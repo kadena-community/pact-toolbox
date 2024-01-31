@@ -1,5 +1,3 @@
-import { readFile } from 'node:fs/promises';
-import { join } from 'node:path';
 import type { DeployContractParams, PactToolboxClient } from '../../../client';
 import type { KeysetConfig, PactDependency, PactPrelude } from '../../../config';
 import { logger } from '../../../logger';
@@ -39,7 +37,7 @@ export default {
     const context = {
       publicKey: keys.publicKey,
     };
-    return renderTemplate(await readFile(join(__dirname, 'install.handlebars'), 'utf-8'), context);
+    return renderTemplate((await import('./install.handlebars')).template, context);
   },
   async deploy(client: PactToolboxClient, params: DeployContractParams = {}) {
     const { signer } = params;

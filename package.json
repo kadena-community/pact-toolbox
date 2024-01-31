@@ -1,6 +1,6 @@
 {
   "name": "pact-toolbox",
-  "version": "0.0.1-alpha.0",
+  "version": "0.0.1-alpha.1",
   "description": "A tool to help you build, test and deploy your Pact smart contracts",
   "keywords": [],
   "repository": "salamaashoush/pact-toolbox",
