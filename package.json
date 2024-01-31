@@ -1,42 +1,40 @@
 {
   "name": "pact-toolbox",
-  "version": "0.0.1-alpha.1",
+  "version": "0.0.1-alpha.2",
   "description": "A tool to help you build, test and deploy your Pact smart contracts",
-  "keywords": [],
+  "keywords": [
+    "pact",
+    "kadena",
+    "tools"
+  ],
   "repository": "salamaashoush/pact-toolbox",
   "author": "Salama Ashoush <salamaashoush@gmail.com>",
   "license": "MIT",
   "type": "module",
-  "main": "./src/index.ts",
-  "bin": {
-    "pact-toolbox": "./src/cli.ts"
-  },
-  "publishConfig": {
-    "access": "public",
-    "exports": {
-      ".": {
+  "access": "public",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": {
         "types": "./dist/index.d.ts",
-        "import": {
-          "types": "./dist/index.d.ts",
-          "default": "./dist/index.js"
-        },
-        "require": {
-          "types": "./dist/index.d.cts",
-          "default": "./dist/index.cjs"
-        }
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
       }
-    },
-    "main": "./dist/index.cjs",
-    "module": "./dist/index.js",
-    "types": "./dist/index.d.ts",
-    "files": [
-      "dist",
-      "bin",
-      "src"
-    ],
-    "bin": {
-      "design-sync": "./bin/pact-toolbox.mjs"
     }
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "bin",
+    "src"
+  ],
+  "bin": {
+    "pact-toolbox": "./bin/pact-toolbox.mjs"
   },
   "scripts": {
     "cli": "tsx src/cli.ts",
