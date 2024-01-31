@@ -18,6 +18,7 @@ export async function getLatestReleaseVersion() {
 }
 
 export function getDownloadUrl(version: string, binaryName: string) {
+  version = version.replace('v', '');
   return `https://github.com/kadena-io/pact/releases/download/v${version}/${binaryName}`;
 }
 
@@ -34,6 +35,7 @@ interface SystemInfo {
 export function getSystemInfo(version: string): SystemInfo {
   const p = platform();
   const a = arch();
+  version = version.replace('v', '');
   const info: SystemInfo = {
     platform: p,
     arch: a,

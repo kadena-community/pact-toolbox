@@ -35,14 +35,21 @@ export async function pollDevNet(devNetConfig: DevNetContainerConfig = {}, timeo
   throw new Error('DevNet did not start in time');
 }
 
-export async function startDevNet(network: DevNetworkConfig, showLogs = false) {
+export function isDockerInstalled() {
   const socket = process.env.DOCKER_SOCKET || '/var/run/docker.sock';
-  const stats = statSync(socket);
+  try {
+    const stats = statSync(socket);
+    return stats.isSocket();
+  } catch (e) {
+    return false;
+  }
+}
 
-  if (!stats.isSocket()) {
+export async function startDevNet(network: DevNetworkConfig, showLogs = false) {
+  if (!isDockerInstalled()) {
     logger.fatal('Are you sure the docker is running?');
   }
-
+  const socket = process.env.DOCKER_SOCKET || '/var/run/docker.sock';
   const devNetConfig = {
     port: 8080,
     volume: 'kadena_devnet',
