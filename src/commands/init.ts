@@ -80,7 +80,11 @@ export const initCommand = defineCommand({
     },
   },
   async run({ args }) {
-    const isCJS = typeof require !== 'undefined';
+    const type = await readFile(`${args.cwd}/package.json`, 'utf8').then((content) => {
+      const pkgJson = JSON.parse(content);
+      return pkgJson.type;
+    });
+    const isCJS = type !== 'module';
     const isTypescript = existsSync(`${args.cwd}/tsconfig.json`);
     const template = generateConfigTemplate(args.contractsDir, isCJS);
 
