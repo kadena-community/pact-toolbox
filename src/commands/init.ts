@@ -56,8 +56,8 @@ async function addPackageJsonScript(packageJsonPath: string, scriptName: string,
 }
 
 const npmScripts = {
-  'pact:local': 'pact-toolbox start local',
-  'pact:devent': 'pact-toolbox start devnet',
+  'pact:local': 'pact-toolbox prelude && pact-toolbox start local',
+  'pact:devnet': 'pact-toolbox start devnet',
   'pact:prelude': 'pact-toolbox prelude',
   'pact:types': 'pact-toolbox types',
 };
