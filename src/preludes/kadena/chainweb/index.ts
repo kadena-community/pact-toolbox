@@ -33,11 +33,11 @@ export default {
   },
   async repl(client: PactToolboxClient) {
     const keys = client.getSigner();
-    const __dirname = new URL('.', import.meta.url).pathname;
     const context = {
       publicKey: keys.publicKey,
     };
-    return renderTemplate((await import('./install.handlebars')).template, context);
+    const installTemplate = (await import('./install.handlebars')).template;
+    return renderTemplate(installTemplate, context);
   },
   async deploy(client: PactToolboxClient, params: DeployContractParams = {}) {
     const { signer } = params;

@@ -56,19 +56,19 @@ export async function downloadPreludes(config: PactConfig, client: PactToolboxCl
   await Promise.all(preludes.map((prelude) => downloadPrelude(prelude, preludesDir, client)));
 
   // write accounts repl
-  const __dirname = new URL('.', import.meta.url).pathname;
   await mkdir(join(preludesDir, 'tools'), { recursive: true });
+  const accountsTemplate = (await import('./accounts.handlebars')).template;
   await writeFile(
     join(preludesDir, 'tools/test-accounts.repl'),
-    renderTemplate((await import('./accounts.handlebars')).template, {
+    renderTemplate(accountsTemplate, {
       accounts: client.network.signers ?? [],
     }),
   );
-
+  const initTemplate = (await import('./init.handlebars')).template;
   // write init repl
   await writeFile(
     join(preludesDir, 'init.repl'),
-    renderTemplate((await import('./accounts.handlebars')).template, {
+    renderTemplate(initTemplate, {
       preludes: preludes.map((p) => p.name),
       gasLimit: client.network.gasLimit || 1000000,
     }),
