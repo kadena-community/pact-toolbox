@@ -1,3 +1,4 @@
+import { exec } from 'child_process';
 import { defineCommand } from 'citty';
 import { existsSync } from 'fs';
 import { readFile, writeFile } from 'fs/promises';
@@ -21,7 +22,7 @@ function defaultConfigTemplate(contractDir: string) {
       devnet: createDevNetNetworkConfig({
         containerConfig: {
           image: 'kadena/devnet',
-          tag: 'minimal',
+          tag: 'latest',
           name: 'devnet',
         },
       }),
@@ -56,7 +57,7 @@ async function addPackageJsonScript(packageJsonPath: string, scriptName: string,
 }
 
 const npmScripts = {
-  'pact:local': 'pact-toolbox prelude && pact-toolbox start local',
+  'pact:local': 'pact-toolbox start local',
   'pact:devnet': 'pact-toolbox start devnet',
   'pact:prelude': 'pact-toolbox prelude',
   'pact:types': 'pact-toolbox types',
@@ -109,6 +110,7 @@ export const initCommand = defineCommand({
       logger.warn(`Failed to add pact:* scripts to package.json at ${pkgJsonPath}, please add manually`);
     }
     await createHelloWorld(join(args.cwd, args.contractsDir));
+    exec('npm run pact:prelude', { cwd: args.cwd });
     logger.box(`You are ready to go!`);
   },
 });
