@@ -1,11 +1,22 @@
-(load "prelude/init.repl")
-
-(begin-tx "Load hello-world module")
+(begin-tx "Load hello world")
 (env-data {
-  'hello-ks: { "keys": [], "pred": "keys-all" }
+  'admin-ks: { "keys": [], "pred": "keys-all" }
 })
+;; define free namespace
+(define-namespace "free" (read-keyset "admin-ks") (read-keyset "admin-ks"))
 
+;; load hello-world
 (load "hello-world.pact")
-(expect "should say hello world!" (free.hello-world.say-hello "world") "Hello, world!")
+;; run hello-world say-hello
+(print (hello-world.say-hello "World"))
+
+(expect "Hello, World!" (hello-world.say-hello "World"))
+;; commit the transaction
 (commit-tx)
 
+; true means that the module can be updated by anyone
+(module todos GOVERNANCE
+  "Smart contract module for TODO-MVC pact app."
+  ; module governance capability
+  (defcap GOVERNANCE() true)
+)

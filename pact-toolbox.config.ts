@@ -1,7 +1,7 @@
 import { createDevNetNetworkConfig, createLocalNetworkConfig, defineConfig } from '.';
 
 export default defineConfig({
-  defaultNetwork: 'devnet',
+  defaultNetwork: 'local',
   networks: {
     local: createLocalNetworkConfig({
       serverConfig: {
@@ -10,7 +10,7 @@ export default defineConfig({
     }),
     devnet: createDevNetNetworkConfig({
       containerConfig: {
-        image: 'salamaashoush/kdevnet',
+        image: 'kadena/devnet',
         tag: 'minimal',
         name: 'devnet-minimal',
       },

@@ -178,13 +178,13 @@ export function defineConfig<T extends Record<string, NetworkConfig> = Record<st
   return config;
 }
 export function isPactServerNetworkConfig(config: NetworkConfig): config is PactServerNetworkConfig {
-  return config.type === 'pact-server';
+  return config?.type === 'pact-server';
 }
 
 export function isDevNetworkConfig(config: NetworkConfig): config is DevNetworkConfig {
-  return config.type === 'chainweb-devnet';
+  return config?.type === 'chainweb-devnet';
 }
 
 export function isChainwebNetworkConfig(config: NetworkConfig): config is ChainwebNetworkConfig {
-  return config.type === 'chainweb';
+  return config?.type === 'chainweb';
 }

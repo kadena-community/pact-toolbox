@@ -1,7 +1,7 @@
 {
   "name": "pact-toolbox",
-  "version": "1.0.0",
-  "description": "",
+  "version": "0.0.1-alpha.0",
+  "description": "A tool to help you build, test and deploy your Pact smart contracts",
   "keywords": [],
   "repository": "salamaashoush/pact-toolbox",
   "author": "Salama Ashoush <salamaashoush@gmail.com>",
@@ -49,7 +49,7 @@
     "release": "pnpm test && pnpm publish",
     "test:watch": "vitest",
     "test": "vitest run",
-    "test:types": "tsc --noEmit --skipLibCheck"
+    "verify": "tsc --noEmit --skipLibCheck"
   },
   "dependencies": {
     "@kadena/client": "^1.8.0",
@@ -62,16 +62,17 @@
     "tar": "^6.2.0",
     "axios": "^1.6.7",
     "dockerode": "^4.0.2",
-    "defu": "^6.1.4"
+    "defu": "^6.1.4",
+    "nypm": "^0.3.6",
+    "handlebars": "^4.7.8"
   },
   "devDependencies": {
     "@kadena/pactjs-cli": "^1.8.0",
     "@kadena/types": "^0.6.0",
-    "@types/node": "^20.11.11",
+    "@types/node": "^20.11.13",
     "prettier": "3.2.4",
     "tsup": "^8.0.1",
     "tsx": "^4.7.0",
-    "handlebars": "^4.7.8",
     "typescript": "^5.3.3",
     "@vitest/coverage-v8": "^1.2.2",
     "vitest": "^1.2.2",

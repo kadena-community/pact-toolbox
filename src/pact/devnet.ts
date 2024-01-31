@@ -35,7 +35,7 @@ export async function pollDevNet(devNetConfig: DevNetContainerConfig = {}, timeo
   throw new Error('DevNet did not start in time');
 }
 
-export async function startDevNet(network: DevNetworkConfig) {
+export async function startDevNet(network: DevNetworkConfig, showLogs = false) {
   const socket = process.env.DOCKER_SOCKET || '/var/run/docker.sock';
   const stats = statSync(socket);
 
@@ -108,6 +108,16 @@ export async function startDevNet(network: DevNetworkConfig) {
 
   logger.info(`Started container ${container.id} from image ${devNetConfig.image}:${devNetConfig.tag}`);
 
+  if (showLogs) {
+    const logStream = await container.logs({
+      follow: true,
+      stdout: true,
+      stderr: true,
+    });
+    logStream.on('data', (chunk) => {
+      logger.log(chunk.toString());
+    });
+  }
   const stop = async () => {
     await container.kill();
     // await container.remove();

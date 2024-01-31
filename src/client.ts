@@ -111,7 +111,7 @@ export class PactToolboxClient {
     return getCmdDataOrFail<T>(res);
   }
 
-  async preflight(tx: IUnsignedCommand | ICommand) {
+  async preflight(tx: IUnsignedCommand | ICommand): ReturnType<IClient['preflight']> {
     return this.kdaClient.preflight(tx);
   }
 

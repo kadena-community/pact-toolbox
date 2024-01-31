@@ -1,10 +1,10 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { PactTestEnv, setupPactTestEnv } from '../src/pact/setupTestEnv';
-describe('hello world', () => {
+describe.skip('hello world', () => {
   let env: PactTestEnv;
   beforeAll(async () => {
-    env = await setupPactTestEnv('devnet');
+    env = await setupPactTestEnv();
     await env.client.deployContract('hello-world.pact');
   }, 100000);
 

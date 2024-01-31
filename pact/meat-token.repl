@@ -1,0 +1,17 @@
+(load "prelude/init.repl")
+
+
+(load "meat-token.pact")
+
+(free.meat.create-account "k:43834eef3feb847dd7332e77ec7abcc25e82d5a1dd55869b65a8d3975d0721b2" (read-keyset "bob-ks"))
+(free.meat.fund "k:43834eef3feb847dd7332e77ec7abcc25e82d5a1dd55869b65a8d3975d0721b2" 1000.0)
+
+(bench (free.meat.get-balance "k:43834eef3feb847dd7332e77ec7abcc25e82d5a1dd55869b65a8d3975d0721b2"))
+
+
+(commit-tx)
+
+
+
+
+

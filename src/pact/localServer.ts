@@ -78,5 +78,9 @@ export async function startPactLocalServer(
     process.on('exit', () => {
       pactProcess.kill();
     });
+    process.on('SIGINT', async () => {
+      pactProcess.kill();
+      process.exit();
+    });
   });
 }

@@ -1,8 +1,11 @@
-import { exec } from 'node:child_process';
-import { readFile, rm, writeFile } from 'node:fs/promises';
-import { promisify } from 'node:util';
-import { createPrincipalNamespace } from './ns';
 import { defineCommand } from 'citty';
+import { exec } from 'node:child_process';
+import { readdirSync } from 'node:fs';
+import { readFile, writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
+import { promisify } from 'node:util';
+import { resolveConfig } from '../config';
+import { logger } from '../logger';
 
 const execAsync = promisify(exec);
 const NAMESPACE_PLACEHOLDER = '{{NAMESPACE}}';
@@ -16,20 +19,16 @@ export async function embedNamespace(file: string, namespace: string) {
 }
 
 export async function generateTypes(path: string, namespace?: string) {
-  const ns = namespace ?? (await createPrincipalNamespace());
-  console.log('Using namespace:', ns);
-  const tmpPath = await embedNamespace(path, ns);
-  await execAsync(`npx pactjs contract-generate --file ${tmpPath}`);
-  // cleanup
-  await rm(tmpPath);
+  // const ns = namespace ?? (await createPrincipalNamespace());
+  // const tmpPath = await embedNamespace(path, ns);
+  await execAsync(`npx pactjs contract-generate --file ${path}`);
+  // // cleanup
+  // await rm(tmpPath);
 }
 
 export async function generateContractTypes(contract: string) {
   await execAsync(
-    `npx pactjs contract-generate --contract=${contract} --api=${getApiHost({
-      chainId: env.APP_CHAIN_ID,
-      networkId: env.APP_NETWORK_ID,
-    })}`,
+    `npx pactjs contract-generate --contract=${contract} --api=https://api.testnet.chainweb.com/chainweb/0.0/testnet04/chain/0/pact`,
   );
 }
 
@@ -39,39 +38,27 @@ export const generateTypesCommand = defineCommand({
     description: 'Generate types for contract',
   },
   args: {
-    file: {
-      type: 'positional',
-      name: 'file',
-      required: false,
-      description: 'Contract file',
-    },
     contract: {
       type: 'string',
       name: 'contract',
       alias: 'c',
       description: 'Deployed contract name',
     },
-    namespace: {
-      type: 'string',
-      name: 'namespace',
-      alias: 'n',
-      required: false,
-      description: 'Namespace',
-    },
   },
   run: async ({ args }) => {
-    const { file = [], namespace, contract = [] } = args;
-    const contracts = Array.isArray(contract) ? contract : contract?.split(',') ?? [];
-    const files = Array.isArray(file) ? file : file.split(',') ?? [];
-    console.log('contracts', contracts);
+    const config = await resolveConfig();
+    const { contract = ['coin'] } = args;
+    const contracts = Array.isArray(contract) ? contract : contract?.split(',');
     if (contract.length > 0) {
-      console.log('Generating types for contract...', contracts.join(', '));
+      logger.info('Generating types for contract...', contracts.join(', '));
       await Promise.all(contracts.map((c) => generateContractTypes(c)));
     }
-
+    const contractsDir = config.pact.contractsDir ?? join(process.cwd(), 'contracts');
+    const files = readdirSync(contractsDir).filter((f) => f.endsWith('.pact'));
     if (files.length > 0) {
-      console.log('Generating types for ...', files.join(', '));
-      await Promise.all(files.map((f) => generateTypes(f, namespace)));
+      logger.info('Generating types for ...', files.join(', '));
+      await Promise.all(files.map((f) => generateTypes(join(contractsDir, f))));
     }
+    logger.info('Done!');
   },
 });
