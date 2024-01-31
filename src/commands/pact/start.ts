@@ -30,6 +30,9 @@ export const startCommand = defineCommand({
     const config = await resolveConfig();
     const { network, silent } = args;
     config.defaultNetwork = network || config.defaultNetwork;
-    const _process = await startLocalNetwork(config, !silent);
+    const _process = await startLocalNetwork(config, {
+      showLogs: !silent,
+      logAccounts: true,
+    });
   },
 });

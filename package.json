@@ -1,6 +1,6 @@
 {
   "name": "pact-toolbox",
-  "version": "0.0.1-alpha.6",
+  "version": "0.0.1-alpha.10",
   "description": "A tool to help you build, test and deploy your Pact smart contracts",
   "keywords": [
     "pact",
@@ -62,11 +62,11 @@
     "dockerode": "^4.0.2",
     "defu": "^6.1.4",
     "nypm": "^0.3.6",
-    "handlebars": "^4.7.8"
+    "handlebars": "^4.7.8",
+    "@kadena/pactjs-cli": "^1.8.0",
+    "@kadena/types": "^0.6.0"
   },
   "devDependencies": {
-    "@kadena/pactjs-cli": "^1.8.0",
-    "@kadena/types": "^0.6.0",
     "@types/node": "^20.11.13",
     "prettier": "3.2.4",
     "tsup": "^8.0.1",

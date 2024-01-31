@@ -7,7 +7,15 @@ import { startDevNet } from './devnet';
 import { downloadPreludes } from './downloadPrelude';
 import { startPactLocalServer } from './localServer';
 
-export async function startLocalNetwork(config: PactToolboxConfigObj, showLogs = false, client?: PactToolboxClient) {
+interface StartLocalNetworkOptions {
+  showLogs?: boolean;
+  client?: PactToolboxClient;
+  logAccounts?: boolean;
+}
+export async function startLocalNetwork(
+  config: PactToolboxConfigObj,
+  { client, showLogs = false, logAccounts }: StartLocalNetworkOptions = {},
+) {
   const networkName = config.defaultNetwork || 'local';
   config.defaultNetwork = networkName;
   const currentNetwork = config.networks[networkName];
@@ -47,12 +55,13 @@ export async function startLocalNetwork(config: PactToolboxConfigObj, showLogs =
     processWrapper = await startDevNet(currentNetwork, showLogs);
     logger.success(`Devnet is ready and listening on http://localhost:${currentNetwork.containerConfig?.port || 8080}`);
   }
+  if (logAccounts) {
+    // log all signers and keys
+    const signers = currentNetwork.signers || [];
+    logger.info('Test accounts:');
 
-  // log all signers and keys
-  const signers = currentNetwork.signers || [];
-  logger.info('Test accounts:');
-
-  console.table(signers);
+    console.table(signers);
+  }
 
   return processWrapper;
 }

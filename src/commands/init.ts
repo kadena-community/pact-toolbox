@@ -2,7 +2,7 @@ import { exec } from 'child_process';
 import { defineCommand } from 'citty';
 import { existsSync } from 'fs';
 import { readFile, writeFile } from 'fs/promises';
-import { addDevDependency, detectPackageManager } from 'nypm';
+import { addDependency, detectPackageManager } from 'nypm';
 import { join } from 'path';
 import { logger } from '../logger';
 import { createHelloWorld } from '../pact/helloTemplate';
@@ -95,7 +95,7 @@ export const initCommand = defineCommand({
       includeParentDirs: true,
     });
     for (const dep of deps) {
-      await addDevDependency(dep, { cwd: args.cwd, silent: true, packageManager });
+      await addDependency(dep, { cwd: args.cwd, silent: true, packageManager });
       logger.success(`Installed ${dep}`);
     }
     const configPath = isTypescript ? 'pact-toolbox.config.ts' : 'pact-toolbox.config.js';

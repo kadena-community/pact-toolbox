@@ -17,7 +17,11 @@ export async function setupPactTestEnv(
   if (!client) {
     client = new PactToolboxClient(config);
   }
-  const processWrapper = await startLocalNetwork(config, false, client);
+  const processWrapper = await startLocalNetwork(config, {
+    client,
+    showLogs: false,
+    logAccounts: false,
+  });
   return {
     stop: async () => processWrapper?.stop(),
     client,
