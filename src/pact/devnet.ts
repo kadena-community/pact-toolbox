@@ -3,6 +3,7 @@ import { statSync } from 'node:fs';
 import { DevNetContainerConfig, DevNetworkConfig } from '../config';
 import { logger } from '../logger';
 import { ProcessWrapper } from '../types';
+import { delay } from '../utils';
 
 export async function isDockerRunning() {
   return true;
@@ -20,8 +21,6 @@ export async function isDevNetRunning(devNetConfig: DevNetContainerConfig = {}) 
   } catch (e) {}
   return false;
 }
-
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export async function pollDevNet(devNetConfig: DevNetContainerConfig = {}, timeout = 5000) {
   const start = performance.now();
@@ -52,7 +51,7 @@ export async function startDevNet(network: DevNetworkConfig, showLogs = false) {
   const socket = process.env.DOCKER_SOCKET || '/var/run/docker.sock';
   const devNetConfig = {
     port: 8080,
-    volume: 'kadena_devnet',
+    // volume: 'kadena_devnet',
     name: 'devnet',
     image: 'kadena/devnet',
     // tag: 'latest',
@@ -64,6 +63,7 @@ export async function startDevNet(network: DevNetworkConfig, showLogs = false) {
   });
 
   const imageName = `${devNetConfig.image}:${devNetConfig.tag}`;
+  const volumeName = devNetConfig.volume;
   // Check if the image exists
   try {
     docker.getImage(imageName);
@@ -74,14 +74,16 @@ export async function startDevNet(network: DevNetworkConfig, showLogs = false) {
     // ignore
   }
 
-  // Check if the volume exists
-  try {
-    docker.getVolume(devNetConfig.volume);
-  } catch (e) {
-    logger.log(` Volume ${devNetConfig.volume} does not exist, creating...`);
-    await docker.createVolume({
-      Name: devNetConfig.volume,
-    });
+  if (volumeName) {
+    // Check if the volume exists
+    try {
+      docker.getVolume(volumeName);
+    } catch (e) {
+      logger.log(` Volume ${volumeName} does not exist, creating...`);
+      await docker.createVolume({
+        Name: volumeName,
+      });
+    }
   }
 
   // Remove the container if it exists
@@ -103,7 +105,7 @@ export async function startDevNet(network: DevNetworkConfig, showLogs = false) {
     name: devNetConfig.name,
     ExposedPorts: { '8080/tcp': {} },
     HostConfig: {
-      Binds: [`${devNetConfig.volume}:/data`],
+      Binds: volumeName ? [`${devNetConfig.volume}:/data`] : [],
       PortBindings: { '8080/tcp': [{ HostPort: `${devNetConfig.port || 8080}`, HostIp: '127.0.0.1' }] },
       PublishAllPorts: true,
       AutoRemove: true,

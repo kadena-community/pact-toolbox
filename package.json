@@ -11,30 +11,37 @@
   "author": "Salama Ashoush <salamaashoush@gmail.com>",
   "license": "MIT",
   "type": "module",
-  "access": "public",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": {
-        "types": "./dist/index.d.ts",
-        "default": "./dist/index.js"
-      },
-      "require": {
-        "types": "./dist/index.d.cts",
-        "default": "./dist/index.cjs"
-      }
-    }
-  },
-  "main": "./dist/index.cjs",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "private": true,
+  "main": "./src/index.ts",
   "files": [
     "dist",
     "bin",
     "src"
   ],
   "bin": {
-    "pact-toolbox": "./bin/pact-toolbox.mjs"
+    "pact-toolbox": "./src/cli.ts"
+  },
+  "publishConfig": {
+    "access": "public",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": {
+          "types": "./dist/index.d.ts",
+          "default": "./dist/index.js"
+        },
+        "require": {
+          "types": "./dist/index.d.cts",
+          "default": "./dist/index.cjs"
+        }
+      }
+    },
+    "main": "./dist/index.cjs",
+    "module": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "bin": {
+      "pact-toolbox": "./bin/pact-toolbox.mjs"
+    }
   },
   "scripts": {
     "cli": "tsx src/cli.ts",
@@ -66,15 +73,19 @@
     "@kadena/pactjs-cli": "^1.8.0",
     "@kadena/types": "^0.6.0"
   },
+  "optionalDependencies": {
+    "vite": "^5.0.12"
+  },
   "devDependencies": {
-    "@types/node": "^20.11.13",
-    "prettier": "3.2.4",
+    "@types/node": "^20.11.16",
+    "prettier": "3.2.5",
     "tsup": "^8.0.1",
     "tsx": "^4.7.0",
     "typescript": "^5.3.3",
     "@vitest/coverage-v8": "^1.2.2",
     "vitest": "^1.2.2",
-    "oxlint": "^0.2.6",
+    "vite": "^5.0.12",
+    "oxlint": "^0.2.7",
     "@types/tar": "^6.1.11",
     "@types/dockerode": "^3.3.23"
   }

@@ -15,7 +15,7 @@ export interface GetRpcUrlParams {
 }
 
 export interface Signer extends IKeyPair {
-  address: string;
+  account: string | `k:${string}`;
 }
 
 export interface CommonNetworkConfig {
@@ -33,6 +33,7 @@ export interface CommonNetworkConfig {
 export interface DevNetworkConfig extends CommonNetworkConfig {
   type: 'chainweb-devnet';
   autoStart?: boolean;
+  onDemandMining?: boolean;
   containerConfig?: DevNetContainerConfig;
 }
 

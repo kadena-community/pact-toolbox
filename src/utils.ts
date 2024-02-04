@@ -36,3 +36,7 @@ export function renderTemplate(template: string, data: any) {
   const compiled = Handlebars.compile(template);
   return compiled(data);
 }
+
+export function delay(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}

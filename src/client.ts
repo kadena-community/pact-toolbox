@@ -72,7 +72,7 @@ export class PactToolboxClient {
   }
 
   getSigner(address: string = this.networkConfig.senderAccount) {
-    const s = this.networkConfig.signers.find((s) => s.address === address);
+    const s = this.networkConfig.signers.find((s) => s.account === address);
     if (!s) {
       throw new Error(`Signer ${address} not found in network accounts`);
     }
@@ -131,6 +131,9 @@ export class PactToolboxClient {
   async submitAndListen<T>(tx: ICommand | IUnsignedCommand) {
     if (isSignedTransaction(tx)) {
       const request = await this.kdaClient.submit(tx);
+      if (isDevNetworkConfig(this.networkConfig) && this.networkConfig.onDemandMining) {
+        await this.mineBlocks();
+      }
       const response = await this.kdaClient.listen(request);
       return getCmdDataOrFail<T>(response);
     } else {
@@ -215,5 +218,21 @@ export class PactToolboxClient {
     }
     const contractCode = await readFile(contractPath, 'utf-8');
     return this.deployCode(contractCode, params);
+  }
+
+  async mineBlocks(count = 10) {
+    if (!isDevNetworkConfig(this.network)) {
+      throw new Error('mineBlocks is only supported for devnet');
+    }
+    const port = this.network.containerConfig?.port || 8080;
+    const chainId = this.network.chainId || '0';
+    const res = await fetch(`http://127.0.0.1:${port || 8080}/make-blocks`, {
+      method: 'POST',
+      body: JSON.stringify({ [chainId]: count }),
+    });
+    if (res.ok) {
+      const message = await res.json();
+      console.log(message);
+    }
   }
 }
