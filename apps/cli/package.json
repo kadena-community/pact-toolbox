@@ -1,0 +1,81 @@
+{
+  "name": "pact-toolbox",
+  "version": "0.0.1-alpha.11",
+  "description": "A tool to help you build, test and deploy your Pact smart contracts",
+  "keywords": [
+    "pact",
+    "kadena",
+    "tools"
+  ],
+  "repository": "salamaashoush/pact-toolbox",
+  "author": "Salama Ashoush <salamaashoush@gmail.com>",
+  "license": "MIT",
+  "type": "module",
+  "private": false,
+  "files": [
+    "dist",
+    "bin",
+    "src"
+  ],
+  "access": "public",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    }
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "pact-toolbox": "./bin/pact-toolbox.mjs"
+  },
+  "scripts": {
+    "cli": "tsx src/cli.ts",
+    "playground": "tsx src/playground.ts",
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "lint": "oxlint --import-plugin  -D all && prettier -c src",
+    "lint:fix": "oxlint --import-plugin  -D all --fix && prettier -c src -w",
+    "prepack": "pnpm run build",
+    "release": "pnpm test && pnpm publish",
+    "test:watch": "vitest",
+    "test": "vitest run",
+    "verify": "tsc --noEmit --skipLibCheck"
+  },
+  "dependencies": {
+    "@pact-toolbox/config": "workspace:*",
+    "@pact-toolbox/client-utils": "workspace:*",
+    "@pact-toolbox/runtime": "workspace:*",
+    "@pact-toolbox/utils": "workspace:*",
+    "@pact-toolbox/network": "workspace:*",
+    "@pact-toolbox/prelude": "workspace:*",
+    "@pact-toolbox/installer": "workspace:*",
+    "@pact-toolbox/test": "workspace:*",
+    "@kadena/client": "^1.8.0",
+    "@kadena/pactjs": "^0.4.2",
+    "@kadena/pactjs-cli": "^1.8.0",
+    "@kadena/types": "^0.6.0",
+    "citty": "^0.1.5",
+    "defu": "^6.1.4",
+    "nypm": "^0.3.6"
+  },
+  "devDependencies": {
+    "@pact-toolbox/tsconfig": "workspace:*",
+    "@types/node": "^20.11.17",
+    "@vitest/coverage-v8": "^1.2.2",
+    "oxlint": "^0.2.8",
+    "prettier": "3.2.5",
+    "tsup": "^8.0.1",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3",
+    "vitest": "^1.2.2"
+  }
+}

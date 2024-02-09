@@ -1,0 +1,54 @@
+{
+  "name": "@pact-toolbox/client-utils",
+  "version": "0.0.1",
+  "repository": "salamaashoush/pact-toolbox",
+  "author": "Salama Ashoush <salamaashoush@gmail.com>",
+  "license": "MIT",
+  "type": "module",
+  "private": false,
+  "access": "public",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    }
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "lint": "oxlint --import-plugin  -D all && prettier -c src",
+    "lint:fix": "oxlint --import-plugin  -D all --fix && prettier -c src -w",
+    "prepack": "pnpm run build",
+    "release": "pnpm test && pnpm publish",
+    "test:watch": "vitest",
+    "test": "vitest run",
+    "verify": "tsc --noEmit --skipLibCheck"
+  },
+  "dependencies": {
+    "@kadena/client": "^1.8.0",
+    "@kadena/cryptography-utils": "^0.4.2"
+  },
+  "devDependencies": {
+    "@pact-toolbox/tsconfig": "workspace:*",
+    "@kadena/types": "^0.6.0",
+    "@vitest/coverage-v8": "^1.2.2",
+    "lint-staged": "^15.2.2",
+    "oxlint": "^0.2.8",
+    "tsup": "^8.0.1",
+    "typescript": "^5.3.3",
+    "vitest": "^1.2.2"
+  }
+}

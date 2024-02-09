@@ -1,0 +1,39 @@
+{
+  "name": "todo-mvc",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "pact:local": "pact-toolbox start local",
+    "pact:devnet": "pact-toolbox start devnet",
+    "pact:prelude": "pact-toolbox prelude",
+    "pact:types": "pact-toolbox types"
+  },
+  "dependencies": {
+    "@kadena/client": "^1.8.0",
+    "@pact-toolbox/client-utils": "workspace:*",
+    "@tanstack/react-query": "^5.18.1",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "pact-toolbox": "workspace:*",
+    "@pact-toolbox/test": "workspace:*",
+    "@pact-toolbox/vite-plugin": "workspace:*",
+    "@testing-library/react": "~14.2.1",
+    "@testing-library/user-event": "~14.5.2",
+    "@types/react": "^18.2.55",
+    "@types/react-dom": "^18.2.19",
+    "@vitejs/plugin-react-swc": "^3.6.0",
+    "happy-dom": "^13.3.8",
+    "typescript": "^5.3.3",
+    "vite": "^5.1.0",
+    "vitest": "^1.2.2",
+    "vitest-dom": "^0.1.1"
+  }
+}

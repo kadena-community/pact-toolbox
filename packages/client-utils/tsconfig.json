@@ -1,0 +1,4 @@
+{
+  "extends": "@pact-toolbox/tsconfig/web",
+  "include": ["src", "tests"]
+}
