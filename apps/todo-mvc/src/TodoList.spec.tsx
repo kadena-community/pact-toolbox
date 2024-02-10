@@ -16,7 +16,7 @@ function renderComponent() {
 describe('TodoList', () => {
   let env: PactTestEnv;
   beforeAll(async () => {
-    env = await setupPactTestEnv('local');
+    env = await setupPactTestEnv();
     await env.client.deployContract('todos.pact');
   });
 

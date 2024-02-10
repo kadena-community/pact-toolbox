@@ -78,17 +78,12 @@ export async function startDevNet(network: DevNetworkConfig, silent = true) {
   await container.start();
 
   logger.info(`Started container ${container.id} from image ${containerConfig.image}:${containerConfig.tag}`);
-
-  if (!silent) {
-    const logStream = await container.logs({
-      follow: true,
-      stdout: true,
-      stderr: true,
-    });
-    logStream.on('data', (chunk) => {
-      logger.log(chunk.toString());
-    });
-  }
+  const logStream = await container.logs({
+    follow: true,
+    stdout: !silent,
+    stderr: true,
+  });
+  docker.modem.demuxStream(logStream, process.stdout, process.stderr);
 
   const isOnDemand = network.onDemandMining;
   const containerUrl = `http://localhost:${containerConfig.port}`;

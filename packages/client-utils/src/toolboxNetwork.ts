@@ -18,7 +18,7 @@ interface PactToolboxNetworkConfig {
   name: string;
 }
 export function getPactToolboxNetworkConfig(): PactToolboxNetworkConfig {
-  const network = (globalThis as any).__pactToolboxNetwork__;
+  const network = (globalThis as any).__PACT_TOOLBOX_NETWORK__;
   if (!network) {
     throw new Error('Make sure you are using the pact-toolbox bundler plugin, eg `@pact-toolbox/vite-plugin');
   }

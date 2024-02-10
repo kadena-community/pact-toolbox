@@ -41,7 +41,7 @@ export function pactVitePlugin({ onReady }: VitePluginOptions): Plugin {
         name: network.name,
       };
       viteConfig.define = viteConfig.define || {};
-      viteConfig.define['globalThis.__pactToolboxNetwork__'] = JSON.stringify(pickedConfig);
+      viteConfig.define['globalThis.__PACT_TOOLBOX_NETWORK__'] = JSON.stringify(pickedConfig);
       const client = new PactToolboxClient(options.toolboxConfig);
       if (options.isServe && !options.isTest && isLocalNetwork(network)) {
         await startLocalNetwork(options.toolboxConfig, {

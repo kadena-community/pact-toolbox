@@ -9,7 +9,8 @@ describe('todos api', () => {
   let title = 'Learn pact';
 
   beforeAll(async () => {
-    env = await setupPactTestEnv('localChainweb');
+    env = await setupPactTestEnv();
+    console.log('deploying contract');
     await env.client.deployContract('todos.pact');
   });
 

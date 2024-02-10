@@ -22,8 +22,9 @@ const minimalImage = {
   name: 'devnet-minimal',
 };
 
+const isCI = process.env.CI === 'true';
 export default defineConfig({
-  defaultNetwork: 'localChainweb',
+  defaultNetwork: 'local',
   networks: {
     local: createLocalNetworkConfig({
       serverConfig: {

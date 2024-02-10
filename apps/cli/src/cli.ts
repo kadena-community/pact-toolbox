@@ -1,3 +1,4 @@
+#!/usr/bin/env tsx
 import { defineCommand, runMain } from 'citty';
 
 const main = defineCommand({
