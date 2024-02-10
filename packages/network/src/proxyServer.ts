@@ -38,7 +38,7 @@ export async function createProxyServer({
         const path = event.req.url;
         if (isOnDemand && path?.endsWith('/listen')) {
           await makeBlocks({
-            count: 5,
+            count: 1,
             onDemandUrl,
           });
         }

@@ -2,7 +2,6 @@ import {
   createChainwebLocalNetworkConfig,
   createDevNetNetworkConfig,
   createLocalNetworkConfig,
-  createTestNetNetworkConfig,
   defineConfig,
 } from 'pact-toolbox';
 
@@ -12,28 +11,33 @@ const onDemandImage = {
   name: 'devnet-on-demand',
 };
 
-const defaultImage = {
-  image: 'kadena/devnet',
-  tag: 'latest',
-  name: 'devnet',
+const onDemandImageSalama = {
+  image: 'salamaashoush/kdevnet',
+  tag: 'on-demand',
+  name: 'devnet-on-demand',
 };
+const minimalImage = {
+  image: 'salamaashoush/kdevnet',
+  tag: 'minimal',
+  name: 'devnet-minimal',
+};
+
 export default defineConfig({
-  defaultNetwork: 'local',
-  pact: {
-    contractsDir: 'pact',
-  },
+  defaultNetwork: 'localChainweb',
   networks: {
     local: createLocalNetworkConfig({
       serverConfig: {
         port: 9001,
-        // persistDir: '.pact-toolbox/pact-state',
       },
     }),
+    localChainweb: createChainwebLocalNetworkConfig({}),
     devnet: createDevNetNetworkConfig({
-      containerConfig: onDemandImage,
+      containerConfig: minimalImage,
+      onDemandMining: false,
+    }),
+    devnetOnDemand: createDevNetNetworkConfig({
+      containerConfig: onDemandImageSalama,
       onDemandMining: true,
     }),
-    chainwebLocal: createChainwebLocalNetworkConfig({}),
-    kdevnet1: createTestNetNetworkConfig({}),
   },
 });
