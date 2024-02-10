@@ -1,7 +1,6 @@
 import type { ChainwebLocalNetworkConfig, ChainwebMiningClientConfig, ChainwebNodeConfig } from '@pact-toolbox/config';
 import { createChainWebMiningClientConfig, createChainwebNodeConfig } from '@pact-toolbox/config';
 import { pollFn, runBin } from '@pact-toolbox/utils';
-import { eventHandler, proxyRequest } from 'h3';
 import { existsSync } from 'node:fs';
 import { rm } from 'node:fs/promises';
 import { logger } from '../../utils/src/logger';
@@ -62,26 +61,21 @@ export async function startChainWeb(network: ChainwebLocalNetworkConfig, silent 
   const proxyPort = network.proxyPort ?? 8080;
   const isOnDemand = miningClientConfig.worker === 'on-demand';
   const onDemandPort = miningClientConfig.onDemandPort;
-  const {
-    app,
-    stop: stopProxyServer,
-    start: startProxyServer,
-  } = await createProxyServer({
-    port: proxyPort,
-    isOnDemand,
-    url: `http://localhost:${nodeConfig.servicePort}`,
-  });
-  if (isOnDemand) {
-    app.use(
-      '/make-blocks',
-      eventHandler((event) => proxyRequest(event, `http://localhost:${onDemandPort}/make-blocks`)),
-    );
-  }
-  await startProxyServer();
   // clean up old db
-  if (existsSync(nodeConfig.databaseDirectory)) {
+  if (!nodeConfig.persistDb && existsSync(nodeConfig.databaseDirectory)) {
     await rm(nodeConfig.databaseDirectory, { recursive: true, force: true });
   }
+
+  const onDemandUrl = `http://localhost:${onDemandPort}`;
+  const nodeUrl = `http://localhost:${nodeConfig.servicePort}`;
+  const { stop: stopProxyServer, start: startProxyServer } = await createProxyServer({
+    port: proxyPort,
+    detentionUrl: nodeUrl,
+    onDemandUrl: isOnDemand ? onDemandUrl : undefined,
+  });
+
+  await startProxyServer();
+
   const chainwebNode = await startChainWebNode(nodeConfig, silent);
   await pollFn(() => isChainWebNodeOk(proxyPort), 10000);
   logger.success('Chainweb node started');
@@ -101,14 +95,17 @@ export async function startChainWeb(network: ChainwebLocalNetworkConfig, silent 
   };
 
   try {
-    await pollFn(
-      () =>
-        didMakeBlocks({
-          count: 5,
-          port: proxyPort,
-        }),
-      10000,
-    );
+    if (isOnDemand) {
+      await pollFn(
+        () =>
+          didMakeBlocks({
+            count: 5,
+            onDemandUrl,
+          }),
+        10000,
+        15,
+      );
+    }
     await pollFn(() => isChainWebAtHeight(20, proxyPort), 10000);
     logger.success('Chainweb network is ready');
   } catch (e) {

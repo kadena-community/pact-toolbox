@@ -29,7 +29,7 @@ await bench('localPactServer', async () => {
 });
 
 // localChainweb
-await bench('localChainwebOnDemand', async () => {
+await bench('localChainweb', async () => {
   const localChainweb = await setupPactTestEnv('localChainweb');
   await localChainweb.client.deployContract('hello-world.pact');
   const signer = localChainweb.client.getSigner();
@@ -42,7 +42,7 @@ await bench('localChainwebOnDemand', async () => {
   await localChainweb.stop();
 });
 
-// // devnetOnDemand
+// //  devnetOnDemand
 // await bench('devnetOnDemand', async () => {
 //   const devnetOnDemand = await setupPactTestEnv('devnetOnDemand');
 //   // await devnetOnDemand.client.mineBlocks(1);

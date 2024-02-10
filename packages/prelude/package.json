@@ -6,26 +6,29 @@
   "license": "MIT",
   "type": "module",
   "private": false,
-  "access": "public",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": {
+  "main": "./src/index.ts",
+  "publishConfig": {
+    "access": "public",
+    "exports": {
+      ".": {
         "types": "./dist/index.d.ts",
-        "default": "./dist/index.js"
-      },
-      "require": {
-        "types": "./dist/index.d.cts",
-        "default": "./dist/index.cjs"
+        "import": {
+          "types": "./dist/index.d.ts",
+          "default": "./dist/index.js"
+        },
+        "require": {
+          "types": "./dist/index.d.cts",
+          "default": "./dist/index.cjs"
+        }
       }
-    }
+    },
+    "main": "./dist/index.cjs",
+    "module": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "files": [
+      "dist"
+    ]
   },
-  "main": "./dist/index.cjs",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "files": [
-    "dist"
-  ],
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
@@ -47,10 +50,10 @@
     "@pact-toolbox/config": "workspace:*"
   },
   "devDependencies": {
-    "@pact-toolbox/runtime": "workspace:*",
-    "@pact-toolbox/config": "workspace:*",
-    "@pact-toolbox/tsconfig": "workspace:*",
     "@kadena/types": "^0.6.0",
+    "@pact-toolbox/config": "workspace:*",
+    "@pact-toolbox/runtime": "workspace:*",
+    "@pact-toolbox/tsconfig": "workspace:*",
     "@vitest/coverage-v8": "^1.2.2",
     "lint-staged": "^15.2.2",
     "oxlint": "^0.2.8",

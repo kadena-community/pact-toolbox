@@ -78,7 +78,7 @@ export class CoinContract {
     }
   }
 
-  async fund(recipient: string | CoinAccount, amount: number, preflight = false) {
+  async fund(recipient: string | CoinAccount, amount: number) {
     const fundingAccount = this.client.getSigner();
     const r =
       typeof recipient === 'string'

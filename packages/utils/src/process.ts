@@ -24,9 +24,7 @@ export function runBin(
     });
 
     proc.stderr.on('data', (data) => {
-      if (!silent) {
-        console.error(data.toString());
-      }
+      console.error(data.toString());
     });
 
     proc.on('error', (err) => {

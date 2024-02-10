@@ -5,7 +5,6 @@ import { buildIdParser } from './utils';
 import { getCurrentNetworkConfig, getNetworkRpcUrl, isLocalNetwork } from '@pact-toolbox/config';
 import { startLocalNetwork } from '@pact-toolbox/network';
 import { PactToolboxClient } from '@pact-toolbox/runtime';
-import { readFile } from 'node:fs/promises';
 import { preResolveOptions, resolveOptions } from './options';
 
 interface VitePluginOptions {
@@ -17,7 +16,7 @@ export function pactVitePlugin({ onReady }: VitePluginOptions): Plugin {
   let viteConfig!: any;
   return {
     name: 'pact-toolbox:transformer',
-    enforce: 'pre',
+    enforce: 'post',
     async config(config, configEnv) {
       options = await preResolveOptions(config, configEnv);
       return config;
@@ -69,7 +68,7 @@ export function pactVitePlugin({ onReady }: VitePluginOptions): Plugin {
     async load(id, { ssr } = {}) {
       const req = requestParser(id, !!ssr);
       if (req) {
-        const content = await readFile(req.path, 'utf8');
+        // const content = await readFile(req.path, 'utf8');
         // const transformed = transformPactModule(content);
         // return transformed;
         return '';

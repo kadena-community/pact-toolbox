@@ -1,5 +1,5 @@
 {
-  "name": "pact-toolbox",
+  "name": "pact-toolbox-root",
   "version": "0.0.0",
   "description": "A tool to help you build, test and deploy your Pact smart contracts",
   "private": true,
@@ -34,6 +34,12 @@
   },
   "devDependencies": {
     "@changesets/cli": "^2.27.1",
+    "pact-toolbox": "workspace:*",
     "tsx": "^4.7.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "pact-toolbox": "workspace:*"
+    }
   }
 }

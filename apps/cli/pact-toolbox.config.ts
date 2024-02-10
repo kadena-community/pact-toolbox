@@ -23,7 +23,7 @@ const minimalImage = {
 };
 
 export default defineConfig({
-  defaultNetwork: 'devnet',
+  defaultNetwork: 'local',
   networks: {
     local: createLocalNetworkConfig({
       serverConfig: {
@@ -36,7 +36,7 @@ export default defineConfig({
       onDemandMining: false,
     }),
     devnetOnDemand: createDevNetNetworkConfig({
-      containerConfig: onDemandImage,
+      containerConfig: onDemandImageSalama,
       onDemandMining: true,
     }),
   },

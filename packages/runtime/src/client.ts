@@ -109,7 +109,7 @@ export class PactToolboxClient {
     return this.kdaClient.preflight(tx);
   }
 
-  async submit<T>(tx: ICommand | IUnsignedCommand) {
+  async submit(tx: ICommand | IUnsignedCommand) {
     if (isSignedTransaction(tx)) {
       return this.kdaClient.submit(tx);
     } else {

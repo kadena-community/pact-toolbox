@@ -1,6 +1,6 @@
 export * from './chainweb';
 export * from './devnet';
-export * from './localServer';
+export * from './pactServer';
 export * from './proxyServer';
 export * from './startLocalNetwork';
 export * from './types';

@@ -1,20 +1,19 @@
 import { DevNetworkConfig } from '@pact-toolbox/config';
 import { logger, pollFn } from '@pact-toolbox/utils';
 import Docker from 'dockerode';
+import { ProxyServer, createProxyServer } from './proxyServer';
 import { ProcessWrapper } from './types';
-import { didMakeBlocks, isChainWebAtHeight, isChainWebNodeOk, isDockerInstalled } from './utils';
+import { didMakeBlocks, isChainWebAtHeight, isChainWebNodeOk, isDockerInstalled, pullDockerImage } from './utils';
 
 export async function startDevNet(network: DevNetworkConfig, silent = true) {
   if (!isDockerInstalled()) {
     logger.fatal('Are you sure the docker is running?');
   }
   const socket = process.env.DOCKER_SOCKET || '/var/run/docker.sock';
-  const devNetConfig = {
+  const containerConfig = {
     port: 8080,
-    // volume: 'kadena_devnet',
     name: 'devnet',
     image: 'kadena/devnet',
-    // tag: 'latest',
     ...network.containerConfig,
   };
 
@@ -22,16 +21,17 @@ export async function startDevNet(network: DevNetworkConfig, silent = true) {
     socketPath: socket,
   });
 
-  const imageName = `${devNetConfig.image}:${devNetConfig.tag}`;
-  const volumeName = devNetConfig.volume;
+  const imageName = `${containerConfig.image}:${containerConfig.tag}`;
+  const volumeName = containerConfig.volume;
   // Check if the image exists
   try {
-    docker.getImage(imageName);
+    await docker.getImage(imageName).inspect();
   } catch (e) {
     logger.log(`Image ${imageName} does not exist, pulling...`);
     // Pull the image
-    await docker.pull(imageName);
-    // ignore
+    await pullDockerImage(docker, imageName, (event) => {
+      logger.info(`${event.status} ${event.progressDetail || ''}`);
+    });
   }
 
   if (volumeName) {
@@ -48,25 +48,27 @@ export async function startDevNet(network: DevNetworkConfig, silent = true) {
 
   // Remove the container if it exists
   try {
-    const container = docker.getContainer(devNetConfig.name);
+    const container = docker.getContainer(containerConfig.name);
     const containerInfo = await container.inspect();
     if (containerInfo.State.Running) {
-      logger.log(`Container ${devNetConfig.name} is running, killing...`);
+      logger.log(`Container ${containerConfig.name} is running, killing...`);
       await container.kill();
     }
-    logger.log(`Container ${devNetConfig.name} exists, removing...`);
-    await container.remove();
+    logger.log(`Container ${containerConfig.name} exists, removing...`);
+    await container.remove({
+      force: true,
+    });
   } catch (e) {
     // ignore
   }
   // Create the container
   const container = await docker.createContainer({
     Image: imageName,
-    name: devNetConfig.name,
+    name: containerConfig.name,
     ExposedPorts: { '8080/tcp': {} },
     HostConfig: {
-      Binds: volumeName ? [`${devNetConfig.volume}:/data`] : [],
-      PortBindings: { '8080/tcp': [{ HostPort: `${devNetConfig.port || 8080}`, HostIp: '127.0.0.1' }] },
+      Binds: volumeName ? [`${containerConfig.volume}:/data`] : [],
+      PortBindings: { '8080/tcp': [{ HostPort: `${containerConfig.port || 8080}`, HostIp: '127.0.0.1' }] },
       PublishAllPorts: true,
       AutoRemove: true,
     },
@@ -75,7 +77,7 @@ export async function startDevNet(network: DevNetworkConfig, silent = true) {
   // Start the container
   await container.start();
 
-  logger.info(`Started container ${container.id} from image ${devNetConfig.image}:${devNetConfig.tag}`);
+  logger.info(`Started container ${container.id} from image ${containerConfig.image}:${containerConfig.tag}`);
 
   if (!silent) {
     const logStream = await container.logs({
@@ -87,9 +89,22 @@ export async function startDevNet(network: DevNetworkConfig, silent = true) {
       logger.log(chunk.toString());
     });
   }
+
+  const isOnDemand = network.onDemandMining;
+  const containerUrl = `http://localhost:${containerConfig.port}`;
+  let proxy: ProxyServer | undefined;
+  if (isOnDemand) {
+    proxy = await createProxyServer({
+      detentionUrl: containerUrl,
+      onDemandUrl: isOnDemand ? containerUrl : undefined,
+      port: network.proxyPort || 8080,
+    });
+    await proxy.start();
+  }
+
   const stop = async () => {
+    await proxy?.stop();
     await container.kill();
-    // await container.remove();
   };
 
   process.on('exit', async () => {
@@ -106,39 +121,24 @@ export async function startDevNet(network: DevNetworkConfig, silent = true) {
     id: container.id,
   };
 
-  const isOnDemand = network.onDemandMining;
-  // const {
-  //   app,
-  //   stop: stopProxyServer,
-  //   start: startProxyServer,
-  // } = await createProxyServer({
-  //   port: proxyPort,
-  //   isOnDemand,
-  //   url: `http://localhost:${nodeConfig.servicePort}`,
-  // });
-
-  // await startProxyServer();
-
   // poll devnet
   try {
-    await pollFn(() => isChainWebNodeOk(devNetConfig.port), 10000);
-    logger.success('DevNet started');
+    await pollFn(() => isChainWebNodeOk(containerConfig.port), 10000);
+    logger.success('DevNet started', isOnDemand ? 'with on-demand mining' : '');
     if (isOnDemand) {
       // the mining client starts later than the node
       await pollFn(
         () =>
           didMakeBlocks({
             count: 5,
-            port: devNetConfig.port,
+            onDemandUrl: containerUrl,
           }),
         10000,
       );
     }
-    await pollFn(() => isChainWebAtHeight(20, devNetConfig.port), 10000);
-    logger.success('DevNet ready');
+    await pollFn(() => isChainWebAtHeight(20, containerConfig.port), 10000);
   } catch (e) {
     await stop();
-    console.log(e);
     logger.fatal('DevNet did not start in time');
   }
 

@@ -1,6 +1,4 @@
-import type { PactToolboxConfigObj } from '@pact-toolbox/config';
-import { getCurrentNetworkConfig, getNetworkRpcUrl } from '@pact-toolbox/config';
-import { delay } from '@pact-toolbox/utils';
+import Docker from 'dockerode';
 import { statSync } from 'node:fs';
 
 export async function isChainWebNodeOk(port: number | string = 8080) {
@@ -11,7 +9,6 @@ export async function isChainWebNodeOk(port: number | string = 8080) {
       if (message.includes('Health check OK.')) {
         return true;
       }
-      await delay(5);
     }
   } catch (e) {}
   return false;
@@ -42,14 +39,34 @@ export function isDockerInstalled() {
   }
 }
 
+export async function pullDockerImage(docker: Docker, imageName: string, onProgress: (event: any) => void) {
+  try {
+    const stream = await docker.pull(imageName);
+    return new Promise((resolve, reject) => {
+      docker.modem.followProgress(
+        stream,
+        (error, results) => {
+          if (error) {
+            reject(error);
+          } else {
+            resolve(results);
+          }
+        },
+        onProgress,
+      );
+    });
+  } catch (e) {
+    return Promise.reject(e);
+  }
+}
 export interface MakeBlocksParams {
   count?: number;
   chainIds?: string[];
-  port?: number | string;
+  onDemandUrl: string;
 }
-export async function makeBlocks({ count = 1, chainIds = ['0'], port = 8080 }: MakeBlocksParams) {
+export async function makeBlocks({ count = 1, chainIds = ['0'], onDemandUrl }: MakeBlocksParams) {
   const body = JSON.stringify(chainIds.reduce((acc, chainId) => ({ ...acc, [chainId]: count }), {}));
-  const res = await fetch(`http://localhost:${port}/make-blocks`, {
+  const res = await fetch(`${onDemandUrl}/make-blocks`, {
     method: 'POST',
     body: body,
   });
@@ -57,7 +74,7 @@ export async function makeBlocks({ count = 1, chainIds = ['0'], port = 8080 }: M
     const data = await res.json();
     return data;
   } else {
-    throw new Error('Failed to make blocks');
+    throw new Error(`Failed to make blocks ${res.status} ${res.statusText}`);
   }
 }
 
@@ -68,22 +85,4 @@ export async function didMakeBlocks(params: MakeBlocksParams) {
   } catch (e) {
     return false;
   }
-}
-
-export function injectGlobals(config: PactToolboxConfigObj) {
-  const network = getCurrentNetworkConfig(config);
-  const pickedConfig = {
-    networkId: network.networkId,
-    chainId: network.chainId,
-    rpcUrl: getNetworkRpcUrl(network),
-    gasLimit: network.gasLimit,
-    gasPrice: network.gasPrice,
-    ttl: network.ttl,
-    senderAccount: network.senderAccount,
-    signers: network.signers,
-    type: network.type,
-    keysets: network.keysets,
-    name: network.name,
-  };
-  (globalThis as any).__pactToolboxNetwork__ = pickedConfig;
 }

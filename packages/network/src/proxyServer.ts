@@ -11,30 +11,40 @@ export interface ProxyServer {
 
 interface ProxyServerOptions {
   port: number | string;
-  url: string;
-  isOnDemand?: boolean;
+  detentionUrl: string;
+  onDemandUrl?: string;
 }
 export async function createProxyServer({
-  url = 'http://localhost:8080',
+  detentionUrl = 'http://localhost:8080',
   port,
-  isOnDemand,
+  onDemandUrl,
 }: ProxyServerOptions): Promise<ProxyServer> {
   const app = createApp();
-  app.use(
-    '*',
-    eventHandler(async (event) => {
-      if (isOnDemand && event.req.url?.includes('listen')) {
-        await makeBlocks({
-          count: 5,
-          port,
-        });
-      }
-      return proxyRequest(event, `${url}/${event.req.url}`);
-    }),
-  );
-
   let listener: Listener;
+  const isOnDemand = !!onDemandUrl;
+  if (onDemandUrl) {
+    app.use(
+      '/make-blocks',
+      eventHandler((event) => {
+        return proxyRequest(event, `${onDemandUrl}/make-blocks`);
+      }),
+    );
+  }
+
   const start = async () => {
+    app.use(
+      '*',
+      eventHandler(async (event) => {
+        const path = event.req.url;
+        if (isOnDemand && path?.endsWith('/listen')) {
+          await makeBlocks({
+            count: 5,
+            onDemandUrl,
+          });
+        }
+        return proxyRequest(event, `${detentionUrl}${path}`);
+      }),
+    );
     try {
       listener = await listen(toNodeListener(app), { port, isProd: true, showURL: false });
     } catch (e) {
@@ -44,10 +54,7 @@ export async function createProxyServer({
     return listener;
   };
 
-  const stop = async () => {
-    await listener.close();
-  };
-
+  const stop = async () => listener.close();
   return {
     app,
     start,

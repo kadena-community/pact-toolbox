@@ -15,6 +15,6 @@ RUN pnpm install
 
 WORKDIR /devnet/app/apps/cli
 # Install pact prelude
-RUN pnpm cli prelude
+# RUN pnpm cli prelude
 
 CMD [ "pnpm", "playground"]

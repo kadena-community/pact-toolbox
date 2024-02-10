@@ -12,30 +12,34 @@
   "license": "MIT",
   "type": "module",
   "private": false,
-  "files": [
-    "dist",
-    "bin",
-    "src"
-  ],
-  "access": "public",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": {
-        "types": "./dist/index.d.ts",
-        "default": "./dist/index.js"
-      },
-      "require": {
-        "types": "./dist/index.d.cts",
-        "default": "./dist/index.cjs"
-      }
-    }
-  },
-  "main": "./dist/index.cjs",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "./src/index.ts",
   "bin": {
-    "pact-toolbox": "./bin/pact-toolbox.mjs"
+    "pact-toolbox": "./src/cli.ts"
+  },
+  "publishConfig": {
+    "access": "public",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": {
+          "types": "./dist/index.d.ts",
+          "default": "./dist/index.js"
+        },
+        "require": {
+          "types": "./dist/index.d.cts",
+          "default": "./dist/index.cjs"
+        }
+      }
+    },
+    "main": "./dist/index.cjs",
+    "module": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "files": [
+      "dist"
+    ],
+    "bin": {
+      "pact-toolbox": "./bin/pact-toolbox.mjs"
+    }
   },
   "scripts": {
     "cli": "tsx src/cli.ts",
@@ -51,18 +55,18 @@
     "verify": "tsc --noEmit --skipLibCheck"
   },
   "dependencies": {
-    "@pact-toolbox/config": "workspace:*",
-    "@pact-toolbox/client-utils": "workspace:*",
-    "@pact-toolbox/runtime": "workspace:*",
-    "@pact-toolbox/utils": "workspace:*",
-    "@pact-toolbox/network": "workspace:*",
-    "@pact-toolbox/prelude": "workspace:*",
-    "@pact-toolbox/installer": "workspace:*",
-    "@pact-toolbox/test": "workspace:*",
     "@kadena/client": "^1.8.0",
     "@kadena/pactjs": "^0.4.2",
     "@kadena/pactjs-cli": "^1.8.0",
     "@kadena/types": "^0.6.0",
+    "@pact-toolbox/client-utils": "workspace:*",
+    "@pact-toolbox/config": "workspace:*",
+    "@pact-toolbox/installer": "workspace:*",
+    "@pact-toolbox/network": "workspace:*",
+    "@pact-toolbox/prelude": "workspace:*",
+    "@pact-toolbox/runtime": "workspace:*",
+    "@pact-toolbox/test": "workspace:*",
+    "@pact-toolbox/utils": "workspace:*",
     "citty": "^0.1.5",
     "defu": "^6.1.4",
     "nypm": "^0.3.6"

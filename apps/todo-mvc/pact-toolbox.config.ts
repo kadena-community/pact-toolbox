@@ -1,5 +1,22 @@
-import { createChainwebRpcUrl, createDevNetNetworkConfig, createLocalNetworkConfig, defineConfig } from 'pact-toolbox';
+import {
+  createChainwebLocalNetworkConfig,
+  createDevNetNetworkConfig,
+  createLocalNetworkConfig,
+  createTestNetNetworkConfig,
+  defineConfig,
+} from 'pact-toolbox';
 
+const onDemandImage = {
+  image: 'kadena/devnet',
+  tag: 'on-demand-minimal',
+  name: 'devnet-on-demand',
+};
+
+const defaultImage = {
+  image: 'kadena/devnet',
+  tag: 'latest',
+  name: 'devnet',
+};
 export default defineConfig({
   defaultNetwork: 'local',
   pact: {
@@ -9,21 +26,14 @@ export default defineConfig({
     local: createLocalNetworkConfig({
       serverConfig: {
         port: 9001,
-        persistDir: '.pact-toolbox/pact-state',
+        // persistDir: '.pact-toolbox/pact-state',
       },
     }),
     devnet: createDevNetNetworkConfig({
-      containerConfig: {
-        image: 'kadena/devnet',
-        tag: 'latest',
-        name: 'devnet',
-      },
+      containerConfig: onDemandImage,
+      onDemandMining: true,
     }),
-    kdevnet1: createDevNetNetworkConfig({
-      autoStart: false,
-      rpcUrl: createChainwebRpcUrl({
-        host: 'https://kdevnet1.salamaashoush.com',
-      }),
-    }),
+    chainwebLocal: createChainwebLocalNetworkConfig({}),
+    kdevnet1: createTestNetNetworkConfig({}),
   },
 });

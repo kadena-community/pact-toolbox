@@ -2,6 +2,7 @@ import {
   NetworkConfig,
   PactToolboxConfigObj,
   getCurrentNetworkConfig,
+  isChainwebLocalNetworkConfig,
   isDevNetworkConfig,
   isPactServerNetworkConfig,
   resolveConfig,
@@ -16,6 +17,10 @@ function disablePersistance(network: NetworkConfig) {
 
   if (isDevNetworkConfig(network) && network.containerConfig?.volume) {
     network.containerConfig.volume = undefined;
+  }
+
+  if (isChainwebLocalNetworkConfig(network) && network.nodeConfig?.persistDb) {
+    network.nodeConfig.persistDb = false;
   }
 
   return network;

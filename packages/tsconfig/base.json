@@ -3,16 +3,19 @@
   "display": "Base",
   "compilerOptions": {
     "skipLibCheck": true,
-    "strict": true,
     "target": "ESNext",
     "module": "ESNext",
     "lib": ["ESNext"],
-    "moduleResolution": "Node",
+    "moduleResolution": "Bundler",
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "noEmit": true,
     "isolatedModules": true,
     "allowImportingTsExtensions": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true
   }
 }

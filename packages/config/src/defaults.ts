@@ -94,7 +94,7 @@ export const defaultPactServerConfig: PactServerConfig = {
 };
 
 export const defaultDevNetContainer = {
-  port: 8080,
+  port: 9090,
   image: 'kadena/devnet',
   tag: 'latest',
   // volume: 'kadena_devnet',
@@ -129,6 +129,12 @@ export function createLocalNetworkConfig(overrides?: Partial<PactServerNetworkCo
 }
 
 export function createDevNetNetworkConfig(overrides?: Partial<DevNetworkConfig>): DevNetworkConfig {
+  const containerPort = overrides?.containerConfig?.port;
+  const proxyPort = overrides?.proxyPort;
+  if (containerPort && proxyPort && containerPort.toString() === proxyPort.toString()) {
+    throw new Error(`DevNet container port must be different from proxy port`);
+  }
+
   const defaults = {
     type: 'chainweb-devnet',
     rpcUrl: createChainwebRpcUrl(),
@@ -140,18 +146,22 @@ export function createDevNetNetworkConfig(overrides?: Partial<DevNetworkConfig>)
     autoStart: true,
     onDemandMining: false,
     containerConfig: defaultDevNetContainer,
+    proxyPort: 8080,
     ...defaultMeta,
   } as DevNetworkConfig;
   return defu(overrides ?? {}, defaults) as DevNetworkConfig;
 }
 
-// export const chainwebConfigDir = join(homedir(), 'Playground/pact-toolbox/bins/chainweb');
-export const chainwebConfigDir = '/devnet';
-export function createChainwebNodeConfig(overrides?: Partial<ChainwebNodeConfig>): ChainwebNodeConfig {
+export const chainwebConfigDir = join(process.cwd(), '.pact-toolbox');
+export function createChainwebNodeConfig(
+  overrides?: Partial<ChainwebNodeConfig>,
+  configDir = chainwebConfigDir,
+): ChainwebNodeConfig {
   const defaults = {
-    configFile: join(chainwebConfigDir, 'chainweb-node.common.yaml'),
-    p2pCertificateChainFile: join(chainwebConfigDir, 'devnet-bootstrap-node.cert.pem'),
-    p2pCertificateKeyFile: join(chainwebConfigDir, 'devnet-bootstrap-node.key.pem'),
+    persistDb: true,
+    configFile: join(configDir, 'chainweb-node.common.yaml'),
+    p2pCertificateChainFile: join(configDir, 'devnet-bootstrap-node.cert.pem'),
+    p2pCertificateKeyFile: join(configDir, 'devnet-bootstrap-node.key.pem'),
     p2pHostname: 'bootstrap-node',
     bootstrapReachability: 1,
     clusterId: 'devnet-minimal',
@@ -208,7 +218,7 @@ export function createChainwebLocalNetworkConfig(
     nodeConfig: createChainwebNodeConfig(),
     miningClientConfig: createChainWebMiningClientConfig(),
     onDemandMining: true,
-    port: 8080,
+    proxyPort: 8080,
     ...defaultMeta,
   } as ChainwebLocalNetworkConfig;
   return defu(overrides ?? {}, defaults) as ChainwebLocalNetworkConfig;

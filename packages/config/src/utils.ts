@@ -34,14 +34,22 @@ export function isLocalNetwork(
 }
 
 export function getNetworkPort(networkConfig: NetworkConfig) {
-  const port = isDevNetworkConfig(networkConfig)
-    ? networkConfig.containerConfig?.port
-    : isChainwebLocalNetworkConfig(networkConfig)
-      ? networkConfig.proxyPort
-      : isPactServerNetworkConfig(networkConfig)
-        ? networkConfig.serverConfig?.port
-        : undefined;
-  return port ?? 8080;
+  const defaultPort = 8080;
+  if (isDevNetworkConfig(networkConfig)) {
+    return (
+      (networkConfig.onDemandMining ? networkConfig.proxyPort : networkConfig.containerConfig?.port) ?? defaultPort
+    );
+  }
+
+  if (isChainwebLocalNetworkConfig(networkConfig)) {
+    return networkConfig.proxyPort ?? defaultPort;
+  }
+
+  if (isPactServerNetworkConfig(networkConfig)) {
+    return networkConfig.serverConfig?.port ?? defaultPort;
+  }
+
+  return defaultPort;
 }
 
 export function getNetworkRpcUrl(networkConfig: NetworkConfig) {

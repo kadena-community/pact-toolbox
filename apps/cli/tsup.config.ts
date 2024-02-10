@@ -2,7 +2,7 @@ import { defineConfig } from 'tsup';
 import { dependencies, devDependencies } from './package.json';
 
 export default defineConfig({
-  entry: ['src/index.ts', 'src/cli.ts'],
+  entry: ['src/index.ts', 'src/cli.ts', 'src/playground.ts'],
   outDir: 'dist',
   splitting: true,
   bundle: true,

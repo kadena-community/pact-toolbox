@@ -4,7 +4,7 @@ import { PactToolboxClient } from '@pact-toolbox/runtime';
 import { logger } from '@pact-toolbox/utils';
 import { startChainWeb } from './chainweb';
 import { startDevNet } from './devnet';
-import { startPactLocalServer } from './localServer';
+import { startPactLocalServer } from './pactServer';
 import { ProcessWrapper } from './types';
 
 interface StartLocalNetworkOptions {

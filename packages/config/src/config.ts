@@ -32,6 +32,7 @@ export interface DevNetworkConfig extends CommonNetworkConfig {
   type: 'chainweb-devnet';
   autoStart?: boolean;
   onDemandMining?: boolean;
+  proxyPort?: string | number;
   containerConfig?: DevNetContainerConfig;
 }
 
@@ -48,6 +49,7 @@ export interface ChainwebMiningClientConfig {
 }
 
 export interface ChainwebNodeConfig {
+  persistDb: boolean;
   configFile: string;
   p2pCertificateChainFile: string;
   p2pCertificateKeyFile: string;
