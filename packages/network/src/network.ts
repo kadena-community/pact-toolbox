@@ -25,7 +25,7 @@ export function createPactToolboxNetwork(
     return new PactServerNetwork(network, silent, isStateless);
   }
   if (isDevNetworkConfig(network)) {
-    return new LocalDevNetNetwork(network, silent, isStateless);
+    return new LocalDevNetNetwork(network, silent);
   }
 
   if (isLocalChainwebNetworkConfig(network)) {
@@ -128,6 +128,7 @@ export class PactToolboxNetwork implements PactToolboxNetworkApi {
       });
     }
     await this.networkApi.start();
+    logger.success(`Network ${this.networkConfig.name} started at ${this.getUrl()}`);
     await this.proxy?.start();
     if (this.toolboxConfig.deployPreludes) {
       await deployPreludes({
@@ -151,11 +152,13 @@ export class PactToolboxNetwork implements PactToolboxNetworkApi {
 
   async restart() {
     await this.networkApi.restart();
+    logger.success(`Network ${this.networkConfig.name} restarted at ${this.getUrl()}`);
   }
 
   async stop() {
     await this.networkApi.stop();
     await this.proxy?.stop();
+    logger.success(`Network ${this.networkConfig.name} stopped!`);
   }
 
   async isOk() {

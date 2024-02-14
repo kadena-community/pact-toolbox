@@ -77,26 +77,36 @@ export class DockerService {
     }
   }
 
-  async removeContainerIfExists(containerName: string) {
+  async removeContainerIfExists(search: string) {
     // Remove the container if it exists
     try {
       const containers = await this.docker.listContainers();
-      const containerInfo = containers.find((c) => c.Names.includes(containerName));
+      const containerInfo = containers.find((c) => {
+        if (c.Names.includes(search)) {
+          return true;
+        }
+        if (c.Image.includes(search)) {
+          return true;
+        }
+        if (c.Id.includes(search)) {
+          return true;
+        }
+      });
       if (containerInfo) {
         const container = this.docker.getContainer(containerInfo.Id);
         if (containerInfo.State === 'running') {
-          logger.log(`Container ${containerName} is running, killing...`);
+          logger.log(`Container ${search} is running, killing...`);
           await container.kill({
             signal: 'SIGKILL',
           });
         }
-        logger.log(`Container ${containerName} exists, removing...`);
+        logger.log(`Container ${search} exists, removing...`);
         await container.remove({
           force: true,
         });
       }
     } catch (e) {
-      throw new Error(`Failed to remove container ${containerName}`);
+      throw new Error(`Failed to remove container ${search}`);
     }
   }
 

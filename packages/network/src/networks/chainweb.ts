@@ -1,6 +1,6 @@
 import type { ChainwebMiningClientConfig, ChainwebNodeConfig, LocalChainwebNetworkConfig } from '@pact-toolbox/config';
 import { createChainWebMiningClientConfig, createChainwebNodeConfig } from '@pact-toolbox/config';
-import { didMakeBlocks, isChainWebAtHeight, isChainWebNodeOk, logger, pollFn, runBin } from '@pact-toolbox/utils';
+import { didMakeBlocks, isChainWebAtHeight, isChainWebNodeOk, pollFn, runBin } from '@pact-toolbox/utils';
 import { ChildProcessWithoutNullStreams } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { rm } from 'node:fs/promises';
@@ -102,10 +102,8 @@ export class LocalChainwebNetwork implements PactToolboxNetworkApi {
     }
     this.chainwebNodeProcess = await startChainWebNode(this.nodeConfig, this.isStateless ? this.id : '', this.silent);
     await pollFn(() => isChainWebNodeOk(this.getServiceUrl()), 10000);
-    logger.success('Chainweb node started');
     const node = `127.0.0.1:${this.nodeConfig.servicePort}`;
     this.miningClientProcess = await startChainWebMiningClient(this.miningClientConfig, node, this.silent);
-    logger.success('Mining client started');
 
     if (this.isOnDemandMining()) {
       try {

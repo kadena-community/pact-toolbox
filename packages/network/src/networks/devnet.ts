@@ -7,7 +7,6 @@ import {
   isChainWebAtHeight,
   isChainWebNodeOk,
   isDockerInstalled,
-  logger,
   pollFn,
 } from '@pact-toolbox/utils';
 import { PactToolboxNetworkApi } from '../types';
@@ -22,19 +21,16 @@ export class LocalDevNetNetwork implements PactToolboxNetworkApi {
   constructor(
     private network: DevNetworkConfig,
     private silent: boolean,
-    private isStateless: boolean = false,
   ) {
     this.containerConfig = {
       port: 8080,
-      name: 'devnet',
       image: 'kadena/devnet',
+      name: 'devnet',
       tag: 'latest',
       volume: null,
       ...this.network.containerConfig,
     };
-    this.containerConfig.name = this.isStateless
-      ? `${this.containerConfig.name}-${this.id}`
-      : this.containerConfig.name;
+    this.containerConfig.name = this.containerConfig.name ?? `devnet-${this.id}`;
   }
 
   get image() {
@@ -84,14 +80,12 @@ export class LocalDevNetNetwork implements PactToolboxNetworkApi {
   async start() {
     this.container = await this.prepareContainer();
     await dockerService.startContainer(this.container, !this.silent);
-    logger.info(`Started container ${this.container.id} from image ${this.image}`);
 
     cleanUpProcess(() => this.stop());
 
     // poll devnet
     try {
       await pollFn(() => isChainWebNodeOk(this.getServiceUrl()), 10000);
-      logger.success('DevNet started');
     } catch (e) {
       await this.stop();
       throw new Error('DevNet did not start in time');
@@ -122,7 +116,6 @@ export class LocalDevNetNetwork implements PactToolboxNetworkApi {
   public async stop() {
     if (this.container) {
       await this.container.kill();
-      logger.info(`Stopped container ${this.container.id}`);
     }
   }
 

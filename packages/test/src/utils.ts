@@ -38,7 +38,7 @@ export function getConfigOverrides(
 
 export function injectNetworkConfig(config: PactToolboxConfigObj) {
   const network = getSerializableNetworkConfig(config);
-  (globalThis as any).__PACT_TOOLBOX_NETWORK__ = network;
+  (globalThis as any).__PACT_TOOLBOX_NETWORK_CONFIG__ = network;
 }
 
 export async function updatePorts(network: NetworkConfig, enableProxy: boolean = false) {

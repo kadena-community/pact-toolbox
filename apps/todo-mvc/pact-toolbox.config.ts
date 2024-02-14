@@ -2,6 +2,7 @@ import {
   createDevNetNetworkConfig,
   createLocalChainwebNetworkConfig,
   createLocalNetworkConfig,
+  createTestNetNetworkConfig,
   defineConfig,
 } from 'pact-toolbox';
 
@@ -23,7 +24,7 @@ const minimalImage = {
 };
 
 export default defineConfig({
-  defaultNetwork: 'local',
+  defaultNetwork: 'localChainweb',
   networks: {
     local: createLocalNetworkConfig(),
     localChainweb: createLocalChainwebNetworkConfig(),
@@ -34,5 +35,6 @@ export default defineConfig({
       containerConfig: onDemandImageSalama,
       onDemandMining: true,
     }),
+    test: createTestNetNetworkConfig(),
   },
 });

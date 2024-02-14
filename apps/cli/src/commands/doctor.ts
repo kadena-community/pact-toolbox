@@ -1,6 +1,5 @@
 import { checkPactVersion, installPact } from '@pact-toolbox/installer';
-import { isDockerInstalled } from '@pact-toolbox/network';
-import { logger } from '@pact-toolbox/utils';
+import { isDockerInstalled, logger } from '@pact-toolbox/utils';
 import { defineCommand } from 'citty';
 
 export const doctorCommand = defineCommand({
@@ -25,7 +24,7 @@ export const doctorCommand = defineCommand({
     const isDockerOk = isDockerInstalled();
     if (!isDockerOk) {
       logger.warn(
-        `We could not establish a connection to docker daemon! make sure it is installed and running on your system`,
+        `We could not establish a connection to docker daemon! make sure it is installed and running on your system.`,
       );
     }
     logger.box('Your system is ready to develop with Pact!');

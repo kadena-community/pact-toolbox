@@ -10,7 +10,7 @@ interface VitePluginOptions {
   onReady?: (client: PactToolboxRuntime) => Promise<void>;
   startNetwork?: boolean;
 }
-export function pactVitePlugin({ onReady, startNetwork }: VitePluginOptions): Plugin {
+export function pactVitePlugin({ onReady, startNetwork = true }: VitePluginOptions): Plugin {
   let requestParser: IdParser;
   let options!: ResolvedOptions;
   let viteConfig!: any;
@@ -21,27 +21,30 @@ export function pactVitePlugin({ onReady, startNetwork }: VitePluginOptions): Pl
       options = await preResolveOptions(config, configEnv);
       return config;
     },
-    // configureServer(server) {},
-    async configResolved(config) {
-      viteConfig = config;
-      options = resolveOptions(options, config);
-      requestParser = buildIdParser(options);
+    async configureServer() {
       const network = getNetworkConfig(options.toolboxConfig);
-      if (!options.isTest) {
-        const networkConfig = getSerializableNetworkConfig(options.toolboxConfig);
-        viteConfig.define = viteConfig.define || {};
-        viteConfig.define['globalThis.__PACT_TOOLBOX_NETWORK__'] = JSON.stringify(networkConfig);
-      }
       const runtime = new PactToolboxRuntime(options.toolboxConfig);
       if (options.isServe && !options.isTest && isLocalNetwork(network) && startNetwork) {
         await startLocalNetwork(options.toolboxConfig, {
           runtime,
+          isStateless: false,
+          enableProxy: true,
           logAccounts: true,
         });
       }
 
       if (options.isServe && !options.isTest && onReady) {
         await onReady(runtime);
+      }
+    },
+    async configResolved(config) {
+      viteConfig = config;
+      options = resolveOptions(options, config);
+      requestParser = buildIdParser(options);
+      if (!options.isTest) {
+        const networkConfig = getSerializableNetworkConfig(options.toolboxConfig);
+        viteConfig.define = viteConfig.define || {};
+        viteConfig.define['globalThis.__PACT_TOOLBOX_NETWORK_CONFIG__'] = JSON.stringify(networkConfig);
       }
     },
 
