@@ -10,25 +10,29 @@ export function getCmdDataOrFail<T = PactValue>(response: ICommandResult): T {
   }
 }
 
-export function createDirtyReadOrFail(client: IClient) {
+type KdaClient = IClient | (() => IClient);
+function getClient(client: KdaClient) {
+  return typeof client === 'function' ? client() : client;
+}
+export function createDirtyReadOrFail(client: KdaClient) {
   return async <T = PactValue>(tx: IUnsignedCommand | ICommand): Promise<T> => {
-    const res = await client.dirtyRead(tx);
+    const res = await getClient(client).dirtyRead(tx);
     return getCmdDataOrFail<T>(res);
   };
 }
 
-export function createLocalOrFail(client: IClient) {
+export function createLocalOrFail(client: KdaClient) {
   return async <T = PactValue>(tx: IUnsignedCommand | ICommand): Promise<T> => {
-    const res = await client.local(tx);
+    const res = await getClient(client).local(tx);
     return getCmdDataOrFail<T>(res);
   };
 }
 
-export function createSubmitAndListen(client: IClient) {
+export function createSubmitAndListen(client: KdaClient) {
   return async <T>(signedTx: IUnsignedCommand | ICommand): Promise<T> => {
     if (isSignedTransaction(signedTx)) {
-      const request = await client.submit(signedTx);
-      const response = await client.listen(request);
+      const request = await getClient(client).submit(signedTx);
+      const response = await getClient(client).listen(request);
       return getCmdDataOrFail<T>(response);
     } else {
       throw new Error('Not signed');
@@ -36,7 +40,7 @@ export function createSubmitAndListen(client: IClient) {
   };
 }
 
-export function createClientUtils(client: IClient) {
+export function createClientUtils(client: () => IClient) {
   return {
     dirtyReadOrFail: createDirtyReadOrFail(client),
     localOrFail: createLocalOrFail(client),

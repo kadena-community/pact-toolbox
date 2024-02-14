@@ -1,6 +1,6 @@
 import {
-  createChainwebLocalNetworkConfig,
   createDevNetNetworkConfig,
+  createLocalChainwebNetworkConfig,
   createLocalNetworkConfig,
   defineConfig,
 } from 'pact-toolbox';
@@ -22,19 +22,13 @@ const minimalImage = {
   name: 'devnet-minimal',
 };
 
-const isCI = process.env.CI === 'true';
 export default defineConfig({
   defaultNetwork: 'local',
   networks: {
-    local: createLocalNetworkConfig({
-      serverConfig: {
-        port: 9001,
-      },
-    }),
-    localChainweb: createChainwebLocalNetworkConfig({}),
+    local: createLocalNetworkConfig(),
+    localChainweb: createLocalChainwebNetworkConfig(),
     devnet: createDevNetNetworkConfig({
       containerConfig: minimalImage,
-      onDemandMining: false,
     }),
     devnetOnDemand: createDevNetNetworkConfig({
       containerConfig: onDemandImageSalama,

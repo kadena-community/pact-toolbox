@@ -6,6 +6,7 @@ settings:
 
 overrides:
   pact-toolbox: workspace:*
+  whatwg-url: ^14.0.0
 
 importers:
 
@@ -31,20 +32,20 @@ importers:
         specifier: workspace:*
         version: link:apps/cli
       tsx:
-        specifier: ^4.7.0
-        version: 4.7.0
+        specifier: ^4.7.1
+        version: 4.7.1
 
   apps/cli:
     dependencies:
       '@kadena/client':
-        specifier: ^1.8.0
-        version: 1.8.0
+        specifier: ^1.8.1
+        version: 1.8.1
       '@kadena/pactjs':
         specifier: ^0.4.2
         version: 0.4.2
       '@kadena/pactjs-cli':
-        specifier: ^1.8.0
-        version: 1.8.0
+        specifier: ^1.8.1
+        version: 1.8.1
       '@kadena/types':
         specifier: ^0.6.0
         version: 0.6.0
@@ -81,6 +82,12 @@ importers:
       nypm:
         specifier: ^0.3.6
         version: 0.3.6
+      untun:
+        specifier: ^0.1.3
+        version: 0.1.3
+      uqr:
+        specifier: ^0.1.2
+        version: 0.1.2
     devDependencies:
       '@pact-toolbox/tsconfig':
         specifier: workspace:*
@@ -98,11 +105,11 @@ importers:
         specifier: 3.2.5
         version: 3.2.5
       tsup:
-        specifier: ^8.0.1
-        version: 8.0.1(typescript@5.3.3)
+        specifier: ^8.0.2
+        version: 8.0.2(typescript@5.3.3)
       tsx:
-        specifier: ^4.7.0
-        version: 4.7.0
+        specifier: ^4.7.1
+        version: 4.7.1
       typescript:
         specifier: ^5.3.3
         version: 5.3.3
@@ -113,14 +120,14 @@ importers:
   apps/todo-mvc:
     dependencies:
       '@kadena/client':
-        specifier: ^1.8.0
-        version: 1.8.0
+        specifier: ^1.8.1
+        version: 1.8.1
       '@pact-toolbox/client-utils':
         specifier: workspace:*
         version: link:../../packages/client-utils
       '@tanstack/react-query':
-        specifier: ^5.18.1
-        version: 5.18.1(react@18.2.0)
+        specifier: ^5.20.5
+        version: 5.20.5(react@18.2.0)
       react:
         specifier: ^18.2.0
         version: 18.2.0
@@ -174,8 +181,8 @@ importers:
   packages/client-utils:
     dependencies:
       '@kadena/client':
-        specifier: ^1.8.0
-        version: 1.8.0
+        specifier: ^1.8.1
+        version: 1.8.1
       '@kadena/cryptography-utils':
         specifier: ^0.4.2
         version: 0.4.2
@@ -196,8 +203,8 @@ importers:
         specifier: ^0.2.8
         version: 0.2.8
       tsup:
-        specifier: ^8.0.1
-        version: 8.0.1(typescript@5.3.3)
+        specifier: ^8.0.2
+        version: 8.0.2(typescript@5.3.3)
       typescript:
         specifier: ^5.3.3
         version: 5.3.3
@@ -230,39 +237,8 @@ importers:
         specifier: ^0.2.8
         version: 0.2.8
       tsup:
-        specifier: ^8.0.1
-        version: 8.0.1(typescript@5.3.3)
-      typescript:
-        specifier: ^5.3.3
-        version: 5.3.3
-      vitest:
-        specifier: ^1.2.2
-        version: 1.2.2(happy-dom@13.3.8)
-
-  packages/ecko-wallet:
-    dependencies:
-      '@kadena/client':
-        specifier: ^1.8.0
-        version: 1.8.0
-      vite:
-        specifier: ^5.0.12
-        version: 5.0.12(@types/node@20.11.17)
-    devDependencies:
-      '@pact-toolbox/tsconfig':
-        specifier: workspace:*
-        version: link:../tsconfig
-      '@vitest/coverage-v8':
-        specifier: ^1.2.2
-        version: 1.2.2(vitest@1.2.2)
-      lint-staged:
-        specifier: ^15.2.2
-        version: 15.2.2
-      oxlint:
-        specifier: ^0.2.8
-        version: 0.2.8
-      tsup:
-        specifier: ^8.0.1
-        version: 8.0.1(typescript@5.3.3)
+        specifier: ^8.0.2
+        version: 8.0.2(typescript@5.3.3)
       typescript:
         specifier: ^5.3.3
         version: 5.3.3
@@ -298,8 +274,8 @@ importers:
         specifier: ^0.2.8
         version: 0.2.8
       tsup:
-        specifier: ^8.0.1
-        version: 8.0.1(typescript@5.3.3)
+        specifier: ^8.0.2
+        version: 8.0.2(typescript@5.3.3)
       typescript:
         specifier: ^5.3.3
         version: 5.3.3
@@ -309,37 +285,25 @@ importers:
 
   packages/network:
     dependencies:
-      '@pact-toolbox/client-utils':
-        specifier: workspace:*
-        version: link:../client-utils
       '@pact-toolbox/config':
         specifier: workspace:*
         version: link:../config
       '@pact-toolbox/prelude':
         specifier: workspace:*
         version: link:../prelude
+      '@pact-toolbox/proxy':
+        specifier: workspace:*
+        version: link:../proxy
       '@pact-toolbox/runtime':
         specifier: workspace:*
         version: link:../runtime
       '@pact-toolbox/utils':
         specifier: workspace:*
         version: link:../utils
-      dockerode:
-        specifier: ^4.0.2
-        version: 4.0.2
-      h3:
-        specifier: ^1.10.1
-        version: 1.10.1
-      listhen:
-        specifier: ^1.6.0
-        version: 1.6.0
     devDependencies:
       '@pact-toolbox/tsconfig':
         specifier: workspace:*
         version: link:../tsconfig
-      '@types/dockerode':
-        specifier: ^3.3.23
-        version: 3.3.23
       '@vitest/coverage-v8':
         specifier: ^1.2.2
         version: 1.2.2(vitest@1.2.2)
@@ -350,8 +314,8 @@ importers:
         specifier: ^0.2.8
         version: 0.2.8
       tsup:
-        specifier: ^8.0.1
-        version: 8.0.1(typescript@5.3.3)
+        specifier: ^8.0.2
+        version: 8.0.2(typescript@5.3.3)
       typescript:
         specifier: ^5.3.3
         version: 5.3.3
@@ -393,8 +357,45 @@ importers:
         specifier: ^0.2.8
         version: 0.2.8
       tsup:
-        specifier: ^8.0.1
-        version: 8.0.1(typescript@5.3.3)
+        specifier: ^8.0.2
+        version: 8.0.2(typescript@5.3.3)
+      typescript:
+        specifier: ^5.3.3
+        version: 5.3.3
+      vitest:
+        specifier: ^1.2.2
+        version: 1.2.2(happy-dom@13.3.8)
+
+  packages/proxy:
+    dependencies:
+      '@pact-toolbox/config':
+        specifier: workspace:*
+        version: link:../config
+      '@pact-toolbox/utils':
+        specifier: workspace:*
+        version: link:../utils
+      h3:
+        specifier: ^1.10.1
+        version: 1.10.1
+      listhen:
+        specifier: ^1.6.0
+        version: 1.6.0
+    devDependencies:
+      '@pact-toolbox/tsconfig':
+        specifier: workspace:*
+        version: link:../tsconfig
+      '@vitest/coverage-v8':
+        specifier: ^1.2.2
+        version: 1.2.2(vitest@1.2.2)
+      lint-staged:
+        specifier: ^15.2.2
+        version: 15.2.2
+      oxlint:
+        specifier: ^0.2.8
+        version: 0.2.8
+      tsup:
+        specifier: ^8.0.2
+        version: 8.0.2(typescript@5.3.3)
       typescript:
         specifier: ^5.3.3
         version: 5.3.3
@@ -405,8 +406,8 @@ importers:
   packages/runtime:
     dependencies:
       '@kadena/client':
-        specifier: ^1.8.0
-        version: 1.8.0
+        specifier: ^1.8.1
+        version: 1.8.1
       '@pact-toolbox/client-utils':
         specifier: workspace:*
         version: link:../client-utils
@@ -430,8 +431,8 @@ importers:
         specifier: ^0.2.8
         version: 0.2.8
       tsup:
-        specifier: ^8.0.1
-        version: 8.0.1(typescript@5.3.3)
+        specifier: ^8.0.2
+        version: 8.0.2(typescript@5.3.3)
       typescript:
         specifier: ^5.3.3
         version: 5.3.3
@@ -450,6 +451,12 @@ importers:
       '@pact-toolbox/runtime':
         specifier: workspace:*
         version: link:../runtime
+      '@pact-toolbox/utils':
+        specifier: workspace:*
+        version: link:../utils
+      tiny-readdir-glob:
+        specifier: ^1.2.1
+        version: 1.2.1
     devDependencies:
       '@pact-toolbox/tsconfig':
         specifier: workspace:*
@@ -464,8 +471,8 @@ importers:
         specifier: ^0.2.8
         version: 0.2.8
       tsup:
-        specifier: ^8.0.1
-        version: 8.0.1(typescript@5.3.3)
+        specifier: ^8.0.2
+        version: 8.0.2(typescript@5.3.3)
       typescript:
         specifier: ^5.3.3
         version: 5.3.3
@@ -480,6 +487,12 @@ importers:
       consola:
         specifier: ^3.2.3
         version: 3.2.3
+      dockerode:
+        specifier: ^4.0.2
+        version: 4.0.2
+      get-port-please:
+        specifier: ^3.1.2
+        version: 3.1.2
     devDependencies:
       '@kadena/types':
         specifier: ^0.6.0
@@ -487,6 +500,9 @@ importers:
       '@pact-toolbox/tsconfig':
         specifier: workspace:*
         version: link:../tsconfig
+      '@types/dockerode':
+        specifier: ^3.3.23
+        version: 3.3.23
       '@vitest/coverage-v8':
         specifier: ^1.2.2
         version: 1.2.2(vitest@1.2.2)
@@ -497,8 +513,8 @@ importers:
         specifier: ^0.2.8
         version: 0.2.8
       tsup:
-        specifier: ^8.0.1
-        version: 8.0.1(typescript@5.3.3)
+        specifier: ^8.0.2
+        version: 8.0.2(typescript@5.3.3)
       typescript:
         specifier: ^5.3.3
         version: 5.3.3
@@ -509,8 +525,8 @@ importers:
   packages/vite-plugin:
     dependencies:
       '@kadena/pactjs-generator':
-        specifier: ^1.8.0
-        version: 1.8.0
+        specifier: ^1.8.1
+        version: 1.8.1
       '@pact-toolbox/config':
         specifier: workspace:*
         version: link:../config
@@ -549,8 +565,8 @@ importers:
         specifier: ^0.2.8
         version: 0.2.8
       tsup:
-        specifier: ^8.0.1
-        version: 8.0.1(typescript@5.3.3)
+        specifier: ^8.0.2
+        version: 8.0.2(typescript@5.3.3)
       typescript:
         specifier: ^5.3.3
         version: 5.3.3
@@ -560,6 +576,34 @@ importers:
       vitest:
         specifier: ^1.2.2
         version: 1.2.2(@types/node@20.11.17)
+
+  packages/wallet:
+    dependencies:
+      '@kadena/client':
+        specifier: ^1.8.1
+        version: 1.8.1
+    devDependencies:
+      '@pact-toolbox/tsconfig':
+        specifier: workspace:*
+        version: link:../tsconfig
+      '@vitest/coverage-v8':
+        specifier: ^1.2.2
+        version: 1.2.2(vitest@1.2.2)
+      lint-staged:
+        specifier: ^15.2.2
+        version: 15.2.2
+      oxlint:
+        specifier: ^0.2.8
+        version: 0.2.8
+      tsup:
+        specifier: ^8.0.2
+        version: 8.0.2(typescript@5.3.3)
+      typescript:
+        specifier: ^5.3.3
+        version: 5.3.3
+      vitest:
+        specifier: ^1.2.2
+        version: 1.2.2(happy-dom@13.3.8)
 
 packages:
 
@@ -1054,8 +1098,8 @@ packages:
       '@jridgewell/sourcemap-codec': 1.4.15
     dev: true
 
-  /@kadena/chainweb-node-client@0.5.2:
-    resolution: {integrity: sha512-YgQ7J0x2ctLTJ2G/OFd07SK+I60H/O2VagvdZik0lcH4ied4qdnYOFev0wsLovrhVntYxDRVKpVQwx5jVZGopg==}
+  /@kadena/chainweb-node-client@0.5.3:
+    resolution: {integrity: sha512-bksjsrKlfDM8xXvTIGnW1oxitEeWzU7s7g112yLgN0xBxo2D6yH1BTpkGJ6SBDYNReTUCvM6KzDZtr7ApwY8tA==}
     dependencies:
       '@kadena/cryptography-utils': 0.4.2
       '@kadena/pactjs': 0.4.2
@@ -1064,10 +1108,10 @@ packages:
       - encoding
     dev: false
 
-  /@kadena/client@1.8.0:
-    resolution: {integrity: sha512-5w1TZNOjVo5hIhol/PT19CywcBM4wThDy/Ye3V6i5RjBVgA5KIOFUpSSoRix6WF7E6d48yKwdliD3N7j2dTQDQ==}
+  /@kadena/client@1.8.1:
+    resolution: {integrity: sha512-CFVgsRLyb7OwcPb4k19qjCywCa1iGzRL7Uay6gRnfFUTufX9usqrRiQ6cV4YClqQ/+t3PXpIhQpuNL5V8cW3Og==}
     dependencies:
-      '@kadena/chainweb-node-client': 0.5.2
+      '@kadena/chainweb-node-client': 0.5.3
       '@kadena/cryptography-utils': 0.4.2
       '@kadena/pactjs': 0.4.2
       '@walletconnect/sign-client': 2.8.6
@@ -1100,12 +1144,12 @@ packages:
       tweetnacl: 1.0.3
     dev: false
 
-  /@kadena/pactjs-cli@1.8.0:
-    resolution: {integrity: sha512-JywT7iUFuayLGX2ogRfIW8GFgbQUDzXqlYgFD8aHVNN4DgPVp6CMMaxFBjCoW/KtTNE51Tv9akjxt6RmPaoiQg==}
+  /@kadena/pactjs-cli@1.8.1:
+    resolution: {integrity: sha512-PG0oiwnPWqu9p/c+aZL1aJ9mf0JHGp2hSE23D8ab+fIW5twM3Mg2vfIzCqFXWyMLiINcmVZlGrJReHdsBON2dA==}
     hasBin: true
     dependencies:
-      '@kadena/client': 1.8.0
-      '@kadena/pactjs-generator': 1.8.0
+      '@kadena/client': 1.8.1
+      '@kadena/pactjs-generator': 1.8.1
       commander: 11.1.0
       cross-fetch: 3.1.8
       debug: 4.3.4
@@ -1132,8 +1176,8 @@ packages:
       - utf-8-validate
     dev: false
 
-  /@kadena/pactjs-generator@1.8.0:
-    resolution: {integrity: sha512-cuSnT3/y1RQz1rgEA9S1IlGDbQdDyNsYrF9Juwy+ilAnqk7ikWKOWXdxMkORiUUikVYIPOUPv56tqBuXiWCfRA==}
+  /@kadena/pactjs-generator@1.8.1:
+    resolution: {integrity: sha512-mPF4nMQgndtOdpyCeQOXymE7Bw0QxtYxtDFTq1nWLgDArAKK/TFZbWjyRR5TYZf3fLC6QUEG9x0P5M+T83eRcw==}
     dependencies:
       memfs: 3.5.3
       moo: 0.5.2
@@ -1735,16 +1779,16 @@ packages:
     resolution: {integrity: sha512-myfUej5naTBWnqOCc/MdVOLVjXUXtIA+NpDrDBKJtLLg2shUjBu3cZmB/85RyitKc55+lUUyl7oRfLOvkr2hsw==}
     dev: true
 
-  /@tanstack/query-core@5.18.1:
-    resolution: {integrity: sha512-fYhrG7bHgSNbnkIJF2R4VUXb4lF7EBiQjKkDc5wOlB7usdQOIN4LxxHpDxyE3qjqIst1WBGvDtL48T0sHJGKCw==}
+  /@tanstack/query-core@5.20.5:
+    resolution: {integrity: sha512-T1W28gGgWn0A++tH3lxj3ZuUVZZorsiKcv+R50RwmPYz62YoDEkG4/aXHZELGkRp4DfrW07dyq2K5dvJ4Wl1aA==}
     dev: false
 
-  /@tanstack/react-query@5.18.1(react@18.2.0):
-    resolution: {integrity: sha512-PdI07BbsahZ+04PxSuDQsQvBWe008eWFk/YYWzt8fvzt2sALUM0TpAJa/DFpqa7+SSo7j1EQR6Jx6znXNHyaXw==}
+  /@tanstack/react-query@5.20.5(react@18.2.0):
+    resolution: {integrity: sha512-6MHwJ8G9cnOC/XKrwt56QMc91vN7hLlAQNUA0ubP7h9Jj3a/CmkUwT6ALdFbnVP+PsYdhW3WONa8WQ4VcTaSLQ==}
     peerDependencies:
       react: ^18.0.0
     dependencies:
-      '@tanstack/query-core': 5.18.1
+      '@tanstack/query-core': 5.20.5
       react: 18.2.0
     dev: false
 
@@ -3427,6 +3471,10 @@ packages:
     resolution: {integrity: sha512-RbJ5/jmFcNNCcDV5o9eTnBLJ/HszWV0P73bc+Ff4nS/rJj+YaS6IGyiOL0VoBYX+l1Wrl3k63h/KrH+nhJ0XvQ==}
     dev: true
 
+  /grammex@3.1.3:
+    resolution: {integrity: sha512-rUZoJJQguOCaAMTuoyxs40OxqSLgVhzCCwDn1mbp2vETWutv/TmgAz7KxMR8Tz4z4cty/zIh88HrOWKqWgeGjg==}
+    dev: false
+
   /grapheme-splitter@1.0.4:
     resolution: {integrity: sha512-bzh50DW9kTPM00T8y4o8vQg89Di9oLJVLW/KaOGIXJWP/iqCN6WKYkbNOF04vFLJhwcpYUh9ydh/+5vpOqV4YQ==}
     dev: true
@@ -4059,10 +4107,6 @@ packages:
     resolution: {integrity: sha512-pDo3lu8Jhfjqls6GkMgpahsF9kCyayhgykjyLMNFTKWrpVdAQtYyB4muAMWozBB4ig/dtWAmsMxLEI8wuz+DYQ==}
     dev: false
 
-  /lodash.sortby@4.7.0:
-    resolution: {integrity: sha512-HDWXG8isMntAyRF5vZ7xKuEvOhT4AhlRt/3czTSjvGUxjYCBVRQY48ViDHyfYz9VIoBkW4TMGQNapx+l3RUwdA==}
-    dev: true
-
   /lodash.startcase@4.4.0:
     resolution: {integrity: sha512-+WKqsK294HMSc2jEbNgpHpd0JfIBhp7rEV4aqXWqFr6AlXov+SlcgB1Fv01y2kGe3Gc8nMW7VA0SrGuSkRfIEg==}
     dev: true
@@ -4362,7 +4406,7 @@ packages:
       encoding:
         optional: true
     dependencies:
-      whatwg-url: 5.0.0
+      whatwg-url: 14.0.0
     dev: false
 
   /node-forge@1.3.1:
@@ -4698,6 +4742,7 @@ packages:
       nanoid: 3.3.7
       picocolors: 1.0.0
       source-map-js: 1.0.2
+    dev: true
 
   /postcss@8.4.35:
     resolution: {integrity: sha512-u5U8qYpBCpN13BsiEB0CbR1Hhh4Gc0zLFuedrHJKMctHCHAGrMdG0PRM/KErzAL3CU6/eckEtmHNB3x6e3c0vA==}
@@ -4775,6 +4820,10 @@ packages:
     resolution: {integrity: sha512-du4wfLyj4yCZq1VupnVSZmRsPJsNuxoDQFdCFHLaYiEbFBD7QE0a+I4D7hOxrVnh78QE/YipFAj9lXHiXocV+Q==}
     dev: false
 
+  /promise-make-naked@2.1.1:
+    resolution: {integrity: sha512-BLvgZSNRkQNM5RGL4Cz8wK76WSb+t3VeMJL+/kxRBHI5+nliqZezranGGtiu/ePeFo5+CaLRvvGMzXrBuu2tAA==}
+    dev: false
+
   /pseudomap@1.0.2:
     resolution: {integrity: sha512-b/YwNhb8lk1Zz2+bXXpS/LK9OisiZZ1SNsSLxN1x2OXVEhW2Ckr/7mWE5vrC1ZTiJlD9g19jWszTmJsB+oEpFQ==}
     dev: true
@@ -4789,7 +4838,6 @@ packages:
   /punycode@2.3.1:
     resolution: {integrity: sha512-vYt7UD1U9Wg6138shLtLOvdAu+8DsC/ilFtEVHcH+wydcSpNE20AfSOduf6MkRFahL5FY7X1oU7nKVZFtfq8Fg==}
     engines: {node: '>=6'}
-    dev: true
 
   /query-string@7.1.3:
     resolution: {integrity: sha512-hh2WYhq4fi8+b+/2Kg9CEge4fDPvHS534aOOvOZeQ3+Vf2mCFsaFBYj0i+iXcAq6I9Vzp5fjMFBlONvayDC1qg==}
@@ -5224,7 +5272,7 @@ packages:
     resolution: {integrity: sha512-2ymg6oRBpebeZi9UUNsgQ89bhx01TcTkmNTGnNO88imTmbSgy4nfujrgVEFKWpMTEGA11EDkTt7mqObTPdigIA==}
     engines: {node: '>= 8'}
     dependencies:
-      whatwg-url: 7.1.0
+      whatwg-url: 14.0.0
     dev: true
 
   /spawndamnit@2.0.0:
@@ -5534,6 +5582,19 @@ packages:
       real-require: 0.1.0
     dev: false
 
+  /tiny-readdir-glob@1.2.1:
+    resolution: {integrity: sha512-KOjDu6u9iDSDr8+dUrkiDGohND70RMd9Iu6ZPu+HFZZktXQ9h+wbMWcrpCwcmo1QkE5+4ujuU8sXb8HgD3+IKA==}
+    dependencies:
+      tiny-readdir: 2.4.0
+      zeptomatch: 1.2.2
+    dev: false
+
+  /tiny-readdir@2.4.0:
+    resolution: {integrity: sha512-LS7NQKLyLy/EepnIbOWDdkR4k8KPwPYkYCMZzQOttE5PhmXBbKqGdRk6ndIsTpB54hL208gREAtMftlb+aELrw==}
+    dependencies:
+      promise-make-naked: 2.1.1
+    dev: false
+
   /tinybench@2.5.1:
     resolution: {integrity: sha512-65NKvSuAVDP/n4CqH+a9w2kTlLReS9vhsAP06MWx+/89nMinJyB2icyl58RIcqCmIggpojIGeuJGhjU1aGMBSg==}
     dev: true
@@ -5566,15 +5627,11 @@ packages:
     dependencies:
       is-number: 7.0.0
 
-  /tr46@0.0.3:
-    resolution: {integrity: sha512-N3WMsuqV66lT30CrXNbEjx4GEwlow3v6rr4mCcv6prnfwhS01rkgyFdjPNBYd9br7LpXV1+Emh01fHnq2Gdgrw==}
-    dev: false
-
-  /tr46@1.0.1:
-    resolution: {integrity: sha512-dTpowEjclQ7Kgx5SdBkqRzVhERQXov8/l9Ft9dVM9fmg0W0KQSVaXX9T4i6twCPNtYiZM53lpSSUAwJbFPOHxA==}
+  /tr46@5.0.0:
+    resolution: {integrity: sha512-tk2G5R2KRwBd+ZN0zaEXpmzdKyOYksXwywulIX95MBODjSzMIuQnQ3m8JxgbhnL1LeVo7lqQKsYa1O3Htl7K5g==}
+    engines: {node: '>=18'}
     dependencies:
       punycode: 2.3.1
-    dev: true
 
   /tree-kill@1.2.2:
     resolution: {integrity: sha512-L0Orpi8qGpRG//Nd+H90vFB+3iHnue1zSSGmNOOCh1GLJ7rUKVwV2HvijphGQS2UmhUZewS9VgvxYIdgr+fG1A==}
@@ -5602,8 +5659,8 @@ packages:
     resolution: {integrity: sha512-Xni35NKzjgMrwevysHTCArtLDpPvye8zV/0E4EyYn43P7/7qvQwPh9BGkHewbMulVntbigmcT7rdX3BNo9wRJg==}
     dev: false
 
-  /tsup@8.0.1(typescript@5.3.3):
-    resolution: {integrity: sha512-hvW7gUSG96j53ZTSlT4j/KL0q1Q2l6TqGBFc6/mu/L46IoNWqLLUzLRLP1R8Q7xrJTmkDxxDoojV5uCVs1sVOg==}
+  /tsup@8.0.2(typescript@5.3.3):
+    resolution: {integrity: sha512-NY8xtQXdH7hDUAZwcQdY/Vzlw9johQsaqf7iwZ6g1DOUlFYQ5/AtVAjTvihhEyeRlGo4dLRVHtrRaL35M1daqQ==}
     engines: {node: '>=18'}
     hasBin: true
     peerDependencies:
@@ -5641,8 +5698,8 @@ packages:
       - ts-node
     dev: true
 
-  /tsx@4.7.0:
-    resolution: {integrity: sha512-I+t79RYPlEYlHn9a+KzwrvEwhJg35h/1zHsLC2JXvhC2mdynMv6Zxzvhv5EMV6VF5qJlLlkSnMVvdZV3PSIGcg==}
+  /tsx@4.7.1:
+    resolution: {integrity: sha512-8d6VuibXHtlN5E3zFkgY8u4DX7Y3Z27zvvPKVmLon/D4AjuKzarkUBTLDBgj9iTQ0hg5xM7c/mYiRVM+HETf0g==}
     engines: {node: '>=18.0.0'}
     hasBin: true
     dependencies:
@@ -6001,6 +6058,7 @@ packages:
       rollup: 4.9.4
     optionalDependencies:
       fsevents: 2.3.3
+    dev: true
 
   /vite@5.1.1(@types/node@20.11.17):
     resolution: {integrity: sha512-wclpAgY3F1tR7t9LL5CcHC41YPkQIpKUGeIuT8MdNwNZr6OqOTLs7JX5vIHAtzqLWXts0T+GDrh9pN2arneKqg==}
@@ -6182,38 +6240,21 @@ packages:
       defaults: 1.0.4
     dev: true
 
-  /webidl-conversions@3.0.1:
-    resolution: {integrity: sha512-2JAn3z8AR6rjK8Sm8orRC0h/bcl/DqL7tRPdGZ4I1CjdF+EaMLmYxBHyXuKL849eucPFhvBoxMsflfOb8kxaeQ==}
-    dev: false
-
-  /webidl-conversions@4.0.2:
-    resolution: {integrity: sha512-YQ+BmxuTgd6UXZW3+ICGfyqRyHXVlD5GtQr5+qjiNW7bF0cqrzX500HVXPBOvgXb5YnzDd+h0zqyv61KUD7+Sg==}
-    dev: true
-
   /webidl-conversions@7.0.0:
     resolution: {integrity: sha512-VwddBukDzu71offAQR975unBIGqfKZpM+8ZX6ySk8nYhVoo5CYaZyzt3YBvYtRtO+aoGlqxPg/B87NGVZ/fu6g==}
     engines: {node: '>=12'}
-    dev: true
 
   /whatwg-mimetype@3.0.0:
     resolution: {integrity: sha512-nt+N2dzIutVRxARx1nghPKGv1xHikU7HKdfafKkLNLindmPU/ch3U31NOCGGA/dmPcmb1VlofO0vnKAcsm0o/Q==}
     engines: {node: '>=12'}
     dev: true
 
-  /whatwg-url@5.0.0:
-    resolution: {integrity: sha512-saE57nupxk6v3HY35+jzBwYa0rKSy0XR8JSxZPwgLr7ys0IBzhGviA1/TUGJLmSVqs8pb9AnvICXEuOHLprYTw==}
+  /whatwg-url@14.0.0:
+    resolution: {integrity: sha512-1lfMEm2IEr7RIV+f4lUNPOqfFL+pO+Xw3fJSqmjX9AbXcXcYOkCe1P6+9VBZB6n94af16NfZf+sSk0JCBZC9aw==}
+    engines: {node: '>=18'}
     dependencies:
-      tr46: 0.0.3
-      webidl-conversions: 3.0.1
-    dev: false
-
-  /whatwg-url@7.1.0:
-    resolution: {integrity: sha512-WUu7Rg1DroM7oQvGWfOiAK21n74Gg+T4elXEQYkOhtyLeWiJFoOGLXPKI/9gzIie9CtwVLm8wtw6YJdKyxSjeg==}
-    dependencies:
-      lodash.sortby: 4.7.0
-      tr46: 1.0.1
-      webidl-conversions: 4.0.2
-    dev: true
+      tr46: 5.0.0
+      webidl-conversions: 7.0.0
 
   /which-boxed-primitive@1.0.2:
     resolution: {integrity: sha512-bwZdv0AKLpplFY2KZRX6TvyuN7ojjr7lwkg6ml0roIy9YeuSr7JS372qlNW18UQYzgYK9ziGcerWqZOmEn9VNg==}
@@ -6407,6 +6448,12 @@ packages:
     resolution: {integrity: sha512-9bnSc/HEW2uRy67wc+T8UwauLuPJVn28jb+GtJY16iiKWyvmYJRXVT4UamsAEGQfPohgr2q4Tq0sQbQlxTfi1g==}
     engines: {node: '>=12.20'}
     dev: true
+
+  /zeptomatch@1.2.2:
+    resolution: {integrity: sha512-0ETdzEO0hdYmT8aXHHf5aMjpX+FHFE61sG4qKFAoJD2Umt3TWdCmH7ADxn2oUiWTlqBGC+SGr8sYMfr+37J8pQ==}
+    dependencies:
+      grammex: 3.1.3
+    dev: false
 
   /zod@3.18.0:
     resolution: {integrity: sha512-gwTm8RfUCe8l9rDwN5r2A17DkAa8Ez4Yl4yXqc5VqeGaXaJahzYYXbTwvhroZi0SNBqTwh/bKm2N0mpCzuw4bA==}

@@ -1,6 +1,6 @@
 import { resolveConfig } from '@pact-toolbox/config';
 import { downloadPreludes } from '@pact-toolbox/prelude';
-import { PactToolboxClient } from '@pact-toolbox/runtime';
+import { PactToolboxRuntime } from '@pact-toolbox/runtime';
 import { logger } from '@pact-toolbox/utils';
 import { defineCommand } from 'citty';
 import { join } from 'path';
@@ -12,14 +12,14 @@ export const preludeCommand = defineCommand({
   },
   run: async () => {
     const config = await resolveConfig();
-    const client = new PactToolboxClient(config);
+    const runtime = new PactToolboxRuntime(config);
     await downloadPreludes({
-      client,
-      contractsDir: config.pact.contractsDir ?? 'contracts',
-      preludes: config.pact.preludes ?? [],
+      runtime,
+      contractsDir: config.contractsDir ?? 'contracts',
+      preludes: config.preludes ?? [],
     });
     logger.box(
-      `All preludes downloaded successfully 🎉\nYou can load them in repl from ${join(process.cwd(), config.pact.contractsDir ?? '', 'prelude', 'init.repl')}`,
+      `All preludes downloaded successfully 🎉\nYou can load them in repl from ${join(process.cwd(), config.contractsDir ?? '', 'prelude', 'init.repl')}`,
     );
   },
 });

@@ -14,12 +14,11 @@ import { getCmdDataOrFail } from '@pact-toolbox/client-utils';
 import {
   KeysetConfig,
   NetworkConfig,
-  PactConfig,
   PactToolboxConfigObj,
   createRpcUrlGetter,
   defaultMeta,
-  getCurrentNetworkConfig,
-  isLocalNetwork,
+  getNetworkConfig,
+  isPactServerNetworkConfig,
 } from '@pact-toolbox/config';
 import { readFile, stat } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -42,14 +41,12 @@ export interface LocalOptions {
   signatureVerification?: boolean;
 }
 
-export class PactToolboxClient {
+export class PactToolboxRuntime {
   private kdaClient: IClient;
   private networkConfig: NetworkConfig;
-  private pactConfig: Required<PactConfig>;
 
-  constructor(private config: Required<PactToolboxConfigObj>) {
-    this.networkConfig = getCurrentNetworkConfig(config);
-    this.pactConfig = config.pact as Required<PactConfig>;
+  constructor(private config: PactToolboxConfigObj) {
+    this.networkConfig = getNetworkConfig(config);
     this.kdaClient = createClient(createRpcUrlGetter(this.networkConfig));
   }
 
@@ -57,8 +54,12 @@ export class PactToolboxClient {
     return this.networkConfig;
   }
 
-  isLocalNetwork() {
-    return isLocalNetwork(this.networkConfig);
+  isPactServerNetwork() {
+    return isPactServerNetworkConfig(this.networkConfig);
+  }
+
+  isChainwebNetwork() {
+    return this.networkConfig.type.includes('chainweb');
   }
 
   getConfig() {
@@ -200,7 +201,8 @@ export class PactToolboxClient {
     return listen ? this.submitAndListen(tx) : this.submit(tx);
   }
 
-  describeModule(module: string) {
+  async describeModule(module: string) {
+    await new Promise((resolve) => setTimeout(resolve, 1000));
     return this.runPact(`(describe-module "${module}")`);
   }
 
@@ -212,14 +214,35 @@ export class PactToolboxClient {
     return false;
   }
 
-  async deployContract(contract: string, params?: DeployContractParams) {
-    const contractsDir = this.pactConfig.contractsDir;
+  async getContractCode(contract: string) {
+    const contractsDir = this.config.contractsDir ?? 'pact';
     const contractPath = join(contractsDir, contract);
     const stats = await stat(contractPath);
     if (!stats.isFile()) {
       throw new Error(`Contract file not found: ${contractPath}`);
     }
-    const contractCode = await readFile(contractPath, 'utf-8');
+    return readFile(contractPath, 'utf-8');
+  }
+
+  async deployContract(contract: string, params?: DeployContractParams) {
+    const contractCode = await this.getContractCode(contract);
     return this.deployCode(contractCode, params);
+  }
+
+  async deployContracts(contracts: string[], params?: DeployContractParams) {
+    return Promise.all(contracts.map((c) => this.deployContract(c, params)));
+  }
+
+  async runScript(script: string, args: Record<string, any> = {}) {
+    const scriptsDir = this.config.scriptsDir ?? 'scripts';
+    const scriptsPath = join(scriptsDir, script);
+    const scriptModule = await import(scriptsPath);
+    return scriptModule.default(this, args);
+  }
+
+  async reset() {
+    const res = await fetch('http://localhost:8080/restart', { method: 'POST' });
+    const data = await res.json();
+    return data;
   }
 }

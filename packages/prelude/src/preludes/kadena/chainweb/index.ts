@@ -1,5 +1,5 @@
 import type { KeysetConfig } from '@pact-toolbox/config';
-import type { DeployContractParams, PactToolboxClient } from '@pact-toolbox/runtime';
+import type { DeployContractParams, PactToolboxRuntime } from '@pact-toolbox/runtime';
 import { logger } from '@pact-toolbox/utils';
 import { deployPactDependency } from '../../../deployPrelude';
 import { PactDependency, PactPrelude } from '../../../types';
@@ -28,21 +28,24 @@ const chainWebSpec: Record<string, PactDependency[]> = {
 export default {
   name: 'chainweb',
   specs: chainWebSpec,
-  async shouldDeploy(client: PactToolboxClient) {
-    const isDeployed = await client.isContractDeployed('coin');
+  async shouldDeploy(runtime: PactToolboxRuntime) {
+    if (runtime.isChainwebNetwork()) {
+      return false;
+    }
+    const isDeployed = await runtime.isContractDeployed('coin');
     return !isDeployed;
   },
-  async repl(client: PactToolboxClient) {
-    const keys = client.getSigner();
+  async repl(runtime: PactToolboxRuntime) {
+    const keys = runtime.getSigner();
     const context = {
       publicKey: keys.publicKey,
     };
     const installTemplate = (await import('./install.handlebars')).template;
     return renderTemplate(installTemplate, context);
   },
-  async deploy(client: PactToolboxClient, params: DeployContractParams = {}) {
+  async deploy(runtime: PactToolboxRuntime, params: DeployContractParams = {}) {
     const { signer } = params;
-    const keys = client.getSigner(signer);
+    const keys = runtime.getSigner(signer);
     const rootKeysets = {
       'ns-admin-keyset': {
         keys: [keys.publicKey],
@@ -68,7 +71,7 @@ export default {
     // deploy root prelude
     for (const dep of chainWebSpec.root) {
       logger.start(`Deploying ${dep.name}`);
-      await deployPactDependency(dep, client, {
+      await deployPactDependency(dep, runtime, {
         ...params,
         keysets: rootKeysets,
         signer: signer,
@@ -78,10 +81,10 @@ export default {
     // deploy util prelude
     for (const dep of chainWebSpec.util) {
       logger.start(`Deploying ${dep.name}`);
-      await deployPactDependency(dep, client, {
+      await deployPactDependency(dep, runtime, {
         ...params,
         keysets: utilKeysets,
-        signer: signer || client.network.senderAccount,
+        signer: signer || runtime.network.senderAccount,
       });
       logger.success(`Deployed ${dep.name}`);
     }

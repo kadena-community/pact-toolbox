@@ -11,15 +11,16 @@
     "preview": "NODE_OPTIONS='--import tsx' vite preview",
     "test": "NODE_OPTIONS='--import tsx' vitest run",
     "verify": "tsc --noEmit",
-    "pact:local": "pact-toolbox start local",
-    "pact:devnet": "pact-toolbox start devnet",
+    "pact:start": "pact-toolbox start",
+    "pact:test": "pact-toolbox test",
     "pact:prelude": "pact-toolbox prelude",
-    "pact:types": "pact-toolbox types"
+    "pact:types": "pact-toolbox types",
+    "pact:run": "pact-toolbox run"
   },
   "dependencies": {
-    "@kadena/client": "^1.8.0",
+    "@kadena/client": "^1.8.1",
     "@pact-toolbox/client-utils": "workspace:*",
-    "@tanstack/react-query": "^5.18.1",
+    "@tanstack/react-query": "^5.20.5",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },
@@ -31,8 +32,8 @@
     "@types/react": "^18.2.55",
     "@types/react-dom": "^18.2.19",
     "@vitejs/plugin-react-swc": "^3.6.0",
-    "oxlint": "^0.2.8",
     "happy-dom": "^13.3.8",
+    "oxlint": "^0.2.8",
     "pact-toolbox": "workspace:*",
     "typescript": "^5.3.3",
     "vite": "^5.1.1",

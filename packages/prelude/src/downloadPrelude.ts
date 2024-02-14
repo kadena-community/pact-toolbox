@@ -1,4 +1,4 @@
-import type { PactToolboxClient } from '@pact-toolbox/runtime';
+import type { PactToolboxRuntime } from '@pact-toolbox/runtime';
 import { logger } from '@pact-toolbox/utils';
 import { downloadTemplate } from 'giget';
 import { cp, mkdir, rm, writeFile } from 'node:fs/promises';
@@ -33,11 +33,9 @@ export async function downloadPactDependency(dep: PactDependency, preludeDir: st
   if (dep.requires) {
     await Promise.all(dep.requires.map((dep) => downloadPactDependency(dep, preludeDir)));
   }
-  logger.info(`Downloaded ${dep.name} contract`);
 }
 
-export async function downloadPrelude(prelude: PactPrelude, preludesDir: string, client: PactToolboxClient) {
-  logger.start(`Downloading ${prelude.name} prelude`);
+export async function downloadPrelude(prelude: PactPrelude, preludesDir: string, client: PactToolboxRuntime) {
   const specs = Array.isArray(prelude.specs) ? prelude.specs : Object.values(prelude.specs).flat();
   await Promise.all(specs.map((dep) => downloadPactDependency(dep, preludesDir)));
   const installScript = await prelude.repl(client);
@@ -52,7 +50,7 @@ export async function downloadPreludes(config: CommonPreludeOptions) {
   await rm(preludesDir, { recursive: true, force: true });
 
   // download preludes
-  await Promise.all(preludes.map((prelude) => downloadPrelude(prelude, preludesDir, config.client)));
+  await Promise.all(preludes.map((prelude) => downloadPrelude(prelude, preludesDir, config.runtime)));
 
   // write accounts repl
   await mkdir(join(preludesDir, 'tools'), { recursive: true });
@@ -60,7 +58,7 @@ export async function downloadPreludes(config: CommonPreludeOptions) {
   await writeFile(
     join(preludesDir, 'tools/test-accounts.repl'),
     renderTemplate(accountsTemplate, {
-      accounts: config.client.network.signers ?? [],
+      accounts: config.runtime.network.signers ?? [],
     }),
   );
   const initTemplate = (await import('./init.handlebars')).template;
@@ -69,7 +67,7 @@ export async function downloadPreludes(config: CommonPreludeOptions) {
     join(preludesDir, 'init.repl'),
     renderTemplate(initTemplate, {
       preludes: preludes.map((p) => p.name),
-      gasLimit: config.client.network.gasLimit || 1000000,
+      gasLimit: config.runtime.network.gasLimit || 1000000,
     }),
   );
 }

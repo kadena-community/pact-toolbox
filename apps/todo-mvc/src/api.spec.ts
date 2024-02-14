@@ -1,22 +1,24 @@
 import { generateUUID } from '@pact-toolbox/client-utils';
-import { PactTestEnv, setupPactTestEnv } from '@pact-toolbox/test';
+import { createPactTestEnv } from 'pact-toolbox';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createTodo, deleteTodoById, editTodoById, readTodoById, readTodos, toggleTodoStatusById } from './api';
 
-describe('todos api', () => {
-  let env: PactTestEnv;
+describe('todos api localChainweb', async () => {
   let id = generateUUID();
   let title = 'Learn pact';
+  const env = await createPactTestEnv({
+    network: 'localChainweb',
+  });
 
   beforeAll(async () => {
-    env = await setupPactTestEnv();
-    console.log('deploying contract');
-    await env.client.deployContract('todos.pact');
+    await env.start();
+    await env.runtime.deployContract('todos.pact');
   });
 
-  afterAll(() => {
-    env?.stop();
+  afterAll(async () => {
+    await env.stop();
   });
+
   it('should read all todos', async () => {
     const todos = await readTodos();
     expect(todos).toEqual([]);

@@ -1,6 +1,5 @@
-import { IBuilder, createClient, createSignWithKeypair } from '@kadena/client';
+import { IBuilder, IClient, ISignFunction, createClient, createSignWithKeypair } from '@kadena/client';
 import { ChainId, IKeyPair } from '@kadena/types';
-
 interface Signer extends IKeyPair {
   account: string;
 }
@@ -19,6 +18,7 @@ interface PactToolboxNetworkConfig {
 }
 export function getPactToolboxNetworkConfig(): PactToolboxNetworkConfig {
   const network = (globalThis as any).__PACT_TOOLBOX_NETWORK__;
+  // console.log('network', network);
   if (!network) {
     throw new Error('Make sure you are using the pact-toolbox bundler plugin, eg `@pact-toolbox/vite-plugin');
   }
@@ -26,15 +26,29 @@ export function getPactToolboxNetworkConfig(): PactToolboxNetworkConfig {
 }
 
 export function createKadenaClient() {
-  const config = getPactToolboxNetworkConfig();
-  return createClient(({ networkId = config.networkId, chainId = config.chainId }) =>
-    config.rpcUrl.replace(/{networkId}|{chainId}/g, (match: string) => (match === '{networkId}' ? networkId : chainId)),
-  );
+  let kdaClient: IClient;
+  return () => {
+    const config = getPactToolboxNetworkConfig();
+    if (!kdaClient) {
+      kdaClient = createClient(({ networkId = config.networkId, chainId = config.chainId }) =>
+        config.rpcUrl.replace(/{networkId}|{chainId}/g, (match: string) =>
+          match === '{networkId}' ? networkId : chainId,
+        ),
+      );
+    }
+    return kdaClient;
+  };
 }
 
-export function createSignWithPactToolbox(signer?: string) {
-  const signerAccount = getSignerAccount(signer);
-  return createSignWithKeypair(signerAccount);
+export function createSignWithPactToolbox(signer?: string): ISignFunction {
+  let sign: ISignFunction;
+  return ((transactions) => {
+    const signerAccount = getSignerAccount(signer);
+    if (!sign) {
+      sign = createSignWithKeypair(signerAccount);
+    }
+    return sign(transactions as any);
+  }) as ISignFunction;
 }
 
 export function addDefaultMeta<T extends IBuilder<any>>(builder: T): T {

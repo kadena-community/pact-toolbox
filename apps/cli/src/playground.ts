@@ -1,4 +1,4 @@
-import { setupPactTestEnv } from '@pact-toolbox/test';
+import { createPactTestEnv } from '@pact-toolbox/test';
 import { logger } from '@pact-toolbox/utils';
 
 const table: Record<string, number> = {};
@@ -16,63 +16,72 @@ async function bench(label: string, f: () => Promise<void>) {
 
 // local
 await bench('localPactServer', async () => {
-  const local = await setupPactTestEnv('local');
-  await local.client.deployContract('hello-world.pact');
-  const signer = local.client.getSigner();
-  const tx = local.client
+  const local = await createPactTestEnv({
+    network: 'local',
+  });
+  await local.start();
+  await local.runtime.deployContract('hello-world.pact');
+  const signer = local.runtime.getSigner();
+  const tx = local.runtime
     .execution('(free.hello-world.say-hello "Salama")')
     .addSigner(signer.publicKey)
     .createTransaction();
-  const signedTx = await local.client.sign(tx);
-  console.log(await local.client.submitAndListen(signedTx));
+  const signedTx = await local.runtime.sign(tx);
+  console.log(await local.runtime.submitAndListen(signedTx));
   await local.stop();
 });
 
 // localChainweb
 await bench('localChainweb', async () => {
-  const localChainweb = await setupPactTestEnv('localChainweb');
-  await localChainweb.client.deployContract('hello-world.pact');
-  const signer = localChainweb.client.getSigner();
-  const tx = localChainweb.client
+  const localChainweb = await createPactTestEnv({
+    network: 'localChainweb',
+  });
+  await localChainweb.start();
+  await localChainweb.runtime.deployContract('hello-world.pact');
+  const signer = localChainweb.runtime.getSigner();
+  const tx = localChainweb.runtime
     .execution('(free.hello-world.say-hello "Salama")')
     .addSigner(signer.publicKey)
     .createTransaction();
-  const signedTx = await localChainweb.client.sign(tx);
-  console.log(await localChainweb.client.submitAndListen(signedTx));
+  const signedTx = await localChainweb.runtime.sign(tx);
+  console.log(await localChainweb.runtime.submitAndListen(signedTx));
   await localChainweb.stop();
 });
 
-// //  devnetOnDemand
-// await bench('devnetOnDemand', async () => {
-//   const devnetOnDemand = await setupPactTestEnv('devnetOnDemand');
-//   // await devnetOnDemand.client.mineBlocks(1);
-//   // await delay(100);
-//   await devnetOnDemand.client.deployContract('hello-world.pact');
-//   const signer = devnetOnDemand.client.getSigner();
-//   const tx = devnetOnDemand.client
-//     .execution('(free.hello-world.say-hello "Salama")')
-//     .addSigner(signer.publicKey)
-//     .createTransaction();
-//   const signedTx = await devnetOnDemand.client.sign(tx);
-//   console.log(await devnetOnDemand.client.submitAndListen(signedTx));
-//   await devnetOnDemand.stop();
-// });
+//  devnetOnDemand
+await bench('devnetOnDemand', async () => {
+  const devnetOnDemand = await createPactTestEnv({
+    network: 'devnetOnDemand',
+  });
+  await devnetOnDemand.start();
+  await devnetOnDemand.runtime.deployContract('hello-world.pact');
+  const signer = devnetOnDemand.runtime.getSigner();
+  const tx = devnetOnDemand.runtime
+    .execution('(free.hello-world.say-hello "Salama")')
+    .addSigner(signer.publicKey)
+    .createTransaction();
+  const signedTx = await devnetOnDemand.runtime.sign(tx);
+  console.log(await devnetOnDemand.runtime.submitAndListen(signedTx));
+  await devnetOnDemand.stop();
+});
 
-// // devnet
-// await bench('devnet', async () => {
-//   const devnet = await setupPactTestEnv('devnet');
-//   // await delay(7000);
-//   await devnet.client.deployContract('hello-world.pact');
-//   const signer = devnet.client.getSigner();
-//   const tx = devnet.client
-//     .execution('(free.hello-world.say-hello "Salama")')
-//     .addSigner(signer.publicKey)
-//     .createTransaction();
+// devnet
+await bench('devnet', async () => {
+  const devnet = await createPactTestEnv({
+    network: 'devnet',
+  });
+  await devnet.start();
+  await devnet.runtime.deployContract('hello-world.pact');
+  const signer = devnet.runtime.getSigner();
+  const tx = devnet.runtime
+    .execution('(free.hello-world.say-hello "Salama")')
+    .addSigner(signer.publicKey)
+    .createTransaction();
 
-//   const signedTx = await devnet.client.sign(tx);
-//   console.log(await devnet.client.submitAndListen(signedTx));
-//   await devnet.stop();
-// });
+  const signedTx = await devnet.runtime.sign(tx);
+  console.log(await devnet.runtime.submitAndListen(signedTx));
+  await devnet.stop();
+});
 
 // find the fastest
 const fastest = Object.entries(table).reduce(

@@ -43,15 +43,20 @@
   "dependencies": {
     "@pact-toolbox/config": "workspace:*",
     "@pact-toolbox/network": "workspace:*",
-    "@pact-toolbox/runtime": "workspace:*"
+    "@pact-toolbox/runtime": "workspace:*",
+    "@pact-toolbox/utils": "workspace:*",
+    "tiny-readdir-glob": "^1.2.1"
   },
   "devDependencies": {
     "@pact-toolbox/tsconfig": "workspace:*",
     "@vitest/coverage-v8": "^1.2.2",
     "lint-staged": "^15.2.2",
     "oxlint": "^0.2.8",
-    "tsup": "^8.0.1",
+    "tsup": "^8.0.2",
     "typescript": "^5.3.3",
+    "vitest": "^1.2.2"
+  },
+  "peerDependencies": {
     "vitest": "^1.2.2"
   }
 }

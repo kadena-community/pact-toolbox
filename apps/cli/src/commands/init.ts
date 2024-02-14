@@ -57,10 +57,11 @@ async function addPackageJsonScript(packageJsonPath: string, scriptName: string,
 }
 
 const npmScripts = {
-  'pact:local': 'pact-toolbox start local',
-  'pact:devnet': 'pact-toolbox start devnet',
+  'pact:start': 'pact-toolbox start',
+  'pact:run': 'pact-toolbox start',
   'pact:prelude': 'pact-toolbox prelude',
   'pact:types': 'pact-toolbox types',
+  'pact:test': 'pact-toolbox test',
 };
 
 export const initCommand = defineCommand({
@@ -89,13 +90,18 @@ export const initCommand = defineCommand({
     const isTypescript = existsSync(`${args.cwd}/tsconfig.json`);
     const template = generateConfigTemplate(args.contractsDir, isCJS);
 
-    const deps = ['pact-toolbox', '@kadena/client'];
+    const deps = ['@kadena/client', '@pact-toolbox/client-utils', '@pact-toolbox/wallet'];
+    const devDeps = ['pact-toolbox'];
     logger.start(`Installing dependencies ${deps.join(', ')} ...`);
     const packageManager = await detectPackageManager(args.cwd, {
       includeParentDirs: true,
     });
     for (const dep of deps) {
       await addDependency(dep, { cwd: args.cwd, silent: true, packageManager });
+      logger.success(`Installed ${dep}`);
+    }
+    for (const dep of devDeps) {
+      await addDependency(dep, { cwd: args.cwd, dev: true, silent: true, packageManager });
       logger.success(`Installed ${dep}`);
     }
     const configPath = isTypescript ? 'pact-toolbox.config.ts' : 'pact-toolbox.config.js';

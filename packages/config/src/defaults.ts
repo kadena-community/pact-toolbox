@@ -1,15 +1,15 @@
 import { defu } from 'defu';
 import { join } from 'node:path';
 import {
-  ChainwebLocalNetworkConfig,
   ChainwebMiningClientConfig,
   ChainwebNetworkConfig,
   ChainwebNodeConfig,
   DevNetworkConfig,
   KeysetConfig,
-  PactConfig,
+  LocalChainwebNetworkConfig,
   PactServerConfig,
   PactServerNetworkConfig,
+  PactToolboxConfigObj,
   Signer,
 } from './config';
 import { createChainwebRpcUrl } from './utils';
@@ -84,14 +84,20 @@ export const defaultMeta = {
   gasPrice: 0.000_000_01,
 };
 
-export const defaultPactServerConfig: PactServerConfig = {
-  port: 8080,
-  logDir: '.pact-toolbox/logs',
-  // persistDir: '.pact-toolbox/persist',
-  verbose: true,
-  pragmas: [],
-  execConfig: ['DisablePact44', 'AllowReadInLocal'],
-};
+export function createPactServerConfig(overrides?: Partial<PactServerConfig>): Required<PactServerConfig> {
+  const defaults = {
+    port: 9091,
+    logDir: '.pact-toolbox/logs',
+    persistDir: '.pact-toolbox/persist',
+    verbose: true,
+    pragmas: [],
+    execConfig: ['DisablePact44', 'AllowReadInLocal'],
+  };
+  return {
+    ...defaults,
+    ...overrides,
+  } as Required<PactServerConfig>;
+}
 
 export const defaultDevNetContainer = {
   port: 9090,
@@ -100,17 +106,6 @@ export const defaultDevNetContainer = {
   // volume: 'kadena_devnet',
   name: 'devnet',
 };
-
-export function createDefaultPactConfig(overrides?: Partial<PactConfig>): PactConfig {
-  const defaults = {
-    contractsDir: 'pact',
-    version: '4.10.0',
-    preludes: ['kadena/chainweb'],
-    deployPreludes: true,
-    downloadPreludes: false,
-  } as PactConfig;
-  return defu(overrides ?? {}, defaults) as PactConfig;
-}
 
 export function createLocalNetworkConfig(overrides?: Partial<PactServerNetworkConfig>): PactServerNetworkConfig {
   const defaults = {
@@ -122,7 +117,8 @@ export function createLocalNetworkConfig(overrides?: Partial<PactServerNetworkCo
     chainId: '0',
     senderAccount: 'sender00',
     autoStart: true,
-    serverConfig: defaultPactServerConfig,
+    proxyPort: 8080,
+    serverConfig: createPactServerConfig(),
     ...defaultMeta,
   } as PactServerNetworkConfig;
   return defu(overrides ?? {}, defaults) as PactServerNetworkConfig;
@@ -163,6 +159,7 @@ export function createChainwebNodeConfig(
     p2pCertificateChainFile: join(configDir, 'devnet-bootstrap-node.cert.pem'),
     p2pCertificateKeyFile: join(configDir, 'devnet-bootstrap-node.key.pem'),
     p2pHostname: 'bootstrap-node',
+    p2pPort: 1789,
     bootstrapReachability: 1,
     clusterId: 'devnet-minimal',
     p2pMaxSessionCount: 1,
@@ -189,13 +186,13 @@ export function createChainWebMiningClientConfig(
 ): ChainwebMiningClientConfig {
   const defaults = {
     publicKey: 'f89ef46927f506c70b6a58fd322450a936311dc6ac91f4ec3d8ef949608dbf1f',
-    node: `127.0.0.1:1848`,
     worker: 'on-demand',
     constantDelayBlockTime: 5,
     threadCount: 1,
     logLevel: 'info',
     noTls: true,
     onDemandPort: 9090,
+    stratumPort: 1917,
   } as ChainwebMiningClientConfig;
   return {
     ...defaults,
@@ -203,9 +200,9 @@ export function createChainWebMiningClientConfig(
   };
 }
 
-export function createChainwebLocalNetworkConfig(
-  overrides?: Partial<ChainwebLocalNetworkConfig>,
-): ChainwebLocalNetworkConfig {
+export function createLocalChainwebNetworkConfig(
+  overrides?: Partial<LocalChainwebNetworkConfig>,
+): LocalChainwebNetworkConfig {
   const defaults = {
     type: 'chainweb-local',
     rpcUrl: createChainwebRpcUrl(),
@@ -220,8 +217,8 @@ export function createChainwebLocalNetworkConfig(
     onDemandMining: true,
     proxyPort: 8080,
     ...defaultMeta,
-  } as ChainwebLocalNetworkConfig;
-  return defu(overrides ?? {}, defaults) as ChainwebLocalNetworkConfig;
+  } as LocalChainwebNetworkConfig;
+  return defu(overrides ?? {}, defaults) as LocalChainwebNetworkConfig;
 }
 
 export function createChainwebNetworkConfig(overrides?: Partial<ChainwebNetworkConfig>): ChainwebNetworkConfig {
@@ -274,8 +271,12 @@ export function createMainNetNetworkConfig(overrides?: Partial<ChainwebNetworkCo
   return defu(overrides ?? {}, defaults) as ChainwebNetworkConfig;
 }
 
-export const defaultConfig = {
+export const defaultConfig: PactToolboxConfigObj = {
   defaultNetwork: 'local',
   networks: {},
-  pact: createDefaultPactConfig(),
+  contractsDir: 'pact',
+  scriptsDir: 'scripts',
+  preludes: ['kadena/chainweb'],
+  deployPreludes: true,
+  downloadPreludes: false,
 };

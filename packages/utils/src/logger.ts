@@ -1,4 +1,11 @@
-import { consola } from 'consola';
+import { createConsola } from 'consola';
 
-export const logger = consola.withTag('PactToolbox');
-// logger.level = LogLevels.debug;
+export const logger = createConsola({
+  level: 4,
+  formatOptions: {
+    columns: 80,
+    colors: false,
+    compact: false,
+    date: false,
+  },
+});

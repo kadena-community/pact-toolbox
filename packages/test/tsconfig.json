@@ -1,4 +1,4 @@
 {
   "extends": "@pact-toolbox/tsconfig/base",
-  "include": ["src", "tests"]
+  "include": ["src", "tests", "../../apps/cli/src/commands/vitest.ts"]
 }

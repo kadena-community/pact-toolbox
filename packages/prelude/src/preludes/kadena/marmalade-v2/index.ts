@@ -1,4 +1,4 @@
-import type { DeployContractParams, PactToolboxClient } from '@pact-toolbox/runtime';
+import type { DeployContractParams, PactToolboxRuntime } from '@pact-toolbox/runtime';
 import type { PactDependency, PactPrelude } from '../../../types';
 import { preludeSpec } from '../../../utils';
 
@@ -23,8 +23,8 @@ export const marmaladeSpecs: PactDependency[] = [
 export default {
   name: 'marmalade-v2',
   specs: marmaladeSpecs,
-  async repl(client: PactToolboxClient) {
+  async repl(client: PactToolboxRuntime) {
     return '';
   },
-  async deploy(client: PactToolboxClient, params: DeployContractParams = {}) {},
+  async deploy(client: PactToolboxRuntime, params: DeployContractParams = {}) {},
 } as PactPrelude;

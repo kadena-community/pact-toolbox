@@ -12,31 +12,41 @@ export function runBin(
   { cwd = process.cwd(), silent = false, env = process.env, resolveIf = () => true }: RunBinOptions,
 ): Promise<ChildProcessWithoutNullStreams> {
   return new Promise((resolve, reject) => {
-    const proc = spawn(bin, args, { cwd, env });
-    proc.stdout.on('data', (data) => {
+    const child = spawn(bin, args, { cwd, env });
+    child.stdout.on('data', (data) => {
       const s = data.toString();
       if (resolveIf(s)) {
-        resolve(proc);
+        resolve(child);
       }
       if (!silent) {
         console.log(s);
       }
     });
 
-    proc.stderr.on('data', (data) => {
-      console.error(data.toString());
+    child.stderr.on('data', (data) => {
+      const s = data.toString();
+      if (!s.includes('chainweb-node: SignalException 15')) {
+        console.error(data.toString());
+      }
     });
 
-    proc.on('error', (err) => {
+    child.on('error', (err) => {
       reject(err);
     });
 
-    process.on('exit', () => {
-      proc.kill();
+    cleanUpProcess(async (signal) => {
+      child.kill(signal);
+      await new Promise((resolve) => child.on('exit', resolve));
     });
+  });
+}
 
-    process.on('SIGINT', () => {
-      proc.kill('SIGINT');
-    });
+export function cleanUpProcess(clean: (signal?: NodeJS.Signals) => Promise<void>) {
+  process.once('SIGINT', async () => {
+    await clean('SIGINT');
+  });
+
+  process.once('SIGTERM', async () => {
+    await clean('SIGTERM');
   });
 }

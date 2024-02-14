@@ -1,6 +1,6 @@
-import { PactTestEnv, setupPactTestEnv } from '@pact-toolbox/test';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { render, screen } from '@testing-library/react';
+import { createPactTestEnv } from 'pact-toolbox';
 import { afterAll, beforeAll, describe, it } from 'vitest';
 import { TodoList } from './TodoList';
 import { createTodo } from './api';
@@ -13,15 +13,19 @@ function renderComponent() {
     </QueryClientProvider>,
   );
 }
-describe('TodoList', () => {
-  let env: PactTestEnv;
-  beforeAll(async () => {
-    env = await setupPactTestEnv();
-    await env.client.deployContract('todos.pact');
+describe('TodoList', async () => {
+  const env = await createPactTestEnv({
+    network: 'local',
+    enableProxy: false,
   });
 
-  afterAll(() => {
-    env?.stop();
+  beforeAll(async () => {
+    await env.start();
+    await env.runtime.deployContract('todos.pact');
+  });
+
+  afterAll(async () => {
+    await env.stop();
   });
 
   it('should render an empty list', async () => {

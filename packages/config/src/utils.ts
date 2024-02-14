@@ -1,8 +1,8 @@
 import type {
-  ChainwebLocalNetworkConfig,
   ChainwebNetworkConfig,
   DevNetworkConfig,
   GetRpcUrlParams,
+  LocalChainwebNetworkConfig,
   NetworkConfig,
   PactServerNetworkConfig,
   PactToolboxConfigObj,
@@ -20,13 +20,13 @@ export function isChainwebNetworkConfig(config: NetworkConfig): config is Chainw
   return config?.type === 'chainweb';
 }
 
-export function isChainwebLocalNetworkConfig(config: NetworkConfig): config is ChainwebLocalNetworkConfig {
+export function isLocalChainwebNetworkConfig(config: NetworkConfig): config is LocalChainwebNetworkConfig {
   return config?.type === 'chainweb-local';
 }
 
 export function isLocalNetwork(
   config: NetworkConfig,
-): config is PactServerNetworkConfig | ChainwebLocalNetworkConfig | DevNetworkConfig {
+): config is PactServerNetworkConfig | LocalChainwebNetworkConfig | DevNetworkConfig {
   return (
     (config?.type === 'pact-server' || config?.type === 'chainweb-local' || config?.type === 'chainweb-devnet') &&
     !!config.autoStart
@@ -35,20 +35,9 @@ export function isLocalNetwork(
 
 export function getNetworkPort(networkConfig: NetworkConfig) {
   const defaultPort = 8080;
-  if (isDevNetworkConfig(networkConfig)) {
-    return (
-      (networkConfig.onDemandMining ? networkConfig.proxyPort : networkConfig.containerConfig?.port) ?? defaultPort
-    );
-  }
-
-  if (isChainwebLocalNetworkConfig(networkConfig)) {
+  if (isLocalNetwork(networkConfig)) {
     return networkConfig.proxyPort ?? defaultPort;
   }
-
-  if (isPactServerNetworkConfig(networkConfig)) {
-    return networkConfig.serverConfig?.port ?? defaultPort;
-  }
-
   return defaultPort;
 }
 
@@ -77,7 +66,27 @@ export function createChainwebRpcUrl({
   return `${host}/chainweb/0.0/${networkId}/chain/${chainId}/pact`;
 }
 
-export function getCurrentNetworkConfig(config: PactToolboxConfigObj) {
-  const networkName = config.defaultNetwork || 'local';
-  return config.networks[networkName];
+export function getNetworkConfig(config: PactToolboxConfigObj, network?: string) {
+  const networkName = network ?? process.env.PACT_TOOLBOX_NETWORK ?? config.defaultNetwork ?? 'local';
+  const found = config.networks[networkName];
+  config.defaultNetwork = networkName;
+  found.name = networkName;
+  return found;
+}
+
+export function getSerializableNetworkConfig(config: PactToolboxConfigObj) {
+  const network = getNetworkConfig(config);
+  return {
+    networkId: network.networkId,
+    chainId: network.chainId,
+    rpcUrl: getNetworkRpcUrl(network),
+    gasLimit: network.gasLimit,
+    gasPrice: network.gasPrice,
+    ttl: network.ttl,
+    senderAccount: network.senderAccount,
+    signers: network.signers,
+    type: network.type,
+    keysets: network.keysets,
+    name: network.name,
+  };
 }

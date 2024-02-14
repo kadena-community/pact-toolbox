@@ -4,7 +4,7 @@
   'hello-ks: { "keys": [], "pred": "keys-all" }
 })
 (load "hello-world.pact")
-(coin.transfer "admin" "free" 1000.0)
+;  (coin.transfer "admin" "free" 1000.0)
 (expect "should say hello world!" (free.hello-world.say-hello "world") "Hello, world!")
 
 (commit-tx)

@@ -8,11 +8,10 @@ import {
   getSignerAccount,
 } from '@pact-toolbox/client-utils';
 
-const client = createKadenaClient();
+const getClient = createKadenaClient();
 const sign = createSignWithPactToolbox();
-const signer = getSignerAccount();
 
-const { dirtyReadOrFail, submitAndListen } = createClientUtils(client);
+const { dirtyReadOrFail, submitAndListen } = createClientUtils(getClient);
 export interface Todo {
   title: string;
   completed: boolean;
@@ -30,6 +29,7 @@ export async function readTodoById(id: string) {
 }
 
 export async function editTodoById(id: string, title: string) {
+  const signer = getSignerAccount();
   const tx = addDefaultMeta(Pact.builder.execution(`(free.todos.edit-todo "${id}" "${title}")`))
     .addSigner(signer.publicKey)
     .setMeta({
@@ -41,6 +41,7 @@ export async function editTodoById(id: string, title: string) {
 }
 
 export async function toggleTodoStatusById(id: string) {
+  const signer = getSignerAccount();
   const tx = addDefaultMeta(Pact.builder.execution(`(free.todos.toggle-todo-status "${id}")`))
     .addSigner(signer.publicKey)
     .setMeta({
@@ -52,6 +53,7 @@ export async function toggleTodoStatusById(id: string) {
 }
 
 export async function deleteTodoById(id: string) {
+  const signer = getSignerAccount();
   const tx = addDefaultMeta(Pact.builder.execution(`(free.todos.delete-todo "${id}")`))
     .addSigner(signer.publicKey)
     .setMeta({
@@ -63,6 +65,7 @@ export async function deleteTodoById(id: string) {
 }
 
 export async function createTodo(title: string, id: string = generateUUID()) {
+  const signer = getSignerAccount();
   const tx = addDefaultMeta(Pact.builder.execution(`(free.todos.new-todo "${id}" "${title}")`))
     .addSigner(signer.publicKey, (signFor) => [signFor('coin.GAS')])
     .setMeta({

@@ -1,7 +1,7 @@
 import { readKeyset } from '@kadena/client';
 import { generateKAccount, getAccountKey, pactDecimal } from '@pact-toolbox/client-utils';
 import { Signer } from '@pact-toolbox/config';
-import { PactToolboxClient } from '../client';
+import { PactToolboxRuntime } from '../runtime';
 
 type CoinAccount = Signer;
 interface CoinAccountDetails {
@@ -10,7 +10,7 @@ interface CoinAccountDetails {
 }
 
 export class CoinContract {
-  constructor(private client: PactToolboxClient) {}
+  constructor(private client: PactToolboxRuntime) {}
 
   async getBalance(account: string) {
     return this.client.dirtyRead(this.client.execution(`(coin.get-balance "${account}")`).createTransaction());

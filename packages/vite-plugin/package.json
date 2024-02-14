@@ -44,7 +44,7 @@
     "vite": "^5.1.1"
   },
   "dependencies": {
-    "@kadena/pactjs-generator": "^1.8.0",
+    "@kadena/pactjs-generator": "^1.8.1",
     "@pact-toolbox/config": "workspace:*",
     "@pact-toolbox/network": "workspace:*",
     "@pact-toolbox/runtime": "workspace:*",
@@ -59,7 +59,7 @@
     "@vitest/coverage-v8": "^1.2.2",
     "lint-staged": "^15.2.2",
     "oxlint": "^0.2.8",
-    "tsup": "^8.0.1",
+    "tsup": "^8.0.2",
     "typescript": "^5.3.3",
     "vite": "^5.1.1",
     "vitest": "^1.2.2"

@@ -37,5 +37,5 @@ export interface ResolvedOptions {
   isTest: boolean;
   isProduction: boolean;
   server?: ViteDevServer;
-  toolboxConfig: PactToolboxConfigObj;
+  toolboxConfig: Required<PactToolboxConfigObj>;
 }

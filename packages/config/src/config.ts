@@ -38,9 +38,9 @@ export interface DevNetworkConfig extends CommonNetworkConfig {
 
 export interface ChainwebMiningClientConfig {
   publicKey: string;
-  node: string;
   // we dont need other options for devnet
   worker: 'constant-delay' | 'on-demand';
+  stratumPort: number;
   constantDelayBlockTime: number;
   threadCount: number;
   logLevel: 'error' | 'warn' | 'info' | 'debug';
@@ -54,6 +54,7 @@ export interface ChainwebNodeConfig {
   p2pCertificateChainFile: string;
   p2pCertificateKeyFile: string;
   p2pHostname: string;
+  p2pPort: number;
   bootstrapReachability: number;
   clusterId: string;
   p2pMaxSessionCount: number;
@@ -70,18 +71,19 @@ export interface ChainwebNodeConfig {
   servicePort: number;
 }
 
-export interface ChainwebLocalNetworkConfig extends CommonNetworkConfig {
+export interface LocalChainwebNetworkConfig extends CommonNetworkConfig {
   type: 'chainweb-local';
   autoStart?: boolean;
   proxyPort?: string | number;
-  miningClientConfig?: Partial<ChainwebMiningClientConfig>;
-  nodeConfig?: Partial<ChainwebNodeConfig>;
+  miningClientConfig?: ChainwebMiningClientConfig;
+  nodeConfig?: ChainwebNodeConfig;
 }
 
 export interface PactServerNetworkConfig extends CommonNetworkConfig {
   type: 'pact-server';
   autoStart?: boolean;
   serverConfig?: PactServerConfig;
+  proxyPort?: string | number;
 }
 
 export interface ChainwebNetworkConfig extends CommonNetworkConfig {
@@ -92,7 +94,7 @@ export type NetworkConfig =
   | DevNetworkConfig
   | PactServerNetworkConfig
   | ChainwebNetworkConfig
-  | ChainwebLocalNetworkConfig;
+  | LocalChainwebNetworkConfig;
 
 export type PactExecConfigFlags =
   | 'AllowReadInLocal'
@@ -160,26 +162,23 @@ export interface PactServerConfig {
 
 export interface DevNetContainerConfig {
   port?: string | number;
-  volume?: string;
+  volume?: string | null;
   name?: string;
-  image?: string;
+  image: string;
   tag?: string;
 }
 type StandardPrelude = 'kadena/chainweb' | 'kadena/marmalade-v2';
-export interface PactConfig {
+export interface PactToolboxConfigObj<T extends Record<string, NetworkConfig> = Record<string, NetworkConfig>> {
+  defaultNetwork: keyof T;
+  networks: T;
   contractsDir?: string;
-  version?: string;
+  scriptsDir?: string;
+  pactVersion?: string;
   // preludes?: (StandardPrelude | PactPrelude)[];
   // TODO: fix circular type dependency
   preludes?: StandardPrelude[];
   downloadPreludes?: boolean;
   deployPreludes?: boolean;
-}
-
-export interface PactToolboxConfigObj<T extends Record<string, NetworkConfig> = Record<string, NetworkConfig>> {
-  defaultNetwork: keyof T;
-  networks: T;
-  pact: PactConfig;
 }
 
 export type PactToolboxConfig<T extends Record<string, NetworkConfig> = {}> =
@@ -192,7 +191,7 @@ export async function resolveConfig(overrides?: Partial<PactToolboxConfigObj>) {
     overrides: overrides as PactToolboxConfigObj,
     defaultConfig: defaultConfig as PactToolboxConfigObj,
   });
-  return configResult.config as PactToolboxConfigObj;
+  return configResult.config as Required<PactToolboxConfigObj>;
 }
 
 export function defineConfig<T extends Record<string, NetworkConfig> = Record<string, NetworkConfig>>(
@@ -201,6 +200,6 @@ export function defineConfig<T extends Record<string, NetworkConfig> = Record<st
   return config;
 }
 
-export function hasOnDemandMining(config: NetworkConfig): config is DevNetworkConfig | ChainwebLocalNetworkConfig {
+export function hasOnDemandMining(config: NetworkConfig): config is DevNetworkConfig | LocalChainwebNetworkConfig {
   return 'onDemandMining' in config && !!config.onDemandMining;
 }

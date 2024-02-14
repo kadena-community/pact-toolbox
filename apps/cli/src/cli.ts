@@ -15,6 +15,8 @@ const main = defineCommand({
     upgrade: async () => (await import('./commands/upgrade')).upgradeCommand,
     prelude: async () => (await import('./commands/prelude')).preludeCommand,
     types: async () => (await import('./commands/types')).generateTypesCommand,
+    run: async () => (await import('./commands/run')).runCommand,
+    test: async () => (await import('./commands/test')).testCommand,
   },
 });
 

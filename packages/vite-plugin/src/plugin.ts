@@ -1,16 +1,16 @@
+import { getNetworkConfig, getSerializableNetworkConfig, isLocalNetwork } from '@pact-toolbox/config';
+import { startLocalNetwork } from '@pact-toolbox/network';
+import { PactToolboxRuntime } from '@pact-toolbox/runtime';
 import { Plugin } from 'vite';
+import { preResolveOptions, resolveOptions } from './options';
 import { IdParser, ResolvedOptions } from './types';
 import { buildIdParser } from './utils';
 
-import { getCurrentNetworkConfig, getNetworkRpcUrl, isLocalNetwork } from '@pact-toolbox/config';
-import { startLocalNetwork } from '@pact-toolbox/network';
-import { PactToolboxClient } from '@pact-toolbox/runtime';
-import { preResolveOptions, resolveOptions } from './options';
-
 interface VitePluginOptions {
-  onReady?: (client: PactToolboxClient) => Promise<void>;
+  onReady?: (client: PactToolboxRuntime) => Promise<void>;
+  startNetwork?: boolean;
 }
-export function pactVitePlugin({ onReady }: VitePluginOptions): Plugin {
+export function pactVitePlugin({ onReady, startNetwork }: VitePluginOptions): Plugin {
   let requestParser: IdParser;
   let options!: ResolvedOptions;
   let viteConfig!: any;
@@ -21,38 +21,27 @@ export function pactVitePlugin({ onReady }: VitePluginOptions): Plugin {
       options = await preResolveOptions(config, configEnv);
       return config;
     },
-
+    // configureServer(server) {},
     async configResolved(config) {
       viteConfig = config;
       options = resolveOptions(options, config);
       requestParser = buildIdParser(options);
-      const network = getCurrentNetworkConfig(options.toolboxConfig);
-      const pickedConfig = {
-        networkId: network.networkId,
-        chainId: network.chainId,
-        rpcUrl: getNetworkRpcUrl(network),
-        gasLimit: network.gasLimit,
-        gasPrice: network.gasPrice,
-        ttl: network.ttl,
-        senderAccount: network.senderAccount,
-        signers: network.signers,
-        type: network.type,
-        keysets: network.keysets,
-        name: network.name,
-      };
-      viteConfig.define = viteConfig.define || {};
-      viteConfig.define['globalThis.__PACT_TOOLBOX_NETWORK__'] = JSON.stringify(pickedConfig);
-      const client = new PactToolboxClient(options.toolboxConfig);
-      if (options.isServe && !options.isTest && isLocalNetwork(network)) {
+      const network = getNetworkConfig(options.toolboxConfig);
+      if (!options.isTest) {
+        const networkConfig = getSerializableNetworkConfig(options.toolboxConfig);
+        viteConfig.define = viteConfig.define || {};
+        viteConfig.define['globalThis.__PACT_TOOLBOX_NETWORK__'] = JSON.stringify(networkConfig);
+      }
+      const runtime = new PactToolboxRuntime(options.toolboxConfig);
+      if (options.isServe && !options.isTest && isLocalNetwork(network) && startNetwork) {
         await startLocalNetwork(options.toolboxConfig, {
-          client,
+          runtime,
           logAccounts: true,
-          // silent: false,
         });
       }
 
       if (options.isServe && !options.isTest && onReady) {
-        await onReady(client);
+        await onReady(runtime);
       }
     },
 

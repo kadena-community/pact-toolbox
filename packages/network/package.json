@@ -41,22 +41,18 @@
     "verify": "tsc --noEmit --skipLibCheck"
   },
   "dependencies": {
-    "@pact-toolbox/client-utils": "workspace:*",
+    "@pact-toolbox/proxy": "workspace:*",
     "@pact-toolbox/config": "workspace:*",
     "@pact-toolbox/prelude": "workspace:*",
     "@pact-toolbox/runtime": "workspace:*",
-    "@pact-toolbox/utils": "workspace:*",
-    "dockerode": "^4.0.2",
-    "h3": "^1.10.1",
-    "listhen": "^1.6.0"
+    "@pact-toolbox/utils": "workspace:*"
   },
   "devDependencies": {
     "@pact-toolbox/tsconfig": "workspace:*",
-    "@types/dockerode": "^3.3.23",
     "@vitest/coverage-v8": "^1.2.2",
     "lint-staged": "^15.2.2",
     "oxlint": "^0.2.8",
-    "tsup": "^8.0.1",
+    "tsup": "^8.0.2",
     "typescript": "^5.3.3",
     "vitest": "^1.2.2"
   }

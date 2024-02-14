@@ -13,8 +13,8 @@ WORKDIR /devnet/app
 # Install packages
 RUN pnpm install
 
-WORKDIR /devnet/app/apps/cli
+WORKDIR /devnet/app/apps/todo-mvc
 # Install pact prelude
 # RUN pnpm cli prelude
 
-CMD [ "pnpm", "playground"]
+CMD [ "pnpm", "test"]
