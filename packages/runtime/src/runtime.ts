@@ -45,8 +45,11 @@ export class PactToolboxRuntime {
   private kdaClient: IClient;
   private networkConfig: NetworkConfig;
 
-  constructor(private config: PactToolboxConfigObj) {
-    this.networkConfig = getNetworkConfig(config);
+  constructor(
+    private config: PactToolboxConfigObj,
+    network?: string,
+  ) {
+    this.networkConfig = getNetworkConfig(config, network);
     this.kdaClient = createClient(createRpcUrlGetter(this.networkConfig));
   }
 
@@ -60,6 +63,18 @@ export class PactToolboxRuntime {
 
   isChainwebNetwork() {
     return this.networkConfig.type.includes('chainweb');
+  }
+
+  getContactsDir() {
+    return this.config.contractsDir ?? 'pact';
+  }
+
+  getScriptsDir() {
+    return this.config.scriptsDir ?? 'scripts';
+  }
+
+  getPreludeDir() {
+    return join(this.getContactsDir(), 'prelude');
   }
 
   getConfig() {
@@ -206,6 +221,18 @@ export class PactToolboxRuntime {
     return this.runPact(`(describe-module "${module}")`);
   }
 
+  async describeNamespace(namespace: string) {
+    return this.runPact(`(describe-namespace "${namespace}")`);
+  }
+
+  async isNamespaceDefined(namespace: string) {
+    const res = await this.describeNamespace(namespace);
+    if (res.result.status === 'success') {
+      return true;
+    }
+    return false;
+  }
+
   async isContractDeployed(module: string) {
     const res = await this.describeModule(module);
     if (res.result.status === 'success') {
@@ -214,11 +241,12 @@ export class PactToolboxRuntime {
     return false;
   }
 
-  async getContractCode(contract: string) {
+  async getContractCode(contractPath: string) {
     const contractsDir = this.config.contractsDir ?? 'pact';
-    const contractPath = join(contractsDir, contract);
-    const stats = await stat(contractPath);
-    if (!stats.isFile()) {
+    contractPath = contractPath.startsWith(contractsDir) ? contractPath : join(contractsDir, contractPath);
+    try {
+      await stat(contractPath);
+    } catch (e) {
       throw new Error(`Contract file not found: ${contractPath}`);
     }
     return readFile(contractPath, 'utf-8');

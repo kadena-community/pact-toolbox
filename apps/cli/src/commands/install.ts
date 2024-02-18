@@ -26,7 +26,7 @@ export const installCommand = defineCommand({
   run: async ({ args }) => {
     let { version, latest } = args;
     const config = await resolveConfig();
-    version = version ?? config.pact.version;
+    version = version ?? config.pactVersion;
     if (!version && latest) {
       logger.info('Pact version not specified, installing latest');
       version = await getLatestReleaseVersion();

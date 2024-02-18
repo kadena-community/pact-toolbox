@@ -1,7 +1,6 @@
-import { resolveConfig } from '@pact-toolbox/config';
-import { PactToolboxRuntime } from '@pact-toolbox/runtime';
 import { logger } from '@pact-toolbox/utils';
 import { defineCommand } from 'citty';
+import { runScript } from '..';
 
 export const runCommand = defineCommand({
   meta: {
@@ -18,6 +17,7 @@ export const runCommand = defineCommand({
     network: {
       type: 'string',
       name: 'network',
+      alias: 'n',
       description: 'Network to use',
       required: false,
       default: 'local',
@@ -26,8 +26,6 @@ export const runCommand = defineCommand({
   run: async ({ args }) => {
     const { script, network, ...rest } = args;
     logger.start(`Running script ${script} on network ${network}`);
-    const config = await resolveConfig();
-    const client = new PactToolboxRuntime(config);
-    await client.runScript(script, rest);
+    await runScript(script, { network, args: rest });
   },
 });

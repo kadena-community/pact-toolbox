@@ -167,7 +167,7 @@ export interface DevNetContainerConfig {
   image: string;
   tag?: string;
 }
-type StandardPrelude = 'kadena/chainweb' | 'kadena/marmalade-v2';
+type StandardPrelude = 'kadena/chainweb' | 'kadena/marmalade';
 export interface PactToolboxConfigObj<T extends Record<string, NetworkConfig> = Record<string, NetworkConfig>> {
   defaultNetwork: keyof T;
   networks: T;

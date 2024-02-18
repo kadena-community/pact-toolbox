@@ -11,6 +11,8 @@ export async function resolvePreludes({ contractsDir, preludes }: CommonPreludeO
         switch (prelude) {
           case 'kadena/chainweb':
             return import('./preludes/kadena/chainweb').then((m) => m.default);
+          case 'kadena/marmalade':
+            return import('./preludes/kadena/marmalade').then((m) => m.default);
           default:
             throw new Error(`Prelude ${prelude} not found`);
         }

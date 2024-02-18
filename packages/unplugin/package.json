@@ -1,0 +1,180 @@
+{
+  "name": "@pact-toolbox/unplugin",
+  "version": "0.0.1",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/salamaashoush/pact-toolbox.git"
+  },
+  "homepage": "https://github.com/salamaashoush/pact-toolbox#readme",
+  "bugs": {
+    "url": "https://github.com/salamaashoush/pact-toolbox/issues"
+  },
+  "author": "Salama Ashoush <salamaashoush@gmail.com>",
+  "license": "MIT",
+  "type": "module",
+  "private": false,
+  "keywords": [
+    "unplugin",
+    "vite",
+    "webpack",
+    "rollup",
+    "transform",
+    "esbuild",
+    "pact-lang",
+    "kadena"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./astro": {
+      "types": "./dist/astro.d.ts",
+      "import": "./dist/astro.js",
+      "require": "./dist/astro.cjs"
+    },
+    "./rspack": {
+      "types": "./dist/rspack.d.ts",
+      "import": "./dist/rspack.js",
+      "require": "./dist/rspack.cjs"
+    },
+    "./rsbuild": {
+      "types": "./dist/rsbuild.d.ts",
+      "import": "./dist/rsbuild.js",
+      "require": "./dist/rsbuild.cjs"
+    },
+    "./vite": {
+      "types": "./dist/vite.d.ts",
+      "import": "./dist/vite.js",
+      "require": "./dist/vite.cjs"
+    },
+    "./webpack": {
+      "types": "./dist/webpack.d.ts",
+      "import": "./dist/webpack.js",
+      "require": "./dist/webpack.cjs"
+    },
+    "./rollup": {
+      "types": "./dist/rollup.d.ts",
+      "import": "./dist/rollup.js",
+      "require": "./dist/rollup.cjs"
+    },
+    "./esbuild": {
+      "types": "./dist/esbuild.d.ts",
+      "import": "./dist/esbuild.js",
+      "require": "./dist/esbuild.cjs"
+    },
+    "./nuxt": {
+      "types": "./dist/nuxt.d.ts",
+      "import": "./dist/nuxt.js",
+      "require": "./dist/nuxt.cjs"
+    },
+    "./next": {
+      "types": "./dist/next.d.ts",
+      "import": "./dist/next.js",
+      "require": "./dist/next.cjs"
+    },
+    "./types": {
+      "types": "./dist/types.d.ts",
+      "import": "./dist/types.js",
+      "require": "./dist/types.cjs"
+    },
+    "./*": "./*"
+  },
+  "main": "dist/index.cjs",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "typesVersions": {
+    "*": {
+      "*": [
+        "./dist/*",
+        "./*"
+      ]
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch src",
+    "lint": "oxlint --import-plugin  -D all && prettier -c src",
+    "lint:fix": "oxlint --import-plugin  -D all --fix && prettier -c src -w",
+    "prepack": "pnpm run build",
+    "release": "pnpm test && pnpm publish",
+    "test:watch": "vitest",
+    "test": "vitest run",
+    "verify": "tsc --noEmit --skipLibCheck",
+    "build:fix": "tsx scripts/postbuild.ts"
+  },
+  "dependencies": {
+    "@kadena/pactjs-generator": "^1.8.1",
+    "@pact-toolbox/config": "workspace:*",
+    "@pact-toolbox/network": "workspace:*",
+    "@pact-toolbox/runtime": "workspace:*",
+    "@pact-toolbox/utils": "workspace:*",
+    "defu": "^6.1.4",
+    "picomatch": "^4.0.1",
+    "unplugin": "^1.7.1"
+  },
+  "peerDependencies": {
+    "@nuxt/kit": "^3",
+    "@nuxt/schema": "^3",
+    "next": "^12",
+    "esbuild": "*",
+    "rollup": "^3",
+    "vite": ">=3",
+    "webpack": "^4 || ^5",
+    "@rspack/core": "^0.5",
+    "@rsbuild/core": "^0.4"
+  },
+  "peerDependenciesMeta": {
+    "webpack": {
+      "optional": true
+    },
+    "rollup": {
+      "optional": true
+    },
+    "vite": {
+      "optional": true
+    },
+    "esbuild": {
+      "optional": true
+    },
+    "@nuxt/kit": {
+      "optional": true
+    },
+    "@nuxt/schema": {
+      "optional": true
+    },
+    "@rspack/core": {
+      "optional": true
+    },
+    "next": {
+      "optional": true
+    },
+    "@rsbuild/core": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@nuxt/kit": "^3.10.2",
+    "next": "^14.1.0",
+    "@nuxt/schema": "^3.10.2",
+    "@pact-toolbox/tsconfig": "workspace:*",
+    "@types/node": "^20.11.19",
+    "@vitest/coverage-v8": "^1.3.0",
+    "fast-glob": "^3.3.2",
+    "lint-staged": "^15.2.2",
+    "oxlint": "^0.2.8",
+    "rollup": "^4.12.0",
+    "tsup": "^8.0.2",
+    "tsx": "^4.7.1",
+    "typescript": "^5.3.3",
+    "vite": "^5.1.3",
+    "vitest": "^1.3.0",
+    "@rsbuild/core": "0.4.3",
+    "webpack": "^5.90.2",
+    "@rspack/core": "^0.5.4"
+  }
+}

@@ -1,10 +1,19 @@
-import { IBuilder, IClient, ISignFunction, createClient, createSignWithKeypair } from '@kadena/client';
+import {
+  IBuilder,
+  IClient,
+  IContinuationPayloadObject,
+  ISignFunction,
+  Pact,
+  createClient,
+  createSignWithKeypair,
+} from '@kadena/client';
 import { ChainId, IKeyPair } from '@kadena/types';
-interface Signer extends IKeyPair {
+
+export interface Signer extends IKeyPair {
   account: string;
 }
 
-interface PactToolboxNetworkConfig {
+export interface PactToolboxNetworkConfig {
   networkId: string;
   chainId: ChainId;
   rpcUrl: string;
@@ -16,12 +25,16 @@ interface PactToolboxNetworkConfig {
   type: string;
   name: string;
 }
+
+export function isPactToolboxInstalled() {
+  return typeof (globalThis as any).__PACT_TOOLBOX_NETWORK_CONFIG__ === 'object';
+}
+
 export function getPactToolboxNetworkConfig(): PactToolboxNetworkConfig {
-  const network = (globalThis as any).__PACT_TOOLBOX_NETWORK_CONFIG__;
-  if (!network) {
-    throw new Error('Make sure you are using the pact-toolbox bundler plugin, eg `@pact-toolbox/vite-plugin');
+  if (!isPactToolboxInstalled()) {
+    throw new Error('Make sure you are using the pact-toolbox bundler plugin, eg `@pact-toolbox/unplugin`');
   }
-  return network;
+  return (globalThis as any).__PACT_TOOLBOX_NETWORK_CONFIG__;
 }
 
 export function createKadenaClient() {
@@ -68,4 +81,16 @@ export function getSignerAccount(signer?: string) {
     throw new Error(`Signer ${signer} not found in network config`);
   }
   return signerAccount;
+}
+
+export function execution<T extends IBuilder<any>>(command: string): T {
+  return addDefaultMeta(Pact.builder.execution(command)) as T;
+}
+
+export function continuation<
+  T extends IBuilder<{
+    payload: IContinuationPayloadObject;
+  }>,
+>(command: Parameters<typeof Pact.builder.continuation>[0]): T {
+  return addDefaultMeta(Pact.builder.continuation(command)) as T;
 }

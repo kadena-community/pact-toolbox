@@ -21,6 +21,7 @@ export class LocalDevNetNetwork implements PactToolboxNetworkApi {
   constructor(
     private network: DevNetworkConfig,
     private silent: boolean,
+    private isStateless: boolean = false,
   ) {
     this.containerConfig = {
       port: 8080,
@@ -30,7 +31,7 @@ export class LocalDevNetNetwork implements PactToolboxNetworkApi {
       volume: null,
       ...this.network.containerConfig,
     };
-    this.containerConfig.name = this.containerConfig.name ?? `devnet-${this.id}`;
+    this.containerConfig.name = this.isStateless ? `devnet-${this.id}` : this.containerConfig.name;
   }
 
   get image() {

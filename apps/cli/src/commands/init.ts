@@ -67,7 +67,7 @@ const npmScripts = {
 export const initCommand = defineCommand({
   meta: {
     name: 'init',
-    description: 'Init design sync config',
+    description: 'Init pact-toolbox in your current project',
   },
   args: {
     cwd: {

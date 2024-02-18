@@ -82,7 +82,7 @@ export class DockerService {
     try {
       const containers = await this.docker.listContainers();
       const containerInfo = containers.find((c) => {
-        if (c.Names.includes(search)) {
+        if (c.Names.includes(`/${search}`) || c.Names.includes(search)) {
           return true;
         }
         if (c.Image.includes(search)) {
@@ -106,7 +106,7 @@ export class DockerService {
         });
       }
     } catch (e) {
-      throw new Error(`Failed to remove container ${search}`);
+      throw new Error(`Failed to remove container ${search}, ${e}`);
     }
   }
 

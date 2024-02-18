@@ -15,7 +15,7 @@ export const preludeCommand = defineCommand({
     const runtime = new PactToolboxRuntime(config);
     await downloadPreludes({
       runtime,
-      contractsDir: config.contractsDir ?? 'contracts',
+      contractsDir: config.contractsDir ?? 'pact',
       preludes: config.preludes ?? [],
     });
     logger.box(

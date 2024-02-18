@@ -1,12 +1,13 @@
 import { KeysetConfig } from '@pact-toolbox/config';
 import type { DeployContractParams, PactToolboxRuntime } from '@pact-toolbox/runtime';
 import { logger } from '@pact-toolbox/utils';
+import { join } from 'node:path';
 import { deployPactDependency } from '../../../deployPrelude';
 import type { PactDependency, PactPrelude } from '../../../types';
 import { preludeSpec, renderTemplate } from '../../../utils';
-export const marmaladeRepoUrl = 'gh:salamaashoush/pact';
+
 export function marmaladePath(path: string) {
-  return `${marmaladeRepoUrl}/${path}#main`;
+  return `gh:salamaashoush/marmalade/pact/${path}#main`;
 }
 
 export const marmaladeSpecs: Record<string, PactDependency[]> = {
@@ -20,12 +21,15 @@ export const marmaladeSpecs: Record<string, PactDependency[]> = {
     preludeSpec('fungible-util.pact', marmaladePath('util/fungible-util.pact'), 'util'),
     preludeSpec('guards1.pact', marmaladePath('util/guards1.pact'), 'util'),
   ],
+  'marmalade-ns': [
+    preludeSpec('ns-marmalade.pact', marmaladePath('marmalade-ns/ns-marmalade.pact'), 'marmalade-ns'),
+    preludeSpec('ns-contract-admin.pact', marmaladePath('marmalade-ns/ns-contract-admin.pact'), 'marmalade-ns'),
+  ],
   'marmalade-v2': [
     preludeSpec('ledger.interface.pact', marmaladePath('ledger/ledger.interface.pact'), 'marmalade-v2'),
     preludeSpec('sale.interface.pact', marmaladePath('policy-manager/sale.interface.pact'), 'marmalade-v2'),
     preludeSpec('policy-manager.pact', marmaladePath('policy-manager/policy-manager.pact'), 'marmalade-v2'),
     preludeSpec('ledger.pact', marmaladePath('ledger/ledger.pact'), 'marmalade-v2'),
-
     // Concrete policies
     preludeSpec(
       'collection-policy-v1.pact',
@@ -47,10 +51,8 @@ export const marmaladeSpecs: Record<string, PactDependency[]> = {
       marmaladePath('concrete-policies/royalty-policy/royalty-policy-v1.pact'),
       'marmalade-v2',
     ),
-
     // init
     preludeSpec('manager-init.pact', marmaladePath('policy-manager/manager-init.pact'), 'marmalade-v2'),
-
     // util
     preludeSpec('util-v1.pact', marmaladePath('marmalade-util/util-v1.pact'), 'marmalade-v2'),
   ],
@@ -73,7 +75,11 @@ export default {
   specs: marmaladeSpecs,
   requires: ['kadena/chainweb'],
   async shouldDeploy(runtime: PactToolboxRuntime) {
-    return false;
+    const namespaces = ['kip', 'util', 'marmalade-v2', 'marmalade-sale'];
+    const contracts = ['marmalade-v2.ledger', 'marmalade-v2.util-v1'];
+    const defined = await Promise.all(namespaces.map((ns) => runtime.isNamespaceDefined(ns)));
+    const deployed = await Promise.all(contracts.map((c) => runtime.isContractDeployed(c)));
+    return defined.some((d) => !d) || deployed.some((d) => !d);
   },
   async repl(runtime: PactToolboxRuntime) {
     const keys = runtime.getSigner();
@@ -98,11 +104,39 @@ export default {
         keys: [keys.publicKey],
         pred: 'keys-all',
       },
+      'marmalade-contract-admin': {
+        keys: [keys.publicKey],
+        pred: 'keys-all',
+      },
     } as Record<string, KeysetConfig>;
+    const preludeDir = join(runtime.getPreludeDir(), 'kadena/marmalade');
 
-    // deploy  util
-    for (const dep of marmaladeSpecs.util) {
-      await deployPactDependency(dep, runtime, {
+    const createNsSpec = marmaladeSpecs['marmalade-ns'].find((s) => s.name.includes('ns-marmalade.pact'));
+    if (!createNsSpec) {
+      throw new Error('Could not find marmalade-ns/ns-marmalade.pact');
+    }
+    await deployPactDependency(createNsSpec, preludeDir, runtime, {
+      ...params,
+      data: {
+        ns: 'kip',
+      },
+      keysets,
+      signer,
+    });
+    logger.success(`Created kip namespace`);
+
+    await deployPactDependency(createNsSpec, preludeDir, runtime, {
+      ...params,
+      data: {
+        ns: 'util',
+      },
+      keysets,
+      signer,
+    });
+    logger.success(`Created util namespace`);
+
+    for (const dep of marmaladeSpecs.kip) {
+      await deployPactDependency(dep, preludeDir, runtime, {
         ...params,
         data: {
           ns: 'kip',
@@ -114,9 +148,49 @@ export default {
       logger.success(`Deployed ${dep.name}`);
     }
 
-    // deploy kip
-    for (const dep of marmaladeSpecs.kip) {
-      await deployPactDependency(dep, runtime, {
+    // create marmalade-v2 namespaces
+    for (const dep of marmaladeSpecs['marmalade-ns']) {
+      await deployPactDependency(dep, preludeDir, runtime, {
+        ...params,
+        data: {
+          ns: 'marmalade-v2',
+          ...params.data,
+        },
+        keysets: {
+          ...keysets,
+          'marmalade-v2.marmalade-contract-admin': {
+            keys: [keys.publicKey],
+            pred: 'keys-all',
+          },
+        },
+        signer,
+      });
+      logger.success(`Created marmalade-v2 namespace`);
+    }
+
+    // create marmalade-sale namespaces
+    for (const dep of marmaladeSpecs['marmalade-ns']) {
+      await deployPactDependency(dep, preludeDir, runtime, {
+        ...params,
+        data: {
+          ns: 'marmalade-sale',
+          ...params.data,
+        },
+        keysets: {
+          ...keysets,
+          'marmalade-sale.marmalade-contract-admin': {
+            keys: [keys.publicKey],
+            pred: 'keys-all',
+          },
+        },
+        signer,
+      });
+      logger.success(`Created marmalade-sale namespace`);
+    }
+
+    // deploy  util
+    for (const dep of marmaladeSpecs.util) {
+      await deployPactDependency(dep, preludeDir, runtime, {
         ...params,
         data: {
           ns: 'kip',
@@ -130,7 +204,7 @@ export default {
 
     // deploy  marmalade-v2
     for (const dep of marmaladeSpecs['marmalade-v2']) {
-      await deployPactDependency(dep, runtime, {
+      await deployPactDependency(dep, preludeDir, runtime, {
         ...params,
         data: {
           ns: 'marmalade-v2',
@@ -144,7 +218,7 @@ export default {
 
     // deploy  marmalade-sale
     for (const dep of marmaladeSpecs['marmalade-sale']) {
-      await deployPactDependency(dep, runtime, {
+      await deployPactDependency(dep, preludeDir, runtime, {
         ...params,
         data: {
           ns: 'marmalade-sale',

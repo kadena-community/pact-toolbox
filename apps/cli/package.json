@@ -65,24 +65,23 @@
     "@pact-toolbox/network": "workspace:*",
     "@pact-toolbox/prelude": "workspace:*",
     "@pact-toolbox/runtime": "workspace:*",
+    "@pact-toolbox/script": "workspace:*",
     "@pact-toolbox/test": "workspace:*",
     "@pact-toolbox/utils": "workspace:*",
-    "citty": "^0.1.5",
+    "citty": "^0.1.6",
     "defu": "^6.1.4",
-    "untun": "^0.1.3",
-    "uqr": "^0.1.2",
     "nypm": "^0.3.6"
   },
   "devDependencies": {
     "@pact-toolbox/tsconfig": "workspace:*",
-    "@types/node": "^20.11.17",
-    "@vitest/coverage-v8": "^1.2.2",
+    "@types/node": "^20.11.19",
+    "@vitest/coverage-v8": "^1.3.0",
     "oxlint": "^0.2.8",
     "prettier": "3.2.5",
     "tsup": "^8.0.2",
     "tsx": "^4.7.1",
     "typescript": "^5.3.3",
-    "vitest": "^1.2.2"
+    "vitest": "^1.3.0"
   },
   "peerDependencies": {
     "vitest": "^1.2.2"

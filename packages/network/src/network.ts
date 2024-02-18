@@ -25,7 +25,7 @@ export function createPactToolboxNetwork(
     return new PactServerNetwork(network, silent, isStateless);
   }
   if (isDevNetworkConfig(network)) {
-    return new LocalDevNetNetwork(network, silent);
+    return new LocalDevNetNetwork(network, silent, isStateless);
   }
 
   if (isLocalChainwebNetworkConfig(network)) {
@@ -34,7 +34,7 @@ export function createPactToolboxNetwork(
   throw new Error(`Unsupported network type`);
 }
 
-interface CreateLocalNetworkOptions {
+export interface StartLocalNetworkOptions {
   silent?: boolean;
   runtime?: PactToolboxRuntime;
   logAccounts?: boolean;
@@ -65,7 +65,7 @@ export class PactToolboxNetwork implements PactToolboxNetworkApi {
       enableProxy = true,
       isStateless = false,
       proxyOptions,
-    }: CreateLocalNetworkOptions = {},
+    }: StartLocalNetworkOptions = {},
   ) {
     const networkConfig = getNetworkConfig(this.toolboxConfig, network);
     if (!networkConfig) {
@@ -168,7 +168,7 @@ export class PactToolboxNetwork implements PactToolboxNetworkApi {
 
 export async function startLocalNetwork(
   config: Required<PactToolboxConfigObj>,
-  options: CreateLocalNetworkOptions = {},
+  options: StartLocalNetworkOptions = {},
 ) {
   const network = new PactToolboxNetwork(config, options);
   try {

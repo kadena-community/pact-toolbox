@@ -1,39 +1,40 @@
 import type { KeysetConfig } from '@pact-toolbox/config';
 import type { DeployContractParams, PactToolboxRuntime } from '@pact-toolbox/runtime';
 import { logger } from '@pact-toolbox/utils';
+import { join } from 'node:path';
 import { deployPactDependency } from '../../../deployPrelude';
 import { PactDependency, PactPrelude } from '../../../types';
 import { preludeSpec, renderTemplate } from '../../../utils';
 
-const chainWebRepoUrl = 'gh:kadena-io/chainweb-node/pact';
 function chainWebPath(path: string) {
-  return `${chainWebRepoUrl}/${path}#master`;
+  return `gh:kadena-io/chainweb-node/pact/${path}#master`;
 }
 
 const chainWebSpec: Record<string, PactDependency[]> = {
   root: [
-    preludeSpec('ns.pact', chainWebPath('namespaces/v1/ns.pact'), 'chainweb/root'),
-    preludeSpec('gas-payer-v1.pact', chainWebPath('gas-payer/gas-payer-v1.pact'), 'chainweb/root'),
-    preludeSpec('coin-v5.pact', chainWebPath('coin-contract/v5/coin-v5-install.pact'), 'chainweb/root', [
-      preludeSpec('fungible-v2.pact', chainWebPath('coin-contract/v2/fungible-v2.pact'), 'chainweb/root'),
-      preludeSpec('fungible-xchain-v1.pact', chainWebPath('coin-contract/v4/fungible-xchain-v1.pact'), 'chainweb/root'),
-    ]),
+    preludeSpec('ns.pact', chainWebPath('namespaces/v1/ns.pact')),
+    preludeSpec('gas-payer-v1.pact', chainWebPath('gas-payer/gas-payer-v1.pact')),
+    preludeSpec('fungible-v2.pact', chainWebPath('coin-contract/v2/fungible-v2.pact')),
+    preludeSpec('fungible-xchain-v1.pact', chainWebPath('coin-contract/v4/fungible-xchain-v1.pact')),
+    preludeSpec('coin-v6.pact', chainWebPath('coin-contract/v6/coin-v6-install.pact')),
   ],
   util: [
-    preludeSpec('util-ns.pact', chainWebPath('util/util-ns.pact'), 'chainweb/util'),
-    preludeSpec('guards.pact', chainWebPath('util/guards.pact'), 'chainweb/util'),
+    preludeSpec('util-ns.pact', chainWebPath('util/util-ns.pact'), 'util'),
+    preludeSpec('guards.pact', chainWebPath('util/guards.pact'), 'util'),
   ],
 };
 
 export default {
-  name: 'chainweb',
+  name: 'kadena/chainweb',
   specs: chainWebSpec,
   async shouldDeploy(runtime: PactToolboxRuntime) {
     if (runtime.isChainwebNetwork()) {
       return false;
     }
-    const isDeployed = await runtime.isContractDeployed('coin');
-    return !isDeployed;
+    if (await runtime.isContractDeployed('coin')) {
+      return false;
+    }
+    return true;
   },
   async repl(runtime: PactToolboxRuntime) {
     const keys = runtime.getSigner();
@@ -68,10 +69,10 @@ export default {
         pred: 'keys-all',
       },
     } as Record<string, KeysetConfig>;
+    const preludeDir = join(runtime.getPreludeDir(), 'kadena/chainweb');
     // deploy root prelude
     for (const dep of chainWebSpec.root) {
-      logger.start(`Deploying ${dep.name}`);
-      await deployPactDependency(dep, runtime, {
+      await deployPactDependency(dep, preludeDir, runtime, {
         ...params,
         keysets: rootKeysets,
         signer: signer,
@@ -80,8 +81,7 @@ export default {
     }
     // deploy util prelude
     for (const dep of chainWebSpec.util) {
-      logger.start(`Deploying ${dep.name}`);
-      await deployPactDependency(dep, runtime, {
+      await deployPactDependency(dep, preludeDir, runtime, {
         ...params,
         keysets: utilKeysets,
         signer: signer || runtime.network.senderAccount,

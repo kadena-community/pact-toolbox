@@ -24,6 +24,7 @@ const minimalImage = {
 
 export default defineConfig({
   defaultNetwork: 'local',
+  preludes: ['kadena/marmalade'],
   networks: {
     local: createLocalNetworkConfig(),
     localChainweb: createLocalChainwebNetworkConfig(),

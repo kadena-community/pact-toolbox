@@ -10,37 +10,44 @@ export function getCmdDataOrFail<T = PactValue>(response: ICommandResult): T {
   }
 }
 
-type KdaClient = IClient | (() => IClient);
+export type KdaClient = IClient | (() => IClient);
 function getClient(client: KdaClient) {
   return typeof client === 'function' ? client() : client;
 }
+
+export async function dirtyReadOrFail<T = PactValue>(client: KdaClient, tx: IUnsignedCommand | ICommand): Promise<T> {
+  const res = await getClient(client).dirtyRead(tx);
+  return getCmdDataOrFail<T>(res);
+}
+
 export function createDirtyReadOrFail(client: KdaClient) {
-  return async <T = PactValue>(tx: IUnsignedCommand | ICommand): Promise<T> => {
-    const res = await getClient(client).dirtyRead(tx);
-    return getCmdDataOrFail<T>(res);
-  };
+  return dirtyReadOrFail.bind(null, client) as <T>(tx: IUnsignedCommand | ICommand) => Promise<T>;
+}
+
+export async function localOrFail<T = PactValue>(client: KdaClient, tx: IUnsignedCommand | ICommand): Promise<T> {
+  const res = await getClient(client).local(tx);
+  return getCmdDataOrFail<T>(res);
 }
 
 export function createLocalOrFail(client: KdaClient) {
-  return async <T = PactValue>(tx: IUnsignedCommand | ICommand): Promise<T> => {
-    const res = await getClient(client).local(tx);
-    return getCmdDataOrFail<T>(res);
-  };
+  return localOrFail.bind(null, client) as <T>(tx: IUnsignedCommand | ICommand) => Promise<T>;
+}
+
+export async function submitAndListen<T>(client: KdaClient, signedTx: IUnsignedCommand | ICommand): Promise<T> {
+  if (isSignedTransaction(signedTx)) {
+    const request = await getClient(client).submit(signedTx);
+    const response = await getClient(client).listen(request);
+    return getCmdDataOrFail<T>(response);
+  } else {
+    throw new Error('Not signed');
+  }
 }
 
 export function createSubmitAndListen(client: KdaClient) {
-  return async <T>(signedTx: IUnsignedCommand | ICommand): Promise<T> => {
-    if (isSignedTransaction(signedTx)) {
-      const request = await getClient(client).submit(signedTx);
-      const response = await getClient(client).listen(request);
-      return getCmdDataOrFail<T>(response);
-    } else {
-      throw new Error('Not signed');
-    }
-  };
+  return submitAndListen.bind(null, client) as <T>(signedTx: IUnsignedCommand | ICommand) => Promise<T>;
 }
 
-export function createClientUtils(client: () => IClient) {
+export function createKdaClientHelpers(client: KdaClient) {
   return {
     dirtyReadOrFail: createDirtyReadOrFail(client),
     localOrFail: createLocalOrFail(client),
