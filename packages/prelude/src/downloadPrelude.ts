@@ -1,11 +1,12 @@
-import type { PactToolboxRuntime } from '@pact-toolbox/runtime';
+import type { PactToolboxClient } from '@pact-toolbox/runtime';
 import { logger, writeFileAtPath } from '@pact-toolbox/utils';
 import { downloadTemplate } from 'giget';
+import { existsSync } from 'node:fs';
 import { cp, mkdir, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join } from 'pathe';
 import { resolvePreludes } from './resolvePrelude';
-import { CommonPreludeOptions, PactDependency, PactPrelude } from './types';
+import type { CommonPreludeOptions, PactDependency, PactPrelude } from './types';
 import { getBaseRepo, parseGitURI, renderTemplate, sortPreludesNames } from './utils';
 
 export function groupByBaseRepo(specs: PactDependency[]) {
@@ -39,7 +40,9 @@ export async function downloadPactDependency(dep: PactDependency, preludeDir: st
     });
     if (isSingleFile) {
       const fileName = subdir.split('/').pop() ?? dep.name;
-      await cp(join(res.dir, fileName), join(dir, dep.name), { recursive: true });
+      await cp(join(res.dir, fileName), join(dir, dep.name), {
+        recursive: true,
+      });
     }
   } catch (e) {
     throw new Error(`Failed to download ${dep.name} from ${uri}, ${e}`);
@@ -53,9 +56,9 @@ export async function downloadPactDependency(dep: PactDependency, preludeDir: st
 export async function downloadPrelude(
   prelude: PactPrelude,
   preludesDir: string,
-  runtime: PactToolboxRuntime,
-  downloaded: Set<string>,
-  allPreludes: PactPrelude[],
+  client: PactToolboxClient,
+  allPreludes: PactPrelude[] = [],
+  downloaded: Set<string> = new Set(),
 ) {
   if (downloaded.has(prelude.name)) {
     return;
@@ -70,7 +73,7 @@ export async function downloadPrelude(
       if (downloaded.has(dep)) {
         continue;
       }
-      await downloadPrelude(found, preludesDir, runtime, downloaded, allPreludes);
+      await downloadPrelude(found, preludesDir, client, allPreludes, downloaded);
     }
   }
   const preludeDir = join(preludesDir, prelude.name);
@@ -87,10 +90,12 @@ export async function downloadPrelude(
     for (const spec of specs) {
       const dir = join(preludeDir, spec.group || 'root');
       const { subdir } = parseGitURI(spec.uri);
-      await cp(join(res.dir, subdir), join(dir, spec.name), { recursive: true });
+      await cp(join(res.dir, subdir), join(dir, spec.name), {
+        recursive: true,
+      });
     }
   }
-  const installScript = await prelude.repl(runtime);
+  const installScript = await prelude.repl(client);
   await writeFileAtPath(join(preludeDir, 'install.repl'), installScript);
   downloaded.add(prelude.name);
   logger.success(`Downloaded ${prelude.name} prelude`);
@@ -104,7 +109,7 @@ export async function downloadPreludes(config: CommonPreludeOptions) {
 
   // download preludes
   for (const prelude of preludes) {
-    await downloadPrelude(prelude, preludesDir, config.runtime, downloaded, preludes);
+    await downloadPrelude(prelude, preludesDir, config.client, preludes, downloaded);
   }
 
   // write accounts repl
@@ -113,7 +118,7 @@ export async function downloadPreludes(config: CommonPreludeOptions) {
   await writeFileAtPath(
     join(preludesDir, 'tools/test-accounts.repl'),
     renderTemplate(accountsTemplate, {
-      accounts: config.runtime.network.signers ?? [],
+      accounts: config.client.network.signers ?? [],
     }),
   );
   const initTemplate = (await import('./init.handlebars')).template;
@@ -122,7 +127,23 @@ export async function downloadPreludes(config: CommonPreludeOptions) {
     join(preludesDir, 'init.repl'),
     renderTemplate(initTemplate, {
       preludes: preludeNames,
-      gasLimit: config.runtime.network.gasLimit || 1000000,
+      gasLimit: config.client.network.meta?.gasLimit || 1000000,
     }),
   );
+}
+
+export function isPreludeDownloaded(prelude: PactPrelude, preludesDir: string) {
+  const specs = Array.isArray(prelude.specs) ? prelude.specs : Object.values(prelude.specs).flat();
+  const paths = specs.map((spec) => join(preludesDir, spec.group || 'root', spec.name));
+  for (const path of paths) {
+    if (!existsSync(path)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+export async function shouldDownloadPreludes(config: CommonPreludeOptions) {
+  const { preludes, preludesDir } = await resolvePreludes(config);
+  return preludes.some((p) => !isPreludeDownloaded(p, preludesDir));
 }

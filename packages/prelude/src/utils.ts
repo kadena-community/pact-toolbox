@@ -1,6 +1,6 @@
-import { GitInfo } from 'giget';
+import type { GitInfo } from 'giget';
 import Handlebars from 'handlebars';
-import { PactDependency, PactPrelude } from './types';
+import type { PactDependency, PactPrelude } from './types';
 
 const inputRegex = /^(?<provider>[\w-.]+):(?<repo>[\w.-]+\/[\w.-]+)(?<subdir>[^#]+)?#?(?<ref>[\w./-]+)?/;
 const providerShortcuts: Record<string, string> = {

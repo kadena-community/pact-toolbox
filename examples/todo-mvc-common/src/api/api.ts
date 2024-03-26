@@ -3,14 +3,13 @@ import {
   addDefaultMeta,
   createKadenaClient,
   createKdaClientHelpers,
-  createSignWithPactToolbox,
   generateUUID,
   getSignerAccount,
 } from '@pact-toolbox/client-utils';
+import { EckoWalletProvider } from '@pact-toolbox/wallet';
 
 const getClient = createKadenaClient();
-const sign = createSignWithPactToolbox();
-
+const wallet = new EckoWalletProvider();
 const { dirtyReadOrFail, submitAndListen } = createKdaClientHelpers(getClient);
 export interface Todo {
   title: string;
@@ -36,7 +35,7 @@ export async function editTodoById(id: string, title: string) {
       senderAccount: signer.account,
     })
     .createTransaction();
-  const signedTX = await sign(tx);
+  const signedTX = await wallet.sign(tx);
   return submitAndListen(signedTX);
 }
 
@@ -48,7 +47,7 @@ export async function toggleTodoStatusById(id: string) {
       senderAccount: signer.account,
     })
     .createTransaction();
-  const signedTX = await sign(tx);
+  const signedTX = await wallet.sign(tx);
   return submitAndListen(signedTX);
 }
 
@@ -60,7 +59,7 @@ export async function deleteTodoById(id: string) {
       senderAccount: signer.account,
     })
     .createTransaction();
-  const signedTX = await sign(tx);
+  const signedTX = await wallet.sign(tx);
   return submitAndListen(signedTX);
 }
 
@@ -72,6 +71,6 @@ export async function createTodo(title: string, id: string = generateUUID()) {
       senderAccount: signer.account,
     })
     .createTransaction();
-  const signedTX = await sign(tx);
+  const signedTX = await wallet.sign(tx);
   return submitAndListen(signedTX);
 }

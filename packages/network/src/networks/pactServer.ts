@@ -1,11 +1,11 @@
-import { createPactServerConfig, type PactServerConfig, type PactServerNetworkConfig } from '@pact-toolbox/config';
-import { runBin } from '@pact-toolbox/utils';
-import { ChildProcessWithoutNullStreams } from 'child_process';
+import type { PactServerConfig, PactServerNetworkConfig } from '@pact-toolbox/config';
+import { createPactServerConfig } from '@pact-toolbox/config';
+import { findProcess, getUuid, killProcess, runBin } from '@pact-toolbox/utils';
+import type { ChildProcessWithoutNullStreams } from 'child_process';
 import { mkdir, writeFile } from 'fs/promises';
 import { rm } from 'node:fs/promises';
-import { join } from 'path';
-import { PactToolboxNetworkApi } from '../types';
-import { getUuid } from '../utils';
+import { join } from 'pathe';
+import type { ToolboxNetworkApi, ToolboxNetworkStartOptions } from '../types';
 
 export function configToYamlString(config: PactServerConfig) {
   let configString = `# This is a generated file, do not edit manually\n`;
@@ -27,9 +27,9 @@ export function configToJSONString(config: PactServerConfig) {
 }
 
 export async function writePactServerConfig(config: PactServerConfig, format: 'yaml' | 'json' = 'yaml', id: string) {
-  const toolboxDir = join(process.cwd(), '.pact-toolbox');
+  const toolboxDir = join(process.cwd(), '.kadena/toolbox/pact');
   await mkdir(toolboxDir, { recursive: true });
-  const configPath = join(toolboxDir, `pact-server-config${id}` + format);
+  const configPath = join(toolboxDir, `pact-server-config${id}${format}`);
   if (config.persistDir) {
     config.persistDir = join(config.persistDir, id);
   }
@@ -41,17 +41,29 @@ export async function writePactServerConfig(config: PactServerConfig, format: 'y
   return configPath;
 }
 
-export class PactServerNetwork implements PactToolboxNetworkApi {
+export async function isPactServerRunning(port: number | string) {
+  let p = await findProcess({ port });
+  if (!p || p.length === 0) {
+    return false;
+  }
+  if (p.some((proc) => proc.name === 'pact')) {
+    return true;
+  }
+  p = await findProcess({ name: 'pact' });
+
+  if (!p || p.length === 0) {
+    return false;
+  }
+  return true;
+}
+
+export class PactServerNetwork implements ToolboxNetworkApi {
   public id = getUuid();
   private child?: ChildProcessWithoutNullStreams;
   private configPath?: string;
   private serverConfig: Required<PactServerConfig>;
 
-  constructor(
-    private networkConfig: PactServerNetworkConfig,
-    private silent: boolean,
-    private isStateless: boolean = false,
-  ) {
+  constructor(private networkConfig: PactServerNetworkConfig) {
     this.serverConfig = createPactServerConfig(this.networkConfig?.serverConfig);
   }
 
@@ -71,10 +83,19 @@ export class PactServerNetwork implements PactToolboxNetworkApi {
     return `http://localhost:${this.getServicePort()}`;
   }
 
-  async start() {
-    this.configPath = await writePactServerConfig(this.serverConfig, 'yaml', this.isStateless ? this.id : '');
+  async start({ silent = false, isStateless = false, conflict = 'error' }: ToolboxNetworkStartOptions = {}) {
+    this.configPath = await writePactServerConfig(this.serverConfig, 'yaml', isStateless ? this.id : '');
+    const port = this.serverConfig.port;
+    if (await isPactServerRunning(port)) {
+      if (conflict === 'error') {
+        throw new Error(`Pact server is already running on port ${port}`);
+      }
+      if (conflict === 'replace') {
+        await killProcess({ port, name: 'pact' });
+      }
+    }
     this.child = await runBin('pact', ['-s', this.configPath], {
-      silent: this.silent,
+      silent,
       resolveIf: (data) => data.includes('[api] starting on port'),
     });
   }
@@ -89,9 +110,9 @@ export class PactServerNetwork implements PactToolboxNetworkApi {
     }
   }
 
-  async restart() {
+  async restart(options?: ToolboxNetworkStartOptions) {
     await this.stop();
-    await this.start();
+    await this.start(options);
   }
 
   async isOk() {
@@ -105,10 +126,9 @@ export class PactServerNetwork implements PactToolboxNetworkApi {
 
 export async function startPactServerNetwork(
   networkConfig: PactServerNetworkConfig,
-  silent: boolean = true,
-  isStateless: boolean = false,
+  startOptions?: ToolboxNetworkStartOptions,
 ) {
-  const server = new PactServerNetwork(networkConfig, silent, isStateless);
-  await server.start();
+  const server = new PactServerNetwork(networkConfig);
+  await server.start(startOptions);
   return server;
 }

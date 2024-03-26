@@ -1,4 +1,4 @@
-import type { PactToolboxRuntime } from '@pact-toolbox/runtime';
+import type { PactToolboxClient } from '@pact-toolbox/runtime';
 
 export type PactSpecDependencyRef = `$spec:${string}`;
 export interface PactDependency {
@@ -16,20 +16,20 @@ export interface PactPrelude {
    * decides if prelude should be deployed to configured networks
    * useful to avoid re-deploying preludes that are already deployed eg. kadena/chainweb on devnet, testnet, mainnet
    */
-  shouldDeploy: (runtime: PactToolboxRuntime) => Promise<boolean>;
+  shouldDeploy: (client: PactToolboxClient) => Promise<boolean>;
 
   /**
    * deploy script fro local server
    */
-  deploy(runtime: PactToolboxRuntime): Promise<void>;
+  deploy(client: PactToolboxClient): Promise<void>;
   /**
    * pact repl install script
    */
-  repl(runtime: PactToolboxRuntime): Promise<string>;
+  repl(client: PactToolboxClient): Promise<string>;
 }
 
 export interface CommonPreludeOptions {
   contractsDir: string;
-  preludes: (PactPrelude | string)[];
-  runtime: PactToolboxRuntime;
+  preludes?: (PactPrelude | string)[];
+  client: PactToolboxClient;
 }

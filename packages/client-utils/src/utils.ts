@@ -1,6 +1,14 @@
-import { IClient, ICommandResult, isSignedTransaction } from '@kadena/client';
+import {
+  IBuilder,
+  IClient,
+  ICommandResult,
+  IContinuationPayloadObject,
+  Pact,
+  isSignedTransaction,
+} from '@kadena/client';
 import { genKeyPair } from '@kadena/cryptography-utils';
 import { ICommand, IUnsignedCommand, PactValue } from '@kadena/types';
+import { addDefaultMeta } from './networkConfig';
 
 export function getCmdDataOrFail<T = PactValue>(response: ICommandResult): T {
   if (response.result.status === 'failure') {
@@ -78,6 +86,14 @@ export function pactDecimal(amount: string | number) {
   };
 }
 
-export function generateUUID() {
-  return crypto.randomUUID();
+export function execution<T extends IBuilder<any>>(command: string): T {
+  return addDefaultMeta(Pact.builder.execution(command)) as T;
+}
+
+export function continuation<
+  T extends IBuilder<{
+    payload: IContinuationPayloadObject;
+  }>,
+>(command: Parameters<typeof Pact.builder.continuation>[0]): T {
+  return addDefaultMeta(Pact.builder.continuation(command)) as T;
 }

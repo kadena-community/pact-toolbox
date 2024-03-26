@@ -1,46 +1,15 @@
-import { createEckoWalletQuicksign, createEckoWalletSign } from '@kadena/client';
-import { WalletAccount, WalletNetwork, WalletProvider, WalletSigner } from '../provider';
-
-export interface WalletRequest {
-  method: string;
-  networkId?: string;
-  data?: unknown;
-}
-
-export type WalletEvent = 'res_accountChange' | 'kda_checkStatus';
-export type AccountChangeEvent = SuccessResponse;
-export type WalletEventHandlers = {
-  res_accountChange: (event: AccountChangeEvent) => void;
-  kda_checkStatus: (event: unknown) => void;
-};
-
-export interface WalletApi {
-  isKadena: boolean;
-  request<T = unknown>(request: WalletRequest): Promise<T>;
-  on<E extends WalletEvent>(event: string, callback: WalletEventHandlers[E]): void;
-}
-
-export interface FailedResponse {
-  status: 'fail';
-  message: string;
-}
-
-export type SuccessResponse<T = {}> = {
-  status: 'success';
-  message: string;
-} & T;
-
-export type ConnectResponse =
-  | FailedResponse
-  | SuccessResponse<{
-      account: WalletSigner;
-    }>;
-
-export type RequestAccountResponse =
-  | FailedResponse
-  | SuccessResponse<{
-      wallet: WalletAccount;
-    }>;
+import {
+  createEckoWalletQuicksign,
+  createEckoWalletSign,
+} from '@kadena/client';
+import type { WalletNetwork, WalletProvider } from '../../provider';
+import type {
+  ConnectResponse,
+  RequestAccountResponse,
+  WalletApi,
+  WalletEvent,
+  WalletEventHandlers,
+} from './types';
 
 export class EckoWalletProvider implements WalletProvider {
   private api: WalletApi;

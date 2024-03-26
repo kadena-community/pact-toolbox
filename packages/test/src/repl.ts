@@ -1,6 +1,7 @@
-import { PactToolboxConfigObj, resolveConfig } from '@pact-toolbox/config';
+import type { PactToolboxConfigObj } from '@pact-toolbox/config';
+import { resolveConfig } from '@pact-toolbox/config';
 import { execAsync, logger } from '@pact-toolbox/utils';
-import { join } from 'node:path';
+import { join } from 'pathe';
 import readdir from 'tiny-readdir-glob';
 
 export async function runReplTests(config?: Required<PactToolboxConfigObj>) {

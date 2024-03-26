@@ -1,4 +1,4 @@
-import { ISignFunction, ISingleSignFunction } from '@kadena/client';
+import type { ISignFunction, ISingleSignFunction } from '@kadena/client';
 
 export interface WalletNetwork {
   explorer?: string;

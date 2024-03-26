@@ -1,27 +1,27 @@
 import {
+  accountExists,
+  createAccount,
   createKadenaClient,
   createSignWithPactToolbox,
-  getPactToolboxNetworkConfig,
+  details,
   getSignerAccount,
-  isPactToolboxInstalled,
+  getToolboxNetworkConfig,
+  isToolboxInstalled,
 } from '@pact-toolbox/client-utils';
-import { accountExists, createAccount, details } from '@pact-toolbox/coin';
-import { WalletProvider } from '../provider';
+import type { WalletProvider } from '../../provider';
 
 export class ToolboxWalletProvider implements WalletProvider {
-  private client = createKadenaClient();
+  sign = createSignWithPactToolbox();
+  quickSign = createSignWithPactToolbox();
 
-  constructor() {
+  constructor(private kdaClient = createKadenaClient()) {
     if (!this.isInstalled()) {
       throw new Error('Pact Toolbox not installed');
     }
   }
 
-  sign = createSignWithPactToolbox();
-  quickSign = createSignWithPactToolbox();
-
   isInstalled() {
-    return isPactToolboxInstalled();
+    return isToolboxInstalled();
   }
 
   async connect(networkId?: string) {
@@ -31,13 +31,13 @@ export class ToolboxWalletProvider implements WalletProvider {
     }
     const signer = getSignerAccount();
     try {
-      const account = await details(this.client, signer.account);
+      const account = await details(this.kdaClient, signer.account);
       return {
         address: account.account,
         publicKey: signer.publicKey,
       };
     } catch (e) {
-      const account = await createAccount(this.client, this.sign, signer);
+      const account = await createAccount(this.kdaClient, this.sign, signer);
       return {
         address: account.account,
         publicKey: signer.publicKey,
@@ -64,7 +64,7 @@ export class ToolboxWalletProvider implements WalletProvider {
     }
 
     const signer = await this.getSigner(networkId);
-    const d = await details(this.client, signer.address);
+    const d = await details(this.kdaClient, signer.address);
     return {
       address: d.account,
       publicKey: signer.publicKey,
@@ -74,7 +74,7 @@ export class ToolboxWalletProvider implements WalletProvider {
   }
 
   async getNetwork() {
-    const networkConfig = getPactToolboxNetworkConfig();
+    const networkConfig = getToolboxNetworkConfig();
     return {
       id: networkConfig.networkId,
       name: networkConfig.name,
@@ -89,7 +89,7 @@ export class ToolboxWalletProvider implements WalletProvider {
       const network = await this.getNetwork();
       networkId = network.networkId;
     }
-    const exist = await accountExists(this.client, getSignerAccount().account);
+    const exist = await accountExists(this.kdaClient, getSignerAccount().account);
     return !!exist;
   }
 

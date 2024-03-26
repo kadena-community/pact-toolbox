@@ -1,16 +1,19 @@
 import { existsSync } from 'node:fs';
 import { mkdir, writeFile } from 'node:fs/promises';
-import { join } from 'node:path';
+import { join } from 'pathe';
 
-export const pactFile = `(namespace 'free )
+export const pactFile = `
+(namespace 'free )
 (module hello-world G
   (defcap G () true)
   (defun say-hello(name:string)
     (format "Hello, {}!" [name])
   )
-)`;
+)
+`.trim();
 
-export const replFile = `(load "prelude/init.repl")
+export const replFile = `
+(load "prelude/init.repl")
 (begin-tx "Load hello-world module")
 (env-data {
   'hello-ks: { "keys": [], "pred": "keys-all" }
@@ -18,7 +21,7 @@ export const replFile = `(load "prelude/init.repl")
 (load "hello-world.pact")
 (expect "should say hello world!" (free.hello-world.say-hello "world") "Hello, world!")
 (commit-tx)
-`;
+`.trim();
 
 export async function createHelloWorld(contractFolder: string) {
   // check if contract folder exists

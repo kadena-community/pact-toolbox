@@ -108,14 +108,14 @@
     "build:fix": "tsx scripts/postbuild.ts"
   },
   "dependencies": {
-    "@kadena/pactjs-generator": "^1.8.1",
+    "@kadena/pactjs-generator": "^1.10.1",
     "@pact-toolbox/config": "workspace:*",
     "@pact-toolbox/network": "workspace:*",
     "@pact-toolbox/runtime": "workspace:*",
     "@pact-toolbox/utils": "workspace:*",
     "defu": "^6.1.4",
     "picomatch": "^4.0.1",
-    "unplugin": "^1.7.1"
+    "unplugin": "^1.10.0"
   },
   "peerDependencies": {
     "@nuxt/kit": "^3",
@@ -158,23 +158,23 @@
     }
   },
   "devDependencies": {
-    "@nuxt/kit": "^3.10.2",
-    "next": "^14.1.0",
-    "@nuxt/schema": "^3.10.2",
+    "@nuxt/kit": "^3.11.1",
+    "@nuxt/schema": "^3.11.1",
     "@pact-toolbox/tsconfig": "workspace:*",
-    "@types/node": "^20.11.19",
-    "@vitest/coverage-v8": "^1.3.0",
+    "@rsbuild/core": "0.4.3",
+    "@rspack/core": "^0.5.9",
+    "@types/node": "^20.11.30",
+    "@vitest/coverage-v8": "^1.4.0",
     "fast-glob": "^3.3.2",
     "lint-staged": "^15.2.2",
-    "oxlint": "^0.2.8",
-    "rollup": "^4.12.0",
+    "next": "^14.1.4",
+    "oxlint": "^0.2.14",
+    "rollup": "^4.13.0",
     "tsup": "^8.0.2",
     "tsx": "^4.7.1",
-    "typescript": "^5.3.3",
-    "vite": "^5.1.3",
-    "vitest": "^1.3.0",
-    "@rsbuild/core": "0.4.3",
-    "webpack": "^5.90.2",
-    "@rspack/core": "^0.5.4"
+    "typescript": "^5.4.3",
+    "vite": "^5.1.7",
+    "vitest": "^1.4.0",
+    "webpack": "^5.91.0"
   }
 }

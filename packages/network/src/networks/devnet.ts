@@ -1,37 +1,32 @@
-import { DevNetContainerConfig, DevNetworkConfig } from '@pact-toolbox/config';
+import type { DevNetContainerConfig, DevNetworkConfig } from '@pact-toolbox/config';
+import type { DockerContainer } from '@pact-toolbox/utils';
 import {
-  DockerContainer,
   DockerService,
   cleanUpProcess,
   didMakeBlocks,
+  getUuid,
   isChainWebAtHeight,
   isChainWebNodeOk,
   isDockerInstalled,
   pollFn,
 } from '@pact-toolbox/utils';
-import { PactToolboxNetworkApi } from '../types';
-import { getUuid } from '../utils';
+import type { ToolboxNetworkApi, ToolboxNetworkStartOptions } from '../types';
 
 export const dockerService = new DockerService();
-export class LocalDevNetNetwork implements PactToolboxNetworkApi {
+export class LocalDevNetNetwork implements ToolboxNetworkApi {
   public id = getUuid();
   private container?: DockerContainer;
-  private containerConfig: Required<DevNetContainerConfig>;
+  private containerConfig: DevNetContainerConfig;
 
-  constructor(
-    private network: DevNetworkConfig,
-    private silent: boolean,
-    private isStateless: boolean = false,
-  ) {
+  constructor(private network: DevNetworkConfig) {
     this.containerConfig = {
       port: 8080,
       image: 'kadena/devnet',
       name: 'devnet',
       tag: 'latest',
-      volume: null,
+      volume: 'kadena_devnet',
       ...this.network.containerConfig,
     };
-    this.containerConfig.name = this.isStateless ? `devnet-${this.id}` : this.containerConfig.name;
   }
 
   get image() {
@@ -43,7 +38,7 @@ export class LocalDevNetNetwork implements PactToolboxNetworkApi {
   }
 
   getServicePort() {
-    return this.containerConfig.port;
+    return this.containerConfig.port ?? 8080;
   }
 
   isOnDemandMining() {
@@ -55,7 +50,7 @@ export class LocalDevNetNetwork implements PactToolboxNetworkApi {
   }
 
   getServiceUrl(): string {
-    return `http://localhost:${this.containerConfig.port}`;
+    return `http://localhost:${this.getServicePort()}`;
   }
 
   async isOk() {
@@ -78,9 +73,10 @@ export class LocalDevNetNetwork implements PactToolboxNetworkApi {
     return dockerService.createContainer(this.containerConfig);
   }
 
-  async start() {
+  async start({ silent = false, isStateless = false, conflict = 'error' }: ToolboxNetworkStartOptions = {}) {
+    this.containerConfig.name = isStateless ? `devnet-${this.id}` : this.containerConfig.name;
     this.container = await this.prepareContainer();
-    await dockerService.startContainer(this.container, !this.silent);
+    await dockerService.startContainer(this.container, !silent);
 
     cleanUpProcess(() => this.stop());
 
@@ -120,14 +116,14 @@ export class LocalDevNetNetwork implements PactToolboxNetworkApi {
     }
   }
 
-  public async restart() {
+  public async restart(options?: ToolboxNetworkStartOptions) {
     await this.stop();
-    await this.start();
+    await this.start(options);
   }
 }
 
-export async function startDevNetNetwork(networkConfig: DevNetworkConfig, silent = true) {
-  const network = new LocalDevNetNetwork(networkConfig, silent);
-  await network.start();
+export async function startDevNetNetwork(networkConfig: DevNetworkConfig, startOptions?: ToolboxNetworkStartOptions) {
+  const network = new LocalDevNetNetwork(networkConfig);
+  await network.start(startOptions);
   return network;
 }

@@ -1,27 +1,18 @@
-import {
+import type {
+  ChainId,
   IBuilder,
   IClient,
   ICommand,
   IKeyPair,
   ITransactionDescriptor,
   IUnsignedCommand,
-  Pact,
-  createClient,
-  createSignWithKeypair,
-  isSignedTransaction,
 } from '@kadena/client';
+import { Pact, createClient, createSignWithKeypair, isSignedTransaction } from '@kadena/client';
 import { getCmdDataOrFail } from '@pact-toolbox/client-utils';
-import {
-  KeysetConfig,
-  NetworkConfig,
-  PactToolboxConfigObj,
-  createRpcUrlGetter,
-  defaultMeta,
-  getNetworkConfig,
-  isPactServerNetworkConfig,
-} from '@pact-toolbox/config';
+import type { KeysetConfig, NetworkConfig, PactToolboxConfigObj } from '@pact-toolbox/config';
+import { createRpcUrlGetter, defaultMeta, getNetworkConfig, isPactServerNetworkConfig } from '@pact-toolbox/config';
 import { readFile, stat } from 'node:fs/promises';
-import { join } from 'node:path';
+import { join } from 'pathe';
 
 export interface DeployContractParams {
   upgrade?: boolean;
@@ -34,6 +25,7 @@ export interface DeployContractParams {
   data?: Record<string, unknown>;
   caps?: string[][];
   skipSign?: boolean;
+  chainId?: ChainId;
 }
 
 export interface LocalOptions {
@@ -41,7 +33,7 @@ export interface LocalOptions {
   signatureVerification?: boolean;
 }
 
-export class PactToolboxRuntime {
+export class PactToolboxClient {
   private kdaClient: IClient;
   private networkConfig: NetworkConfig;
 
@@ -50,6 +42,12 @@ export class PactToolboxRuntime {
     network?: string,
   ) {
     this.networkConfig = getNetworkConfig(config, network);
+    this.kdaClient = createClient(createRpcUrlGetter(this.networkConfig));
+  }
+
+  setConfig(config: PactToolboxConfigObj) {
+    this.config = config;
+    this.networkConfig = getNetworkConfig(config);
     this.kdaClient = createClient(createRpcUrlGetter(this.networkConfig));
   }
 
@@ -94,11 +92,8 @@ export class PactToolboxRuntime {
       .execution(command)
       .setMeta({
         ...defaultMeta,
-        chainId: this.networkConfig.chainId,
+        ...this.networkConfig.meta,
         senderAccount: this.networkConfig.senderAccount,
-        ttl: this.networkConfig.ttl,
-        gasLimit: this.networkConfig.gasLimit,
-        gasPrice: this.networkConfig.gasPrice,
       })
       .setNetworkId(this.networkConfig.networkId) as T;
   }
@@ -171,9 +166,15 @@ export class PactToolboxRuntime {
       caps = [],
       skipSign = false,
       listen = true,
+      chainId,
     }: DeployContractParams = {},
   ) {
     const txBuilder = this.execution(code).addData('upgrade', upgrade).addData('init', init);
+
+    if (chainId) {
+      txBuilder.setMeta({ chainId });
+    }
+
     if (signer && !skipSign) {
       const signerKeys = this.getSigner(signer);
       if (!signerKeys) {
@@ -259,18 +260,5 @@ export class PactToolboxRuntime {
 
   async deployContracts(contracts: string[], params?: DeployContractParams) {
     return Promise.all(contracts.map((c) => this.deployContract(c, params)));
-  }
-
-  async runScript(script: string, args: Record<string, any> = {}) {
-    const scriptsDir = this.config.scriptsDir ?? 'scripts';
-    const scriptsPath = join(scriptsDir, script);
-    const scriptModule = await import(scriptsPath);
-    return scriptModule.default(this, args);
-  }
-
-  async reset() {
-    const res = await fetch('http://localhost:8080/restart', { method: 'POST' });
-    const data = await res.json();
-    return data;
   }
 }

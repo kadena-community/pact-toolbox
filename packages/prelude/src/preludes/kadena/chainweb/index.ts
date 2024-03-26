@@ -1,9 +1,9 @@
 import type { KeysetConfig } from '@pact-toolbox/config';
-import type { DeployContractParams, PactToolboxRuntime } from '@pact-toolbox/runtime';
+import type { DeployContractParams, PactToolboxClient } from '@pact-toolbox/runtime';
 import { logger } from '@pact-toolbox/utils';
 import { join } from 'node:path';
 import { deployPactDependency } from '../../../deployPrelude';
-import { PactDependency, PactPrelude } from '../../../types';
+import type { PactDependency, PactPrelude } from '../../../types';
 import { preludeSpec, renderTemplate } from '../../../utils';
 
 function chainWebPath(path: string) {
@@ -27,26 +27,26 @@ const chainWebSpec: Record<string, PactDependency[]> = {
 export default {
   name: 'kadena/chainweb',
   specs: chainWebSpec,
-  async shouldDeploy(runtime: PactToolboxRuntime) {
-    if (runtime.isChainwebNetwork()) {
+  async shouldDeploy(client: PactToolboxClient) {
+    if (client.isChainwebNetwork()) {
       return false;
     }
-    if (await runtime.isContractDeployed('coin')) {
+    if (await client.isContractDeployed('coin')) {
       return false;
     }
     return true;
   },
-  async repl(runtime: PactToolboxRuntime) {
-    const keys = runtime.getSigner();
+  async repl(client: PactToolboxClient) {
+    const keys = client.getSigner();
     const context = {
       publicKey: keys.publicKey,
     };
     const installTemplate = (await import('./install.handlebars')).template;
     return renderTemplate(installTemplate, context);
   },
-  async deploy(runtime: PactToolboxRuntime, params: DeployContractParams = {}) {
+  async deploy(client: PactToolboxClient, params: DeployContractParams = {}) {
     const { signer } = params;
-    const keys = runtime.getSigner(signer);
+    const keys = client.getSigner(signer);
     const rootKeysets = {
       'ns-admin-keyset': {
         keys: [keys.publicKey],
@@ -69,10 +69,10 @@ export default {
         pred: 'keys-all',
       },
     } as Record<string, KeysetConfig>;
-    const preludeDir = join(runtime.getPreludeDir(), 'kadena/chainweb');
+    const preludeDir = join(client.getPreludeDir(), 'kadena/chainweb');
     // deploy root prelude
     for (const dep of chainWebSpec.root) {
-      await deployPactDependency(dep, preludeDir, runtime, {
+      await deployPactDependency(dep, preludeDir, client, {
         ...params,
         keysets: rootKeysets,
         signer: signer,
@@ -81,10 +81,10 @@ export default {
     }
     // deploy util prelude
     for (const dep of chainWebSpec.util) {
-      await deployPactDependency(dep, preludeDir, runtime, {
+      await deployPactDependency(dep, preludeDir, client, {
         ...params,
         keysets: utilKeysets,
-        signer: signer || runtime.network.senderAccount,
+        signer: signer || client.network.senderAccount,
       });
       logger.success(`Deployed ${dep.name}`);
     }

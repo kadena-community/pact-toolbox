@@ -10,11 +10,9 @@ const main = defineCommand({
   subCommands: {
     doctor: async () => (await import('./commands/doctor')).doctorCommand,
     init: async () => (await import('./commands/init')).initCommand,
-    install: async () => (await import('./commands/install')).installCommand,
+    pact: async () => (await import('./commands/pact')).pactCommand,
     start: async () => (await import('./commands/start')).startCommand,
-    upgrade: async () => (await import('./commands/upgrade')).upgradeCommand,
     prelude: async () => (await import('./commands/prelude')).preludeCommand,
-    types: async () => (await import('./commands/types')).generateTypesCommand,
     run: async () => (await import('./commands/run')).runCommand,
     test: async () => (await import('./commands/test')).testCommand,
   },

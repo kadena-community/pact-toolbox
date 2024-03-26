@@ -16,7 +16,7 @@ export const doctorCommand = defineCommand({
         type: 'confirm',
         default: true,
       });
-      if (answer) {
+      if (answer === true) {
         await installPact(latestVersion);
       }
     }

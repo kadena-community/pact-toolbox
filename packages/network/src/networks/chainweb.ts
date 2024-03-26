@@ -1,12 +1,11 @@
 import type { ChainwebMiningClientConfig, ChainwebNodeConfig, LocalChainwebNetworkConfig } from '@pact-toolbox/config';
 import { createChainWebMiningClientConfig, createChainwebNodeConfig } from '@pact-toolbox/config';
-import { didMakeBlocks, isChainWebAtHeight, isChainWebNodeOk, pollFn, runBin } from '@pact-toolbox/utils';
-import { ChildProcessWithoutNullStreams } from 'node:child_process';
+import { didMakeBlocks, getUuid, isChainWebAtHeight, isChainWebNodeOk, pollFn, runBin } from '@pact-toolbox/utils';
+import type { ChildProcessWithoutNullStreams } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { rm } from 'node:fs/promises';
-import { join } from 'node:path';
-import { PactToolboxNetworkApi } from '../types';
-import { getUuid } from '../utils';
+import { join } from 'pathe';
+import type { ToolboxNetworkApi } from '../types';
 
 const chainwebNodeBin = 'chainweb-node';
 const chainwebMiningClientBin = 'chainweb-mining-client';
@@ -58,7 +57,7 @@ export async function startChainWebMiningClient(config: ChainwebMiningClientConf
   );
 }
 
-export class LocalChainwebNetwork implements PactToolboxNetworkApi {
+export class LocalChainwebNetwork implements ToolboxNetworkApi {
   public id = getUuid();
   private chainwebNodeProcess?: ChildProcessWithoutNullStreams;
   private miningClientProcess?: ChildProcessWithoutNullStreams;
@@ -130,7 +129,10 @@ export class LocalChainwebNetwork implements PactToolboxNetworkApi {
   async stop() {
     this.chainwebNodeProcess?.kill();
     this.miningClientProcess?.kill();
-    await rm(this.nodeConfig.databaseDirectory, { recursive: true, force: true });
+    await rm(this.nodeConfig.databaseDirectory, {
+      recursive: true,
+      force: true,
+    });
   }
 
   async restart() {

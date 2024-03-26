@@ -29,7 +29,7 @@ export const startCommand = defineCommand({
       alias: 't',
       description: 'Start a cloudflare tunnel to the network',
       required: false,
-      default: true,
+      default: false,
     },
     clipboard: {
       type: 'boolean',
@@ -44,11 +44,13 @@ export const startCommand = defineCommand({
     await versionCheckMiddleware();
     const config = await resolveConfig();
     const { network, quiet, tunnel, clipboard } = args;
-    await startLocalNetwork(config, {
+    const _network = await startLocalNetwork(config, {
       silent: quiet || tunnel,
       logAccounts: true,
       network,
       enableProxy: true,
+      conflict: 'replace',
+
       proxyOptions: {
         showURL: true,
         isProd: false,

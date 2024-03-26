@@ -7,13 +7,18 @@ export async function isChainWebNodeOk(serviceUrl: string) {
         return true;
       }
     }
-  } catch (e) {}
+  } catch (e) {
+    // swallow
+  }
   return false;
 }
 
-export async function isChainWebAtHeight(targetHeight: number, serviceUrl: string) {
+export async function isChainWebAtHeight(
+  targetHeight: number,
+  serviceUrl: string,
+) {
   try {
-    const res = await fetch(`${serviceUrl}/chainweb/0.0/fast-development/cut`);
+    const res = await fetch(`${serviceUrl}/chainweb/0.0/development/cut`);
     if (res.ok) {
       const data = (await res.json()) as { height: number };
       const height = data.height;
@@ -22,7 +27,9 @@ export async function isChainWebAtHeight(targetHeight: number, serviceUrl: strin
       }
       return false;
     }
-  } catch (e) {}
+  } catch (e) {
+    // swallow
+  }
   return false;
 }
 
@@ -31,8 +38,14 @@ export interface MakeBlocksParams {
   chainIds?: string[];
   onDemandUrl: string;
 }
-export async function makeBlocks({ count = 1, chainIds = ['0'], onDemandUrl }: MakeBlocksParams) {
-  const body = JSON.stringify(chainIds.reduce((acc, chainId) => ({ ...acc, [chainId]: count }), {}));
+export async function makeBlocks({
+  count = 1,
+  chainIds = ['0'],
+  onDemandUrl,
+}: MakeBlocksParams) {
+  const body = JSON.stringify(
+    chainIds.reduce((acc, chainId) => ({ ...acc, [chainId]: count }), {}),
+  );
   const res = await fetch(`${onDemandUrl}/make-blocks`, {
     method: 'POST',
     body: body,

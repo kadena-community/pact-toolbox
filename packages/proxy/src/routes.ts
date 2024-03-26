@@ -1,6 +1,7 @@
 import { makeBlocks } from '@pact-toolbox/utils';
-import { App, Router, eventHandler, proxyRequest } from 'h3';
-import { PactToolboxNetworkApiLike } from './types';
+import type { App, Router } from 'h3';
+import { eventHandler, proxyRequest } from 'h3';
+import type { PactToolboxNetworkApiLike } from './types';
 
 export function setupRoutes(router: Router, networkApi: PactToolboxNetworkApiLike) {
   if (networkApi.isOnDemandMining()) {

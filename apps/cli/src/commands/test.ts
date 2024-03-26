@@ -15,7 +15,7 @@ export async function runVitest({ mode = 'test', watch = false, filters = [] }: 
     testTimeout: 10000,
   });
   if (!watch) {
-    vitest?.exit();
+    await vitest?.exit();
   }
 }
 
@@ -46,7 +46,7 @@ export const testCommand = defineCommand({
     const { repl, watch } = args;
     const config = await resolveConfig();
     await runReplTests(config);
-    if (repl) {
+    if (repl === true) {
       return;
     }
     await runVitest({ watch });

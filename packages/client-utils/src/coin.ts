@@ -1,5 +1,5 @@
 import { IKeyPair, ISingleSignFunction } from '@kadena/client';
-import { KdaClient, dirtyReadOrFail, execution, generateKAccount, submitAndListen } from '@pact-toolbox/client-utils';
+import { KdaClient, dirtyReadOrFail, execution, generateKAccount, submitAndListen } from './utils';
 
 export interface CoinAccountDetails {
   balance: string;

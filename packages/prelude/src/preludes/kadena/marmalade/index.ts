@@ -1,5 +1,5 @@
-import { KeysetConfig } from '@pact-toolbox/config';
-import type { DeployContractParams, PactToolboxRuntime } from '@pact-toolbox/runtime';
+import type { KeysetConfig } from '@pact-toolbox/config';
+import type { DeployContractParams, PactToolboxClient } from '@pact-toolbox/runtime';
 import { logger } from '@pact-toolbox/utils';
 import { join } from 'node:path';
 import { deployPactDependency } from '../../../deployPrelude';
@@ -74,27 +74,27 @@ export default {
   name: 'kadena/marmalade',
   specs: marmaladeSpecs,
   requires: ['kadena/chainweb'],
-  async shouldDeploy(runtime: PactToolboxRuntime) {
+  async shouldDeploy(client: PactToolboxClient) {
     const namespaces = ['kip', 'util', 'marmalade-v2', 'marmalade-sale'];
     const contracts = ['marmalade-v2.ledger', 'marmalade-v2.util-v1'];
-    const defined = await Promise.all(namespaces.map((ns) => runtime.isNamespaceDefined(ns)));
-    const deployed = await Promise.all(contracts.map((c) => runtime.isContractDeployed(c)));
+    const defined = await Promise.all(namespaces.map((ns) => client.isNamespaceDefined(ns)));
+    const deployed = await Promise.all(contracts.map((c) => client.isContractDeployed(c)));
     return defined.some((d) => !d) || deployed.some((d) => !d);
   },
-  async repl(runtime: PactToolboxRuntime) {
-    const keys = runtime.getSigner();
+  async repl(client: PactToolboxClient) {
+    const keys = client.getSigner();
     const context = {
       publicKey: keys.publicKey,
     };
     const installTemplate = (await import('./install.handlebars')).template;
     return renderTemplate(installTemplate, context);
   },
-  async deploy(runtime: PactToolboxRuntime, params: DeployContractParams = {}) {
+  async deploy(client: PactToolboxClient, params: DeployContractParams = {}) {
     let { signer } = params;
     if (!signer) {
       signer = 'sender00';
     }
-    const keys = runtime.getSigner(signer);
+    const keys = client.getSigner(signer);
     const keysets = {
       'marmalade-admin': {
         keys: [keys.publicKey],
@@ -109,13 +109,13 @@ export default {
         pred: 'keys-all',
       },
     } as Record<string, KeysetConfig>;
-    const preludeDir = join(runtime.getPreludeDir(), 'kadena/marmalade');
+    const preludeDir = join(client.getPreludeDir(), 'kadena/marmalade');
 
     const createNsSpec = marmaladeSpecs['marmalade-ns'].find((s) => s.name.includes('ns-marmalade.pact'));
     if (!createNsSpec) {
       throw new Error('Could not find marmalade-ns/ns-marmalade.pact');
     }
-    await deployPactDependency(createNsSpec, preludeDir, runtime, {
+    await deployPactDependency(createNsSpec, preludeDir, client, {
       ...params,
       data: {
         ns: 'kip',
@@ -125,7 +125,7 @@ export default {
     });
     logger.success(`Created kip namespace`);
 
-    await deployPactDependency(createNsSpec, preludeDir, runtime, {
+    await deployPactDependency(createNsSpec, preludeDir, client, {
       ...params,
       data: {
         ns: 'util',
@@ -136,7 +136,7 @@ export default {
     logger.success(`Created util namespace`);
 
     for (const dep of marmaladeSpecs.kip) {
-      await deployPactDependency(dep, preludeDir, runtime, {
+      await deployPactDependency(dep, preludeDir, client, {
         ...params,
         data: {
           ns: 'kip',
@@ -150,7 +150,7 @@ export default {
 
     // create marmalade-v2 namespaces
     for (const dep of marmaladeSpecs['marmalade-ns']) {
-      await deployPactDependency(dep, preludeDir, runtime, {
+      await deployPactDependency(dep, preludeDir, client, {
         ...params,
         data: {
           ns: 'marmalade-v2',
@@ -170,7 +170,7 @@ export default {
 
     // create marmalade-sale namespaces
     for (const dep of marmaladeSpecs['marmalade-ns']) {
-      await deployPactDependency(dep, preludeDir, runtime, {
+      await deployPactDependency(dep, preludeDir, client, {
         ...params,
         data: {
           ns: 'marmalade-sale',
@@ -190,7 +190,7 @@ export default {
 
     // deploy  util
     for (const dep of marmaladeSpecs.util) {
-      await deployPactDependency(dep, preludeDir, runtime, {
+      await deployPactDependency(dep, preludeDir, client, {
         ...params,
         data: {
           ns: 'kip',
@@ -204,7 +204,7 @@ export default {
 
     // deploy  marmalade-v2
     for (const dep of marmaladeSpecs['marmalade-v2']) {
-      await deployPactDependency(dep, preludeDir, runtime, {
+      await deployPactDependency(dep, preludeDir, client, {
         ...params,
         data: {
           ns: 'marmalade-v2',
@@ -218,7 +218,7 @@ export default {
 
     // deploy  marmalade-sale
     for (const dep of marmaladeSpecs['marmalade-sale']) {
-      await deployPactDependency(dep, preludeDir, runtime, {
+      await deployPactDependency(dep, preludeDir, client, {
         ...params,
         data: {
           ns: 'marmalade-sale',

@@ -17,11 +17,12 @@ export interface DockerContainerConfig {
   image: string;
   tag?: string;
   port?: number | string;
-  volume?: string | null;
+  volume?: string;
 }
 
 export type DockerContainer = Docker.Container;
-export const DOCKER_SOCKET = process.env.DOCKER_SOCKET || '/var/run/docker.sock';
+export const DOCKER_SOCKET =
+  process.env.DOCKER_SOCKET || '/var/run/docker.sock';
 
 export class DockerService {
   private docker: Docker;
@@ -119,7 +120,11 @@ export class DockerService {
       ExposedPorts: { '8080/tcp': {} },
       HostConfig: {
         Binds: config.volume ? [`${config.volume}:/data`] : [],
-        PortBindings: { '8080/tcp': [{ HostPort: `${config.port || 8080}`, HostIp: '127.0.0.1' }] },
+        PortBindings: {
+          '8080/tcp': [
+            { HostPort: `${config.port || 8080}`, HostIp: '127.0.0.1' },
+          ],
+        },
         PublishAllPorts: true,
         AutoRemove: true,
       },
@@ -130,15 +135,18 @@ export class DockerService {
     // Start the container
     await container.start();
     if (attach) {
-      container.attach({ stream: true, stdout: true, stderr: true }, (err, stream) => {
-        if (err) {
-          logger.error(`Error attaching to container ${container.id}`);
-          return;
-        }
-        stream?.on('data', (chunk) => {
-          logger.log(chunk.toString());
-        });
-      });
+      container.attach(
+        { stream: true, stdout: true, stderr: true },
+        (err, stream) => {
+          if (err) {
+            logger.error(`Error attaching to container ${container.id}`);
+            return;
+          }
+          stream?.on('data', (chunk) => {
+            logger.log(chunk.toString());
+          });
+        },
+      );
     }
   }
 }

@@ -42,23 +42,24 @@
   },
   "dependencies": {
     "@pact-toolbox/utils": "workspace:*",
-    "giget": "^1.2.1",
-    "handlebars": "^4.7.8"
+    "giget": "^1.2.3",
+    "handlebars": "^4.7.8",
+    "pathe": "^1.1.2"
   },
   "peerDependencies": {
     "@pact-toolbox/runtime": "workspace:*",
     "@pact-toolbox/config": "workspace:*"
   },
   "devDependencies": {
-    "@kadena/types": "^0.6.0",
+    "@kadena/types": "^0.6.1",
     "@pact-toolbox/config": "workspace:*",
     "@pact-toolbox/runtime": "workspace:*",
     "@pact-toolbox/tsconfig": "workspace:*",
-    "@vitest/coverage-v8": "^1.3.0",
+    "@vitest/coverage-v8": "^1.4.0",
     "lint-staged": "^15.2.2",
-    "oxlint": "^0.2.8",
+    "oxlint": "^0.2.14",
     "tsup": "^8.0.2",
-    "typescript": "^5.3.3",
-    "vitest": "^1.3.0"
+    "typescript": "^5.4.3",
+    "vitest": "^1.4.0"
   }
 }

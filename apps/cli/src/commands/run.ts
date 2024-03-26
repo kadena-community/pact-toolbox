@@ -1,6 +1,6 @@
+import { runScript } from '@pact-toolbox/script';
 import { logger } from '@pact-toolbox/utils';
 import { defineCommand } from 'citty';
-import { runScript } from '..';
 
 export const runCommand = defineCommand({
   meta: {
@@ -14,6 +14,14 @@ export const runCommand = defineCommand({
       description: 'Script to run',
       required: true,
     },
+    start: {
+      type: 'boolean',
+      name: 'start',
+      alias: 's',
+      description: 'Start the network before running the script',
+      required: false,
+      default: true,
+    },
     network: {
       type: 'string',
       name: 'network',
@@ -24,8 +32,14 @@ export const runCommand = defineCommand({
     },
   },
   run: async ({ args }) => {
-    const { script, network, ...rest } = args;
+    const { script, network, start, ...rest } = args;
     logger.start(`Running script ${script} on network ${network}`);
-    await runScript(script, { network, args: rest });
+    await runScript(script, {
+      network,
+      args: rest,
+      scriptOptions: {
+        autoStartNetwork: start,
+      },
+    });
   },
 });

@@ -1,7 +1,9 @@
-import { Router, createApp, createRouter, toNodeListener } from 'h3';
-import { ListenOptions, Listener, listen } from 'listhen';
+import type { Router } from 'h3';
+import { createApp, createRouter, toNodeListener } from 'h3';
+import type { ListenOptions, Listener } from 'listhen';
+import { listen } from 'listhen';
 import { setupRoutes, setupWildCardProxy } from './routes';
-import { PactToolboxNetworkApiLike } from './types';
+import type { PactToolboxNetworkApiLike } from './types';
 
 export interface CreateProxyServerOptions extends Partial<ListenOptions> {
   port?: number | string;
@@ -47,6 +49,9 @@ export class PactToolboxProxyServer {
   }
 }
 
-export function createProxyServer(network: PactToolboxNetworkApiLike, options: CreateProxyServerOptions) {
+export function createProxyServer(
+  network: PactToolboxNetworkApiLike,
+  options: CreateProxyServerOptions,
+) {
   return new PactToolboxProxyServer(network, options);
 }

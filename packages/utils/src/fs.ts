@@ -1,7 +1,11 @@
 import { mkdir, stat, writeFile as writeFileN } from 'node:fs/promises';
-import { dirname } from 'node:path';
+import { dirname } from 'pathe';
 
-export const writeFileAtPath: typeof writeFileN = async (path, data, options) => {
+export const writeFileAtPath: typeof writeFileN = async (
+  path,
+  data,
+  options,
+) => {
   if (typeof path !== 'string') throw new Error('path must be a string');
   const exist = await stat(path)
     .then(() => true)

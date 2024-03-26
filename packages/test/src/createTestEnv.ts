@@ -1,11 +1,12 @@
-import { PactToolboxConfigObj, getNetworkConfig, resolveConfig } from '@pact-toolbox/config';
+import type { PactToolboxConfigObj } from '@pact-toolbox/config';
+import { getNetworkConfig, resolveConfig } from '@pact-toolbox/config';
 import { PactToolboxNetwork } from '@pact-toolbox/network';
-import { PactToolboxRuntime } from '@pact-toolbox/runtime';
+import { PactToolboxClient } from '@pact-toolbox/runtime';
 import { logger } from '@pact-toolbox/utils';
-import { disablePersistance, injectNetworkConfig, updatePorts } from './utils';
+import { disablePersistance, injectNetworkConfig, setupWalletsMocks, updatePorts } from './utils';
 
 export interface PactTestEnv {
-  runtime: PactToolboxRuntime;
+  client: PactToolboxClient;
   stop: () => Promise<void>;
   start: () => Promise<void>;
   restart: () => Promise<void>;
@@ -14,7 +15,7 @@ export interface PactTestEnv {
 
 export interface CreatePactTestEnvOptions {
   network?: string;
-  runtime?: PactToolboxRuntime;
+  client?: PactToolboxClient;
   configOverrides?: Partial<PactToolboxConfigObj>;
   config?: Required<PactToolboxConfigObj>;
   noPersistence?: boolean;
@@ -23,7 +24,7 @@ export interface CreatePactTestEnvOptions {
 export async function createPactTestEnv({
   network,
   noPersistence = true,
-  runtime,
+  client,
   config,
   configOverrides,
   enableProxy = true,
@@ -40,9 +41,10 @@ export async function createPactTestEnv({
   await updatePorts(networkConfig, enableProxy);
 
   injectNetworkConfig(config);
+  setupWalletsMocks();
 
-  if (!runtime) {
-    runtime = new PactToolboxRuntime(config);
+  if (!client) {
+    client = new PactToolboxClient(config);
   }
 
   if (noPersistence) {
@@ -52,7 +54,7 @@ export async function createPactTestEnv({
   }
 
   const localNetwork = new PactToolboxNetwork(config, {
-    runtime,
+    client,
     silent: true,
     logAccounts: false,
     enableProxy,
@@ -62,7 +64,7 @@ export async function createPactTestEnv({
     start: async () => localNetwork.start(),
     stop: async () => localNetwork.stop(),
     restart: async () => localNetwork.restart(),
-    runtime,
+    client,
     config,
   };
 }

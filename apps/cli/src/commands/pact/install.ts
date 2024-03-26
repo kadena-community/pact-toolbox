@@ -1,5 +1,5 @@
 import { resolveConfig } from '@pact-toolbox/config';
-import { getLatestReleaseVersion, installPact } from '@pact-toolbox/installer';
+import { installPact } from '@pact-toolbox/installer';
 import { logger } from '@pact-toolbox/utils';
 import { defineCommand } from 'citty';
 
@@ -20,18 +20,16 @@ export const installCommand = defineCommand({
       type: 'boolean',
       name: 'latest',
       description: 'force install latest pact version',
-      default: false,
+      default: true,
     },
   },
   run: async ({ args }) => {
-    let { version, latest } = args;
     const config = await resolveConfig();
-    version = version ?? config.pactVersion;
-    if (!version && latest) {
+    args.version = args.version ?? config.pactVersion;
+    if (!args.version) {
       logger.info('Pact version not specified, installing latest');
-      version = await getLatestReleaseVersion();
     }
-
+    const version = args.latest ? undefined : args.version;
     await installPact(version);
   },
 });

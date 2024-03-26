@@ -1,4 +1,4 @@
-import { ChainId, IKeyPair } from '@kadena/types';
+import type { ChainId, IKeyPair } from '@kadena/types';
 import { loadConfig } from 'c12';
 import { defaultConfig } from './defaults';
 
@@ -16,17 +16,20 @@ export interface Signer extends IKeyPair {
   account: string | `k:${string}`;
 }
 
+export interface NetworkMeta {
+  chainId: ChainId;
+  gasLimit?: number;
+  gasPrice?: number;
+  ttl?: number;
+}
 export interface CommonNetworkConfig {
+  networkId: string;
   rpcUrl: string;
   name?: string;
   senderAccount: string;
   signers: Signer[];
   keysets: Record<string, KeysetConfig>;
-  gasLimit?: number;
-  gasPrice?: number;
-  chainId?: ChainId;
-  networkId: string;
-  ttl?: number;
+  meta?: NetworkMeta;
 }
 export interface DevNetworkConfig extends CommonNetworkConfig {
   type: 'chainweb-devnet';
@@ -38,7 +41,6 @@ export interface DevNetworkConfig extends CommonNetworkConfig {
 
 export interface ChainwebMiningClientConfig {
   publicKey: string;
-  // we dont need other options for devnet
   worker: 'constant-delay' | 'on-demand';
   stratumPort: number;
   constantDelayBlockTime: number;
@@ -95,6 +97,7 @@ export type NetworkConfig =
   | PactServerNetworkConfig
   | ChainwebNetworkConfig
   | LocalChainwebNetworkConfig;
+export type NetwokConfigType = NetworkConfig['type'];
 
 export type PactExecConfigFlags =
   | 'AllowReadInLocal'
@@ -162,44 +165,52 @@ export interface PactServerConfig {
 
 export interface DevNetContainerConfig {
   port?: string | number;
-  volume?: string | null;
+  volume?: string;
   name?: string;
   image: string;
   tag?: string;
 }
-type StandardPrelude = 'kadena/chainweb' | 'kadena/marmalade';
-export interface PactToolboxConfigObj<T extends Record<string, NetworkConfig> = Record<string, NetworkConfig>> {
+
+export type StandardPrelude = 'kadena/chainweb' | 'kadena/marmalade';
+export interface PactToolboxConfigEnvOverrides<
+  T extends Record<string, NetworkConfig> = Record<string, NetworkConfig>,
+> {
+  // environment specific configurations
+  $test?: Partial<PactToolboxConfigObj<T>>;
+  $development?: Partial<PactToolboxConfigObj<T>>;
+  $production?: Partial<PactToolboxConfigObj<T>>;
+  $env?: { [key: string]: Partial<PactToolboxConfigObj<T>> };
+}
+export interface PactToolboxConfigObj<
+  T extends Record<string, NetworkConfig> = Record<string, NetworkConfig>,
+> {
   defaultNetwork: keyof T;
   networks: T;
   contractsDir?: string;
   scriptsDir?: string;
   pactVersion?: string;
-  // preludes?: (StandardPrelude | PactPrelude)[];
-  // TODO: fix circular type dependency
   preludes?: StandardPrelude[];
   downloadPreludes?: boolean;
   deployPreludes?: boolean;
 }
 
 export type PactToolboxConfig<T extends Record<string, NetworkConfig> = {}> =
-  | Partial<PactToolboxConfigObj<T>>
-  | ((network: string) => Partial<PactToolboxConfigObj<T>>);
+  | (Partial<PactToolboxConfigObj<T>> & PactToolboxConfigEnvOverrides<T>)
+  | ((
+      network: string,
+    ) => Partial<PactToolboxConfigObj<T>> & PactToolboxConfigEnvOverrides<T>);
 
 export async function resolveConfig(overrides?: Partial<PactToolboxConfigObj>) {
   const configResult = await loadConfig<PactToolboxConfigObj>({
-    name: 'pact-toolbox',
+    name: 'kadena-toolbox',
     overrides: overrides as PactToolboxConfigObj,
     defaultConfig: defaultConfig as PactToolboxConfigObj,
   });
   return configResult.config as Required<PactToolboxConfigObj>;
 }
 
-export function defineConfig<T extends Record<string, NetworkConfig> = Record<string, NetworkConfig>>(
-  config: PactToolboxConfig<T>,
-) {
+export function defineConfig<
+  T extends Record<string, NetworkConfig> = Record<string, NetworkConfig>,
+>(config: PactToolboxConfig<T>) {
   return config;
-}
-
-export function hasOnDemandMining(config: NetworkConfig): config is DevNetworkConfig | LocalChainwebNetworkConfig {
-  return 'onDemandMining' in config && !!config.onDemandMining;
 }

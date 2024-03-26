@@ -2,19 +2,47 @@ import { execAsync, logger } from '@pact-toolbox/utils';
 import { createWriteStream } from 'node:fs';
 import { chmod, mkdir } from 'node:fs/promises';
 import { arch, homedir, platform, tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { Readable } from 'stream';
-import { finished } from 'stream/promises';
+import { Readable } from 'node:stream';
+import { finished } from 'node:stream/promises';
+import { join } from 'pathe';
 import tar from 'tar';
 
 const PACT_INSTALL_DIR = join(homedir(), '.local', 'bin');
 // pact --version returns something like "pact version 4.0.0"
 const PACT_VERSION_REGEX = /(\d+)\.(\d+)(?:\.(\d+))?(-[A-Za-z0-9]+)?/;
 
-export async function getLatestReleaseVersion() {
-  const res = await fetch('https://api.github.com/repos/kadena-io/pact/releases/latest');
-  const data = await res.json();
-  return (data as any).tag_name;
+export interface GithubRelease {
+  id: number;
+  tag_name: string;
+  body: string;
+  published_at: string;
+  created_at: string;
+  prerelease: boolean;
+  draft: boolean;
+  html_url: string;
+  url: string;
+  user: {
+    login: string;
+    id: number;
+    url: string;
+  };
+  assets: {
+    name: string;
+    browser_download_url: string;
+  }[];
+}
+interface PactReleaseInfo {
+  latestRelease: GithubRelease;
+  releases: GithubRelease[];
+}
+export async function getPactReleaseInfo(): Promise<PactReleaseInfo> {
+  const res = await fetch('https://api.github.com/repos/kadena-io/pact/releases');
+  const data: GithubRelease[] = await res.json();
+  const latestRelease = data[0];
+  return {
+    latestRelease,
+    releases: data,
+  };
 }
 
 export function getDownloadUrl(version: string, binaryName: string) {
@@ -35,7 +63,7 @@ interface SystemInfo {
 export function getSystemInfo(version: string): SystemInfo {
   const p = platform();
   const a = arch();
-  version = version.replace('v', '');
+  version = normalizeVersion(version).replace('v', '');
   const info: SystemInfo = {
     platform: p,
     arch: a,
@@ -81,7 +109,11 @@ export async function downloadAndExtract(downloadUrl: string, dest: string, file
 
     // Save the file locally
     const writer = createWriteStream(path);
-    await finished(Readable.fromWeb(res.body!).pipe(writer));
+    if (!res.body) {
+      throw new Error('Response body is undefined');
+    }
+    // @ts-ignore
+    await finished(Readable.fromWeb(res.body).pipe(writer));
     await mkdir(dest, { recursive: true });
     // Extract the file
     await tar.extract({
@@ -109,6 +141,9 @@ async function getInstalledVersion() {
 }
 
 export function compareVersions(version1: string, version2: string) {
+  version1 = normalizeVersion(version1).replace('v', '');
+  version2 = normalizeVersion(version2).replace('v', '');
+
   const parts1 = version1.split('.').map(Number);
   const parts2 = version2.split('.').map(Number);
 
@@ -125,10 +160,12 @@ export function compareVersions(version1: string, version2: string) {
 }
 
 export async function checkPactVersion(version?: string) {
-  let latestVersion = await getLatestReleaseVersion();
+  const { latestRelease } = await getPactReleaseInfo();
+  const latestVersion = latestRelease.tag_name;
   if (!version) {
     version = latestVersion;
   }
+
   const installedVersion = await getInstalledVersion();
 
   const info = {
@@ -175,7 +212,25 @@ export async function checkPactVersion(version?: string) {
   };
 }
 
-export async function installPact(version: string) {
+export function normalizeVersion(version: string) {
+  return version.replace('v', '');
+}
+export async function lookupPactVersion(version: string) {
+  version = normalizeVersion(version);
+  const { releases } = await getPactReleaseInfo();
+  const release = releases.find((r) => normalizeVersion(r.tag_name).includes(version));
+  if (!release) {
+    throw new Error(`Pact version ${version} not found`);
+  }
+  return release;
+}
+
+export async function installPact(version?: string) {
+  if (!version) {
+    const { latestRelease } = await getPactReleaseInfo();
+    version = latestRelease.tag_name;
+  }
+  version = normalizeVersion(version);
   const { isInstalled, isMatching } = await checkPactVersion(version);
   if (isInstalled && isMatching) {
     logger.info(`Pact is already installed at version ${version}`);
@@ -196,8 +251,8 @@ export async function installPact(version: string) {
 }
 
 export async function isPactUpToDate() {
-  const latestVersion = await getLatestReleaseVersion();
-  const { isInstalled, isMatching } = await checkPactVersion(latestVersion);
+  const { latestRelease } = await getPactReleaseInfo();
+  const { isInstalled, isMatching } = await checkPactVersion(latestRelease.tag_name);
   return isInstalled && isMatching;
 }
 

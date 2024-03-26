@@ -36,18 +36,6 @@ export const unpluginFactory: UnpluginFactory<Options | undefined> = (options) =
         options.define['globalThis.__PACT_TOOLBOX_NETWORK_CONFIG__'] = JSON.stringify(networkConfig);
       },
     },
-    async webpack(compiler) {
-      await toolboxConfig;
-      const DefinePlugin = (await import('webpack')).DefinePlugin;
-      const networkConfig = getSerializableNetworkConfig(await toolboxConfig);
-      const define = new DefinePlugin({
-        'globalThis.__PACT_TOOLBOX_NETWORK_CONFIG__': JSON.stringify(networkConfig),
-      });
-      define.apply(compiler);
-      if (compiler.options.mode === 'development') {
-        await startToolboxNetwork({ isServe: true, isTest: false }, await toolboxConfig, options!);
-      }
-    },
     async rspack(compiler) {
       const DefinePlugin = (await import('@rspack/core')).DefinePlugin;
       const networkConfig = getSerializableNetworkConfig(await toolboxConfig);
