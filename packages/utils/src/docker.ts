@@ -21,8 +21,7 @@ export interface DockerContainerConfig {
 }
 
 export type DockerContainer = Docker.Container;
-export const DOCKER_SOCKET =
-  process.env.DOCKER_SOCKET || '/var/run/docker.sock';
+export const DOCKER_SOCKET = process.env.DOCKER_SOCKET || '/var/run/docker.sock';
 
 export class DockerService {
   private docker: Docker;
@@ -111,42 +110,39 @@ export class DockerService {
     }
   }
 
-  async createContainer(config: DockerContainerConfig) {
+  async createContainer(config: DockerContainerConfig, env: Record<string, string> = {}) {
     // Create the container
     const imageName = `${config.image}:${config.tag}`;
-    return this.docker.createContainer({
+    const container = await this.docker.createContainer({
       Image: imageName,
       name: config.name,
       ExposedPorts: { '8080/tcp': {} },
+      Env: Object.entries(env).map(([key, value]) => `${key}=${value}`),
       HostConfig: {
         Binds: config.volume ? [`${config.volume}:/data`] : [],
         PortBindings: {
-          '8080/tcp': [
-            { HostPort: `${config.port || 8080}`, HostIp: '127.0.0.1' },
-          ],
+          '8080/tcp': [{ HostPort: `${config.port || 8080}`, HostIp: '127.0.0.1' }],
         },
         PublishAllPorts: true,
         AutoRemove: true,
       },
     });
+    return container;
   }
 
   async startContainer(container: DockerContainer, attach = false) {
     // Start the container
     await container.start();
     if (attach) {
-      container.attach(
-        { stream: true, stdout: true, stderr: true },
-        (err, stream) => {
-          if (err) {
-            logger.error(`Error attaching to container ${container.id}`);
-            return;
-          }
-          stream?.on('data', (chunk) => {
-            logger.log(chunk.toString());
-          });
-        },
-      );
+      container.attach({ stream: true, stdout: true, stderr: true }, (err, stream) => {
+        if (err) {
+          logger.error(`Error attaching to container ${container.id}`);
+          return;
+        }
+        stream?.on('data', (chunk) => {
+          logger.log(chunk.toString());
+        });
+      });
     }
   }
 }

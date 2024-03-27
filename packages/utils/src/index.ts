@@ -2,7 +2,6 @@ export * from './chainwebApi';
 export * from './docker';
 export * from './fs';
 export * from './helpers';
-export * from './kdaClient';
 export * from './logger';
 export * from './port';
 export * from './process';

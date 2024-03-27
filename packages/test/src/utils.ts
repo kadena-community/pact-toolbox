@@ -1,13 +1,13 @@
-import type { NetworkConfig, PactToolboxConfigObj } from '../config';
+import type { NetworkConfig, PactToolboxConfigObj } from '@pact-toolbox/config';
 import {
   getSerializableNetworkConfig,
   isDevNetworkConfig,
   isLocalChainwebNetworkConfig,
   isLocalNetwork,
   isPactServerNetworkConfig,
-} from '../config';
-import { getRandomNetworkPorts } from '../utils';
-import { mockEckoWallet } from '../wallet';
+} from '@pact-toolbox/config';
+import { getRandomNetworkPorts } from '@pact-toolbox/utils';
+import { mockEckoWallet } from '@pact-toolbox/wallet';
 
 export function disablePersistance(network: NetworkConfig) {
   if (isPactServerNetworkConfig(network) && network.serverConfig?.persistDir) {

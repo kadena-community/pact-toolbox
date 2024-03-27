@@ -1,5 +1,5 @@
-import { NextConfig } from 'next';
-import { Options } from './core/options';
+import type { NextConfig } from 'next';
+import type { Options } from './core/options';
 import webpackPlugin from './webpack';
 
 function withPactToolbox(pluginOptions?: Options) {

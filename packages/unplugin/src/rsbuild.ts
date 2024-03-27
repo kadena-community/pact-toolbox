@@ -1,7 +1,7 @@
 import { getSerializableNetworkConfig, resolveConfig } from '@pact-toolbox/config';
 import type { RsbuildPlugin } from '@rsbuild/core';
 import { PLUGIN_NAME, startToolboxNetwork } from './core';
-import { Options } from './core/options';
+import type { Options } from './core/options';
 
 export const pluginPactToolbox = (options?: Options): RsbuildPlugin => ({
   name: PLUGIN_NAME,

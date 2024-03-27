@@ -1,4 +1,4 @@
-import type { DevNetContainerConfig, DevNetworkConfig } from '@pact-toolbox/config';
+import type { DevNetContainerConfig, DevNetMiningConfig, DevNetworkConfig } from '@pact-toolbox/config';
 import type { DockerContainer } from '@pact-toolbox/utils';
 import {
   DockerService,
@@ -12,11 +12,37 @@ import {
 } from '@pact-toolbox/utils';
 import type { ToolboxNetworkApi, ToolboxNetworkStartOptions } from '../types';
 
+export function devNetMiningConfigToEnvVars(miningConfig?: DevNetMiningConfig): Record<string, string> {
+  const envVars: Record<string, string> = {};
+
+  if (miningConfig?.batchPeriod) {
+    envVars['MINING_BATCH_PERIOD'] = miningConfig.batchPeriod.toString();
+  }
+  if (miningConfig?.confirmationCount) {
+    envVars['MINING_CONFIRMATION_COUNT'] = miningConfig.confirmationCount.toString();
+  }
+  if (miningConfig?.confirmationPeriod) {
+    envVars['MINING_CONFIRMATION_PERIOD'] = miningConfig.confirmationPeriod.toString();
+  }
+  if (miningConfig?.disableConfirmation) {
+    envVars['MINING_DISABLE_CONFIRMATION'] = miningConfig.disableConfirmation.toString();
+  }
+  if (miningConfig?.disableIdle) {
+    envVars['MINING_DISABLE_IDLE'] = miningConfig.disableIdle.toString();
+  }
+  if (miningConfig?.idlePeriod) {
+    envVars['MINING_IDLE_PERIOD'] = miningConfig.idlePeriod.toString();
+  }
+
+  return envVars;
+}
+
 export const dockerService = new DockerService();
 export class LocalDevNetNetwork implements ToolboxNetworkApi {
   public id = getUuid();
   private container?: DockerContainer;
   private containerConfig: DevNetContainerConfig;
+  private containerEnv: Record<string, string> = {};
 
   constructor(private network: DevNetworkConfig) {
     this.containerConfig = {
@@ -27,6 +53,7 @@ export class LocalDevNetNetwork implements ToolboxNetworkApi {
       volume: 'kadena_devnet',
       ...this.network.containerConfig,
     };
+    this.containerEnv = devNetMiningConfigToEnvVars(this.network.miningConfig);
   }
 
   get image() {
@@ -69,14 +96,17 @@ export class LocalDevNetNetwork implements ToolboxNetworkApi {
       await dockerService.createVolumeIfNotExists(this.volume);
     }
     await dockerService.removeContainerIfExists(this.containerConfig.name ?? 'devnet');
-
-    return dockerService.createContainer(this.containerConfig);
+    return dockerService.createContainer(this.containerConfig, this.containerEnv);
   }
 
   async start({ silent = false, isStateless = false, conflict = 'error' }: ToolboxNetworkStartOptions = {}) {
     this.containerConfig.name = isStateless ? `devnet-${this.id}` : this.containerConfig.name;
     this.container = await this.prepareContainer();
-    await dockerService.startContainer(this.container, !silent);
+    try {
+      await dockerService.startContainer(this.container, !silent);
+    } catch (e) {
+      console.error(e);
+    }
 
     cleanUpProcess(() => this.stop());
 
@@ -110,13 +140,15 @@ export class LocalDevNetNetwork implements ToolboxNetworkApi {
     }
   }
 
-  public async stop() {
+  async stop() {
+    console.log('Stopping devnet');
     if (this.container) {
       await this.container.kill();
     }
   }
 
-  public async restart(options?: ToolboxNetworkStartOptions) {
+  async restart(options?: ToolboxNetworkStartOptions) {
+    console.log('Restarting devnet');
     await this.stop();
     await this.start(options);
   }

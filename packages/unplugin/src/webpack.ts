@@ -1,8 +1,9 @@
 import { getSerializableNetworkConfig, resolveConfig } from '@pact-toolbox/config';
-import { UnpluginFactory, WebpackPluginInstance, createWebpackPlugin } from 'unplugin';
+import type { UnpluginFactory, WebpackPluginInstance } from 'unplugin';
+import { createWebpackPlugin } from 'unplugin';
 import webpack from 'webpack';
 import { PLUGIN_NAME, startToolboxNetwork } from './core';
-import { Options } from './core/options';
+import type { Options } from './core/options';
 
 const unpluginFactory: UnpluginFactory<Options | undefined> = (options) => {
   return {
@@ -15,6 +16,7 @@ const unpluginFactory: UnpluginFactory<Options | undefined> = (options) => {
         const define = new webpack.DefinePlugin({
           'globalThis.__PACT_TOOLBOX_NETWORK_CONFIG__': JSON.stringify(networkConfig),
         });
+        // @ts-ignore
         define.apply(compiler);
       });
       compiler.hooks.afterDone.tap(PLUGIN_NAME, async () => {

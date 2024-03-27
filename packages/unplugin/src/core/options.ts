@@ -1,6 +1,6 @@
-import type { PactToolboxRuntime } from '@pact-toolbox/runtime';
+import type { PactToolboxClient } from '@pact-toolbox/runtime';
 
 export interface Options {
-  onReady?: (runtime: PactToolboxRuntime) => Promise<void>;
+  onReady?: (runtime: PactToolboxClient) => Promise<void>;
   startNetwork?: boolean;
 }

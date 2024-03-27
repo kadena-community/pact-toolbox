@@ -15,9 +15,9 @@ export class ToolboxWalletProvider implements WalletProvider {
   quickSign = createSignWithPactToolbox();
 
   constructor(private kdaClient = createKadenaClient()) {
-    if (!this.isInstalled()) {
-      throw new Error('Pact Toolbox not installed');
-    }
+    // if (!this.isInstalled()) {
+    //   throw new Error('Pact Toolbox not installed');
+    // }
   }
 
   isInstalled() {

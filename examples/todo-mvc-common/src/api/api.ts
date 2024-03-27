@@ -3,12 +3,13 @@ import {
   addDefaultMeta,
   createKadenaClient,
   createKdaClientHelpers,
-  generateUUID,
   getSignerAccount,
+  getUuid,
 } from '@pact-toolbox/client-utils';
 import { EckoWalletProvider } from '@pact-toolbox/wallet';
 
 const getClient = createKadenaClient();
+// const wallet = new ToolboxWalletProvider();
 const wallet = new EckoWalletProvider();
 const { dirtyReadOrFail, submitAndListen } = createKdaClientHelpers(getClient);
 export interface Todo {
@@ -63,7 +64,7 @@ export async function deleteTodoById(id: string) {
   return submitAndListen(signedTX);
 }
 
-export async function createTodo(title: string, id: string = generateUUID()) {
+export async function createTodo(title: string, id: string = getUuid()) {
   const signer = getSignerAccount();
   const tx = addDefaultMeta(Pact.builder.execution(`(free.todos.new-todo "${id}" "${title}")`))
     .addSigner(signer.publicKey, (signFor) => [signFor('coin.GAS')])

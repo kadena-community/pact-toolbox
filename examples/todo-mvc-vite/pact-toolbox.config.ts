@@ -6,21 +6,17 @@ import {
   defineConfig,
 } from 'pact-toolbox';
 
-const onDemandImage = {
+const minimal = {
   image: 'kadena/devnet',
-  tag: 'on-demand-minimal',
-  name: 'devnet-on-demand',
+  tag: 'minimal',
+  name: 'devnet-minimal',
+  port: 8080,
 };
 
 const onDemandImageSalama = {
   image: 'salamaashoush/kdevnet',
   tag: 'on-demand',
   name: 'devnet-on-demand',
-};
-const minimalImage = {
-  image: 'salamaashoush/kdevnet',
-  tag: 'minimal',
-  name: 'devnet-minimal',
 };
 
 export default defineConfig({
@@ -30,7 +26,10 @@ export default defineConfig({
     local: createLocalNetworkConfig(),
     localChainweb: createLocalChainwebNetworkConfig(),
     devnet: createDevNetNetworkConfig({
-      containerConfig: minimalImage,
+      containerConfig: minimal,
+      miningConfig: {
+        batchPeriod: 0.05,
+      },
     }),
     devnetOnDemand: createDevNetNetworkConfig({
       containerConfig: onDemandImageSalama,

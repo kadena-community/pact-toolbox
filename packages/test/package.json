@@ -45,6 +45,7 @@
     "@pact-toolbox/network": "workspace:*",
     "@pact-toolbox/runtime": "workspace:*",
     "@pact-toolbox/utils": "workspace:*",
+    "@pact-toolbox/wallet": "workspace:*",
     "pathe": "^1.1.2",
     "tiny-readdir-glob": "^1.4.0"
   },

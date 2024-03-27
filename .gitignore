@@ -11,3 +11,7 @@ types
 *.env*
 .pnpm-store
 .npmrc
+
+pact/prelude
+.pact-toolbox
+.kadena

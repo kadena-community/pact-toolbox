@@ -1,7 +1,8 @@
-import { PactToolboxConfigObj, getNetworkConfig, isLocalNetwork } from '@pact-toolbox/config';
+import type { PactToolboxConfigObj } from '@pact-toolbox/config';
+import { getNetworkConfig, isLocalNetwork } from '@pact-toolbox/config';
 import { startLocalNetwork } from '@pact-toolbox/network';
-import { PactToolboxRuntime } from '@pact-toolbox/runtime';
-import { Options } from './options';
+import { PactToolboxClient } from '@pact-toolbox/runtime';
+import type { Options } from './options';
 
 interface StartOptions {
   isTest: boolean;
@@ -13,10 +14,10 @@ export async function startToolboxNetwork(
   { startNetwork = true, onReady }: Options = {},
 ) {
   const network = getNetworkConfig(toolboxConfig);
-  const runtime = new PactToolboxRuntime(toolboxConfig);
+  const client = new PactToolboxClient(toolboxConfig);
   if (isServe && !isTest && isLocalNetwork(network) && startNetwork) {
     await startLocalNetwork(toolboxConfig, {
-      runtime,
+      client,
       isStateless: false,
       enableProxy: true,
       logAccounts: true,
@@ -24,7 +25,7 @@ export async function startToolboxNetwork(
   }
 
   if (isServe && !isTest && onReady) {
-    await onReady(runtime);
+    await onReady(client);
   }
 }
 

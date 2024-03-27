@@ -31,12 +31,45 @@ export interface CommonNetworkConfig {
   keysets: Record<string, KeysetConfig>;
   meta?: NetworkMeta;
 }
+export interface DevNetMiningConfig {
+  /**
+   * Wait for this period, in seconds, after receiving a transaction and then mine blocks on the chain where the transaction was received. This period is used to batch transactions and avoid mining a block for each transaction. Increasing this period also makes mining more realistic compared to the public networks
+   * @default 5.0
+   */
+  batchPeriod?: number;
+  /**
+   * The number of blocks to mine faster after transactions; This makes it quicker to get a transaction confirmed.
+   * @default 5
+   */
+  confirmationCount?: number;
+  /**
+   * The period, in seconds, to wait after minting the confirmation blocks of transactions
+   * @default 5.0
+   */
+  confirmationPeriod?: number;
+  /**
+   * Disable quick mining for confirming transactions. Note that if you want to mint the blocks containing transactions only and no further confirmations, don’t disable this option and use MINING_CONFIRMATION_COUNT=1 instead.
+   * @default false
+   */
+  disableConfirmation?: boolean;
+  /**
+   * Disable periodic mining when the network is idle. Note that this is NOT RECOMMENDED for most cases, since in the absence of mining, the node’s current time will lag behind and transactions will not be accepted. Consider increasing MINING_IDLE_PERIOD instead.
+   * @default false
+   */
+  disableIdle?: boolean;
+  /**
+   * The average time, in seconds, it takes to mine blocks and advance the block height by one while the network is idle (i.e. no incoming transactions)
+   * @default 30.0
+   */
+  idlePeriod?: number;
+}
 export interface DevNetworkConfig extends CommonNetworkConfig {
   type: 'chainweb-devnet';
   autoStart?: boolean;
   onDemandMining?: boolean;
   proxyPort?: string | number;
   containerConfig?: DevNetContainerConfig;
+  miningConfig?: DevNetMiningConfig;
 }
 
 export interface ChainwebMiningClientConfig {
@@ -181,9 +214,7 @@ export interface PactToolboxConfigEnvOverrides<
   $production?: Partial<PactToolboxConfigObj<T>>;
   $env?: { [key: string]: Partial<PactToolboxConfigObj<T>> };
 }
-export interface PactToolboxConfigObj<
-  T extends Record<string, NetworkConfig> = Record<string, NetworkConfig>,
-> {
+export interface PactToolboxConfigObj<T extends Record<string, NetworkConfig> = Record<string, NetworkConfig>> {
   defaultNetwork: keyof T;
   networks: T;
   contractsDir?: string;
@@ -196,21 +227,19 @@ export interface PactToolboxConfigObj<
 
 export type PactToolboxConfig<T extends Record<string, NetworkConfig> = {}> =
   | (Partial<PactToolboxConfigObj<T>> & PactToolboxConfigEnvOverrides<T>)
-  | ((
-      network: string,
-    ) => Partial<PactToolboxConfigObj<T>> & PactToolboxConfigEnvOverrides<T>);
+  | ((network: string) => Partial<PactToolboxConfigObj<T>> & PactToolboxConfigEnvOverrides<T>);
 
 export async function resolveConfig(overrides?: Partial<PactToolboxConfigObj>) {
   const configResult = await loadConfig<PactToolboxConfigObj>({
-    name: 'kadena-toolbox',
+    name: 'pact-toolbox',
     overrides: overrides as PactToolboxConfigObj,
     defaultConfig: defaultConfig as PactToolboxConfigObj,
   });
   return configResult.config as Required<PactToolboxConfigObj>;
 }
 
-export function defineConfig<
-  T extends Record<string, NetworkConfig> = Record<string, NetworkConfig>,
->(config: PactToolboxConfig<T>) {
+export function defineConfig<T extends Record<string, NetworkConfig> = Record<string, NetworkConfig>>(
+  config: PactToolboxConfig<T>,
+) {
   return config;
 }

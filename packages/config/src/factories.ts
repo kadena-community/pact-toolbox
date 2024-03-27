@@ -9,18 +9,10 @@ import type {
   PactServerConfig,
   PactServerNetworkConfig,
 } from './config';
-import {
-  chainwebConfigDir,
-  defaultDevNetContainer,
-  defaultKeysets,
-  defaultMeta,
-  defaultSigners,
-} from './defaults';
-import { createChainwebRpcUrl, getKadenaCliNetwork } from './utils';
+import { chainwebConfigDir, defaultDevNetContainer, defaultKeysets, defaultMeta, defaultSigners } from './defaults';
+import { createChainwebRpcUrl } from './utils';
 
-export function createPactServerConfig(
-  overrides?: Partial<PactServerConfig>,
-): Required<PactServerConfig> {
+export function createPactServerConfig(overrides?: Partial<PactServerConfig>): Required<PactServerConfig> {
   const defaults = {
     port: 9091,
     logDir: '.kadena/toolbox/pact/logs',
@@ -35,9 +27,7 @@ export function createPactServerConfig(
   } as Required<PactServerConfig>;
 }
 
-export function createLocalNetworkConfig(
-  overrides?: Partial<PactServerNetworkConfig>,
-): PactServerNetworkConfig {
+export function createLocalNetworkConfig(overrides?: Partial<PactServerNetworkConfig>): PactServerNetworkConfig {
   const defaults = {
     type: 'pact-server',
     rpcUrl: 'http://localhost:{port}',
@@ -53,16 +43,10 @@ export function createLocalNetworkConfig(
   return defu(overrides ?? {}, defaults) as PactServerNetworkConfig;
 }
 
-export function createDevNetNetworkConfig(
-  overrides?: Partial<DevNetworkConfig>,
-): DevNetworkConfig {
+export function createDevNetNetworkConfig(overrides?: Partial<DevNetworkConfig>): DevNetworkConfig {
   const containerPort = overrides?.containerConfig?.port;
   const proxyPort = overrides?.proxyPort;
-  if (
-    containerPort &&
-    proxyPort &&
-    containerPort.toString() === proxyPort.toString()
-  ) {
+  if (containerPort && proxyPort && containerPort.toString() === proxyPort.toString()) {
     throw new Error(`DevNet container port must be different from proxy port`);
   }
 
@@ -74,7 +58,6 @@ export function createDevNetNetworkConfig(
     keysets: defaultKeysets,
     senderAccount: 'sender00',
     autoStart: true,
-    onDemandMining: false,
     containerConfig: defaultDevNetContainer,
     proxyPort: 8080,
     meta: defaultMeta,
@@ -97,12 +80,10 @@ export function createChainwebNodeConfig(
     clusterId: 'devnet-minimal',
     p2pMaxSessionCount: 1,
     mempoolP2pMaxSessionCount: 1,
-    knownPeerInfo:
-      'YNo8pXthYQ9RQKv1bbpQf2R5LcLYA3ppx2BL2Hf8fIM@bootstrap-node:1789',
+    knownPeerInfo: 'YNo8pXthYQ9RQKv1bbpQf2R5LcLYA3ppx2BL2Hf8fIM@bootstrap-node:1789',
     logLevel: 'info',
     enableMiningCoordination: true,
-    miningPublicKey:
-      'f89ef46927f506c70b6a58fd322450a936311dc6ac91f4ec3d8ef949608dbf1f',
+    miningPublicKey: 'f89ef46927f506c70b6a58fd322450a936311dc6ac91f4ec3d8ef949608dbf1f',
     headerStream: true,
     rosetta: false,
     allowReadsInLocal: true,
@@ -120,8 +101,7 @@ export function createChainWebMiningClientConfig(
   overrides?: Partial<ChainwebMiningClientConfig>,
 ): ChainwebMiningClientConfig {
   const defaults = {
-    publicKey:
-      'f89ef46927f506c70b6a58fd322450a936311dc6ac91f4ec3d8ef949608dbf1f',
+    publicKey: 'f89ef46927f506c70b6a58fd322450a936311dc6ac91f4ec3d8ef949608dbf1f',
     worker: 'on-demand',
     constantDelayBlockTime: 5,
     threadCount: 1,
@@ -156,9 +136,7 @@ export function createLocalChainwebNetworkConfig(
   return defu(overrides ?? {}, defaults) as LocalChainwebNetworkConfig;
 }
 
-export function createChainwebNetworkConfig(
-  overrides?: Partial<ChainwebNetworkConfig>,
-): ChainwebNetworkConfig {
+export function createChainwebNetworkConfig(overrides?: Partial<ChainwebNetworkConfig>): ChainwebNetworkConfig {
   const defaults = {
     type: 'chainweb',
     rpcUrl: createChainwebRpcUrl({
@@ -173,9 +151,7 @@ export function createChainwebNetworkConfig(
 
   return defu(overrides ?? {}, defaults) as ChainwebNetworkConfig;
 }
-export function createTestNetNetworkConfig(
-  overrides?: Partial<ChainwebNetworkConfig>,
-): ChainwebNetworkConfig {
+export function createTestNetNetworkConfig(overrides?: Partial<ChainwebNetworkConfig>): ChainwebNetworkConfig {
   const defaults = {
     type: 'chainweb',
     rpcUrl: createChainwebRpcUrl({
@@ -191,9 +167,7 @@ export function createTestNetNetworkConfig(
   return defu(overrides ?? {}, defaults) as ChainwebNetworkConfig;
 }
 
-export function createMainNetNetworkConfig(
-  overrides?: Partial<ChainwebNetworkConfig>,
-): ChainwebNetworkConfig {
+export function createMainNetNetworkConfig(overrides?: Partial<ChainwebNetworkConfig>): ChainwebNetworkConfig {
   const defaults = {
     type: 'chainweb',
     rpcUrl: createChainwebRpcUrl({
