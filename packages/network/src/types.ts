@@ -11,8 +11,8 @@ export interface ToolboxNetworkApi {
   restart: (options?: ToolboxNetworkStartOptions) => Promise<void>;
   isOk: () => Promise<boolean>;
   getServicePort: () => number | string;
-  isOnDemandMining: () => boolean;
-  getOnDemandUrl: () => string;
+  hasOnDemandMining: () => boolean;
+  getOnDemandMiningUrl: () => string;
   getServiceUrl: () => string;
   id: number | string;
 }

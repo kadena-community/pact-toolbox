@@ -71,11 +71,11 @@ export class PactServerNetwork implements ToolboxNetworkApi {
     return this.serverConfig.port;
   }
 
-  isOnDemandMining() {
+  hasOnDemandMining() {
     return false;
   }
 
-  getOnDemandUrl() {
+  getOnDemandMiningUrl() {
     return '';
   }
 

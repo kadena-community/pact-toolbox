@@ -9,7 +9,7 @@ import type {
   PactServerConfig,
   PactServerNetworkConfig,
 } from './config';
-import { chainwebConfigDir, defaultDevNetContainer, defaultKeysets, defaultMeta, defaultSigners } from './defaults';
+import { chainwebConfigDir, defaultKeysets, defaultMeta, defaultSigners, latestDevNetContainer } from './defaults';
 import { createChainwebRpcUrl } from './utils';
 
 export function createPactServerConfig(overrides?: Partial<PactServerConfig>): Required<PactServerConfig> {
@@ -31,25 +31,18 @@ export function createLocalNetworkConfig(overrides?: Partial<PactServerNetworkCo
   const defaults = {
     type: 'pact-server',
     rpcUrl: 'http://localhost:{port}',
-    networkId: 'local',
+    networkId: 'development',
     signers: defaultSigners,
     keysets: defaultKeysets,
     senderAccount: 'sender00',
     autoStart: true,
-    proxyPort: 8080,
     serverConfig: createPactServerConfig(),
     meta: defaultMeta,
-  } as PactServerNetworkConfig;
+  } satisfies PactServerNetworkConfig;
   return defu(overrides ?? {}, defaults) as PactServerNetworkConfig;
 }
 
 export function createDevNetNetworkConfig(overrides?: Partial<DevNetworkConfig>): DevNetworkConfig {
-  const containerPort = overrides?.containerConfig?.port;
-  const proxyPort = overrides?.proxyPort;
-  if (containerPort && proxyPort && containerPort.toString() === proxyPort.toString()) {
-    throw new Error(`DevNet container port must be different from proxy port`);
-  }
-
   const defaults = {
     type: 'chainweb-devnet',
     rpcUrl: createChainwebRpcUrl(),
@@ -58,10 +51,9 @@ export function createDevNetNetworkConfig(overrides?: Partial<DevNetworkConfig>)
     keysets: defaultKeysets,
     senderAccount: 'sender00',
     autoStart: true,
-    containerConfig: defaultDevNetContainer,
-    proxyPort: 8080,
+    containerConfig: latestDevNetContainer,
     meta: defaultMeta,
-  } as DevNetworkConfig;
+  } satisfies DevNetworkConfig;
   return defu(overrides ?? {}, defaults) as DevNetworkConfig;
 }
 
@@ -90,7 +82,7 @@ export function createChainwebNodeConfig(
     databaseDirectory: join(process.cwd(), '.kadena/toolbox/chainweb/db'),
     disablePow: true,
     servicePort: 1848,
-  } as ChainwebNodeConfig;
+  } satisfies ChainwebNodeConfig;
   return {
     ...defaults,
     ...overrides,
@@ -109,7 +101,7 @@ export function createChainWebMiningClientConfig(
     noTls: true,
     onDemandPort: 9090,
     stratumPort: 1917,
-  } as ChainwebMiningClientConfig;
+  } satisfies ChainwebMiningClientConfig;
   return {
     ...defaults,
     ...overrides,
@@ -129,10 +121,8 @@ export function createLocalChainwebNetworkConfig(
     autoStart: true,
     nodeConfig: createChainwebNodeConfig(),
     miningClientConfig: createChainWebMiningClientConfig(),
-    onDemandMining: true,
-    proxyPort: 8080,
     meta: defaultMeta,
-  } as LocalChainwebNetworkConfig;
+  } satisfies LocalChainwebNetworkConfig;
   return defu(overrides ?? {}, defaults) as LocalChainwebNetworkConfig;
 }
 
@@ -162,7 +152,7 @@ export function createTestNetNetworkConfig(overrides?: Partial<ChainwebNetworkCo
     keysets: {},
     senderAccount: '',
     meta: defaultMeta,
-  } as ChainwebNetworkConfig;
+  } satisfies ChainwebNetworkConfig;
 
   return defu(overrides ?? {}, defaults) as ChainwebNetworkConfig;
 }
@@ -178,7 +168,7 @@ export function createMainNetNetworkConfig(overrides?: Partial<ChainwebNetworkCo
     keysets: {},
     senderAccount: '',
     meta: defaultMeta,
-  } as ChainwebNetworkConfig;
+  } satisfies ChainwebNetworkConfig;
 
   return defu(overrides ?? {}, defaults) as ChainwebNetworkConfig;
 }

@@ -30,9 +30,7 @@ async function handleKdaRequestAccount(request: KdaRequestAccountRequest) {
 
 async function handleKdaCheckStatus(request: KdaCheckStatusRequest) {
   const isConnected = await toolboxWallet.isConnected();
-  const wallet = isConnected
-    ? await toolboxWallet.getAccountDetails(request.networkId)
-    : null;
+  const wallet = isConnected ? await toolboxWallet.getAccountDetails(request.networkId) : null;
   return {
     status: isConnected ? 'success' : 'fail',
     message: isConnected ? 'connected' : 'disconnected',
@@ -49,10 +47,7 @@ async function handleKdaDisconnect(request: KdaDisconnectRequest) {
 }
 
 async function handleKdaSign(request: KdaRequestSignRequest) {
-  const cmd = signingRequestToPactCommand(
-    request,
-    await toolboxWallet.getSigner(),
-  );
+  const cmd = signingRequestToPactCommand(request, await toolboxWallet.getSigner(request.data.signingCmd.sender));
   const signedCmd = await toolboxWallet.sign(cmd);
   return {
     status: 'success',
@@ -92,12 +87,12 @@ export function createEckoWalletMock(): WalletApi {
     on: (event: string, callback: any) => {
       console.log(event, callback);
     },
-    request: async (request: WalletRequest) => {
-      return handleWalletRequest(request);
-    },
+    // @ts-ignore
+    request: handleWalletRequest,
   };
 }
 
 export function mockEckoWallet() {
-  window.kadena = createEckoWalletMock();
+  //@ts-ignore
+  globalThis.kadena = createEckoWalletMock();
 }

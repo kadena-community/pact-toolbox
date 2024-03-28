@@ -3,7 +3,7 @@ import { getNetworkConfig, resolveConfig } from '@pact-toolbox/config';
 import { PactToolboxNetwork } from '@pact-toolbox/network';
 import { PactToolboxClient } from '@pact-toolbox/runtime';
 import { logger } from '@pact-toolbox/utils';
-import { disablePersistance, injectNetworkConfig, setupWalletsMocks, updatePorts } from './utils';
+import { disablePersistance, injectNetworkConfig, updatePorts } from './utils';
 
 export interface PactTestEnv {
   client: PactToolboxClient;
@@ -27,7 +27,6 @@ export async function createPactTestEnv({
   client,
   config,
   configOverrides,
-  enableProxy = true,
 }: CreatePactTestEnvOptions = {}): Promise<PactTestEnv> {
   logger.pauseLogs();
   if (!config) {
@@ -38,10 +37,8 @@ export async function createPactTestEnv({
     config.defaultNetwork = network;
   }
   const networkConfig = getNetworkConfig(config);
-  await updatePorts(networkConfig, enableProxy);
-
+  await updatePorts(config);
   injectNetworkConfig(config);
-  setupWalletsMocks();
 
   if (!client) {
     client = new PactToolboxClient(config);
@@ -57,7 +54,6 @@ export async function createPactTestEnv({
     client,
     silent: true,
     logAccounts: false,
-    enableProxy,
     isStateless: true,
   });
   return {

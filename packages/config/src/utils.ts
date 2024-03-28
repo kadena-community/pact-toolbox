@@ -40,18 +40,24 @@ export function isLocalNetwork(
   );
 }
 
-export function getNetworkPort(networkConfig: NetworkConfig) {
-  const defaultPort = 8080;
+export function getNetworkPort(networkConfig: NetworkConfig): string {
   if (isLocalNetwork(networkConfig)) {
-    return networkConfig.proxyPort ?? defaultPort;
+    const port = isDevNetworkConfig(networkConfig)
+      ? networkConfig.containerConfig?.port
+      : isLocalChainwebNetworkConfig(networkConfig)
+        ? networkConfig.nodeConfig?.servicePort
+        : isPactServerNetworkConfig(networkConfig)
+          ? networkConfig.serverConfig?.port
+          : undefined;
+    return port?.toString() ?? '8080';
   }
-  return defaultPort;
+  return '8080';
 }
 
 export function getNetworkRpcUrl(networkConfig: NetworkConfig) {
   const port = getNetworkPort(networkConfig);
   const rpcUrl = networkConfig.rpcUrl ?? `http://localhost:{port}`;
-  return rpcUrl.replace(/{port}/g, port.toString());
+  return rpcUrl.replace(/{port}/g, port);
 }
 
 export function createRpcUrlGetter(networkConfig: NetworkConfig): (params: GetRpcUrlParams) => string {
@@ -83,6 +89,7 @@ export function getNetworkConfig(config: PactToolboxConfigObj, network?: string)
 
 export function getSerializableNetworkConfig(config: PactToolboxConfigObj, isDev = true) {
   const network = getNetworkConfig(config);
+  const devProxyUrl = `http://localhost:${config.devProxyPort}`;
   return {
     networkId: network.networkId,
     meta: network.meta,
@@ -91,6 +98,8 @@ export function getSerializableNetworkConfig(config: PactToolboxConfigObj, isDev
     type: network.type,
     keysets: network.keysets,
     name: network.name,
+    devProxyUrl,
+    isDevProxyEnabled: config.enableDevProxy,
     ...(isDev ? { signers: network.signers } : {}),
   };
 }

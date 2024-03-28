@@ -4,12 +4,14 @@ import {
   createKadenaClient,
   createSignWithPactToolbox,
   details,
+  generateKAccounts,
   getSignerAccount,
   getToolboxNetworkConfig,
   isToolboxInstalled,
 } from '@pact-toolbox/client-utils';
 import type { WalletProvider } from '../../provider';
 
+const signers = generateKAccounts(10);
 export class ToolboxWalletProvider implements WalletProvider {
   sign = createSignWithPactToolbox();
   quickSign = createSignWithPactToolbox();
@@ -31,12 +33,14 @@ export class ToolboxWalletProvider implements WalletProvider {
     }
     const signer = getSignerAccount();
     try {
-      const account = await details(this.kdaClient, signer.account);
+      const account = await details(this.kdaClient, `k:${signer.publicKey}`);
+      console.log('account found', account);
       return {
         address: account.account,
         publicKey: signer.publicKey,
       };
     } catch (e) {
+      console.log('creating account', signer);
       const account = await createAccount(this.kdaClient, this.sign, signer);
       return {
         address: account.account,

@@ -77,11 +77,11 @@ export class LocalChainwebNetwork implements ToolboxNetworkApi {
     return this.nodeConfig.servicePort;
   }
 
-  isOnDemandMining(): boolean {
+  hasOnDemandMining(): boolean {
     return this.miningClientConfig.worker === 'on-demand';
   }
 
-  getOnDemandUrl() {
+  getOnDemandMiningUrl() {
     return `http://localhost:${this.miningClientConfig.onDemandPort}`;
   }
 
@@ -104,13 +104,13 @@ export class LocalChainwebNetwork implements ToolboxNetworkApi {
     const node = `127.0.0.1:${this.nodeConfig.servicePort}`;
     this.miningClientProcess = await startChainWebMiningClient(this.miningClientConfig, node, this.silent);
 
-    if (this.isOnDemandMining()) {
+    if (this.hasOnDemandMining()) {
       try {
         await pollFn(
           () =>
             didMakeBlocks({
               count: 5,
-              onDemandUrl: this.getOnDemandUrl(),
+              onDemandUrl: this.getOnDemandMiningUrl(),
             }),
           10000,
         );

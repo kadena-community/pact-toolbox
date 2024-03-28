@@ -3,7 +3,6 @@ import type { DockerContainer } from '@pact-toolbox/utils';
 import {
   DockerService,
   cleanUpProcess,
-  didMakeBlocks,
   getUuid,
   isChainWebAtHeight,
   isChainWebNodeOk,
@@ -68,15 +67,15 @@ export class LocalDevNetNetwork implements ToolboxNetworkApi {
     return this.containerConfig.port ?? 8080;
   }
 
-  isOnDemandMining() {
-    return !!this.network.onDemandMining;
+  hasOnDemandMining() {
+    return true;
   }
 
-  getOnDemandUrl() {
+  getOnDemandMiningUrl() {
     return `http://localhost:${this.containerConfig.port}`;
   }
 
-  getServiceUrl(): string {
+  getServiceUrl() {
     return `http://localhost:${this.getServicePort()}`;
   }
 
@@ -99,13 +98,13 @@ export class LocalDevNetNetwork implements ToolboxNetworkApi {
     return dockerService.createContainer(this.containerConfig, this.containerEnv);
   }
 
-  async start({ silent = false, isStateless = false, conflict = 'error' }: ToolboxNetworkStartOptions = {}) {
+  async start({ silent = false, isStateless = false }: ToolboxNetworkStartOptions = {}) {
     this.containerConfig.name = isStateless ? `devnet-${this.id}` : this.containerConfig.name;
     this.container = await this.prepareContainer();
     try {
       await dockerService.startContainer(this.container, !silent);
     } catch (e) {
-      console.error(e);
+      throw new Error(`Failed to start container ${this.containerConfig.name}, ${e}`);
     }
 
     cleanUpProcess(() => this.stop());
@@ -118,20 +117,20 @@ export class LocalDevNetNetwork implements ToolboxNetworkApi {
       throw new Error('DevNet did not start in time');
     }
 
-    if (this.isOnDemandMining()) {
-      try {
-        await pollFn(
-          () =>
-            didMakeBlocks({
-              count: 5,
-              onDemandUrl: this.getOnDemandUrl(),
-            }),
-          10000,
-        );
-      } catch (e) {
-        throw new Error('Could not make initial blocks for on-demand mining');
-      }
-    }
+    // if (this.hasOnDemandMining()) {
+    //   try {
+    //     await pollFn(
+    //       () =>
+    //         didMakeBlocks({
+    //           count: 5,
+    //           onDemandUrl: this.getOnDemandUrl(),
+    //         }),
+    //       10000,
+    //     );
+    //   } catch (e) {
+    //     throw new Error('Could not make initial blocks for on-demand mining');
+    //   }
+    // }
 
     try {
       await pollFn(() => isChainWebAtHeight(20, this.getServiceUrl()), 10000);
@@ -141,14 +140,15 @@ export class LocalDevNetNetwork implements ToolboxNetworkApi {
   }
 
   async stop() {
-    console.log('Stopping devnet');
     if (this.container) {
-      await this.container.kill();
+      const isRunning = (await this.container.inspect()).State.Running;
+      if (isRunning) {
+        await this.container.kill();
+      }
     }
   }
 
   async restart(options?: ToolboxNetworkStartOptions) {
-    console.log('Restarting devnet');
     await this.stop();
     await this.start(options);
   }

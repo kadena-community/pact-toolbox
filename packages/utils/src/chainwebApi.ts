@@ -13,10 +13,7 @@ export async function isChainWebNodeOk(serviceUrl: string) {
   return false;
 }
 
-export async function isChainWebAtHeight(
-  targetHeight: number,
-  serviceUrl: string,
-) {
+export async function isChainWebAtHeight(targetHeight: number, serviceUrl: string) {
   try {
     const res = await fetch(`${serviceUrl}/chainweb/0.0/development/cut`);
     if (res.ok) {
@@ -38,14 +35,8 @@ export interface MakeBlocksParams {
   chainIds?: string[];
   onDemandUrl: string;
 }
-export async function makeBlocks({
-  count = 1,
-  chainIds = ['0'],
-  onDemandUrl,
-}: MakeBlocksParams) {
-  const body = JSON.stringify(
-    chainIds.reduce((acc, chainId) => ({ ...acc, [chainId]: count }), {}),
-  );
+export async function makeBlocks({ count = 1, chainIds = ['0'], onDemandUrl }: MakeBlocksParams) {
+  const body = JSON.stringify(chainIds.reduce((acc, chainId) => ({ ...acc, [chainId]: count }), {}));
   const res = await fetch(`${onDemandUrl}/make-blocks`, {
     method: 'POST',
     body: body,

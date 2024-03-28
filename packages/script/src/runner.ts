@@ -6,7 +6,7 @@ import { PactToolboxClient } from '@pact-toolbox/runtime';
 import { logger } from '@pact-toolbox/utils';
 import defu from 'defu';
 import createJiti from 'jiti';
-import { join } from 'node:path';
+import { join } from 'pathe';
 
 export interface ToolboxScriptContext {
   client: PactToolboxClient;

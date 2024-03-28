@@ -46,7 +46,8 @@
     "@pact-toolbox/runtime": "workspace:*",
     "@pact-toolbox/utils": "workspace:*",
     "defu": "^6.1.4",
-    "jiti": "^1.21.0"
+    "jiti": "^1.21.0",
+    "pathe": "^1.1.2"
   },
   "devDependencies": {
     "@kadena/types": "^0.6.1",

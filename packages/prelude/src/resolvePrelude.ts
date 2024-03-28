@@ -1,11 +1,10 @@
-import { join } from 'node:path';
+import { isAbsolute, join } from 'pathe';
 import type { CommonPreludeOptions, PactPrelude } from './types';
 
-export async function resolvePreludes({
-  contractsDir,
-  preludes = [],
-}: CommonPreludeOptions) {
-  const preludesDir = join(process.cwd(), contractsDir as string, 'prelude');
+export async function resolvePreludes({ contractsDir, preludes = [] }: CommonPreludeOptions) {
+  const preludesDir = isAbsolute(contractsDir)
+    ? join(contractsDir as string, 'prelude')
+    : join(process.cwd(), contractsDir as string, 'prelude');
   const uniquePreludes = [...new Set(preludes)];
   const resolved: PactPrelude[] = await Promise.all(
     uniquePreludes?.map((prelude) => {

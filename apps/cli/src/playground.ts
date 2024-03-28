@@ -32,21 +32,21 @@ await bench('localPactServer', async () => {
 });
 
 // localChainweb
-await bench('localChainweb', async () => {
-  const localChainweb = await createPactTestEnv({
-    network: 'localChainweb',
-  });
-  await localChainweb.start();
-  await localChainweb.client.deployContract('hello-world.pact');
-  const signer = localChainweb.client.getSigner();
-  const tx = localChainweb.client
-    .execution('(free.hello-world.say-hello "Salama")')
-    .addSigner(signer.publicKey)
-    .createTransaction();
-  const signedTx = await localChainweb.client.sign(tx);
-  console.log(await localChainweb.client.submitAndListen(signedTx));
-  await localChainweb.stop();
-});
+// await bench('localChainweb', async () => {
+//   const localChainweb = await createPactTestEnv({
+//     network: 'localChainweb',
+//   });
+//   await localChainweb.start();
+//   await localChainweb.client.deployContract('hello-world.pact');
+//   const signer = localChainweb.client.getSigner();
+//   const tx = localChainweb.client
+//     .execution('(free.hello-world.say-hello "Salama")')
+//     .addSigner(signer.publicKey)
+//     .createTransaction();
+//   const signedTx = await localChainweb.client.sign(tx);
+//   console.log(await localChainweb.client.submitAndListen(signedTx));
+//   await localChainweb.stop();
+// });
 
 //  devnetOnDemand
 await bench('devnetOnDemand', async () => {

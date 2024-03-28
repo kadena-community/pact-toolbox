@@ -8,10 +8,9 @@ export class EckoWalletProvider implements WalletProvider {
   public quickSign = createEckoWalletQuicksign();
 
   constructor() {
-    if (!this.isInstalled()) {
-      throw new Error('EckoWallet not installed');
-    }
-    this.api = window.kadena as WalletApi;
+    // @ts-ignore
+    this.api = globalThis.kadena as WalletApi;
+    console.log('EckoWalletProvider', this.api);
   }
 
   on<E extends WalletEvent>(event: E, callback: WalletEventHandlers[E]) {
@@ -19,7 +18,7 @@ export class EckoWalletProvider implements WalletProvider {
   }
 
   isInstalled() {
-    const { kadena } = window;
+    const { kadena } = globalThis as typeof window;
     return Boolean(kadena && kadena.isKadena);
   }
 

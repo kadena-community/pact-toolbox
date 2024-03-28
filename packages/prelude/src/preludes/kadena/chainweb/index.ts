@@ -1,7 +1,7 @@
 import type { KeysetConfig } from '@pact-toolbox/config';
 import type { DeployContractParams, PactToolboxClient } from '@pact-toolbox/runtime';
 import { logger } from '@pact-toolbox/utils';
-import { join } from 'node:path';
+import { join } from 'pathe';
 import { deployPactDependency } from '../../../deployPrelude';
 import type { PactDependency, PactPrelude } from '../../../types';
 import { preludeSpec, renderTemplate } from '../../../utils';

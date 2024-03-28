@@ -20,6 +20,6 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src"],
+  "include": ["src", "../todo-mvc-common/src/api/TodoList.spec.tsx"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

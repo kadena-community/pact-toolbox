@@ -113,26 +113,37 @@ export class DockerService {
   async createContainer(config: DockerContainerConfig, env: Record<string, string> = {}) {
     // Create the container
     const imageName = `${config.image}:${config.tag}`;
-    const container = await this.docker.createContainer({
-      Image: imageName,
-      name: config.name,
-      ExposedPorts: { '8080/tcp': {} },
-      Env: Object.entries(env).map(([key, value]) => `${key}=${value}`),
-      HostConfig: {
-        Binds: config.volume ? [`${config.volume}:/data`] : [],
-        PortBindings: {
-          '8080/tcp': [{ HostPort: `${config.port || 8080}`, HostIp: '127.0.0.1' }],
+    try {
+      const container = await this.docker.createContainer({
+        Image: imageName,
+        name: config.name,
+        ExposedPorts: { '8080/tcp': {} },
+        Env: Object.entries(env).map(([key, value]) => `${key}=${value}`),
+        HostConfig: {
+          Binds: config.volume ? [`${config.volume}:/data`] : [],
+          PortBindings: {
+            '8080/tcp': [{ HostPort: `${config.port || 8080}`, HostIp: '127.0.0.1' }],
+          },
+          PublishAllPorts: true,
+          AutoRemove: true,
         },
-        PublishAllPorts: true,
-        AutoRemove: true,
-      },
-    });
-    return container;
+      });
+      return container;
+    } catch (e) {
+      logger.error(`Failed to create container ${imageName}, ${e}`);
+      throw e;
+    }
   }
 
   async startContainer(container: DockerContainer, attach = false) {
-    // Start the container
-    await container.start();
+    try {
+      // Start the container
+      await container.start();
+    } catch (e) {
+      logger.error(`Failed to start container ${container.id}, ${e}`);
+      throw e;
+    }
+
     if (attach) {
       container.attach({ stream: true, stdout: true, stderr: true }, (err, stream) => {
         if (err) {

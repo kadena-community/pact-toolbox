@@ -43,22 +43,23 @@
 
 ### List of Features
 
-- **Network Management Tools** (`@pact-toolbox/network`): Facilitate the starting and managing of various Kadena local networks (Pact server, Chainweb, Devnet, etc.).
-- **Frontend Build System Integration** (`@pact-toolbox/unplugin`): Automates environment setup, allowing developers to concentrate on DApp logic.
-- **First-Class Support for Pact Files** (`@pact-toolbox/unplugin`): Enables direct import of Pact files into frontend applications, streamlining smart contract interaction.
-- **Development Proxy Server** (`@pact-toolbox/proxy`): Supports on-demand mining in tests and provides network management functionalities.
-- **DApp Testing Utilities** (`@pact-toolbox/test`): Offers utilities to make DApp testing easier.
-- **Web/Browser Utilities** (`@pact-toolbox/client-utils`): Enhances integration with the @kadena/client.
-- **Node Runtime Utilities** (`@pact-toolbox/runtime`): Assists in deploying and interacting with networks using Node.js.
-- **Script Runner** (`@pact-toolbox/script`): Simplifies contract deployment and simulations through JS/TS scripts.
-- **Standard Contract Management** (`@pact-toolbox/prelude`): Streamlines the downloading and deployment of standard Kadena contracts.
-- **Standard Contract Interaction** (`@pact-toolbox/coin`, `@pact-toolbox/maramalade`): Provides JS/TS packages for easy interactions with standard contracts.
-- **Wallet Integration and Mocks** (`@pact-toolbox/wallet`): Provide unified wallet APIs and facilitates testing of wallet interactions.
-- **Pact Installer** (`@pact-toolbox/installer`): Eases the installation and upgrade of Pact across different systems.
-- **CLI Tools** (`@pact-toolbox/cli`): A comprehensive CLI for project initialization, Pact management, and network operation.
-- **Application Templates/Components**: Offers ready-to-use templates for common application patterns, including NFTs, gas stations, fungible tokens, and more.
-
-
+- **Network Management Tools** (`@pact-toolbox/network`): Facilitate the starting and managing of various Kadena local networks (Pact server, Devnet, etc.). (test, document)
+- **Frontend Build System Integration** (`@pact-toolbox/unplugin`): Bundler plugins to inject network configs and enables direct import of Pact files into frontend applications, streamlining smart contract interaction. (fix, test, document)
+- **Development Proxy Server** (`@pact-toolbox/proxy`): Provide development dev server api to debugs and manage running networks (repurpose).
+- **DApp Testing Utilities** (`@pact-toolbox/test`): Prepare a pact testing env for testing code that interacts with local networks  (test, document).
+- **Web/Browser Utilities** (`@pact-toolbox/client-utils`): Enhances integration with the `@kadena/client` and `@kadena/client-utils`  (wip, test, document).
+- **Node Runtime Utilities** (`@pact-toolbox/runtime`): General utils to interact with networks, eg deployment, simulations, etc (test, document).
+- **Script Runner** (`@pact-toolbox/script`): Simplifies contract deployment and simulations through JS/TS scripts (test, document).
+- **Standard Contract Management** (`@pact-toolbox/prelude`): Streamlines the downloading and deployment of standard Kadena contracts  (test, document).
+- **Wallet Integration and Mocks** (`@pact-toolbox/wallet`): Provide unified wallet APIs and mocks(proxy to toolbox signing in tests) (eckoWallet, metamask, spireKey, etc). (wip, test, document)
+- **Pact Installer** (`@pact-toolbox/installer`): Eases the installation and upgrade of Pact across different systems  (test, document).
+- **CLI Tools** (`@pact-toolbox/cli`): A comprehensive CLI for project initialization, Pact management, and network operation ,eventually will be part of kadena-cli (test, document) (test, document).
+- **Application Templates/Components**: Offers ready-to-use templates for common application patterns, including NFTs, gas stations, fungible tokens, and more. (n/a)
+  - `pact-toolbox generate gas-station`
+  - `pact-toolbox generate fungible-token`
+  - `pact-toolbox generate nft`
+- **Devtools UI** InApp devtools to help you debug transactions and manage networks from your app ui during development (similar to react-query devtools) (n/a).
+  
 ### First Milestone
 
 - Development of:
@@ -70,7 +71,6 @@
   - `@pact-toolbox/runtime`
   - `@pact-toolbox/script`
   - `@pact-toolbox/wallet` staring with ecko wallet only.
-  - `@pact-toolbox/maramalade`
   - `@pact-toolbox/installer`
 - Test coverage and Code docs.
 - Initial documentation covering setup, configuration, and basic usage.

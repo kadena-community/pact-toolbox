@@ -2,8 +2,8 @@ import { createScript } from 'pact-toolbox';
 
 export default createScript({
   autoStartNetwork: true,
-  run: async ({ runtime, args }) => {
-    const isDep = await runtime.isContractDeployed('coin');
-    const s = await runtime.deployContract('hello-world.pact', {});
+  run: async ({ client, args }) => {
+    const isDep = await client.isContractDeployed('coin');
+    const s = await client.deployContract('hello-world.pact', {});
   },
 });

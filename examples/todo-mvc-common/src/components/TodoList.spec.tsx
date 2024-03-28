@@ -21,7 +21,7 @@ describe('TodoList', async () => {
 
   beforeAll(async () => {
     await env.start();
-    await env.runtime.deployContract('todos.pact');
+    await env.client.deployContract('todos.pact');
   });
 
   afterAll(async () => {

@@ -37,7 +37,7 @@ interface PactReleaseInfo {
 }
 export async function getPactReleaseInfo(): Promise<PactReleaseInfo> {
   const res = await fetch('https://api.github.com/repos/kadena-io/pact/releases');
-  const data: GithubRelease[] = await res.json();
+  const data = (await res.json()) as GithubRelease[];
   const latestRelease = data[0];
   return {
     latestRelease,

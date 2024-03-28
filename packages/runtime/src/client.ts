@@ -12,7 +12,7 @@ import { getCmdDataOrFail } from '@pact-toolbox/client-utils';
 import type { KeysetConfig, NetworkConfig, PactToolboxConfigObj } from '@pact-toolbox/config';
 import { createRpcUrlGetter, defaultMeta, getNetworkConfig, isPactServerNetworkConfig } from '@pact-toolbox/config';
 import { readFile, stat } from 'node:fs/promises';
-import { join } from 'pathe';
+import { isAbsolute, join } from 'pathe';
 
 export interface DeployContractParams {
   upgrade?: boolean;
@@ -244,7 +244,10 @@ export class PactToolboxClient {
 
   async getContractCode(contractPath: string) {
     const contractsDir = this.config.contractsDir ?? 'pact';
-    contractPath = contractPath.startsWith(contractsDir) ? contractPath : join(contractsDir, contractPath);
+    contractPath =
+      isAbsolute(contractPath) || contractPath.startsWith(contractsDir)
+        ? contractPath
+        : join(contractsDir, contractPath);
     try {
       await stat(contractPath);
     } catch (e) {

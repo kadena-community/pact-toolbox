@@ -5,18 +5,18 @@ import { listen } from 'listhen';
 import { setupRoutes, setupWildCardProxy } from './routes';
 import type { PactToolboxNetworkApiLike } from './types';
 
-export interface CreateProxyServerOptions extends Partial<ListenOptions> {
+export interface CreateDevProxyServerOptions extends Partial<ListenOptions> {
   port?: number | string;
 }
 
-export class PactToolboxProxyServer {
+export class PactToolboxDevProxyServer {
   private app = createApp();
   private router = createRouter();
   private listener?: Listener;
 
   constructor(
     private network: PactToolboxNetworkApiLike,
-    private options: CreateProxyServerOptions,
+    private options: CreateDevProxyServerOptions,
   ) {
     setupRoutes(this.router, network);
   }
@@ -49,9 +49,6 @@ export class PactToolboxProxyServer {
   }
 }
 
-export function createProxyServer(
-  network: PactToolboxNetworkApiLike,
-  options: CreateProxyServerOptions,
-) {
-  return new PactToolboxProxyServer(network, options);
+export function createDevProxyServer(network: PactToolboxNetworkApiLike, options: CreateDevProxyServerOptions) {
+  return new PactToolboxDevProxyServer(network, options);
 }

@@ -1,39 +1,5 @@
-import {
-  createDevNetNetworkConfig,
-  createLocalChainwebNetworkConfig,
-  createLocalNetworkConfig,
-  defineConfig,
-} from '@pact-toolbox/config';
-
-const onDemandImage = {
-  image: 'kadena/devnet',
-  tag: 'on-demand-minimal',
-  name: 'devnet-on-demand',
-};
-
-const onDemandImageSalama = {
-  image: 'salamaashoush/kdevnet',
-  tag: 'on-demand',
-  name: 'devnet-on-demand',
-};
-const minimalImage = {
-  image: 'salamaashoush/kdevnet',
-  tag: 'minimal',
-  name: 'devnet-minimal',
-};
+import { defineConfig } from '@pact-toolbox/config';
 
 export default defineConfig({
-  defaultNetwork: 'local',
-  preludes: ['kadena/marmalade'],
-  networks: {
-    local: createLocalNetworkConfig(),
-    localChainweb: createLocalChainwebNetworkConfig(),
-    devnet: createDevNetNetworkConfig({
-      containerConfig: minimalImage,
-    }),
-    devnetOnDemand: createDevNetNetworkConfig({
-      containerConfig: onDemandImageSalama,
-      onDemandMining: true,
-    }),
-  },
+  extends: '../../pact-toolbox.config.ts',
 });

@@ -1,13 +1,12 @@
 import type { NetworkConfig, PactToolboxConfigObj } from '@pact-toolbox/config';
 import {
+  getNetworkConfig,
   getSerializableNetworkConfig,
   isDevNetworkConfig,
   isLocalChainwebNetworkConfig,
-  isLocalNetwork,
   isPactServerNetworkConfig,
 } from '@pact-toolbox/config';
 import { getRandomNetworkPorts } from '@pact-toolbox/utils';
-import { mockEckoWallet } from '@pact-toolbox/wallet';
 
 export function disablePersistance(network: NetworkConfig) {
   if (isPactServerNetworkConfig(network) && network.serverConfig?.persistDir) {
@@ -41,15 +40,10 @@ export function injectNetworkConfig(config: PactToolboxConfigObj) {
   (globalThis as any).__PACT_TOOLBOX_NETWORK_CONFIG__ = network;
 }
 
-export function setupWalletsMocks() {
-  mockEckoWallet();
-}
-export async function updatePorts(network: NetworkConfig, enableProxy: boolean = false) {
+export async function updatePorts(config: PactToolboxConfigObj) {
   const ports = await getRandomNetworkPorts();
-  if (isLocalNetwork(network)) {
-    network.proxyPort = enableProxy ? ports.proxy : ports.service;
-  }
-
+  config.devProxyPort = config.enableDevProxy ? ports.proxy : ports.service;
+  const network = getNetworkConfig(config);
   if (isPactServerNetworkConfig(network)) {
     if (network.serverConfig) {
       network.serverConfig.port = ports.service;

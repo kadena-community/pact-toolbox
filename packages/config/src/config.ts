@@ -63,11 +63,8 @@ export interface DevNetMiningConfig {
    */
   idlePeriod?: number;
 }
-export interface DevNetworkConfig extends CommonNetworkConfig {
+export interface DevNetworkConfig extends CommonNetworkConfig, LocalNetworkCommonConfig {
   type: 'chainweb-devnet';
-  autoStart?: boolean;
-  onDemandMining?: boolean;
-  proxyPort?: string | number;
   containerConfig?: DevNetContainerConfig;
   miningConfig?: DevNetMiningConfig;
 }
@@ -106,19 +103,19 @@ export interface ChainwebNodeConfig {
   servicePort: number;
 }
 
-export interface LocalChainwebNetworkConfig extends CommonNetworkConfig {
-  type: 'chainweb-local';
+export interface LocalNetworkCommonConfig {
   autoStart?: boolean;
-  proxyPort?: string | number;
+}
+
+export interface LocalChainwebNetworkConfig extends CommonNetworkConfig, LocalNetworkCommonConfig {
+  type: 'chainweb-local';
   miningClientConfig?: ChainwebMiningClientConfig;
   nodeConfig?: ChainwebNodeConfig;
 }
 
-export interface PactServerNetworkConfig extends CommonNetworkConfig {
+export interface PactServerNetworkConfig extends CommonNetworkConfig, LocalNetworkCommonConfig {
   type: 'pact-server';
-  autoStart?: boolean;
   serverConfig?: PactServerConfig;
-  proxyPort?: string | number;
 }
 
 export interface ChainwebNetworkConfig extends CommonNetworkConfig {
@@ -208,6 +205,7 @@ export type StandardPrelude = 'kadena/chainweb' | 'kadena/marmalade';
 export interface PactToolboxConfigEnvOverrides<
   T extends Record<string, NetworkConfig> = Record<string, NetworkConfig>,
 > {
+  extends?: string | string[];
   // environment specific configurations
   $test?: Partial<PactToolboxConfigObj<T>>;
   $development?: Partial<PactToolboxConfigObj<T>>;
@@ -223,6 +221,8 @@ export interface PactToolboxConfigObj<T extends Record<string, NetworkConfig> = 
   preludes?: StandardPrelude[];
   downloadPreludes?: boolean;
   deployPreludes?: boolean;
+  devProxyPort?: string | number;
+  enableDevProxy?: boolean;
 }
 
 export type PactToolboxConfig<T extends Record<string, NetworkConfig> = {}> =

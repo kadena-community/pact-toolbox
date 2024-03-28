@@ -1,19 +1,19 @@
-import { generateUUID } from '@pact-toolbox/client-utils';
-import { createPactTestEnv } from 'pact-toolbox';
+import { createPactTestEnv, getUuid } from 'pact-toolbox';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createTodo, deleteTodoById, editTodoById, readTodoById, readTodos, toggleTodoStatusById } from './api';
 
 describe('todos api devnetOnDemand', async () => {
-  let id = generateUUID();
+  let id = getUuid();
   let title = 'Learn pact';
 
   const env = await createPactTestEnv({
-    network: 'localChainweb',
+    network: 'devnetOnDemand',
   });
 
   beforeAll(async () => {
     await env.start();
-    await env.runtime.deployContract('todos.pact');
+    console.log('deploying contract');
+    await env.client.deployContract('todos.pact');
   });
 
   afterAll(async () => {
