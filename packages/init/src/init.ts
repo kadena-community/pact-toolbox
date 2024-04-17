@@ -1,5 +1,7 @@
 import { logger } from '@pact-toolbox/utils';
 import { exec } from 'child_process';
+import { loadFile } from 'magicast';
+import { addVitePlugin } from 'magicast/helpers';
 import { writeFile } from 'node:fs/promises';
 import { addDependency, detectPackageManager } from 'nypm';
 import { join } from 'pathe';
@@ -15,41 +17,60 @@ import { createHelloWorld } from './hello';
 
 export function defaultConfigTemplate(contractDir: string) {
   return `{
+    contractsDir: '${contractDir}',
     defaultNetwork: 'local',
-    pact: {
-      contractsDir: '${contractDir}',
-    },
     networks: {
-      local: createLocalNetworkConfig({
-        serverConfig: {
-          port: 9001,
+      local: createLocalNetworkConfig(),
+      devnet: createDevNetNetworkConfig(),
+      devnetOnDemand: createDevNetNetworkConfig({
+        containerConfig: minimalDevNetContainer,
+        miningConfig: {
+          batchPeriod: 0.05,
         },
       }),
-      devnet: createDevNetNetworkConfig({
-        containerConfig: {
-          image: 'kadena/devnet',
-          tag: 'latest',
-          name: 'devnet',
-        },
-      }),
+      testnet: createTestNetNetworkConfig(),
+      mainnet: createMainNetNetworkConfig(),
     },
   }`;
 }
 
 export function generateCJSConfigTemplate(contractDir: string) {
-  return `const {  createDevNetNetworkConfig, createLocalNetworkConfig, defineConfig } = require('pact-toolbox');
+  return `const {
+  createDevNetNetworkConfig,
+  createLocalNetworkConfig,
+  createMainNetNetworkConfig,
+  createTestNetNetworkConfig,
+  defineConfig,
+  minimalDevNetContainer,
+} = require('pact-toolbox');
 
 module.exports = defineConfig(${defaultConfigTemplate(contractDir)});`;
 }
 
 export function generateESMConfigTemplate(contractDir: string) {
-  return `import { createDevNetNetworkConfig, createLocalNetworkConfig, defineConfig } from 'pact-toolbox';
+  return `import {
+  createDevNetNetworkConfig,
+  createLocalNetworkConfig,
+  createMainNetNetworkConfig,
+  createTestNetNetworkConfig,
+  defineConfig,
+  minimalDevNetContainer,
+} from 'pact-toolbox';
 
 export default defineConfig(${defaultConfigTemplate(contractDir)});`;
 }
 
 export function generateConfigTemplate(contractDir: string, isCJS: boolean) {
   return isCJS ? generateCJSConfigTemplate(contractDir) : generateESMConfigTemplate(contractDir);
+}
+
+export async function updateViteConfig() {
+  const viteConfig = await loadFile('vite.config.ts');
+  addVitePlugin(viteConfig, {
+    constructor: 'pactVitePlugin',
+    from: '@pact-toolbox/unplugin/vite',
+    options: {},
+  });
 }
 
 export const NPM_SCRIPTS = {
@@ -74,8 +95,8 @@ export async function initToolbox(args: InitToolboxArgs) {
   const isTypescript = !!tsConfig;
   const template = generateConfigTemplate(args.contractsDir, isCJS);
 
-  const deps = ['@kadena/client', '@kadena/client-utils', '@pact-toolbox/client-utils'];
-  const devDeps = ['pact-toolbox'];
+  const deps = ['@kadena/client', '@pact-toolbox/client-utils'];
+  const devDeps = ['pact-toolbox', '@pact-toolbox/unplugin'];
   logger.start(`Installing dependencies ${deps.join(', ')} ...`);
   const packageManager = await detectPackageManager(args.cwd, {
     includeParentDirs: true,
@@ -123,6 +144,7 @@ export async function initToolbox(args: InitToolboxArgs) {
       `Failed to add ".kadena/pactjs-generated" to the types array in tsconfig.json at ${tsConfigPath}, please add manually`,
     );
   }
+
   await createHelloWorld(join(args.cwd, args.contractsDir));
 
   // fetch preludes

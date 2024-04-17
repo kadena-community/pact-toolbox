@@ -1,6 +1,6 @@
 {
   "name": "@pact-toolbox/unplugin",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/salamaashoush/pact-toolbox.git"
@@ -13,6 +13,9 @@
   "license": "MIT",
   "type": "module",
   "private": false,
+  "publishConfig": {
+    "access": "public"
+  },
   "keywords": [
     "unplugin",
     "vite",

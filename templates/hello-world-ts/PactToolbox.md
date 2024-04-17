@@ -4,13 +4,13 @@ This guide will help you to get started with the Pact toolbox in a few minutes.
 
 ## Create a new project
 
-### Step 1: Create a vite project (typescript is recommended).
+### Step 1: Create a vite project (typescript is recommended)
 
 ```bash
 npm create vite@latest hello-world-dapp -- --template react-swc-ts
 ```
 
-### Step 2: Initialize a Pact toolbox project.
+### Step 2: Initialize a Pact toolbox project
 
 ```bash
 npx pact-toolbox init
@@ -40,7 +40,7 @@ export default defineConfig({
 });
 ```
 
-### Step 4: Make sure you have pact installed.
+### Step 4: Make sure you have pact installed
 
 - to check your system
 
@@ -54,7 +54,7 @@ npx pact-toolbox doctor
 npx pact-toolbox pact install 4.10
 ```
 
-### Step 5: Start vite dev server.
+### Step 5: Start vite dev server
 
 ```bash
 npm run dev

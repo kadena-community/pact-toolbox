@@ -1,6 +1,6 @@
 {
   "name": "@pact-toolbox/init",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "repository": "salamaashoush/pact-toolbox",
   "author": "Salama Ashoush <salamaashoush@gmail.com>",
   "license": "MIT",
@@ -44,7 +44,8 @@
     "@pact-toolbox/utils": "workspace:*",
     "nypm": "^0.3.8",
     "pathe": "^1.1.2",
-    "pkg-types": "^1.0.3"
+    "pkg-types": "^1.0.3",
+    "magicast": "^0.3.4"
   },
   "devDependencies": {
     "@kadena/types": "^0.6.1",
