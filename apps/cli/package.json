@@ -1,6 +1,6 @@
 {
   "name": "pact-toolbox",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "A tool to help you build, test and deploy your Pact smart contracts",
   "keywords": [
     "pact",
@@ -16,6 +16,9 @@
   "bin": {
     "pact-toolbox": "./src/cli.ts"
   },
+  "files": [
+    "dist"
+  ],
   "publishConfig": {
     "access": "public",
     "exports": {
@@ -34,9 +37,6 @@
     "main": "./dist/index.cjs",
     "module": "./dist/index.js",
     "types": "./dist/index.d.ts",
-    "files": [
-      "dist"
-    ],
     "bin": {
       "pact-toolbox": "./bin/pact-toolbox.mjs"
     }

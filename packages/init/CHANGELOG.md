@@ -1,5 +1,13 @@
 # @pact-toolbox/init
 
+## 0.0.4
+
+### Patch Changes
+
+- Fix npm include files
+- Updated dependencies
+  - @pact-toolbox/utils@0.0.3
+
 ## 0.0.3
 
 ### Patch Changes

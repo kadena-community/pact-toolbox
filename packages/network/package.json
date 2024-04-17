@@ -1,12 +1,16 @@
 {
   "name": "@pact-toolbox/network",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "repository": "salamaashoush/pact-toolbox",
   "author": "Salama Ashoush <salamaashoush@gmail.com>",
   "license": "MIT",
   "type": "module",
   "private": false,
   "main": "./src/index.ts",
+  "files": [
+    "dist",
+    "configs"
+  ],
   "publishConfig": {
     "access": "public",
     "exports": {
@@ -24,11 +28,7 @@
     },
     "main": "./dist/index.cjs",
     "module": "./dist/index.js",
-    "types": "./dist/index.d.ts",
-    "files": [
-      "dist",
-      "configs"
-    ]
+    "types": "./dist/index.d.ts"
   },
   "scripts": {
     "build": "tsup",

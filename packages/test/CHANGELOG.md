@@ -1,5 +1,17 @@
 # @pact-toolbox/test
 
+## 0.0.3
+
+### Patch Changes
+
+- Fix npm include files
+- Updated dependencies
+  - @pact-toolbox/network@0.0.3
+  - @pact-toolbox/runtime@0.0.3
+  - @pact-toolbox/config@0.0.3
+  - @pact-toolbox/wallet@0.0.3
+  - @pact-toolbox/utils@0.0.3
+
 ## 0.0.2
 
 ### Patch Changes
