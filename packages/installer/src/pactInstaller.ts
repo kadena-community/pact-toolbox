@@ -1,16 +1,14 @@
-import { execAsync, logger } from '@pact-toolbox/utils';
+import { compareVersions, getInstalledPactVersion, logger, normalizeVersion } from '@pact-toolbox/utils';
 import { createWriteStream } from 'node:fs';
 import { chmod, mkdir } from 'node:fs/promises';
-import { arch, homedir, platform, tmpdir } from 'node:os';
+import { homedir, tmpdir } from 'node:os';
 import { Readable } from 'node:stream';
 import { finished } from 'node:stream/promises';
 import { join } from 'pathe';
-import tar from 'tar';
+import { extract } from 'tar/extract';
 
 const PACT_INSTALL_DIR = join(homedir(), '.local', 'bin');
 // pact --version returns something like "pact version 4.0.0"
-const PACT_VERSION_REGEX = /(\d+)\.(\d+)(?:\.(\d+))?(-[A-Za-z0-9]+)?/;
-
 export interface GithubRelease {
   id: number;
   tag_name: string;
@@ -31,78 +29,98 @@ export interface GithubRelease {
     browser_download_url: string;
   }[];
 }
-interface PactReleaseInfo {
-  latestRelease: GithubRelease;
+export interface PactReleaseInfo {
+  latestStable: GithubRelease;
+  latestNightly: GithubRelease;
   releases: GithubRelease[];
 }
-export async function getPactReleaseInfo(): Promise<PactReleaseInfo> {
-  const res = await fetch('https://api.github.com/repos/kadena-io/pact/releases');
-  const data = (await res.json()) as GithubRelease[];
-  const latestRelease = data[0];
-  return {
-    latestRelease,
-    releases: data,
-  };
+
+export const PACT4X_REPO = 'kadena-io/pact';
+export const PACT5X_REPO = 'kadena-io/pact-5';
+let pactReleases: GithubRelease[] | undefined;
+
+export async function findLatestRelease(nightly = false): Promise<GithubRelease> {
+  if (!pactReleases) {
+    pactReleases = await getPactGithubReleases(nightly ? PACT5X_REPO : PACT4X_REPO);
+  }
+  return nightly
+    ? pactReleases.filter((r) => r.tag_name.includes('development')).pop() || pactReleases[0]
+    : pactReleases
+        .filter((r) => !r.draft && !r.prerelease)
+        .sort((a, b) => compareVersions(a.tag_name, b.tag_name))
+        .pop() || pactReleases[0];
 }
 
-export function getDownloadUrl(version: string, binaryName: string) {
-  version = version.replace('v', '');
-  return `https://github.com/kadena-io/pact/releases/download/v${version}/${binaryName}`;
+export async function getPactGithubReleases(repo = PACT4X_REPO): Promise<GithubRelease[]> {
+  if (Array.isArray(pactReleases)) {
+    return pactReleases;
+  }
+  const res = await fetch(`https://api.github.com/repos/${repo}/releases`);
+  const data = (await res.json()) as GithubRelease[];
+  pactReleases = data;
+  return data;
+}
+
+export async function getPactLatestGithubRelease(repo = PACT4X_REPO): Promise<GithubRelease> {
+  const res = await fetch(`https://api.github.com/repos/${repo}/releases/latest`);
+  return (await res.json()) as GithubRelease;
+}
+
+export async function getDownloadUrl(releases: GithubRelease[], version?: string, nightly = false) {
+  const latest = await findLatestRelease(nightly);
+  const release =
+    !version || normalizeVersion(latest.tag_name) === version
+      ? latest
+      : releases.find((r) => normalizeVersion(r.tag_name).includes(version));
+  if (release) {
+    const binaryName = getBinaryName(normalizeVersion(release.tag_name), nightly);
+    const asset = release.assets.find((a) => a.name === binaryName);
+    if (asset) {
+      return asset.browser_download_url;
+    }
+  }
+  throw new Error(`Could not find release for version ${version || 'latest'}`);
 }
 
 const Z3_URL = 'https://github.com/kadena-io/pact/releases/download/v4.1/z3-4.8.10-osx.tar.gz';
-interface SystemInfo {
-  platform: string;
-  arch: string;
-  version: string;
-  binaryName: string;
-  isSupported: boolean;
-  downloadUrl: string;
+
+export const NIGHTLY_BINARIES: Record<string, Record<string, string>> = {
+  darwin: {
+    x64: 'pact-binary-bundle.macos-latest.tar.gz',
+    arm64: 'pact-binary-bundle.macos-m1.tar.gz',
+  },
+  linux: {
+    x64: 'pact-binary-bundle.ubuntu-latest.tar.gz',
+  },
+};
+
+export const STABLE_BINARIES: Record<string, Record<string, string>> = {
+  darwin: {
+    x64: 'pact-{{version}}-osx.tar.gz',
+    arm64: 'pact-{{version}}-osx.tar.gz',
+
+    // arm64: 'pact-{{version}}-aarch64-osx.tar.gz',
+  },
+  linux: {
+    x64: 'pact-{{version}}-linux-22.04.tar.gz',
+  },
+};
+export function getBinaryName(version: string, nightly = false) {
+  const binaries = nightly ? NIGHTLY_BINARIES : STABLE_BINARIES;
+  const platform = process.platform;
+  const arch = process.arch;
+  const binaryName = binaries[platform]?.[arch].replace('{{version}}', version);
+  if (!binaryName) {
+    throw new Error(`Binary not found for ${platform} ${arch}, version ${version}, make sure it's supported.`);
+  }
+  return binaryName;
 }
 
-export function getSystemInfo(version: string): SystemInfo {
-  const p = platform();
-  const a = arch();
-  version = normalizeVersion(version).replace('v', '');
-  const info: SystemInfo = {
-    platform: p,
-    arch: a,
-    version,
-    binaryName: '',
-    isSupported: false,
-    downloadUrl: '',
-  };
-
-  if (p === 'darwin') {
-    // const binaryName = a === 'arm64' ? `pact-${version}-aarch64-osx.zip` : `pact-${version}-osx.zip`;
-    const binaryName = `pact-${version}-osx.tar.gz`;
-    return {
-      ...info,
-      binaryName,
-      isSupported: true,
-      downloadUrl: getDownloadUrl(version, binaryName),
-    };
-  }
-
-  if (p === 'linux' && a === 'x64') {
-    const binaryName = `pact-${version}-linux-22.04.tar.gz`;
-    return {
-      ...info,
-      binaryName,
-      isSupported: true,
-      downloadUrl: getDownloadUrl(version, binaryName),
-    };
-  }
-
-  return info;
-}
-
-export async function downloadAndExtract(downloadUrl: string, dest: string, filename: string) {
+export async function downloadTarball(downloadUrl: string): Promise<string> {
   try {
     const res = await fetch(downloadUrl);
-    const binaryName = downloadUrl.split('/').pop() as string;
-    const path = join(tmpdir(), binaryName);
-
+    const dest = downloadUrl.split('/').pop() as string;
+    const path = join(tmpdir(), dest);
     if (!res.ok) {
       throw new Error(`Failed to download ${downloadUrl}`);
     }
@@ -114,60 +132,37 @@ export async function downloadAndExtract(downloadUrl: string, dest: string, file
     }
     // @ts-ignore
     await finished(Readable.fromWeb(res.body).pipe(writer));
-    await mkdir(dest, { recursive: true });
-    // Extract the file
-    await tar.extract({
-      file: path,
-      cwd: dest,
-      filter: (path) => path === filename,
-    });
-    // make it executable
+    return path;
+  } catch (error) {
+    throw new Error(`Failed to download ${downloadUrl}: ${(error as Error).message}`);
+  }
+}
+
+export async function extractTarball(tarball: string, dest: string, executable = 'pact', filter?: string[]) {
+  const files: string[] = [];
+  await mkdir(dest, { recursive: true });
+  // Extract the file
+  await extract({
+    file: tarball,
+    cwd: dest,
+    onentry: (entry) => {
+      files.push(entry.path);
+    },
+    filter: (path) => (filter ? filter.some((f) => path.includes(f)) : true),
+  });
+  // make it executable
+  const filename = files.find((f) => f.endsWith(executable));
+  if (filename) {
     await chmod(join(dest, filename), 0o755);
-  } catch (error) {
-    logger.error('Error during download and unzip:', error);
   }
 }
-
-async function getInstalledVersion() {
-  try {
-    const { stdout } = await execAsync('pact --version');
-    const match = stdout.match(PACT_VERSION_REGEX);
-    if (match) {
-      return match[0];
-    }
-  } catch (error) {
-    return undefined;
-  }
-}
-
-export function compareVersions(version1: string, version2: string) {
-  version1 = normalizeVersion(version1).replace('v', '');
-  version2 = normalizeVersion(version2).replace('v', '');
-
-  const parts1 = version1.split('.').map(Number);
-  const parts2 = version2.split('.').map(Number);
-
-  // Pad the shorter array with zeros
-  while (parts1.length < parts2.length) parts1.push(0);
-  while (parts2.length < parts1.length) parts2.push(0);
-
-  for (let i = 0; i < parts1.length; i++) {
-    if (parts1[i] > parts2[i]) return 1; // version1 is greater
-    if (parts1[i] < parts2[i]) return -1; // version2 is greater
-  }
-
-  return 0; // versions are equal
-}
-
 export async function checkPactVersion(version?: string) {
-  const { latestRelease } = await getPactReleaseInfo();
-  const latestVersion = latestRelease.tag_name;
+  const latestStable = await getPactLatestGithubRelease();
+  const latestVersion = latestStable.tag_name;
   if (!version) {
     version = latestVersion;
   }
-
-  const installedVersion = await getInstalledVersion();
-
+  const installedVersion = await getInstalledPactVersion();
   const info = {
     isInstalled: false,
     isMatching: false,
@@ -212,12 +207,9 @@ export async function checkPactVersion(version?: string) {
   };
 }
 
-export function normalizeVersion(version: string) {
-  return version.replace('v', '');
-}
 export async function lookupPactVersion(version: string) {
   version = normalizeVersion(version);
-  const { releases } = await getPactReleaseInfo();
+  const releases = await getPactGithubReleases();
   const release = releases.find((r) => normalizeVersion(r.tag_name).includes(version));
   if (!release) {
     throw new Error(`Pact version ${version} not found`);
@@ -225,33 +217,28 @@ export async function lookupPactVersion(version: string) {
   return release;
 }
 
-export async function installPact(version?: string) {
-  if (!version) {
-    const { latestRelease } = await getPactReleaseInfo();
-    version = latestRelease.tag_name;
-  }
-  version = normalizeVersion(version);
-  const { isInstalled, isMatching } = await checkPactVersion(version);
+export async function installPact(version?: string, nightly = false) {
+  const releases = await getPactGithubReleases(nightly ? PACT5X_REPO : PACT4X_REPO);
+  const downloadUrl = await getDownloadUrl(releases, version, nightly);
+  const { isMatching, isInstalled } = await checkPactVersion(version);
   if (isInstalled && isMatching) {
-    logger.info(`Pact is already installed at version ${version}`);
+    logger.info(`Pact version ${version} is already installed at ${PACT_INSTALL_DIR}/pact`);
     return;
-  }
-  const info = getSystemInfo(version);
-  if (!info.isSupported) {
-    logger.error(`Unsupported platform: ${platform()}-${arch()}`);
   }
 
   logger.start(`Installing Pact version ${version}`);
-  await downloadAndExtract(info.downloadUrl, PACT_INSTALL_DIR, 'pact');
+  const path = await downloadTarball(downloadUrl);
+  await extractTarball(path, PACT_INSTALL_DIR);
   logger.success(`Pact installed successfully 🎉`);
   logger.start(`Installing Z3`);
-  await downloadAndExtract(Z3_URL, PACT_INSTALL_DIR, 'z3');
+  const z3Path = await downloadTarball(Z3_URL);
+  await extractTarball(z3Path, PACT_INSTALL_DIR);
   logger.success(`Z3 installed successfully 🎉`);
   logger.box(`Make sure it's in your shell PATH \n\`export PATH="$PATH:${PACT_INSTALL_DIR}"\``);
 }
 
 export async function isPactUpToDate() {
-  const { latestRelease } = await getPactReleaseInfo();
+  const latestRelease = await findLatestRelease();
   const { isInstalled, isMatching } = await checkPactVersion(latestRelease.tag_name);
   return isInstalled && isMatching;
 }

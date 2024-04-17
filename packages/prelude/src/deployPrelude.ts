@@ -1,4 +1,4 @@
-import type { DeployContractParams, PactToolboxClient } from '@pact-toolbox/runtime';
+import type { DeployContractOptions, PactToolboxClient } from '@pact-toolbox/runtime';
 import { logger } from '@pact-toolbox/utils';
 import { join } from 'pathe';
 import { downloadPrelude, isPreludeDownloaded } from './downloadPrelude';
@@ -10,7 +10,7 @@ export async function deployPactDependency(
   dep: PactDependency,
   preludeDir: string,
   client: PactToolboxClient,
-  params: DeployContractParams = {},
+  params: DeployContractOptions = {},
 ) {
   const { group, requires, name } = dep;
   const contractPath = join(preludeDir, group || 'root', name);

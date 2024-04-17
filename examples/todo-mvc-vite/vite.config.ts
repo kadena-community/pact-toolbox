@@ -10,7 +10,9 @@ export default defineConfig({
       onReady: async (client) => {
         const isDeployed = await client.isContractDeployed('free.todos');
         await client.deployContract('todos.pact', {
-          upgrade: isDeployed,
+          prepareTx: {
+            upgrade: isDeployed,
+          },
         });
       },
     }),

@@ -20,16 +20,27 @@ export const installCommand = defineCommand({
       type: 'boolean',
       name: 'latest',
       description: 'force install latest pact version',
-      default: true,
+      default: false,
+    },
+    nightly: {
+      type: 'boolean',
+      name: 'nightly',
+      description: 'install latest nightly pact version',
+      default: false,
     },
   },
   run: async ({ args }) => {
     const config = await resolveConfig();
     args.version = args.version ?? config.pactVersion;
     if (!args.version) {
-      logger.info('Pact version not specified, installing latest');
+      if (args.nightly) {
+        logger.info('Checking latest nightly pact version');
+      } else {
+        logger.info('Pact version not specified, checking latest');
+      }
+    } else {
+      logger.info(`Checking pact version ${args.version}`);
     }
-    const version = args.latest ? undefined : args.version;
-    await installPact(version);
+    await installPact(args.version && !args.latest ? args.version : undefined, args.nightly);
   },
 });

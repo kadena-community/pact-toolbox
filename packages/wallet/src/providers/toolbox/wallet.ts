@@ -4,14 +4,13 @@ import {
   createKadenaClient,
   createSignWithPactToolbox,
   details,
-  generateKAccounts,
   getSignerAccount,
   getToolboxNetworkConfig,
   isToolboxInstalled,
 } from '@pact-toolbox/client-utils';
 import type { WalletProvider } from '../../provider';
 
-const signers = generateKAccounts(10);
+//const signers = generateKAccounts(10);
 export class ToolboxWalletProvider implements WalletProvider {
   sign = createSignWithPactToolbox();
   quickSign = createSignWithPactToolbox();

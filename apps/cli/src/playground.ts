@@ -21,7 +21,7 @@ await bench('localPactServer', async () => {
   });
   await local.start();
   await local.client.deployContract('hello-world.pact');
-  const signer = local.client.getSigner();
+  const signer = local.client.getValidateSigner();
   const tx = local.client
     .execution('(free.hello-world.say-hello "Salama")')
     .addSigner(signer.publicKey)
@@ -55,7 +55,7 @@ await bench('devnetOnDemand', async () => {
   });
   await devnetOnDemand.start();
   await devnetOnDemand.client.deployContract('hello-world.pact');
-  const signer = devnetOnDemand.client.getSigner();
+  const signer = devnetOnDemand.client.getValidateSigner();
   const tx = devnetOnDemand.client
     .execution('(free.hello-world.say-hello "Salama")')
     .addSigner(signer.publicKey)
@@ -72,7 +72,7 @@ await bench('devnet', async () => {
   });
   await devnet.start();
   await devnet.client.deployContract('hello-world.pact');
-  const signer = devnet.client.getSigner();
+  const signer = devnet.client.getValidateSigner();
   const tx = devnet.client
     .execution('(free.hello-world.say-hello "Salama")')
     .addSigner(signer.publicKey)

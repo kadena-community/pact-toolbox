@@ -47,16 +47,16 @@
     "@pact-toolbox/utils": "workspace:*",
     "@pact-toolbox/wallet": "workspace:*",
     "pathe": "^1.1.2",
-    "tiny-readdir-glob": "^1.4.0"
+    "tiny-readdir-glob": "^1.22.24"
   },
   "devDependencies": {
     "@pact-toolbox/tsconfig": "workspace:*",
-    "@vitest/coverage-v8": "^1.4.0",
+    "@vitest/coverage-v8": "^1.5.0",
     "lint-staged": "^15.2.2",
-    "oxlint": "^0.2.14",
+    "oxlint": "^0.2.17",
     "tsup": "^8.0.2",
-    "typescript": "^5.4.3",
-    "vitest": "^1.4.0"
+    "typescript": "^5.4.5",
+    "vitest": "^1.5.0"
   },
   "peerDependencies": {
     "vitest": "^1.2.2"

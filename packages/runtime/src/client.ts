@@ -8,26 +8,35 @@ import type {
   IUnsignedCommand,
 } from '@kadena/client';
 import { Pact, createClient, createSignWithKeypair, isSignedTransaction } from '@kadena/client';
-import { getCmdDataOrFail } from '@pact-toolbox/client-utils';
-import type { KeysetConfig, NetworkConfig, PactToolboxConfigObj } from '@pact-toolbox/config';
+import { Signer, getCmdDataOrFail } from '@pact-toolbox/client-utils';
+import type { KeysetConfig, NetworkConfig, NetworkMeta, PactToolboxConfigObj } from '@pact-toolbox/config';
 import { createRpcUrlGetter, defaultMeta, getNetworkConfig, isPactServerNetworkConfig } from '@pact-toolbox/config';
 import { readFile, stat } from 'node:fs/promises';
 import { isAbsolute, join } from 'pathe';
+import { getSignerFromEnv, isValidateSigner } from './utils';
 
-export interface DeployContractParams {
+export interface TransactionBuilderData extends Partial<NetworkMeta> {
+  senderAccount?: string;
+  networkId?: string;
   upgrade?: boolean;
-  preflight?: boolean;
-  listen?: boolean;
   init?: boolean;
   namespace?: string;
   keysets?: Record<string, KeysetConfig>;
-  signer?: string;
-  data?: Record<string, unknown>;
+  data?: Record<string, any>;
+}
+export interface DeployContractOptions {
+  preflight?: boolean;
+  listen?: boolean;
+  signer?: string | Signer;
   caps?: string[][];
   skipSign?: boolean;
-  chainId?: ChainId;
+  prepareTx?: ((builder: IBuilder<any>) => Promise<IBuilder<any>>) | TransactionBuilderData;
+  signTx?: (tx: IUnsignedCommand, keyPair: IKeyPair) => Promise<ICommand>;
 }
 
+export interface DeployContractMultiChainOptions extends DeployContractOptions {
+  targetChains?: ChainId[];
+}
 export interface LocalOptions {
   preflight?: boolean;
   signatureVerification?: boolean;
@@ -79,12 +88,25 @@ export class PactToolboxClient {
     return this.config;
   }
 
-  getSigner(address: string = this.networkConfig.senderAccount) {
-    const s = this.networkConfig.signers.find((s) => s.account === address);
-    if (!s) {
-      throw new Error(`Signer ${address} not found in network accounts`);
+  getSigner<T extends Partial<Signer>>(
+    address: T | string = this.networkConfig.senderAccount,
+    args: Record<string, unknown> = {},
+  ): T {
+    if (typeof address === 'object') {
+      return address;
     }
-    return s;
+    const signer =
+      this.networkConfig.signers.find((s) => s.account === address) ??
+      getSignerFromEnv(args, this.network.name?.toUpperCase());
+    return signer as T;
+  }
+
+  getValidateSigner(signer?: string | Signer, args: Record<string, unknown> = {}) {
+    signer = this.getSigner(signer, args);
+    if (!isValidateSigner(signer)) {
+      throw new Error(`Invalid signer: ${JSON.stringify(signer)}`);
+    }
+    return signer;
   }
 
   execution<T extends IBuilder<any>>(command: string): T {
@@ -98,12 +120,9 @@ export class PactToolboxClient {
       .setNetworkId(this.networkConfig.networkId) as T;
   }
 
-  async sign(tx: IUnsignedCommand, keyPair?: IKeyPair) {
-    const senderKeys = keyPair ?? this.getSigner(this.networkConfig.senderAccount);
-    if (!senderKeys) {
-      throw new Error(`Signer ${this.networkConfig.senderAccount} not found in network accounts`);
-    }
-    return createSignWithKeypair(senderKeys)(tx);
+  async sign(tx: IUnsignedCommand, signer?: Signer) {
+    signer = signer ?? this.getValidateSigner(this.networkConfig.senderAccount);
+    return createSignWithKeypair(signer)(tx);
   }
 
   async dirtyRead<T>(tx: IUnsignedCommand | ICommand) {
@@ -153,58 +172,62 @@ export class PactToolboxClient {
     return this.kdaClient.dirtyRead(builder.createTransaction());
   }
 
-  async deployCode(
+  private async _deployCode(
     code: string,
     {
-      upgrade = false,
-      preflight = false,
-      init = false,
-      namespace,
-      keysets,
-      data,
-      signer = this.networkConfig.senderAccount,
       caps = [],
+      preflight = false,
+      signer = this.networkConfig.senderAccount,
       skipSign = false,
       listen = true,
-      chainId,
-    }: DeployContractParams = {},
+      signTx,
+      prepareTx,
+    }: DeployContractOptions = {},
+    targetChainId?: ChainId,
   ) {
-    const txBuilder = this.execution(code).addData('upgrade', upgrade).addData('init', init);
-
-    if (chainId) {
-      txBuilder.setMeta({ chainId });
+    let txBuilder = this.execution(code);
+    signer = this.getSigner(signer);
+    if (typeof prepareTx === 'function') {
+      txBuilder = await prepareTx(txBuilder);
+    } else {
+      const {
+        senderAccount,
+        chainId = this.networkConfig.meta?.chainId ?? '0',
+        init = false,
+        namespace,
+        keysets,
+        data,
+        upgrade = false,
+      } = prepareTx ?? {};
+      txBuilder.addData('upgrade', upgrade).addData('init', init);
+      if (chainId) {
+        txBuilder.setMeta({ chainId: targetChainId ?? chainId });
+      }
+      if (senderAccount) {
+        txBuilder.setMeta({ senderAccount });
+      }
+      if (namespace) {
+        txBuilder.addData('namespace', namespace);
+        txBuilder.addData('ns', namespace);
+      }
+      if (keysets) {
+        for (const [keysetName, keyset] of Object.entries(keysets)) {
+          txBuilder.addKeyset(keysetName, keyset.pred, ...keyset.keys);
+        }
+      }
+      if (data) {
+        for (const [key, value] of Object.entries(data)) {
+          txBuilder.addData(key, value as any);
+        }
+      }
     }
-
     if (signer && !skipSign) {
-      const signerKeys = this.getSigner(signer);
-      if (!signerKeys) {
-        throw new Error(`Signer ${signer} not found in network accounts`);
-      }
-      txBuilder.addSigner(signerKeys.publicKey, (signFor) =>
-        caps.map((capArgs) => signFor.apply(null, capArgs as any)),
-      );
-    }
-
-    if (namespace) {
-      txBuilder.addData('namespace', namespace);
-      txBuilder.addData('ns', namespace);
-    }
-
-    if (typeof keysets === 'object') {
-      for (const [keysetName, keyset] of Object.entries(keysets)) {
-        txBuilder.addKeyset(keysetName, keyset.pred, ...keyset.keys);
-      }
-    }
-
-    if (data) {
-      for (const [key, value] of Object.entries(data)) {
-        txBuilder.addData(key, value as any);
-      }
+      txBuilder.addSigner(signer.publicKey, (signFor) => caps.map((capArgs) => signFor.apply(null, capArgs as any)));
     }
 
     let tx = txBuilder.createTransaction();
     if (!skipSign) {
-      tx = await this.sign(tx);
+      tx = typeof signTx === 'function' ? await signTx(tx, signer) : await this.sign(tx, signer);
     }
 
     if (preflight) {
@@ -215,6 +238,13 @@ export class PactToolboxClient {
     }
 
     return listen ? this.submitAndListen(tx) : this.submit(tx);
+  }
+
+  deployCode(
+    code: string,
+    { targetChains = [this.network.meta?.chainId ?? '0'], ...params }: DeployContractMultiChainOptions = {},
+  ) {
+    return Promise.all(targetChains.map((chainId) => this._deployCode(code, params, chainId)));
   }
 
   async describeModule(module: string) {
@@ -256,12 +286,12 @@ export class PactToolboxClient {
     return readFile(contractPath, 'utf-8');
   }
 
-  async deployContract(contract: string, params?: DeployContractParams) {
+  async deployContract(contract: string, params?: DeployContractMultiChainOptions) {
     const contractCode = await this.getContractCode(contract);
     return this.deployCode(contractCode, params);
   }
 
-  async deployContracts(contracts: string[], params?: DeployContractParams) {
+  async deployContracts(contracts: string[], params?: DeployContractOptions) {
     return Promise.all(contracts.map((c) => this.deployContract(c, params)));
   }
 }

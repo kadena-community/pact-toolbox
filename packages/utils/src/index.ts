@@ -6,3 +6,4 @@ export * from './logger';
 export * from './port';
 export * from './process';
 export * from './uuid';
+export * from './pact';

@@ -1,5 +1,5 @@
 import type { KeysetConfig } from '@pact-toolbox/config';
-import type { DeployContractParams, PactToolboxClient } from '@pact-toolbox/runtime';
+import type { DeployContractOptions, PactToolboxClient } from '@pact-toolbox/runtime';
 import { logger } from '@pact-toolbox/utils';
 import { join } from 'pathe';
 import { deployPactDependency } from '../../../deployPrelude';
@@ -44,7 +44,7 @@ export default {
     const installTemplate = (await import('./install.handlebars')).template;
     return renderTemplate(installTemplate, context);
   },
-  async deploy(client: PactToolboxClient, params: DeployContractParams = {}) {
+  async deploy(client: PactToolboxClient, params: DeployContractOptions = {}) {
     const { signer } = params;
     const keys = client.getSigner(signer);
     const rootKeysets = {
@@ -74,8 +74,10 @@ export default {
     for (const dep of chainWebSpec.root) {
       await deployPactDependency(dep, preludeDir, client, {
         ...params,
-        keysets: rootKeysets,
-        signer: signer,
+        prepareTx: {
+          keysets: rootKeysets,
+        },
+        signer,
       });
       logger.success(`Deployed ${dep.name}`);
     }
@@ -83,8 +85,8 @@ export default {
     for (const dep of chainWebSpec.util) {
       await deployPactDependency(dep, preludeDir, client, {
         ...params,
-        keysets: utilKeysets,
-        signer: signer || client.network.senderAccount,
+        prepareTx: { keysets: utilKeysets },
+        signer,
       });
       logger.success(`Deployed ${dep.name}`);
     }

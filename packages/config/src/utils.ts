@@ -80,7 +80,7 @@ export function createChainwebRpcUrl({
 }
 
 export function getNetworkConfig(config: PactToolboxConfigObj, network?: string) {
-  const networkName = network ?? process.env.KADENA_TOOLBOX_NETWORK ?? config.defaultNetwork ?? 'local';
+  const networkName = network ?? process.env.PACT_TOOLBOX_NETWORK ?? config.defaultNetwork ?? 'local';
   const found = config.networks[networkName];
   config.defaultNetwork = networkName;
   found.name = networkName;

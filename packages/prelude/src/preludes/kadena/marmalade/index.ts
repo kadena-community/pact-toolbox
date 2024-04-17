@@ -1,5 +1,5 @@
 import type { KeysetConfig } from '@pact-toolbox/config';
-import type { DeployContractParams, PactToolboxClient } from '@pact-toolbox/runtime';
+import type { DeployContractOptions, PactToolboxClient } from '@pact-toolbox/runtime';
 import { logger } from '@pact-toolbox/utils';
 import { join } from 'pathe';
 import { deployPactDependency } from '../../../deployPrelude';
@@ -89,23 +89,19 @@ export default {
     const installTemplate = (await import('./install.handlebars')).template;
     return renderTemplate(installTemplate, context);
   },
-  async deploy(client: PactToolboxClient, params: DeployContractParams = {}) {
-    let { signer } = params;
-    if (!signer) {
-      signer = 'sender00';
-    }
-    const keys = client.getSigner(signer);
+  async deploy(client: PactToolboxClient, params: DeployContractOptions = {}) {
+    const signer = client.getValidateSigner(params.signer);
     const keysets = {
       'marmalade-admin': {
-        keys: [keys.publicKey],
+        keys: [signer.publicKey],
         pred: 'keys-all',
       },
       'marmalade-user': {
-        keys: [keys.publicKey],
+        keys: [signer.publicKey],
         pred: 'keys-all',
       },
       'marmalade-contract-admin': {
-        keys: [keys.publicKey],
+        keys: [signer.publicKey],
         pred: 'keys-all',
       },
     } as Record<string, KeysetConfig>;
@@ -117,20 +113,20 @@ export default {
     }
     await deployPactDependency(createNsSpec, preludeDir, client, {
       ...params,
-      data: {
-        ns: 'kip',
+      prepareTx: {
+        namespace: 'kip',
+        keysets,
       },
-      keysets,
       signer,
     });
     logger.success(`Created kip namespace`);
 
     await deployPactDependency(createNsSpec, preludeDir, client, {
       ...params,
-      data: {
-        ns: 'util',
+      prepareTx: {
+        namespace: 'util',
+        keysets,
       },
-      keysets,
       signer,
     });
     logger.success(`Created util namespace`);
@@ -138,11 +134,10 @@ export default {
     for (const dep of marmaladeSpecs.kip) {
       await deployPactDependency(dep, preludeDir, client, {
         ...params,
-        data: {
-          ns: 'kip',
-          ...params.data,
+        prepareTx: {
+          namespace: 'kip',
+          keysets,
         },
-        keysets,
         signer,
       });
       logger.success(`Deployed ${dep.name}`);
@@ -152,15 +147,14 @@ export default {
     for (const dep of marmaladeSpecs['marmalade-ns']) {
       await deployPactDependency(dep, preludeDir, client, {
         ...params,
-        data: {
-          ns: 'marmalade-v2',
-          ...params.data,
-        },
-        keysets: {
-          ...keysets,
-          'marmalade-v2.marmalade-contract-admin': {
-            keys: [keys.publicKey],
-            pred: 'keys-all',
+        prepareTx: {
+          namespace: 'marmalade-v2',
+          keysets: {
+            ...keysets,
+            'marmalade-v2.marmalade-contract-admin': {
+              keys: [signer.publicKey],
+              pred: 'keys-all',
+            },
           },
         },
         signer,
@@ -172,15 +166,14 @@ export default {
     for (const dep of marmaladeSpecs['marmalade-ns']) {
       await deployPactDependency(dep, preludeDir, client, {
         ...params,
-        data: {
-          ns: 'marmalade-sale',
-          ...params.data,
-        },
-        keysets: {
-          ...keysets,
-          'marmalade-sale.marmalade-contract-admin': {
-            keys: [keys.publicKey],
-            pred: 'keys-all',
+        prepareTx: {
+          namespace: 'marmalade-sale',
+          keysets: {
+            ...keysets,
+            'marmalade-sale.marmalade-contract-admin': {
+              keys: [signer.publicKey],
+              pred: 'keys-all',
+            },
           },
         },
         signer,
@@ -192,11 +185,10 @@ export default {
     for (const dep of marmaladeSpecs.util) {
       await deployPactDependency(dep, preludeDir, client, {
         ...params,
-        data: {
-          ns: 'kip',
-          ...params.data,
+        prepareTx: {
+          namespace: 'kip',
+          keysets,
         },
-        keysets,
         signer,
       });
       logger.success(`Deployed ${dep.name}`);
@@ -206,11 +198,10 @@ export default {
     for (const dep of marmaladeSpecs['marmalade-v2']) {
       await deployPactDependency(dep, preludeDir, client, {
         ...params,
-        data: {
-          ns: 'marmalade-v2',
-          ...params.data,
+        prepareTx: {
+          namespace: 'marmalade-v2',
+          keysets,
         },
-        keysets,
         signer,
       });
       logger.success(`Deployed ${dep.name}`);
@@ -220,11 +211,10 @@ export default {
     for (const dep of marmaladeSpecs['marmalade-sale']) {
       await deployPactDependency(dep, preludeDir, client, {
         ...params,
-        data: {
-          ns: 'marmalade-sale',
-          ...params.data,
+        prepareTx: {
+          namespace: 'marmalade-sale',
+          keysets,
         },
-        keysets,
         signer,
       });
       logger.success(`Deployed ${dep.name}`);

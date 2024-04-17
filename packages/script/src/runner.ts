@@ -8,9 +8,12 @@ import defu from 'defu';
 import createJiti from 'jiti';
 import { join } from 'pathe';
 
-export interface ToolboxScriptContext {
+export interface ToolboxScriptContext<Args = Record<string, unknown>> {
   client: PactToolboxClient;
-  args: Record<string, unknown>;
+  args: Args;
+  logger: typeof logger;
+  network: string;
+  config: PactToolboxConfigObj;
 }
 
 export interface ToolboxScriptOptions {
@@ -20,11 +23,11 @@ export interface ToolboxScriptOptions {
   configOverrides?: Partial<PactToolboxConfigObj>;
   network?: string;
 }
-export interface ToolboxScript extends ToolboxScriptOptions {
-  run: (ctx: ToolboxScriptContext) => Promise<void>;
+export interface ToolboxScript<Args = Record<string, unknown>> extends ToolboxScriptOptions {
+  run: (ctx: ToolboxScriptContext<Args>) => Promise<void>;
 }
 
-export function createScript(options: ToolboxScript) {
+export function createScript<Args = Record<string, unknown>>(options: ToolboxScript<Args>) {
   return options;
 }
 
@@ -42,7 +45,6 @@ export async function runScript(
   if (!config) {
     config = await resolveConfig();
   }
-
   const scriptsDir = config.scriptsDir ?? 'scripts';
   const jiti = createJiti(undefined as unknown as string, {
     interopDefault: true,
@@ -70,23 +72,26 @@ export async function runScript(
   if (options.configOverrides) {
     config = defu(options.configOverrides, config) as Required<PactToolboxConfigObj>;
   }
+  network = network ?? options.network ?? config.defaultNetwork;
   if (!client) {
-    client = new PactToolboxClient(config, network ?? options.network);
+    client = new PactToolboxClient(config, network);
   }
   client.setConfig(config);
   try {
     let n;
     if (options.autoStartNetwork) {
       n = await startLocalNetwork(config, {
-        enableProxy: true,
         ...options.startNetworkOptions,
-        network: network ?? options.network,
+        network,
         client,
       });
     }
     const context = {
       client,
       args,
+      logger,
+      network,
+      config,
     };
     await options.run(context);
     if (!options.persist) {

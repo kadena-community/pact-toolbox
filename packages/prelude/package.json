@@ -55,11 +55,11 @@
     "@pact-toolbox/config": "workspace:*",
     "@pact-toolbox/runtime": "workspace:*",
     "@pact-toolbox/tsconfig": "workspace:*",
-    "@vitest/coverage-v8": "^1.4.0",
+    "@vitest/coverage-v8": "^1.5.0",
     "lint-staged": "^15.2.2",
-    "oxlint": "^0.2.14",
+    "oxlint": "^0.2.17",
     "tsup": "^8.0.2",
-    "typescript": "^5.4.3",
-    "vitest": "^1.4.0"
+    "typescript": "^5.4.5",
+    "vitest": "^1.5.0"
   }
 }
