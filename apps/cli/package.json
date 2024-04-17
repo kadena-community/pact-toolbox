@@ -7,7 +7,7 @@
     "kadena",
     "tools"
   ],
-  "repository": "salamaashoush/pact-toolbox",
+  "repository": "kadena-community/pact-toolbox",
   "author": "Salama Ashoush <salamaashoush@gmail.com>",
   "license": "MIT",
   "type": "module",
