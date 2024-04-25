@@ -20,5 +20,5 @@ jobs:
       - run: pnpm install
       - run: pnpm lint
       - run: pnpm build
-      - run: pnpm test
+      - run: export PATH="$PATH:/home/runner/.kadena/bin" && pnpm test
       - uses: codecov/codecov-action@v3
