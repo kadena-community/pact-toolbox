@@ -10,12 +10,7 @@ export interface RunBinOptions {
 export function runBin(
   bin: string,
   args: string[],
-  {
-    cwd = process.cwd(),
-    silent = false,
-    env = process.env,
-    resolveIf = () => true,
-  }: RunBinOptions,
+  { cwd = process.cwd(), silent = false, env = process.env, resolveIf = () => true }: RunBinOptions,
 ): Promise<ChildProcessWithoutNullStreams> {
   return new Promise((resolve, reject) => {
     const child = spawn(bin, args, { cwd, env });
@@ -47,9 +42,7 @@ export function runBin(
   });
 }
 
-export function cleanUpProcess(
-  clean: (signal?: NodeJS.Signals) => Promise<void>,
-) {
+export function cleanUpProcess(clean: (signal?: NodeJS.Signals) => Promise<void>) {
   process.once('SIGINT', async () => {
     await clean('SIGINT');
   });
@@ -76,7 +69,7 @@ export function findProcess(query: ProcessQuery) {
   if (pid) {
     return find('pid', pid);
   }
-  return null;
+  return;
 }
 
 export async function killProcess(query: ProcessQuery) {

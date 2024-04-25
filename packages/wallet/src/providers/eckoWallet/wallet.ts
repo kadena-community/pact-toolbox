@@ -8,7 +8,7 @@ export class EckoWalletProvider implements WalletProvider {
   public quickSign = createEckoWalletQuicksign();
 
   constructor() {
-    // @ts-ignore
+    // @ts-expect-error
     this.api = globalThis.kadena as WalletApi;
     console.log('EckoWalletProvider', this.api);
   }

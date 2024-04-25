@@ -16,13 +16,13 @@ export const unpluginFactory: UnpluginFactory<Options | undefined> = (options) =
         await startToolboxNetwork({ isServe, isTest }, await toolboxConfig, options!);
       },
       async configResolved(config) {
-        // @ts-ignore
+        // @ts-expect-error
         isTest = config.command === 'test' || isTest;
         isServe = config.command === 'serve';
-        // @ts-ignore
+        // @ts-expect-error
         if (!isTest) {
           const networkConfig = getSerializableNetworkConfig(await toolboxConfig);
-          // @ts-ignore
+          // @ts-expect-error
           config.define = config.define || {};
           config.define['globalThis.__PACT_TOOLBOX_NETWORK_CONFIG__'] = JSON.stringify(networkConfig);
         }

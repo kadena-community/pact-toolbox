@@ -29,7 +29,7 @@ export async function dirtyReadOrFail<T = PactValue>(client: KdaClient, tx: IUns
 }
 
 export function createDirtyReadOrFail(client: KdaClient) {
-  return dirtyReadOrFail.bind(null, client) as <T>(tx: IUnsignedCommand | ICommand) => Promise<T>;
+  return dirtyReadOrFail.bind(undefined, client) as <T>(tx: IUnsignedCommand | ICommand) => Promise<T>;
 }
 
 export async function localOrFail<T = PactValue>(client: KdaClient, tx: IUnsignedCommand | ICommand): Promise<T> {
@@ -38,7 +38,7 @@ export async function localOrFail<T = PactValue>(client: KdaClient, tx: IUnsigne
 }
 
 export function createLocalOrFail(client: KdaClient) {
-  return localOrFail.bind(null, client) as <T>(tx: IUnsignedCommand | ICommand) => Promise<T>;
+  return localOrFail.bind(undefined, client) as <T>(tx: IUnsignedCommand | ICommand) => Promise<T>;
 }
 
 export async function submitAndListen<T>(client: KdaClient, signedTx: IUnsignedCommand | ICommand): Promise<T> {
@@ -52,7 +52,7 @@ export async function submitAndListen<T>(client: KdaClient, signedTx: IUnsignedC
 }
 
 export function createSubmitAndListen(client: KdaClient) {
-  return submitAndListen.bind(null, client) as <T>(signedTx: IUnsignedCommand | ICommand) => Promise<T>;
+  return submitAndListen.bind(undefined, client) as <T>(signedTx: IUnsignedCommand | ICommand) => Promise<T>;
 }
 
 export function createKdaClientHelpers(client: KdaClient) {

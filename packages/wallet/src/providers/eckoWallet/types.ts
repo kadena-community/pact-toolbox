@@ -127,8 +127,5 @@ export interface WalletEventHandlers {
 export interface WalletApi {
   isKadena: boolean;
   request<T = unknown>(request: WalletRequest): Promise<T>;
-  on<E extends WalletEvent>(
-    event: WalletEvent,
-    callback: WalletEventHandlers[E],
-  ): void;
+  on<E extends WalletEvent>(event: WalletEvent, callback: WalletEventHandlers[E]): void;
 }

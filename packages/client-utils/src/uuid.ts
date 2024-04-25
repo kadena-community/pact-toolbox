@@ -7,13 +7,7 @@ export function nanoid(t = 21) {
     (t, e) =>
       (t +=
         // eslint-disable-next-line no-bitwise
-        (e &= 63) < 36
-          ? e.toString(36)
-          : e < 62
-          ? (e - 26).toString(36).toUpperCase()
-          : e > 62
-          ? '-'
-          : '_'),
+        (e &= 63) < 36 ? e.toString(36) : e < 62 ? (e - 26).toString(36).toUpperCase() : e > 62 ? '-' : '_'),
     '',
   );
 }
@@ -33,7 +27,5 @@ export function getUuid() {
     return fallbackWhenNoCrypto();
   }
   // use nanoid instead of native crypto.randomUUID, mainly for nodejs/jest and also old browsers
-  return typeof crypto.randomUUID === 'function'
-    ? crypto.randomUUID()
-    : nanoid(21);
+  return typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : nanoid(21);
 }

@@ -4,6 +4,4 @@ import { createRspackPlugin } from 'unplugin';
 import { unpluginFactory } from '.';
 import type { Options } from './core/options';
 
-export default createRspackPlugin(unpluginFactory) as (
-  options?: Options,
-) => RspackPluginInstance;
+export default createRspackPlugin(unpluginFactory) as (options?: Options) => RspackPluginInstance;

@@ -30,7 +30,7 @@ async function handleKdaRequestAccount(request: KdaRequestAccountRequest) {
 
 async function handleKdaCheckStatus(request: KdaCheckStatusRequest) {
   const isConnected = await toolboxWallet.isConnected();
-  const wallet = isConnected ? await toolboxWallet.getAccountDetails(request.networkId) : null;
+  const wallet = isConnected ? await toolboxWallet.getAccountDetails(request.networkId) : undefined;
   return {
     status: isConnected ? 'success' : 'fail',
     message: isConnected ? 'connected' : 'disconnected',
@@ -65,20 +65,27 @@ async function handleKdaSign(request: KdaRequestSignRequest) {
 
 async function handleWalletRequest(request: WalletRequest) {
   switch (request.method) {
-    case 'kda_connect':
+    case 'kda_connect': {
       return handleKdaConnect(request);
-    case 'kda_requestAccount':
+    }
+    case 'kda_requestAccount': {
       return handleKdaRequestAccount(request);
-    case 'kda_checkStatus':
+    }
+    case 'kda_checkStatus': {
       return handleKdaCheckStatus(request);
-    case 'kda_disconnect':
+    }
+    case 'kda_disconnect': {
       return handleKdaDisconnect(request);
-    case 'kda_getNetwork':
+    }
+    case 'kda_getNetwork': {
       return toolboxWallet.getNetwork();
-    case 'kda_requestSign':
+    }
+    case 'kda_requestSign': {
       return handleKdaSign(request);
-    default:
+    }
+    default: {
       return Promise.reject(new Error('Invalid method'));
+    }
   }
 }
 export function createEckoWalletMock(): WalletApi {
@@ -87,12 +94,12 @@ export function createEckoWalletMock(): WalletApi {
     on: (event: string, callback: any) => {
       console.log(event, callback);
     },
-    // @ts-ignore
+    // @ts-expect-error
     request: handleWalletRequest,
   };
 }
 
 export function mockEckoWallet() {
-  //@ts-ignore
+  //@ts-expect-error
   globalThis.kadena = createEckoWalletMock();
 }
