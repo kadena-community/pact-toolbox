@@ -16,7 +16,7 @@ const unpluginFactory: UnpluginFactory<Options | undefined> = (options) => {
         const define = new webpack.DefinePlugin({
           'globalThis.__PACT_TOOLBOX_NETWORK_CONFIG__': JSON.stringify(networkConfig),
         });
-        // @ts-expect-error
+        // @ts-ignore
         define.apply(compiler);
       });
       compiler.hooks.afterDone.tap(PLUGIN_NAME, async () => {
