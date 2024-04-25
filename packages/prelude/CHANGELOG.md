@@ -1,5 +1,15 @@
 # @pact-toolbox/prelude
 
+## 0.0.4
+
+### Patch Changes
+
+- more pact version manager features
+- Updated dependencies
+  - @pact-toolbox/runtime@0.0.4
+  - @pact-toolbox/config@0.0.4
+  - @pact-toolbox/utils@0.0.4
+
 ## 0.0.3
 
 ### Patch Changes

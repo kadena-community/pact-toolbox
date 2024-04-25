@@ -48,10 +48,8 @@ export const startCommand = defineCommand({
       silent: quiet || tunnel,
       logAccounts: true,
       network,
-      enableProxy: true,
       conflict: 'replace',
-
-      proxyOptions: {
+      devProxyOptions: {
         showURL: true,
         isProd: false,
         tunnel,

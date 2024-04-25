@@ -1,5 +1,14 @@
 # todo-mvc-common
 
+## 0.0.3
+
+### Patch Changes
+
+- more pact version manager features
+- Updated dependencies
+  - @pact-toolbox/client-utils@0.0.4
+  - @pact-toolbox/wallet@0.0.4
+
 ## 0.0.2
 
 ### Patch Changes

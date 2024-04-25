@@ -1,5 +1,13 @@
 # todo-mvc-vite
 
+## 0.0.3
+
+### Patch Changes
+
+- more pact version manager features
+- Updated dependencies
+  - todo-mvc-common@0.0.3
+
 ## 0.0.2
 
 ### Patch Changes

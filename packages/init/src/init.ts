@@ -75,7 +75,7 @@ export async function updateViteConfig() {
 
 export const NPM_SCRIPTS = {
   'pact:start': 'pact-toolbox start',
-  'pact:run': 'pact-toolbox start',
+  'pact:run': 'pact-toolbox run',
   'pact:prelude': 'pact-toolbox prelude',
   'pact:types': 'pact-toolbox types',
   'pact:test': 'pact-toolbox test',
@@ -85,17 +85,9 @@ export interface InitToolboxArgs {
   cwd: string;
   contractsDir: string;
 }
-export async function initToolbox(args: InitToolboxArgs) {
-  const packageJsonPath = await resolvePackageJSON();
-  const tsConfigPath = await resolveTSConfig();
-  const packageJson = await readPackageJSON(packageJsonPath);
-  const tsConfig = await readTSConfig(tsConfigPath);
 
-  const isCJS = packageJson.type !== 'module';
-  const isTypescript = !!tsConfig;
-  const template = generateConfigTemplate(args.contractsDir, isCJS);
-
-  const deps = ['@kadena/client', '@pact-toolbox/client-utils'];
+async function installDeps(args: InitToolboxArgs) {
+  const deps = ['@kadena/client', '@pact-toolbox/client-utils', '@pact-toolbox/wallet'];
   const devDeps = ['pact-toolbox', '@pact-toolbox/unplugin'];
   logger.start(`Installing dependencies ${deps.join(', ')} ...`);
   const packageManager = await detectPackageManager(args.cwd, {
@@ -114,6 +106,18 @@ export async function initToolbox(args: InitToolboxArgs) {
     });
     logger.success(`Installed ${dep}`);
   }
+}
+export async function initToolbox(args: InitToolboxArgs) {
+  await installDeps(args);
+  const packageJsonPath = await resolvePackageJSON();
+  const tsConfigPath = await resolveTSConfig();
+  const packageJson = await readPackageJSON(packageJsonPath);
+  const tsConfig = await readTSConfig(tsConfigPath);
+
+  const isCJS = packageJson.type !== 'module';
+  const isTypescript = !!tsConfig;
+  const template = generateConfigTemplate(args.contractsDir, isCJS);
+
   const configPath = isTypescript ? 'pact-toolbox.config.ts' : 'pact-toolbox.config.js';
   await writeFile(join(args.cwd, configPath), template);
   logger.success(`Config file created at ${configPath}`);
@@ -125,6 +129,7 @@ export async function initToolbox(args: InitToolboxArgs) {
       packageJson.scripts[scriptName] = scriptCommand;
     }
     await writePackageJSON(packageJsonPath, packageJson);
+    logger.success(`Added pact:* scripts to package.json`);
   } catch (e) {
     logger.warn(`Failed to add pact:* scripts to package.json at ${packageJsonPath}, please add manually`);
   }
@@ -138,6 +143,7 @@ export async function initToolbox(args: InitToolboxArgs) {
         tsConfig.compilerOptions.types.push('.kadena/pactjs-generated');
       }
       await writeTSConfig(tsConfigPath, tsConfig);
+      logger.success(`Added ".kadena/pactjs-generated" to the types array in tsconfig.json`);
     }
   } catch (e) {
     logger.warn(
@@ -145,9 +151,11 @@ export async function initToolbox(args: InitToolboxArgs) {
     );
   }
 
+  logger.start(`Creating hello world contract...`);
   await createHelloWorld(join(args.cwd, args.contractsDir));
 
   // fetch preludes
+  logger.start(`Fetching preludes...`);
   exec('npm run pact:prelude', { cwd: args.cwd });
   logger.box(`You are ready to go!`);
 }

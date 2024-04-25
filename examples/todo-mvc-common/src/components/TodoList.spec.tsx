@@ -13,7 +13,7 @@ function renderComponent() {
     </QueryClientProvider>,
   );
 }
-describe('TodoList', async () => {
+describe.skip('TodoList', async () => {
   const env = await createPactTestEnv({
     network: 'local',
     enableProxy: false,

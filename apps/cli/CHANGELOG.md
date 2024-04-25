@@ -1,5 +1,22 @@
 # pact-toolbox
 
+## 0.0.4
+
+### Patch Changes
+
+- more pact version manager features
+- Updated dependencies
+  - @pact-toolbox/client-utils@0.0.4
+  - @pact-toolbox/installer@0.0.4
+  - @pact-toolbox/network@0.0.4
+  - @pact-toolbox/prelude@0.0.4
+  - @pact-toolbox/runtime@0.0.4
+  - @pact-toolbox/config@0.0.4
+  - @pact-toolbox/script@0.0.4
+  - @pact-toolbox/utils@0.0.4
+  - @pact-toolbox/init@0.0.5
+  - @pact-toolbox/test@0.0.4
+
 ## 0.0.3
 
 ### Patch Changes

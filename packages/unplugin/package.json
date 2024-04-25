@@ -1,6 +1,6 @@
 {
   "name": "@pact-toolbox/unplugin",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/kadena-community/pact-toolbox.git"
@@ -164,20 +164,20 @@
     "@nuxt/kit": "^3.11.2",
     "@nuxt/schema": "^3.11.2",
     "@pact-toolbox/tsconfig": "workspace:*",
-    "@rsbuild/core": "0.6.2",
-    "@rspack/core": "^0.6.1",
+    "@rsbuild/core": "0.6.6",
+    "@rspack/core": "^0.6.3",
     "@types/node": "^20.12.7",
-    "@vitest/coverage-v8": "^1.5.0",
+    "@vitest/coverage-v8": "^1.5.2",
     "fast-glob": "^3.3.2",
     "lint-staged": "^15.2.2",
-    "next": "^14.2.1",
-    "oxlint": "^0.2.17",
-    "rollup": "^4.14.3",
+    "next": "^14.2.3",
+    "oxlint": "^0.3.1",
+    "rollup": "^4.16.4",
     "tsup": "^8.0.2",
-    "tsx": "^4.7.2",
+    "tsx": "^4.7.3",
     "typescript": "^5.4.5",
-    "vite": "^5.2.9",
-    "vitest": "^1.5.0",
+    "vite": "^5.2.10",
+    "vitest": "^1.5.2",
     "webpack": "^5.91.0"
   }
 }
