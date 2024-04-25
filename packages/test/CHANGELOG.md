@@ -1,5 +1,11 @@
 # @pact-toolbox/test
 
+## 0.0.6
+
+### Patch Changes
+
+- @pact-toolbox/network@0.0.6
+
 ## 0.0.5
 
 ### Patch Changes
