@@ -6,7 +6,8 @@ describe('todos api devnet', async () => {
   let id = getUuid();
   let title = 'Learn pact';
   const env = await createPactTestEnv({
-    network: 'devnet',
+    network: 'local',
+    enableProxy: false,
   });
 
   beforeAll(async () => {

@@ -1,5 +1,12 @@
 # @pact-toolbox/network
 
+## 0.0.5
+
+### Patch Changes
+
+- Updated dependencies
+  - @pact-toolbox/prelude@0.0.5
+
 ## 0.0.4
 
 ### Patch Changes

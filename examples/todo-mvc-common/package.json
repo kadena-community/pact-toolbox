@@ -1,13 +1,13 @@
 {
   "name": "todo-mvc-common",
   "private": true,
-  "version": "0.0.3",
+  "version": "0.0.4",
   "type": "module",
   "main": "src/index.ts",
   "scripts": {
     "lint": "oxlint --import-plugin  -D all && prettier -c src",
     "lint:fix": "oxlint --import-plugin  -D all --fix && prettier -c src -w",
-    "test": "NODE_OPTIONS='--import tsx' vitest run",
+    "test": "npx pact-toolbox pact install && npx pact-toolbox prelude && NODE_OPTIONS='--import tsx' vitest run",
     "verify": "tsc --noEmit"
   },
   "dependencies": {

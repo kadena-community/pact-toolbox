@@ -135,12 +135,7 @@ export async function downloadPreludes(config: CommonPreludeOptions) {
 export function isPreludeDownloaded(prelude: PactPrelude, preludesDir: string) {
   const specs = Array.isArray(prelude.specs) ? prelude.specs : Object.values(prelude.specs).flat();
   const paths = specs.map((spec) => join(preludesDir, spec.group || 'root', spec.name));
-  for (const path of paths) {
-    if (!existsSync(path)) {
-      return false;
-    }
-  }
-  return true;
+  return paths.every((p) => existsSync(p));
 }
 
 export async function shouldDownloadPreludes(config: CommonPreludeOptions) {

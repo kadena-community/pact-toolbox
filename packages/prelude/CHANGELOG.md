@@ -1,5 +1,11 @@
 # @pact-toolbox/prelude
 
+## 0.0.5
+
+### Patch Changes
+
+- Fix prelude download check
+
 ## 0.0.4
 
 ### Patch Changes

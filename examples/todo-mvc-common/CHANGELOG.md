@@ -1,5 +1,11 @@
 # todo-mvc-common
 
+## 0.0.4
+
+### Patch Changes
+
+- Fix prelude download check
+
 ## 0.0.3
 
 ### Patch Changes

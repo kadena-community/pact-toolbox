@@ -7,7 +7,8 @@ describe('todos api devnetOnDemand', async () => {
   let title = 'Learn pact';
 
   const env = await createPactTestEnv({
-    network: 'devnetOnDemand',
+    network: 'local',
+    enableProxy: false,
   });
 
   beforeAll(async () => {
