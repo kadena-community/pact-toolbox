@@ -13,18 +13,15 @@ export const preludeCommand = defineCommand({
   run: async () => {
     const config = await resolveConfig();
     const client = new PactToolboxClient(config);
+    const start = performance.now();
     await downloadPreludes({
       client,
       contractsDir: config.contractsDir ?? 'pact',
       preludes: config.preludes ?? [],
     });
+    const end = performance.now();
     logger.box(
-      `All preludes downloaded successfully 🎉\nYou can load them in repl from ${join(
-        process.cwd(),
-        config.contractsDir ?? '',
-        'prelude',
-        'init.repl',
-      )}`,
+      `All preludes downloaded successfully in ${Math.round(end - start) / 1000}s 🎉\nYou can load them in repl from ${join(process.cwd(), config.contractsDir ?? '', 'prelude', 'init.repl')}`,
     );
   },
 });

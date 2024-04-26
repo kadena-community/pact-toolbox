@@ -3,7 +3,6 @@ import { logger, writeFileAtPath } from '@pact-toolbox/utils';
 import { downloadTemplate } from 'giget';
 import { existsSync } from 'node:fs';
 import { cp, mkdir, rm } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
 import { join } from 'pathe';
 import { resolvePreludes } from './resolvePrelude';
 import type { CommonPreludeOptions, PactDependency, PactPrelude } from './types';
@@ -21,8 +20,19 @@ export function groupByBaseRepo(specs: PactDependency[]) {
   return groups;
 }
 
-const tempDir = join(tmpdir(), 'pact-toolbox');
-export async function downloadPactDependency(dep: PactDependency, preludeDir: string, preferOffline = true) {
+const tempDir = join(process.cwd(), '.pact-toolbox/tmp');
+export async function downloadGitRepo(dest: string, uri: string, force = false, preferOffline = false) {
+  if (!existsSync(dest) || force) {
+    await downloadTemplate(uri, {
+      dir: dest,
+      cwd: process.cwd(),
+      force: true,
+      silent: false,
+      preferOffline,
+    });
+  }
+}
+export async function downloadPactDependency(dep: PactDependency, preludeDir: string) {
   const dir = join(preludeDir, dep.group || 'root');
   let uri = dep.uri;
   const { subdir, repo, provider, ref } = parseGitURI(dep.uri);
@@ -31,16 +41,11 @@ export async function downloadPactDependency(dep: PactDependency, preludeDir: st
     uri = `${provider}:${repo}#${ref}`;
   }
   try {
-    const res = await downloadTemplate(uri, {
-      dir: join(tempDir, dep.group || 'root'),
-      cwd: process.cwd(),
-      force: true,
-      silent: false,
-      preferOffline,
-    });
+    const clonePath = join(tempDir, dep.group || 'root');
+    await downloadGitRepo(clonePath, uri, false);
     if (isSingleFile) {
       const fileName = subdir.split('/').pop() ?? dep.name;
-      await cp(join(res.dir, fileName), join(dir, dep.name), {
+      await cp(join(clonePath, fileName), join(dir, dep.name), {
         recursive: true,
       });
     }
@@ -49,7 +54,7 @@ export async function downloadPactDependency(dep: PactDependency, preludeDir: st
   }
 
   if (dep.requires) {
-    await Promise.all(dep.requires.map((dep) => downloadPactDependency(dep, preludeDir, preferOffline)));
+    await Promise.all(dep.requires.map((dep) => downloadPactDependency(dep, preludeDir)));
   }
 }
 
@@ -80,17 +85,12 @@ export async function downloadPrelude(
   const specs = Array.isArray(prelude.specs) ? prelude.specs : Object.values(prelude.specs).flat();
   const groups = groupByBaseRepo(specs);
   for (const [repo, specs] of Object.entries(groups)) {
-    const res = await downloadTemplate(repo, {
-      dir: join(tempDir, prelude.name),
-      cwd: process.cwd(),
-      force: true,
-      registry: false,
-      silent: false,
-    });
+    const clonePath = join(tempDir, prelude.name);
+    await downloadGitRepo(clonePath, repo, false);
     for (const spec of specs) {
       const dir = join(preludeDir, spec.group || 'root');
       const { subdir } = parseGitURI(spec.uri);
-      await cp(join(res.dir, subdir), join(dir, spec.name), {
+      await cp(join(clonePath, subdir), join(dir, spec.name), {
         recursive: true,
       });
     }
@@ -104,6 +104,8 @@ export async function downloadPrelude(
 export async function downloadPreludes(config: CommonPreludeOptions) {
   const downloaded = new Set<string>();
   const { preludes, preludesDir } = await resolvePreludes(config);
+  // clean temp dir
+  await rm(tempDir, { recursive: true, force: true });
   // clean preludes dir
   await rm(preludesDir, { recursive: true, force: true });
 

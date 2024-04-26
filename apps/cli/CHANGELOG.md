@@ -1,5 +1,16 @@
 # pact-toolbox
 
+## 0.0.7
+
+### Patch Changes
+
+- Fix preludes cache and cloning
+- Updated dependencies
+  - @pact-toolbox/prelude@0.0.7
+  - @pact-toolbox/network@0.0.7
+  - @pact-toolbox/script@0.0.7
+  - @pact-toolbox/test@0.0.7
+
 ## 0.0.6
 
 ### Patch Changes

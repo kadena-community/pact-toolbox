@@ -16,7 +16,7 @@ const chainWebSpec: Record<string, PactDependency[]> = {
     preludeSpec('gas-payer-v1.pact', chainWebPath('gas-payer/gas-payer-v1.pact')),
     preludeSpec('fungible-v2.pact', chainWebPath('coin-contract/v2/fungible-v2.pact')),
     preludeSpec('fungible-xchain-v1.pact', chainWebPath('coin-contract/v4/fungible-xchain-v1.pact')),
-    preludeSpec('coin-v6.pact', chainWebPath('coin-contract/v6/coin-v6-install.pact')),
+    preludeSpec('coin.pact', chainWebPath('coin-contract/coin-install.pact')),
   ],
   util: [
     preludeSpec('util-ns.pact', chainWebPath('util/util-ns.pact'), 'util'),

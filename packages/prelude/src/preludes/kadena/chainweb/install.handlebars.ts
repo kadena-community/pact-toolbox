@@ -10,7 +10,7 @@ export const template = `
 (load "root/gas-payer-v1.pact")
 (load "root/fungible-v2.pact")
 (load "root/fungible-xchain-v1.pact")
-(load "root/coin-v6.pact")
+(load "root/coin.pact")
 (commit-tx)
 
 

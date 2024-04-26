@@ -1,5 +1,11 @@
 # @pact-toolbox/prelude
 
+## 0.0.7
+
+### Patch Changes
+
+- Fix preludes cache and cloning
+
 ## 0.0.6
 
 ### Patch Changes
