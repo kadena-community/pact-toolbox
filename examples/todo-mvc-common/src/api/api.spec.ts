@@ -2,7 +2,7 @@ import { createPactTestEnv, getUuid } from 'pact-toolbox';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createTodo, deleteTodoById, editTodoById, readTodoById, readTodos, toggleTodoStatusById } from './api';
 
-describe('todos api devnet', async () => {
+describe('todos api', async () => {
   let id = getUuid();
   let title = 'Learn pact';
   const env = await createPactTestEnv({
