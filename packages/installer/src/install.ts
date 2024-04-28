@@ -171,6 +171,12 @@ export async function installPact({
     await activatePactVersion(assetInfo.version);
   }
   await updateShellProfileScript();
+
+  return {
+    binaryPath: join(versionDir, binary ?? 'pact'),
+    files,
+    ...assetInfo,
+  };
 }
 
 export async function removePactVersion(version: string) {

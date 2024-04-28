@@ -1,5 +1,11 @@
 # @pact-toolbox/installer
 
+## 0.0.8
+
+### Patch Changes
+
+- Return version info from installPact function
+
 ## 0.0.7
 
 ### Patch Changes
