@@ -1,0 +1,7 @@
+;; intro2.repl
+;; I AM NOT DONE
+
+(let ((name "pactlings!"))
+  ;; print "Hello pactlings!" to the console
+
+)
