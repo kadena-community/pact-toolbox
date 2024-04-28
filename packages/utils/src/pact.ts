@@ -9,12 +9,12 @@ export function normalizeVersion(version: string) {
   return version;
 }
 
-export async function isPactInstalled(match?: string) {
-  const version = await getInstalledPactVersion();
+export async function isAnyPactInstalled(match?: string) {
+  const version = await getCurrentPactVersion();
   return match ? version?.includes(match) : !!version;
 }
 
-export async function getInstalledPactVersion() {
+export async function getCurrentPactVersion() {
   try {
     const { stdout } = await execAsync('pact --version');
     const match = stdout.match(PACT_VERSION_REGEX);

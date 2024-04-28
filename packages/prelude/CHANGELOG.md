@@ -1,5 +1,12 @@
 # @pact-toolbox/prelude
 
+## 0.0.9
+
+### Patch Changes
+
+- Updated dependencies
+  - @pact-toolbox/utils@0.0.6
+
 ## 0.0.8
 
 ### Patch Changes

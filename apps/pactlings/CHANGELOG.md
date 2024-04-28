@@ -1,5 +1,11 @@
 # pactlings
 
+## 0.0.10
+
+### Patch Changes
+
+- Improve installer version detection
+
 ## 0.0.9
 
 ### Patch Changes

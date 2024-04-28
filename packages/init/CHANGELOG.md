@@ -1,5 +1,12 @@
 # @pact-toolbox/init
 
+## 0.0.7
+
+### Patch Changes
+
+- Updated dependencies
+  - @pact-toolbox/utils@0.0.6
+
 ## 0.0.6
 
 ### Patch Changes

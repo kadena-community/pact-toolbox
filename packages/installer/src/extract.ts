@@ -1,4 +1,4 @@
-import { normalizeVersion, writeFileAtPath } from '@pact-toolbox/utils';
+import { normalizeVersion } from '@pact-toolbox/utils';
 import { existsSync } from 'node:fs';
 import { chmod, mkdir, rm } from 'node:fs/promises';
 import { join } from 'pathe';
@@ -8,12 +8,11 @@ import { Open } from 'unzipper';
 export interface ExtractTarballOptions {
   filter?: string[];
   executable?: string;
-  writeMetadata?: boolean;
 }
 export async function extractTarball(
   tarball: string,
   dest: string,
-  { executable = 'pact', filter, writeMetadata = true }: ExtractTarballOptions = {},
+  { executable = 'pact', filter }: ExtractTarballOptions = {},
 ) {
   const isTarball = tarball.endsWith('.tar.gz');
   let version = dest.split('/').pop();
@@ -48,19 +47,8 @@ export async function extractTarball(
   if (binary) {
     await chmod(join(dest, binary), 0o755);
   }
-  if (writeMetadata) {
-    // write metadata file
-    await writeFileAtPath(
-      join(dest, 'metadata.json'),
-      JSON.stringify(
-        {
-          version,
-          binary,
-          files,
-        },
-        null,
-        2,
-      ),
-    );
-  }
+  return {
+    binary,
+    files,
+  };
 }

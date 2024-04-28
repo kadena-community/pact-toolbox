@@ -1,4 +1,5 @@
 export * from './chainwebApi';
+export * from './date';
 export * from './docker';
 export * from './fs';
 export * from './helpers';

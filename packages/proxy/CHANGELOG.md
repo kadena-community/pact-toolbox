@@ -1,5 +1,12 @@
 # @pact-toolbox/proxy
 
+## 0.0.6
+
+### Patch Changes
+
+- Updated dependencies
+  - @pact-toolbox/utils@0.0.6
+
 ## 0.0.5
 
 ### Patch Changes

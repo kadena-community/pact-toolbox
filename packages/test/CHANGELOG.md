@@ -1,5 +1,13 @@
 # @pact-toolbox/test
 
+## 0.0.9
+
+### Patch Changes
+
+- Updated dependencies
+  - @pact-toolbox/network@0.0.9
+  - @pact-toolbox/utils@0.0.6
+
 ## 0.0.8
 
 ### Patch Changes

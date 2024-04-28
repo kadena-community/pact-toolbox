@@ -1,9 +1,11 @@
 import { existsSync } from 'node:fs';
-import { readdir } from 'node:fs/promises';
+import { readdir, readFile } from 'node:fs/promises';
 import { join } from 'pathe';
+import { InstalledPactVersionMetadata } from './activate';
 import { PACT4X_REPO, PACT5X_REPO, PACT_ROOT_DIR } from './constants';
+import { isActivePactVersion } from './install';
 import { fetchPactGithubReleases } from './releaseInfo';
-import { getInstalledPactVersion, isNightlyPactVersion, normalizeVersion } from './utils';
+import { compareVersions, getCurrentPactVersion, isNightlyPactVersion, normalizeVersion } from './utils';
 
 export async function listRemotePactVersions() {
   const releases = await fetchPactGithubReleases(PACT4X_REPO);
@@ -22,26 +24,34 @@ export async function listRemotePactVersions() {
   };
 }
 
-export interface InstalledPactVersion {
+export interface InstalledPactVersion extends InstalledPactVersionMetadata {
   version: string;
   path: string;
   isActive: boolean;
 }
-export async function listInstalledPactVersions() {
+export async function listInstalledPactVersions(includeNightly = true) {
   const versions: InstalledPactVersion[] = [];
-  const installedVersion = await getInstalledPactVersion();
+  const currentVersion = await getCurrentPactVersion();
   if (!existsSync(PACT_ROOT_DIR)) {
     return versions;
   }
   for (const f of await readdir(PACT_ROOT_DIR)) {
-    const areNightly = isNightlyPactVersion(f) && installedVersion && isNightlyPactVersion(installedVersion);
-    const isActive = installedVersion ? normalizeVersion(f).includes(normalizeVersion(installedVersion)) : false;
+    if (!includeNightly && isNightlyPactVersion(normalizeVersion(f))) {
+      continue;
+    }
+    const areNightly = isNightlyPactVersion(f) && currentVersion && isNightlyPactVersion(currentVersion);
+    const isActive = await isActivePactVersion(f, currentVersion);
+    const path = join(PACT_ROOT_DIR, f);
+    const metadata = await readFile(join(path, 'metadata.json'), 'utf-8')
+      .then(JSON.parse)
+      .catch(() => undefined);
     versions.push({
+      path,
       version: f,
-      path: join(PACT_ROOT_DIR, f),
       isActive: areNightly || isActive,
+      ...metadata,
     });
   }
 
-  return versions;
+  return versions.sort((a, b) => compareVersions(a.version, b.version));
 }

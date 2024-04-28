@@ -1,6 +1,6 @@
 import type { PactServerConfig, PactServerNetworkConfig } from '@pact-toolbox/config';
 import { createPactServerConfig } from '@pact-toolbox/config';
-import { findProcess, getUuid, isPactInstalled, killProcess, runBin } from '@pact-toolbox/utils';
+import { findProcess, getUuid, isAnyPactInstalled, killProcess, runBin } from '@pact-toolbox/utils';
 import type { ChildProcessWithoutNullStreams } from 'child_process';
 import { mkdir, writeFile } from 'fs/promises';
 import { rm } from 'node:fs/promises';
@@ -84,7 +84,7 @@ export class PactServerNetwork implements ToolboxNetworkApi {
   }
 
   async start({ silent = false, isStateless = false, conflict = 'error' }: ToolboxNetworkStartOptions = {}) {
-    const isInstalled = await isPactInstalled();
+    const isInstalled = await isAnyPactInstalled();
     if (!isInstalled) {
       throw new Error('Pact is not installed, try running `npx pact-toolbox pact install`');
     }

@@ -122,51 +122,6 @@ importers:
 
   apps/pactlings:
     dependencies:
-      '@kadena/client':
-        specifier: ^1.11.0
-        version: 1.11.0
-      '@kadena/pactjs':
-        specifier: ^0.4.2
-        version: 0.4.2
-      '@kadena/pactjs-cli':
-        specifier: ^1.11.0
-        version: 1.11.0
-      '@kadena/types':
-        specifier: ^0.6.1
-        version: 0.6.1
-      '@pact-toolbox/client-utils':
-        specifier: workspace:*
-        version: link:../../packages/client-utils
-      '@pact-toolbox/config':
-        specifier: workspace:*
-        version: link:../../packages/config
-      '@pact-toolbox/fabricator':
-        specifier: workspace:*
-        version: link:../../packages/fabricator
-      '@pact-toolbox/init':
-        specifier: workspace:*
-        version: link:../../packages/init
-      '@pact-toolbox/installer':
-        specifier: workspace:*
-        version: link:../../packages/installer
-      '@pact-toolbox/network':
-        specifier: workspace:*
-        version: link:../../packages/network
-      '@pact-toolbox/prelude':
-        specifier: workspace:*
-        version: link:../../packages/prelude
-      '@pact-toolbox/runtime':
-        specifier: workspace:*
-        version: link:../../packages/runtime
-      '@pact-toolbox/script':
-        specifier: workspace:*
-        version: link:../../packages/script
-      '@pact-toolbox/test':
-        specifier: workspace:*
-        version: link:../../packages/test
-      '@pact-toolbox/utils':
-        specifier: workspace:*
-        version: link:../../packages/utils
       citty:
         specifier: ^0.1.6
         version: 0.1.6
@@ -9052,7 +9007,7 @@ snapshots:
       joycon: 3.1.1
       postcss-load-config: 4.0.2(postcss@8.4.38)
       resolve-from: 5.0.0
-      rollup: 4.17.0
+      rollup: 4.9.4
       source-map: 0.8.0-beta.0
       sucrase: 3.35.0
       tree-kill: 1.2.2

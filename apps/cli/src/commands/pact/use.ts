@@ -1,5 +1,5 @@
-import { activatePactVersion } from '@pact-toolbox/installer';
-import { getInstalledPactVersion, logger, normalizeVersion } from '@pact-toolbox/utils';
+import { activatePactVersion, isActivePactVersion, isNightlyPactVersion } from '@pact-toolbox/installer';
+import { logger } from '@pact-toolbox/utils';
 import { defineCommand } from 'citty';
 
 export const useCommand = defineCommand({
@@ -16,10 +16,9 @@ export const useCommand = defineCommand({
     },
   },
   run: async ({ args }) => {
-    let currentVersion = await getInstalledPactVersion();
-    const isNightly =
-      currentVersion?.includes('5.0') || currentVersion?.includes('nightly') || currentVersion?.includes('dev');
-    if (currentVersion && normalizeVersion(currentVersion) === normalizeVersion(args.version) && !isNightly) {
+    const isNightly = isNightlyPactVersion(args.version);
+    const isActive = await isActivePactVersion(args.version);
+    if (isActive && !isNightly) {
       logger.info(`Already using pact version ${args.version}`);
       return;
     }

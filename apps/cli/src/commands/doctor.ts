@@ -1,5 +1,5 @@
-import { getPactInstallationInfo, installPact } from '@pact-toolbox/installer';
-import { isDockerInstalled, logger } from '@pact-toolbox/utils';
+import { installPact } from '@pact-toolbox/installer';
+import { isAnyPactInstalled, isDockerInstalled, logger } from '@pact-toolbox/utils';
 import { defineCommand } from 'citty';
 
 export const doctorCommand = defineCommand({
@@ -9,17 +9,15 @@ export const doctorCommand = defineCommand({
   },
   run: async () => {
     // check if pact is installed
-    const { isInstalled, latestVersion } = await getPactInstallationInfo();
+    const isInstalled = await isAnyPactInstalled();
     if (!isInstalled) {
       logger.warn(`Pact is not installed!`);
-      const answer = await logger.prompt(`Would you like to install Pact ${latestVersion}?`, {
+      const answer = await logger.prompt(`Would you like to install pact latest version?`, {
         type: 'confirm',
         default: true,
       });
       if (answer === true) {
-        await installPact({
-          version: latestVersion,
-        });
+        await installPact();
       }
     }
     // check if docker is installed

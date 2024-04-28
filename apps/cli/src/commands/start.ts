@@ -1,5 +1,4 @@
 import { resolveConfig } from '@pact-toolbox/config';
-import { versionCheckMiddleware } from '@pact-toolbox/installer';
 import { startLocalNetwork } from '@pact-toolbox/network';
 import { defineCommand } from 'citty';
 
@@ -41,7 +40,6 @@ export const startCommand = defineCommand({
     },
   },
   run: async ({ args }) => {
-    await versionCheckMiddleware();
     const config = await resolveConfig();
     const { network, quiet, tunnel, clipboard } = args;
     //@ts-ignore

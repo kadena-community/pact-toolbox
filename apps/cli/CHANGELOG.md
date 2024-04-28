@@ -1,5 +1,20 @@
 # pact-toolbox
 
+## 0.0.10
+
+### Patch Changes
+
+- Improve installer version detection
+- Updated dependencies
+  - @pact-toolbox/installer@0.0.7
+  - @pact-toolbox/network@0.0.9
+  - @pact-toolbox/utils@0.0.6
+  - @pact-toolbox/script@0.0.9
+  - @pact-toolbox/test@0.0.9
+  - @pact-toolbox/fabricator@0.0.2
+  - @pact-toolbox/init@0.0.7
+  - @pact-toolbox/prelude@0.0.9
+
 ## 0.0.9
 
 ### Patch Changes

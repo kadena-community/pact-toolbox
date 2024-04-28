@@ -1,5 +1,6 @@
 export * from './activate';
 export * from './constants';
+export * from './env';
 export * from './extract';
 export * from './install';
 export * from './list';

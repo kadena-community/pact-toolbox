@@ -1,6 +1,6 @@
 {
   "name": "pactlings",
-  "version": "0.0.9",
+  "version": "0.0.10",
   "description": "A tool to help you build, test and deploy your Pact smart contracts",
   "keywords": [
     "pact",
@@ -11,10 +11,10 @@
   "author": "Salama Ashoush <salamaashoush@gmail.com>",
   "license": "MIT",
   "type": "module",
-  "private": false,
+  "private": true,
   "main": "./src/index.ts",
   "bin": {
-    "pact-toolbox": "./src/cli.ts"
+    "pactlings": "./src/cli.ts"
   },
   "files": [
     "dist"
@@ -38,12 +38,11 @@
     "module": "./dist/index.js",
     "types": "./dist/index.d.ts",
     "bin": {
-      "pact-toolbox": "./bin/pact-toolbox.mjs"
+      "pactlings": "./bin/pactlings.mjs"
     }
   },
   "scripts": {
     "cli": "tsx src/cli.ts",
-    "playground": "tsx src/playground.ts",
     "build": "tsup",
     "dev": "tsup --watch",
     "lint": "oxlint --import-plugin  -D all && prettier -c src",
@@ -55,21 +54,6 @@
     "verify": "tsc --noEmit --skipLibCheck"
   },
   "dependencies": {
-    "@kadena/client": "^1.11.0",
-    "@kadena/pactjs": "^0.4.2",
-    "@kadena/pactjs-cli": "^1.11.0",
-    "@kadena/types": "^0.6.1",
-    "@pact-toolbox/client-utils": "workspace:*",
-    "@pact-toolbox/config": "workspace:*",
-    "@pact-toolbox/fabricator": "workspace:*",
-    "@pact-toolbox/init": "workspace:*",
-    "@pact-toolbox/installer": "workspace:*",
-    "@pact-toolbox/network": "workspace:*",
-    "@pact-toolbox/prelude": "workspace:*",
-    "@pact-toolbox/runtime": "workspace:*",
-    "@pact-toolbox/script": "workspace:*",
-    "@pact-toolbox/test": "workspace:*",
-    "@pact-toolbox/utils": "workspace:*",
     "citty": "^0.1.6",
     "defu": "^6.1.4",
     "pathe": "^1.1.2"
