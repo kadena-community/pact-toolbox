@@ -39,7 +39,9 @@ export async function extractTarball(
     }
     await directory.extract({ path: dest, verbose: true });
     for (const entry of directory.files) {
-      files.push(entry.path);
+      if (entry.type === 'File' && (!filter || filter.some((f) => entry.path.includes(f)))) {
+        files.push(entry.path);
+      }
     }
   }
   // make it executable

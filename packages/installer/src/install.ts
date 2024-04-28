@@ -13,7 +13,7 @@ import { activatePactVersion } from './activate';
 import { KADENA_BIN_DIR, PACT4X_REPO, PACT5X_REPO, PACT_ROOT_DIR, Z3_URL } from './constants';
 import { updateShellProfileScript } from './env';
 import { extractTarball } from './extract';
-import { listInstalledPactVersions } from './list';
+import { InstalledPactVersion, listInstalledPactVersions } from './list';
 import {
   PactRemoteAssetInfo,
   downloadTarball,
@@ -57,7 +57,23 @@ export async function isPactVersionInstalled(version: string) {
   return installedVersions.some((v) => areVersionMatching(v.version, version)) || !!currentVersion;
 }
 
-export async function getPactInstallationInfo({ version, nightly }: PactInstallCommonOptions = {}) {
+export interface PactInstallationInfo {
+  foundAnyVersion: boolean;
+  updatedAt: string;
+  isNightlyVersion: boolean;
+  isInstalled: boolean;
+  currentVersion?: string;
+  latestVersion: string;
+  isManagedVersion: boolean;
+  isCurrentVersion: boolean;
+  isUpToDate: boolean;
+  versionInfo: InstalledPactVersion;
+}
+
+export async function getPactInstallationInfo({
+  version,
+  nightly,
+}: PactInstallCommonOptions = {}): Promise<PactInstallationInfo> {
   const latestRelease = await fetchLatestPactGithubRelease(nightly ? PACT5X_REPO : PACT4X_REPO);
   const latestVersion = latestRelease.tag_name;
   if (!version) {
@@ -71,7 +87,7 @@ export async function getPactInstallationInfo({ version, nightly }: PactInstallC
   const isCurrentVersion = await isActivePactVersion(version, currentVersion);
   const isInstalled = isCurrentVersion || managedVersions.some((mv) => areVersionMatching(mv.version, version));
   const isNightlyVersion = !!currentVersion && isNightlyPactVersion(currentVersion);
-  const foundManagedVersion = managedVersions.find((mv) => areVersionMatching(mv.version, version));
+  const foundManagedVersion = managedVersions.find((mv) => areVersionMatching(mv.version, version))!;
   let isUpToDate = false;
   if (latestRelease.assets.length > 0) {
     const latestUpdate = latestRelease.assets[0].updated_at;
@@ -93,6 +109,7 @@ export async function getPactInstallationInfo({ version, nightly }: PactInstallC
     isManagedVersion,
     isCurrentVersion,
     isUpToDate,
+    versionInfo: foundManagedVersion ?? {},
   };
 }
 
@@ -112,7 +129,11 @@ export async function installZ3() {
   logger.success(`Z3 installed successfully 🎉`);
 }
 
-export async function writeVersionMetadata(asset: PactRemoteAssetInfo, binary?: string, files: string[] = []) {
+export async function writeVersionMetadata(
+  asset: PactRemoteAssetInfo,
+  pactExecutable: string = 'pact',
+  files: string[] = [],
+) {
   const dest = join(PACT_ROOT_DIR, asset.version);
   // write metadata file
   await writeFileAtPath(
@@ -120,8 +141,9 @@ export async function writeVersionMetadata(asset: PactRemoteAssetInfo, binary?: 
     JSON.stringify(
       {
         ...asset,
-        binary,
         files,
+        pactExecutable,
+        pactExecutablePath: join(dest, pactExecutable),
       },
       null,
       2,
@@ -133,12 +155,13 @@ export interface InstallPactOptions extends PactInstallCommonOptions {
   activate?: boolean;
   force?: boolean;
 }
+
 export async function installPact({
   version,
   nightly = false,
   force = false,
   activate = false,
-}: InstallPactOptions = {}) {
+}: InstallPactOptions = {}): Promise<InstalledPactVersion> {
   const repo = nightly ? PACT5X_REPO : PACT4X_REPO;
   const releases = await fetchPactGithubReleases(repo);
   if (!version) {
@@ -147,14 +170,14 @@ export async function installPact({
     version = (await findPactRelease({ version, nightly })).tag_name;
   }
   const assetInfo = await getPactRemoteAssetInfo(releases, version, nightly);
-  const { isInstalled, currentVersion } = await getPactInstallationInfo({
+  const { isInstalled, currentVersion, versionInfo } = await getPactInstallationInfo({
     version: assetInfo.version,
     nightly,
   });
   const versionDir = join(PACT_ROOT_DIR, assetInfo.version);
   if (isInstalled && !force) {
     logger.info(`Pact version ${assetInfo.version} is already installed at ${versionDir}`);
-    return;
+    return versionInfo;
   }
   logger.start(`Installing Pact version ${assetInfo.version}`);
   const path = await downloadTarball(assetInfo.downloadUrl);
@@ -173,9 +196,16 @@ export async function installPact({
   await updateShellProfileScript();
 
   return {
-    binaryPath: join(versionDir, binary ?? 'pact'),
+    ...versionInfo,
+    pactExecutablePath: join(versionDir, binary ?? 'pact'),
+    pactExecutable: binary ?? 'pact',
     files,
-    ...assetInfo,
+    version: assetInfo.version,
+    updatedAt: assetInfo.updatedAt,
+    createdAt: assetInfo.createdAt,
+    downloadUrl: assetInfo.downloadUrl,
+    isActive: Boolean(activate || !currentVersion || versionInfo?.isActive),
+    path: versionDir,
   };
 }
 

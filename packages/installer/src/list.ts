@@ -42,14 +42,13 @@ export async function listInstalledPactVersions(includeNightly = true) {
     const areNightly = isNightlyPactVersion(f) && currentVersion && isNightlyPactVersion(currentVersion);
     const isActive = await isActivePactVersion(f, currentVersion);
     const path = join(PACT_ROOT_DIR, f);
-    const metadata = await readFile(join(path, 'metadata.json'), 'utf-8')
-      .then(JSON.parse)
-      .catch(() => undefined);
+    const metadata: InstalledPactVersionMetadata = await readFile(join(path, 'metadata.json'), 'utf-8').then(
+      JSON.parse,
+    );
     versions.push({
       path,
-      version: f,
       isActive: areNightly || isActive,
-      ...metadata,
+      ...(metadata ?? {}),
     });
   }
 

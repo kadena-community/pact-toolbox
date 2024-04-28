@@ -1,5 +1,12 @@
 # pact-toolbox
 
+## 0.0.12
+
+### Patch Changes
+
+- Updated dependencies
+  - @pact-toolbox/installer@0.0.9
+
 ## 0.0.11
 
 ### Patch Changes
