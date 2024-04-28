@@ -1,9 +1,9 @@
 import { createWriteStream } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'pathe';
+import { finished } from 'stream/promises';
 import { NIGHTLY_BINARIES, PACT4X_REPO, PACT5X_REPO, STABLE_BINARIES } from './constants';
 import { compareVersions, normalizeVersion } from './utils';
-
 export interface GithubRelease {
   id: number;
   tag_name: string;
@@ -115,8 +115,11 @@ export async function downloadTarball(downloadUrl: string): Promise<string> {
     if (!res.body) {
       throw new Error('Response body is undefined');
     }
-    // @ts-ignore
-    await finished(Readable.fromWeb(res.body).pipe(writer));
+
+    await finished(
+      // @ts-ignore
+      Readable.fromWeb(res.body).pipe(writer),
+    );
     return path;
   } catch (error) {
     throw new Error(`Failed to download ${downloadUrl}: ${(error as Error).message}`);

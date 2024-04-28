@@ -1,6 +1,6 @@
 {
   "name": "pactlings",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "description": "A tool to help you build, test and deploy your Pact smart contracts",
   "keywords": [
     "pact",
