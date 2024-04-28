@@ -24,7 +24,7 @@ export interface WalletSigningApi {
   quickSign: ISignFunction;
 }
 
-export interface WalletProvider extends WalletSigningApi {
+export interface Wallet extends WalletSigningApi {
   isInstalled(): boolean;
   connect(networkId?: string): Promise<WalletSigner>;
   getSigner(networkId?: string): Promise<WalletSigner>;

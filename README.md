@@ -28,8 +28,8 @@ export default defineConfig({
     // add pact vite plugin
     pactVitePlugin({
       onReady: async (client) => {
-        const isDeployed = await client.isContractDeployed('free.todos');
-        await client.deployContract('todos.pact', {
+        const isDeployed = await client.isContractDeployed('free.hello-world');
+        await client.deployContract('hello-world.pact', {
           prepareTx: {
             upgrade: isDeployed,
           },

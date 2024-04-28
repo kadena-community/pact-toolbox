@@ -1,7 +1,7 @@
 import type { ISigningCap } from '@kadena/types';
 
 import type { IPactCommand } from '@kadena/client';
-import type { WalletAccount, WalletSigner } from '../../provider';
+import type { WalletAccount, WalletSigner } from '../../wallet';
 
 export interface KdaSendKadenaPayload {
   networkId: string;

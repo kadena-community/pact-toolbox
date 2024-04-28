@@ -1,8 +1,8 @@
 import { createEckoWalletQuicksign, createEckoWalletSign } from '@kadena/client';
-import type { WalletNetwork, WalletProvider } from '../../provider';
+import type { Wallet, WalletNetwork } from '../../wallet';
 import type { ConnectResponse, RequestAccountResponse, WalletApi, WalletEvent, WalletEventHandlers } from './types';
 
-export class EckoWalletProvider implements WalletProvider {
+export class EckoWalletProvider implements Wallet {
   private api: WalletApi;
   public sign = createEckoWalletSign();
   public quickSign = createEckoWalletQuicksign();

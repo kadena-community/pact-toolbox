@@ -1,5 +1,5 @@
 import { signingRequestToPactCommand } from '../../utils';
-import { ToolboxWalletProvider } from '../toolbox';
+import { ToolboxWallet } from '../toolbox';
 import type {
   KdaCheckStatusRequest,
   KdaConnectRequest,
@@ -10,7 +10,7 @@ import type {
   WalletRequest,
 } from './types';
 
-const toolboxWallet = new ToolboxWalletProvider();
+const toolboxWallet = new ToolboxWallet();
 
 async function handleKdaConnect(request: KdaConnectRequest) {
   const account = await toolboxWallet.connect(request.networkId);

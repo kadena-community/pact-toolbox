@@ -1,7 +1,7 @@
 import type { ChainId, IExecutionPayloadObject, IPactCommand, IUnsignedCommand } from '@kadena/client';
 import { hash } from '@kadena/cryptography-utils';
-import type { WalletSigner } from './provider';
 import type { KdaRequestSignRequest } from './providers/eckoWallet/types';
+import type { WalletSigner } from './wallet';
 
 export function signingRequestToPactCommand(request: KdaRequestSignRequest, signer: WalletSigner): IUnsignedCommand {
   const signingCmd = request.data.signingCmd;

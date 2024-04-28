@@ -8,10 +8,10 @@ import {
   getToolboxNetworkConfig,
   isToolboxInstalled,
 } from '@pact-toolbox/client-utils';
-import type { WalletProvider } from '../../provider';
+import type { Wallet } from '../../wallet';
 
 //const signers = generateKAccounts(10);
-export class ToolboxWalletProvider implements WalletProvider {
+export class ToolboxWallet implements Wallet {
   sign = createSignWithPactToolbox();
   quickSign = createSignWithPactToolbox();
 
