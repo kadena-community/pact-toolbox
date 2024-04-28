@@ -1,5 +1,11 @@
 # @pact-toolbox/installer
 
+## 0.0.9
+
+### Patch Changes
+
+- Expose more installation info
+
 ## 0.0.8
 
 ### Patch Changes

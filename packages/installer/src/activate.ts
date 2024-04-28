@@ -8,10 +8,11 @@ import { PactRemoteAssetInfo } from './releaseInfo';
 
 export interface InstalledPactVersionMetadata extends PactRemoteAssetInfo {
   version: string;
-  binary: string;
+  pactExecutable: string;
+  pactExecutablePath: string;
   files: string[];
 }
-export async function activatePactVersion(version: string, binary?: string) {
+export async function activatePactVersion(version: string, pactExecutable?: string) {
   const managedVersions = await listInstalledPactVersions();
   const installedVersion = managedVersions.find((v) => normalizeVersion(v.version).includes(normalizeVersion(version)));
   if (!installedVersion) {
@@ -27,8 +28,8 @@ export async function activatePactVersion(version: string, binary?: string) {
     .catch(() => {
       throw new Error(`Could not find metadata for version ${version}`);
     });
-  binary = binary || metadata.binary;
-  const pactBinary = binary.startsWith('/') ? binary : join(versionPath, binary);
+  pactExecutable = pactExecutable || metadata.pactExecutable;
+  const pactBinary = pactExecutable.startsWith('/') ? pactExecutable : join(versionPath, pactExecutable);
   if (!existsSync(pactBinary)) {
     throw new Error(`Could not find binary ${pactBinary}`);
   }
