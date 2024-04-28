@@ -1,21 +1,13 @@
 {
-  "name": "pact-toolbox",
-  "version": "0.0.7",
-  "description": "A tool to help you build, test and deploy your Pact smart contracts",
-  "keywords": [
-    "pact",
-    "kadena",
-    "tools"
-  ],
+  "name": "@pact-toolbox/fabricator",
+  "version": "0.0.0",
+  "description": "A tool to generate Pact contracts and components",
   "repository": "kadena-community/pact-toolbox",
   "author": "Salama Ashoush <salamaashoush@gmail.com>",
   "license": "MIT",
   "type": "module",
   "private": false,
   "main": "./src/index.ts",
-  "bin": {
-    "pact-toolbox": "./src/cli.ts"
-  },
   "files": [
     "dist"
   ],
@@ -36,14 +28,9 @@
     },
     "main": "./dist/index.cjs",
     "module": "./dist/index.js",
-    "types": "./dist/index.d.ts",
-    "bin": {
-      "pact-toolbox": "./bin/pact-toolbox.mjs"
-    }
+    "types": "./dist/index.d.ts"
   },
   "scripts": {
-    "cli": "tsx src/cli.ts",
-    "playground": "tsx src/playground.ts",
     "build": "tsup",
     "dev": "tsup --watch",
     "lint": "oxlint --import-plugin  -D all && prettier -c src",
@@ -55,37 +42,20 @@
     "verify": "tsc --noEmit --skipLibCheck"
   },
   "dependencies": {
-    "@kadena/client": "^1.11.0",
-    "@kadena/pactjs": "^0.4.2",
-    "@kadena/pactjs-cli": "^1.11.0",
-    "@kadena/types": "^0.6.1",
-    "@pact-toolbox/client-utils": "workspace:*",
-    "@pact-toolbox/config": "workspace:*",
-    "@pact-toolbox/fabricator": "workspace:*",
-    "@pact-toolbox/init": "workspace:*",
-    "@pact-toolbox/installer": "workspace:*",
-    "@pact-toolbox/network": "workspace:*",
-    "@pact-toolbox/prelude": "workspace:*",
-    "@pact-toolbox/runtime": "workspace:*",
-    "@pact-toolbox/script": "workspace:*",
-    "@pact-toolbox/test": "workspace:*",
     "@pact-toolbox/utils": "workspace:*",
-    "citty": "^0.1.6",
-    "defu": "^6.1.4",
-    "pathe": "^1.1.2"
+    "magicast": "^0.3.4",
+    "nypm": "^0.3.8",
+    "pathe": "^1.1.2",
+    "pkg-types": "^1.1.0"
   },
   "devDependencies": {
+    "@kadena/types": "^0.6.1",
     "@pact-toolbox/tsconfig": "workspace:*",
-    "@types/node": "^20.12.7",
     "@vitest/coverage-v8": "^1.5.2",
+    "lint-staged": "^15.2.2",
     "oxlint": "^0.3.1",
-    "prettier": "3.2.5",
     "tsup": "^8.0.2",
-    "tsx": "^4.7.3",
     "typescript": "^5.4.5",
     "vitest": "^1.5.2"
-  },
-  "peerDependencies": {
-    "vitest": "^1.2.2"
   }
 }

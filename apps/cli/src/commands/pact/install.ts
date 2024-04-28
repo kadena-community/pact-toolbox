@@ -41,6 +41,9 @@ export const installCommand = defineCommand({
     } else {
       logger.info(`Checking pact version ${args.version}`);
     }
-    await installPact(args.version && !args.latest ? args.version : undefined, args.nightly);
+    await installPact({
+      version: args.version && !args.latest ? args.version : undefined,
+      nightly: args.nightly,
+    });
   },
 });

@@ -1,4 +1,4 @@
-import { checkPactVersion, installPact } from '@pact-toolbox/installer';
+import { getPactInstallationInfo, installPact } from '@pact-toolbox/installer';
 import { isDockerInstalled, logger } from '@pact-toolbox/utils';
 import { defineCommand } from 'citty';
 
@@ -9,7 +9,7 @@ export const doctorCommand = defineCommand({
   },
   run: async () => {
     // check if pact is installed
-    const { isInstalled, latestVersion } = await checkPactVersion();
+    const { isInstalled, latestVersion } = await getPactInstallationInfo();
     if (!isInstalled) {
       logger.warn(`Pact is not installed!`);
       const answer = await logger.prompt(`Would you like to install Pact ${latestVersion}?`, {
@@ -17,7 +17,9 @@ export const doctorCommand = defineCommand({
         default: true,
       });
       if (answer === true) {
-        await installPact(latestVersion);
+        await installPact({
+          version: latestVersion,
+        });
       }
     }
     // check if docker is installed

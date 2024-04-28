@@ -15,6 +15,7 @@ const main = defineCommand({
     prelude: async () => (await import('./commands/prelude')).preludeCommand,
     run: async () => (await import('./commands/run')).runCommand,
     test: async () => (await import('./commands/test')).testCommand,
+    generate: async () => (await import('./commands/generate')).generateCommand,
   },
 });
 

@@ -6,5 +6,15 @@ export const upgradeCommand = defineCommand({
     name: 'upgrade',
     description: 'Upgrade Pact',
   },
-  run: upgradePact,
+  args: {
+    nightly: {
+      type: 'boolean',
+      name: 'nightly',
+      description: 'Upgrade to the nightly version',
+      required: false,
+    },
+  },
+  run: async ({ args }) => {
+    await upgradePact(args.nightly);
+  },
 });

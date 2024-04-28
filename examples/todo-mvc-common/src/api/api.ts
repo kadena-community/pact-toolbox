@@ -1,9 +1,9 @@
 import { Pact } from '@kadena/client';
 import { addDefaultMeta, createKadenaClient, createKdaClientHelpers, getUuid } from '@pact-toolbox/client-utils';
-import { ToolboxWalletProvider } from '@pact-toolbox/wallet';
+import { ToolboxWallet } from '@pact-toolbox/wallet';
 
 const getClient = createKadenaClient();
-const wallet = new ToolboxWalletProvider();
+const wallet = new ToolboxWallet();
 // const wallet = new EckoWalletProvider();
 const { dirtyReadOrFail, submitAndListen } = createKdaClientHelpers(getClient);
 export interface Todo {

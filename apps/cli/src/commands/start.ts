@@ -44,6 +44,7 @@ export const startCommand = defineCommand({
     await versionCheckMiddleware();
     const config = await resolveConfig();
     const { network, quiet, tunnel, clipboard } = args;
+    //@ts-ignore
     const _network = await startLocalNetwork(config, {
       silent: quiet || tunnel,
       logAccounts: true,

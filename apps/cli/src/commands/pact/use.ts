@@ -1,4 +1,4 @@
-import { switchPactVersion } from '@pact-toolbox/installer';
+import { activatePactVersion } from '@pact-toolbox/installer';
 import { getInstalledPactVersion, logger, normalizeVersion } from '@pact-toolbox/utils';
 import { defineCommand } from 'citty';
 
@@ -23,6 +23,6 @@ export const useCommand = defineCommand({
       logger.info(`Already using pact version ${args.version}`);
       return;
     }
-    await switchPactVersion(args.version);
+    await activatePactVersion(args.version);
   },
 });

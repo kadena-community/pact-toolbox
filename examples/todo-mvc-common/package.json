@@ -15,16 +15,16 @@
     "@pact-toolbox/client-utils": "workspace:*",
     "@pact-toolbox/wallet": "workspace:*",
     "@tanstack/react-query": "^5.32.0",
-    "react": "^18.2.0"
+    "react": "^18.3.1"
   },
   "devDependencies": {
     "@pact-toolbox/test": "workspace:*",
     "@pact-toolbox/unplugin": "workspace:*",
     "@pact-toolbox/wallet": "workspace:*",
-    "@testing-library/react": "~15.0.4",
+    "@testing-library/react": "~15.0.5",
     "@testing-library/user-event": "~14.5.2",
-    "@types/react": "^18.2.79",
-    "@types/react-dom": "^18.2.25",
+    "@types/react": "^18.3.1",
+    "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react-swc": "^3.6.0",
     "happy-dom": "^14.7.1",
     "oxlint": "^0.3.1",
