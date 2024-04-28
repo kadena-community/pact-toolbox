@@ -1,5 +1,11 @@
 # todo-mvc-next
 
+## 0.1.5
+
+### Patch Changes
+
+- todo-mvc-common@0.0.5
+
 ## 0.1.4
 
 ### Patch Changes

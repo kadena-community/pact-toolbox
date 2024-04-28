@@ -1,5 +1,11 @@
 # @pact-toolbox/wallet
 
+## 0.0.5
+
+### Patch Changes
+
+- `pact-toolbox generate` and installer refactoring
+
 ## 0.0.4
 
 ### Patch Changes

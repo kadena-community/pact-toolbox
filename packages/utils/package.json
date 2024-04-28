@@ -1,6 +1,6 @@
 {
   "name": "@pact-toolbox/utils",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "repository": "kadena-community/pact-toolbox",
   "author": "Salama Ashoush <salamaashoush@gmail.com>",
   "license": "MIT",

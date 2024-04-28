@@ -1,5 +1,13 @@
 # @pact-toolbox/installer
 
+## 0.0.5
+
+### Patch Changes
+
+- `pact-toolbox generate` and installer refactoring
+- Updated dependencies
+  - @pact-toolbox/utils@0.0.5
+
 ## 0.0.4
 
 ### Patch Changes
