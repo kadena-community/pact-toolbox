@@ -122,6 +122,9 @@ importers:
 
   apps/pactlings:
     dependencies:
+      '@pact-toolbox/utils':
+        specifier: workspace:*
+        version: link:../../packages/utils
       citty:
         specifier: ^0.1.6
         version: 0.1.6

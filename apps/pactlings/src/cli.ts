@@ -9,6 +9,10 @@ const main = defineCommand({
   },
   subCommands: {
     watch: async () => (await import('./commands/watch')).watchCommand,
+    run: async () => (await import('./commands/run')).runCommand,
+    list: async () => (await import('./commands/list')).listCommand,
+    reset: async () => (await import('./commands/reset')).resetCommand,
+    hint: async () => (await import('./commands/hint')).hintCommand,
   },
 });
 

@@ -56,7 +56,8 @@
   "dependencies": {
     "citty": "^0.1.6",
     "defu": "^6.1.4",
-    "pathe": "^1.1.2"
+    "pathe": "^1.1.2",
+    "@pact-toolbox/utils": "workspace:*"
   },
   "devDependencies": {
     "@pact-toolbox/tsconfig": "workspace:*",
