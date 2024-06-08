@@ -1,9 +1,10 @@
-import Docker from 'dockerode';
-import { statSync } from 'node:fs';
-import { logger } from './logger';
+import { statSync } from "node:fs";
+import Docker from "dockerode";
+
+import { logger } from "./logger";
 
 export function isDockerInstalled() {
-  const socket = process.env.DOCKER_SOCKET || '/var/run/docker.sock';
+  const socket = process.env.DOCKER_SOCKET || "/var/run/docker.sock";
   try {
     const stats = statSync(socket);
     return stats.isSocket();
@@ -21,7 +22,7 @@ export interface DockerContainerConfig {
 }
 
 export type DockerContainer = Docker.Container;
-export const DOCKER_SOCKET = process.env.DOCKER_SOCKET || '/var/run/docker.sock';
+export const DOCKER_SOCKET = process.env.DOCKER_SOCKET || "/var/run/docker.sock";
 
 export class DockerService {
   private docker: Docker;
@@ -60,7 +61,7 @@ export class DockerService {
       logger.log(`Image ${image} does not exist, pulling...`);
       // Pull the image
       await this.pullImage(image, (event) => {
-        logger.info(`${event.status} ${event.progressDetail || ''}`);
+        logger.info(`${event.status} ${event.progressDetail || ""}`);
       });
     }
   }
@@ -94,10 +95,10 @@ export class DockerService {
       });
       if (containerInfo) {
         const container = this.docker.getContainer(containerInfo.Id);
-        if (containerInfo.State === 'running') {
+        if (containerInfo.State === "running") {
           logger.log(`Container ${search} is running, killing...`);
           await container.kill({
-            signal: 'SIGKILL',
+            signal: "SIGKILL",
           });
         }
         logger.log(`Container ${search} exists, removing...`);
@@ -117,12 +118,12 @@ export class DockerService {
       const container = await this.docker.createContainer({
         Image: imageName,
         name: config.name,
-        ExposedPorts: { '8080/tcp': {} },
+        ExposedPorts: { "8080/tcp": {} },
         Env: Object.entries(env).map(([key, value]) => `${key}=${value}`),
         HostConfig: {
           Binds: config.volume ? [`${config.volume}:/data`] : [],
           PortBindings: {
-            '8080/tcp': [{ HostPort: `${config.port || 8080}`, HostIp: '127.0.0.1' }],
+            "8080/tcp": [{ HostPort: `${config.port || 8080}`, HostIp: "127.0.0.1" }],
           },
           PublishAllPorts: true,
           AutoRemove: true,
@@ -150,7 +151,7 @@ export class DockerService {
           logger.error(`Error attaching to container ${container.id}`);
           return;
         }
-        stream?.on('data', (chunk) => {
+        stream?.on("data", (chunk) => {
           logger.log(chunk.toString());
         });
       });

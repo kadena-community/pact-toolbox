@@ -1,5 +1,5 @@
-import { exec } from 'node:child_process';
-import { promisify } from 'node:util';
+import { exec } from "node:child_process";
+import { promisify } from "node:util";
 
 export async function pollFn(fn: () => Promise<boolean>, timeout: number, delayMs: number = 10) {
   const start = performance.now();
@@ -10,7 +10,7 @@ export async function pollFn(fn: () => Promise<boolean>, timeout: number, delayM
     }
     await delay(delayMs);
   }
-  throw new Error('Timeout');
+  throw new Error("Timeout");
 }
 
 export const execAsync = promisify(exec);

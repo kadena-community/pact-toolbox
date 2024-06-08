@@ -1,9 +1,10 @@
-import { useQuery } from '@tanstack/react-query';
-import { readTodos } from '../api/api';
+import { useQuery } from "@tanstack/react-query";
+
+import { readTodos } from "../api/api";
 
 export function TodoList() {
   const { data: todos = [], isLoading } = useQuery({
-    queryKey: ['todos/readTodos'],
+    queryKey: ["todos/readTodos"],
     queryFn: readTodos,
   });
 

@@ -1,7 +1,7 @@
-import type { IBuilder, IClient, ISignFunction } from '@kadena/client';
-import { createClient, createSignWithKeypair } from '@kadena/client';
-import { setGlobalConfig } from '@kadena/client-utils/core';
-import type { ChainId, IKeyPair } from '@kadena/types';
+import type { IBuilder, IClient, ISignFunction } from "@kadena/client";
+import type { ChainId, IKeyPair } from "@kadena/types";
+import { createClient, createSignWithKeypair } from "@kadena/client";
+import { setGlobalConfig } from "@kadena/client-utils/core";
 
 export interface Signer extends IKeyPair {
   account: string;
@@ -28,12 +28,12 @@ export interface ToolboxClientNetworkConfig {
 export type IClientConfig = Parameters<typeof setGlobalConfig>[0];
 
 export function isToolboxInstalled() {
-  return typeof (globalThis as any).__PACT_TOOLBOX_NETWORK_CONFIG__ === 'object';
+  return typeof (globalThis as any).__PACT_TOOLBOX_NETWORK_CONFIG__ === "object";
 }
 
 export function getToolboxNetworkConfig(): ToolboxClientNetworkConfig {
   if (!isToolboxInstalled()) {
-    throw new Error('Make sure you are using the pact-toolbox bundler plugin, eg `@pact-toolbox/unplugin`');
+    throw new Error("Make sure you are using the pact-toolbox bundler plugin, eg `@pact-toolbox/unplugin`");
   }
   return (globalThis as any).__PACT_TOOLBOX_NETWORK_CONFIG__;
 }
@@ -45,7 +45,7 @@ export function createKadenaClient() {
     if (!kdaClient) {
       kdaClient = createClient(({ networkId = config.networkId, chainId = config.meta.chainId }) =>
         config.rpcUrl.replace(/{networkId}|{chainId}/g, (match: string) =>
-          match === '{networkId}' ? networkId : chainId,
+          match === "{networkId}" ? networkId : chainId,
         ),
       );
     }
@@ -59,7 +59,7 @@ export function getToolboxClientUtilsDefaults(): IClientConfig {
     return {
       host: ({ networkId = network.networkId, chainId = network.meta.chainId }) =>
         network.rpcUrl.replace(/{networkId}|{chainId}/g, (match: string) =>
-          match === '{networkId}' ? networkId : chainId,
+          match === "{networkId}" ? networkId : chainId,
         ),
       defaults: {
         meta: network.meta,
@@ -68,7 +68,7 @@ export function getToolboxClientUtilsDefaults(): IClientConfig {
           {
             pubKey: network.defaultSigner.publicKey,
             address: network.defaultSigner.account,
-            scheme: 'ED25519',
+            scheme: "ED25519",
           },
         ],
       },
@@ -101,7 +101,7 @@ export function addDefaultMeta<T extends IBuilder<any>>(builder: T): T {
 
 export function getSignerAccount(signer?: string) {
   const network = getToolboxNetworkConfig();
-  signer = signer || network.senderAccount || 'sender00';
+  signer = signer || network.senderAccount || "sender00";
   const signerAccount = network.signers.find((s) => s.account === signer);
   if (!signerAccount) {
     throw new Error(`Signer ${signer} not found in network config`);

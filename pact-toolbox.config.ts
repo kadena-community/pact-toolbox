@@ -6,8 +6,9 @@ import {
   minimalDevNetContainer,
 } from 'pact-toolbox';
 
+console.log('Using root pact-toolbox.config.ts');
 export default defineConfig({
-  defaultNetwork: 'local',
+  defaultNetwork: 'devnetOnDemand',
   networks: {
     local: createLocalNetworkConfig(),
     devnetOnDemand: createDevNetNetworkConfig({

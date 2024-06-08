@@ -1,6 +1,7 @@
-import { createEckoWalletQuicksign, createEckoWalletSign } from '@kadena/client';
-import type { Wallet, WalletNetwork } from '../../wallet';
-import type { ConnectResponse, RequestAccountResponse, WalletApi, WalletEvent, WalletEventHandlers } from './types';
+import { createEckoWalletQuicksign, createEckoWalletSign } from "@kadena/client";
+
+import type { Wallet, WalletNetwork } from "../../wallet";
+import type { ConnectResponse, RequestAccountResponse, WalletApi, WalletEvent, WalletEventHandlers } from "./types";
 
 export class EckoWalletProvider implements Wallet {
   private api: WalletApi;
@@ -10,7 +11,7 @@ export class EckoWalletProvider implements Wallet {
   constructor() {
     // @ts-expect-error
     this.api = globalThis.kadena as WalletApi;
-    console.log('EckoWalletProvider', this.api);
+    console.log("EckoWalletProvider", this.api);
   }
 
   on<E extends WalletEvent>(event: E, callback: WalletEventHandlers[E]) {
@@ -28,10 +29,10 @@ export class EckoWalletProvider implements Wallet {
       networkId = network.networkId;
     }
     const res = await this.api.request<ConnectResponse>({
-      method: 'kda_connect',
+      method: "kda_connect",
       networkId,
     });
-    if (res.status === 'fail') {
+    if (res.status === "fail") {
       throw new Error(res.message);
     }
     return res.account;
@@ -51,10 +52,10 @@ export class EckoWalletProvider implements Wallet {
       networkId = network.networkId;
     }
     const res = await this.api.request<RequestAccountResponse>({
-      method: 'kda_requestAccount',
+      method: "kda_requestAccount",
       networkId,
     });
-    if (res.status === 'fail') {
+    if (res.status === "fail") {
       throw new Error(res.message);
     }
     return res.wallet;
@@ -75,14 +76,14 @@ export class EckoWalletProvider implements Wallet {
       networkId = network.networkId;
     }
     await this.api.request({
-      method: 'kda_disconnect',
+      method: "kda_disconnect",
       networkId,
     });
   }
 
   async getNetwork() {
     const result = await this.api.request<WalletNetwork>({
-      method: 'kda_getNetwork',
+      method: "kda_getNetwork",
     });
     return result;
   }
@@ -93,10 +94,10 @@ export class EckoWalletProvider implements Wallet {
       networkId = network.networkId;
     }
     const res = await this.api.request<ConnectResponse>({
-      method: 'kda_checkStatus',
+      method: "kda_checkStatus",
       networkId,
     });
-    if (res.status === 'fail') {
+    if (res.status === "fail") {
       throw new Error(res.message);
     }
     return res.account;

@@ -1,12 +1,13 @@
-import type { NetworkConfig, PactToolboxConfigObj } from '@pact-toolbox/config';
+import type { NetworkConfig, PactToolboxConfigObj } from "@pact-toolbox/config";
+
 import {
   getNetworkConfig,
   getSerializableNetworkConfig,
   isDevNetworkConfig,
   isLocalChainwebNetworkConfig,
   isPactServerNetworkConfig,
-} from '@pact-toolbox/config';
-import { getRandomNetworkPorts } from '@pact-toolbox/utils';
+} from "@pact-toolbox/config";
+import { getRandomNetworkPorts } from "@pact-toolbox/utils";
 
 export function disablePersistance(network: NetworkConfig) {
   if (isPactServerNetworkConfig(network) && network.serverConfig?.persistDir) {
@@ -27,7 +28,7 @@ export function disablePersistance(network: NetworkConfig) {
 export function getConfigOverrides(
   configOverrides?: Partial<PactToolboxConfigObj> | string,
 ): Partial<PactToolboxConfigObj> {
-  if (typeof configOverrides === 'string') {
+  if (typeof configOverrides === "string") {
     return {
       defaultNetwork: configOverrides,
     };

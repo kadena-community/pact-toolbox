@@ -1,17 +1,18 @@
-'use client';
+"use client";
 
-import { FormEvent, useState } from 'react';
+import { FormEvent, useState } from "react";
+
 interface TodoInputProps {
   addTodo: (title: string) => void;
 }
 
 export function TodoInput(props: TodoInputProps) {
-  const [title, setTitle] = useState('');
+  const [title, setTitle] = useState("");
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault();
     props.addTodo?.(title);
-    setTitle('');
+    setTitle("");
   }
 
   return (

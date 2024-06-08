@@ -1,4 +1,4 @@
-export type ConflictStrategy = 'error' | 'replace' | 'ignore';
+export type ConflictStrategy = "error" | "replace" | "ignore";
 
 export interface ToolboxNetworkStartOptions {
   silent?: boolean;

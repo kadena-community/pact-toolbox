@@ -1,5 +1,5 @@
-import { createPactTestEnv } from '@pact-toolbox/test';
-import { logger } from '@pact-toolbox/utils';
+import { createPactTestEnv } from "@pact-toolbox/test";
+import { logger } from "@pact-toolbox/utils";
 
 const table: Record<string, number> = {};
 
@@ -15,12 +15,12 @@ async function bench(label: string, f: () => Promise<void>) {
 }
 
 // local
-await bench('localPactServer', async () => {
+await bench("localPactServer", async () => {
   const local = await createPactTestEnv({
-    network: 'local',
+    network: "local",
   });
   await local.start();
-  await local.client.deployContract('hello-world.pact');
+  await local.client.deployContract("hello-world.pact");
   const signer = local.client.getValidateSigner();
   const tx = local.client
     .execution('(free.hello-world.say-hello "Salama")')
@@ -49,12 +49,12 @@ await bench('localPactServer', async () => {
 // });
 
 //  devnetOnDemand
-await bench('devnetOnDemand', async () => {
+await bench("devnetOnDemand", async () => {
   const devnetOnDemand = await createPactTestEnv({
-    network: 'devnetOnDemand',
+    network: "devnetOnDemand",
   });
   await devnetOnDemand.start();
-  await devnetOnDemand.client.deployContract('hello-world.pact');
+  await devnetOnDemand.client.deployContract("hello-world.pact");
   const signer = devnetOnDemand.client.getValidateSigner();
   const tx = devnetOnDemand.client
     .execution('(free.hello-world.say-hello "Salama")')
@@ -66,12 +66,12 @@ await bench('devnetOnDemand', async () => {
 });
 
 // devnet
-await bench('devnet', async () => {
+await bench("devnet", async () => {
   const devnet = await createPactTestEnv({
-    network: 'devnet',
+    network: "devnet",
   });
   await devnet.start();
-  await devnet.client.deployContract('hello-world.pact');
+  await devnet.client.deployContract("hello-world.pact");
   const signer = devnet.client.getValidateSigner();
   const tx = devnet.client
     .execution('(free.hello-world.say-hello "Salama")')
@@ -91,7 +91,7 @@ const fastest = Object.entries(table).reduce(
     }
     return acc;
   },
-  ['', Infinity],
+  ["", Infinity],
 );
 
 logger.info(`Fastest: ${fastest[0]}: ${fastest[1]}ms`);

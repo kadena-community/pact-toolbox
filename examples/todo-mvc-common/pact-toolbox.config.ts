@@ -1,5 +1,5 @@
-import { defineConfig } from 'pact-toolbox';
+import { defineConfig } from "pact-toolbox";
 
 export default defineConfig({
-  extends: '../../pact-toolbox.config.ts',
+  extends: "../../pact-toolbox.config.ts",
 });

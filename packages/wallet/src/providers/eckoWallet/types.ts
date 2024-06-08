@@ -1,7 +1,7 @@
-import type { ISigningCap } from '@kadena/types';
+import type { IPactCommand } from "@kadena/client";
+import type { ISigningCap } from "@kadena/types";
 
-import type { IPactCommand } from '@kadena/client';
-import type { WalletAccount, WalletSigner } from '../../wallet';
+import type { WalletAccount, WalletSigner } from "../../wallet";
 
 export interface KdaSendKadenaPayload {
   networkId: string;
@@ -16,7 +16,7 @@ export interface ISigningRequest {
   data?: Record<string, unknown>;
   caps: ISigningCap[];
   nonce?: string;
-  chainId?: IPactCommand['meta']['chainId'];
+  chainId?: IPactCommand["meta"]["chainId"];
   gasLimit?: number;
   gasPrice?: number;
   ttl?: number;
@@ -44,42 +44,42 @@ interface KdaRequestQuickSignPayload {
 }
 
 export interface KdaRequestSignRequest {
-  method: 'kda_requestSign';
+  method: "kda_requestSign";
   data: KdaRequestSignPayload;
 }
 
 export interface KdaRequestQuickSignRequest {
-  method: 'kda_requestQuickSign';
+  method: "kda_requestQuickSign";
   data: KdaRequestQuickSignPayload;
 }
 
 export interface KdaSendKadenaRequest {
-  method: 'kda_sendKadena';
+  method: "kda_sendKadena";
   data: KdaSendKadenaPayload;
 }
 
 export interface KdaConnectRequest {
-  method: 'kda_connect';
+  method: "kda_connect";
   networkId: string;
 }
 
 export interface KdaRequestAccountRequest {
-  method: 'kda_requestAccount';
+  method: "kda_requestAccount";
   networkId: string;
 }
 
 export interface KdaCheckStatusRequest {
-  method: 'kda_checkStatus';
+  method: "kda_checkStatus";
   networkId: string;
 }
 
 export interface KdaDisconnectRequest {
-  method: 'kda_disconnect';
+  method: "kda_disconnect";
   networkId: string;
 }
 
 export interface KdaGetNetworkRequest {
-  method: 'kda_getNetwork';
+  method: "kda_getNetwork";
 }
 
 export type WalletRequest =
@@ -92,14 +92,14 @@ export type WalletRequest =
   | KdaDisconnectRequest
   | KdaGetNetworkRequest;
 
-export type WalletRequestMethod = WalletRequest['method'];
+export type WalletRequestMethod = WalletRequest["method"];
 export interface FailedResponse {
-  status: 'fail';
+  status: "fail";
   message: string;
 }
 
 export type SuccessResponse<T = {}> = {
-  status: 'success';
+  status: "success";
   message: string;
 } & T;
 
@@ -117,7 +117,7 @@ export type RequestAccountResponse =
 
 export type CheckStatusResponse = FailedResponse | SuccessResponse;
 
-export type WalletEvent = 'res_accountChange' | 'kda_checkStatus';
+export type WalletEvent = "res_accountChange" | "kda_checkStatus";
 export type AccountChangeEvent = SuccessResponse;
 export interface WalletEventHandlers {
   res_accountChange: (event: AccountChangeEvent) => void;

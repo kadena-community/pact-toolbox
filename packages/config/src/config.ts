@@ -1,10 +1,11 @@
-import type { ChainId, IKeyPair } from '@kadena/types';
-import { loadConfig } from 'c12';
-import { defaultConfig } from './defaults';
+import type { ChainId, IKeyPair } from "@kadena/types";
+import { loadConfig } from "c12";
+
+import { defaultConfig } from "./defaults";
 
 export interface KeysetConfig {
   keys: string[];
-  pred: 'keys-all' | 'keys-any' | 'keys-2' | '=';
+  pred: "keys-all" | "keys-any" | "keys-2" | "=";
 }
 
 export interface GetRpcUrlParams {
@@ -64,18 +65,18 @@ export interface DevNetMiningConfig {
   idlePeriod?: number;
 }
 export interface DevNetworkConfig extends CommonNetworkConfig, LocalNetworkCommonConfig {
-  type: 'chainweb-devnet';
+  type: "chainweb-devnet";
   containerConfig?: DevNetContainerConfig;
   miningConfig?: DevNetMiningConfig;
 }
 
 export interface ChainwebMiningClientConfig {
   publicKey: string;
-  worker: 'constant-delay' | 'on-demand';
+  worker: "constant-delay" | "on-demand";
   stratumPort: number;
   constantDelayBlockTime: number;
   threadCount: number;
-  logLevel: 'error' | 'warn' | 'info' | 'debug';
+  logLevel: "error" | "warn" | "info" | "debug";
   noTls: boolean;
   onDemandPort: number;
 }
@@ -92,7 +93,7 @@ export interface ChainwebNodeConfig {
   p2pMaxSessionCount: number;
   mempoolP2pMaxSessionCount: number;
   knownPeerInfo: string;
-  logLevel: 'error' | 'warn' | 'info' | 'debug';
+  logLevel: "error" | "warn" | "info" | "debug";
   enableMiningCoordination: boolean;
   miningPublicKey: string;
   headerStream: boolean;
@@ -108,18 +109,18 @@ export interface LocalNetworkCommonConfig {
 }
 
 export interface LocalChainwebNetworkConfig extends CommonNetworkConfig, LocalNetworkCommonConfig {
-  type: 'chainweb-local';
+  type: "chainweb-local";
   miningClientConfig?: ChainwebMiningClientConfig;
   nodeConfig?: ChainwebNodeConfig;
 }
 
 export interface PactServerNetworkConfig extends CommonNetworkConfig, LocalNetworkCommonConfig {
-  type: 'pact-server';
+  type: "pact-server";
   serverConfig?: PactServerConfig;
 }
 
 export interface ChainwebNetworkConfig extends CommonNetworkConfig {
-  type: 'chainweb';
+  type: "chainweb";
 }
 
 export type NetworkConfig =
@@ -127,32 +128,32 @@ export type NetworkConfig =
   | PactServerNetworkConfig
   | ChainwebNetworkConfig
   | LocalChainwebNetworkConfig;
-export type NetwokConfigType = NetworkConfig['type'];
+export type NetwokConfigType = NetworkConfig["type"];
 
 export type PactExecConfigFlags =
-  | 'AllowReadInLocal'
-  | 'DisableHistoryInTransactionalMode'
-  | 'DisableInlineMemCheck'
-  | 'DisableModuleInstall'
-  | 'DisableNewTrans'
-  | 'DisablePact40'
-  | 'DisablePact420'
-  | 'DisablePact43'
-  | 'DisablePact431'
-  | 'DisablePact44'
-  | 'DisablePact45'
-  | 'DisablePact46'
-  | 'DisablePact47'
-  | 'DisablePact48'
-  | 'DisablePact49'
-  | 'DisablePactEvents'
-  | 'DisableRuntimeReturnTypeChecking'
-  | 'EnforceKeyFormats'
-  | 'OldReadOnlyBehavior'
-  | 'PreserveModuleIfacesBug'
-  | 'PreserveModuleNameBug'
-  | 'PreserveNsModuleInstallBug'
-  | 'PreserveShowDefs';
+  | "AllowReadInLocal"
+  | "DisableHistoryInTransactionalMode"
+  | "DisableInlineMemCheck"
+  | "DisableModuleInstall"
+  | "DisableNewTrans"
+  | "DisablePact40"
+  | "DisablePact420"
+  | "DisablePact43"
+  | "DisablePact431"
+  | "DisablePact44"
+  | "DisablePact45"
+  | "DisablePact46"
+  | "DisablePact47"
+  | "DisablePact48"
+  | "DisablePact49"
+  | "DisablePactEvents"
+  | "DisableRuntimeReturnTypeChecking"
+  | "EnforceKeyFormats"
+  | "OldReadOnlyBehavior"
+  | "PreserveModuleIfacesBug"
+  | "PreserveModuleNameBug"
+  | "PreserveNsModuleInstallBug"
+  | "PreserveShowDefs";
 export interface PactServerConfig {
   /**
    * HTTP server port
@@ -201,7 +202,7 @@ export interface DevNetContainerConfig {
   tag?: string;
 }
 
-export type StandardPrelude = 'kadena/chainweb' | 'kadena/marmalade';
+export type StandardPrelude = "kadena/chainweb" | "kadena/marmalade";
 export interface PactToolboxConfigEnvOverrides<
   T extends Record<string, NetworkConfig> = Record<string, NetworkConfig>,
 > {
@@ -231,7 +232,7 @@ export type PactToolboxConfig<T extends Record<string, NetworkConfig> = {}> =
 
 export async function resolveConfig(overrides?: Partial<PactToolboxConfigObj>) {
   const configResult = await loadConfig<PactToolboxConfigObj>({
-    name: 'pact-toolbox',
+    name: "pact-toolbox",
     overrides: overrides as PactToolboxConfigObj,
     defaultConfig: defaultConfig as PactToolboxConfigObj,
   });

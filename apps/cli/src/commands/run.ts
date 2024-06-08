@@ -1,34 +1,35 @@
-import { runScript } from '@pact-toolbox/script';
-import { logger } from '@pact-toolbox/utils';
-import { defineCommand } from 'citty';
+import { defineCommand } from "citty";
+
+import { runScript } from "@pact-toolbox/script";
+import { logger } from "@pact-toolbox/utils";
 
 export const runCommand = defineCommand({
   meta: {
-    name: 'run',
-    description: 'Run a script with the toolbox runtime',
+    name: "run",
+    description: "Run a script with the toolbox runtime",
   },
   args: {
     script: {
-      type: 'positional',
-      name: 'script',
-      description: 'Script to run',
+      type: "positional",
+      name: "script",
+      description: "Script to run",
       required: true,
     },
     start: {
-      type: 'boolean',
-      name: 'start',
-      alias: 's',
-      description: 'Start the network before running the script',
+      type: "boolean",
+      name: "start",
+      alias: "s",
+      description: "Start the network before running the script",
       required: false,
       default: true,
     },
     network: {
-      type: 'string',
-      name: 'network',
-      alias: 'n',
-      description: 'Network to use',
+      type: "string",
+      name: "network",
+      alias: "n",
+      description: "Network to use",
       required: false,
-      default: 'local',
+      default: "local",
     },
   },
   run: async ({ args }) => {

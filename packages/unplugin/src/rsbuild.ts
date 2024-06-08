@@ -1,7 +1,9 @@
-import { getSerializableNetworkConfig, resolveConfig } from '@pact-toolbox/config';
-import type { RsbuildPlugin } from '@rsbuild/core';
-import { PLUGIN_NAME, startToolboxNetwork } from './core';
-import type { Options } from './core/options';
+import type { RsbuildPlugin } from "@rsbuild/core";
+
+import { getSerializableNetworkConfig, resolveConfig } from "@pact-toolbox/config";
+
+import type { Options } from "./core/options";
+import { PLUGIN_NAME, startToolboxNetwork } from "./core";
 
 export const pluginPactToolbox = (options?: Options): RsbuildPlugin => ({
   name: PLUGIN_NAME,
@@ -15,7 +17,7 @@ export const pluginPactToolbox = (options?: Options): RsbuildPlugin => ({
         config.source.define = {};
       }
       const networkConfig = getSerializableNetworkConfig(toolboxConfig);
-      config.source.define['globalThis.__PACT_TOOLBOX_NETWORK_CONFIG__'] = JSON.stringify(networkConfig);
+      config.source.define["globalThis.__PACT_TOOLBOX_NETWORK_CONFIG__"] = JSON.stringify(networkConfig);
     });
     api.onAfterStartDevServer(async () => {
       await startToolboxNetwork(

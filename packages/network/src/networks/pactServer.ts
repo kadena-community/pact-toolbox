@@ -1,11 +1,13 @@
-import type { PactServerConfig, PactServerNetworkConfig } from '@pact-toolbox/config';
-import { createPactServerConfig } from '@pact-toolbox/config';
-import { findProcess, getUuid, isAnyPactInstalled, killProcess, runBin } from '@pact-toolbox/utils';
-import type { ChildProcessWithoutNullStreams } from 'child_process';
-import { mkdir, writeFile } from 'fs/promises';
-import { rm } from 'node:fs/promises';
-import { join } from 'pathe';
-import type { ToolboxNetworkApi, ToolboxNetworkStartOptions } from '../types';
+import { mkdir, writeFile } from "fs/promises";
+import { rm } from "node:fs/promises";
+import type { PactServerConfig, PactServerNetworkConfig } from "@pact-toolbox/config";
+import type { ChildProcessWithoutNullStreams } from "child_process";
+import { join } from "pathe";
+
+import { createPactServerConfig } from "@pact-toolbox/config";
+import { findProcess, getUuid, isAnyPactInstalled, killProcess, runBin } from "@pact-toolbox/utils";
+
+import type { ToolboxNetworkApi, ToolboxNetworkStartOptions } from "../types";
 
 export function configToYamlString(config: PactServerConfig) {
   let configString = `# This is a generated file, do not edit manually\n`;
@@ -14,7 +16,7 @@ export function configToYamlString(config: PactServerConfig) {
       continue;
     }
     if (Array.isArray(value)) {
-      configString += `${key}: [${value.join(', ')}]\n`;
+      configString += `${key}: [${value.join(", ")}]\n`;
     } else {
       configString += `${key}: ${value}\n`;
     }
@@ -26,8 +28,8 @@ export function configToJSONString(config: PactServerConfig) {
   return JSON.stringify(config, null, 2);
 }
 
-export async function writePactServerConfig(config: PactServerConfig, format: 'yaml' | 'json' = 'yaml', id: string) {
-  const toolboxDir = join(process.cwd(), '.kadena/toolbox/pact');
+export async function writePactServerConfig(config: PactServerConfig, format: "yaml" | "json" = "yaml", id: string) {
+  const toolboxDir = join(process.cwd(), ".kadena/toolbox/pact");
   await mkdir(toolboxDir, { recursive: true });
   const configPath = join(toolboxDir, `pact-server-config${id}${format}`);
   if (config.persistDir) {
@@ -37,7 +39,7 @@ export async function writePactServerConfig(config: PactServerConfig, format: 'y
     config.logDir = join(config.logDir, id);
   }
   // write config to file
-  await writeFile(configPath, format === 'yaml' ? configToYamlString(config) : configToJSONString(config));
+  await writeFile(configPath, format === "yaml" ? configToYamlString(config) : configToJSONString(config));
   return configPath;
 }
 
@@ -46,10 +48,10 @@ export async function isPactServerRunning(port: number | string) {
   if (!p || p.length === 0) {
     return false;
   }
-  if (p.some((proc) => proc.name === 'pact')) {
+  if (p.some((proc) => proc.name === "pact")) {
     return true;
   }
-  p = await findProcess({ name: 'pact' });
+  p = await findProcess({ name: "pact" });
 
   if (!p || p.length === 0) {
     return false;
@@ -76,31 +78,31 @@ export class PactServerNetwork implements ToolboxNetworkApi {
   }
 
   getOnDemandMiningUrl() {
-    return '';
+    return "";
   }
 
   getServiceUrl(): string {
     return `http://localhost:${this.getServicePort()}`;
   }
 
-  async start({ silent = false, isStateless = false, conflict = 'error' }: ToolboxNetworkStartOptions = {}) {
+  async start({ silent = false, isStateless = false, conflict = "error" }: ToolboxNetworkStartOptions = {}) {
     const isInstalled = await isAnyPactInstalled();
     if (!isInstalled) {
-      throw new Error('Pact is not installed, try running `npx pact-toolbox pact install`');
+      throw new Error("Pact is not installed, try running `npx pact-toolbox pact install`");
     }
-    this.configPath = await writePactServerConfig(this.serverConfig, 'yaml', isStateless ? this.id : '');
+    this.configPath = await writePactServerConfig(this.serverConfig, "yaml", isStateless ? this.id : "");
     const port = this.serverConfig.port;
     if (await isPactServerRunning(port)) {
-      if (conflict === 'error') {
+      if (conflict === "error") {
         throw new Error(`Pact server is already running on port ${port}`);
       }
-      if (conflict === 'replace') {
-        await killProcess({ port, name: 'pact' });
+      if (conflict === "replace") {
+        await killProcess({ port, name: "pact" });
       }
     }
-    this.child = await runBin('pact', ['-s', this.configPath], {
+    this.child = await runBin("pact", ["-s", this.configPath], {
       silent,
-      resolveIf: (data) => data.includes('[api] starting on port'),
+      resolveIf: (data) => data.includes("[api] starting on port"),
     });
   }
 

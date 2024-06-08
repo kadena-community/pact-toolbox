@@ -1,9 +1,11 @@
-import type { PactToolboxConfigObj } from '@pact-toolbox/config';
-import { getNetworkConfig, resolveConfig } from '@pact-toolbox/config';
-import { PactToolboxNetwork } from '@pact-toolbox/network';
-import { PactToolboxClient } from '@pact-toolbox/runtime';
-import { logger } from '@pact-toolbox/utils';
-import { disablePersistance, injectNetworkConfig, updatePorts } from './utils';
+import type { PactToolboxConfigObj } from "@pact-toolbox/config";
+
+import { getNetworkConfig, resolveConfig } from "@pact-toolbox/config";
+import { PactToolboxNetwork } from "@pact-toolbox/network";
+import { PactToolboxClient } from "@pact-toolbox/runtime";
+import { logger } from "@pact-toolbox/utils";
+
+import { disablePersistance, injectNetworkConfig, updatePorts } from "./utils";
 
 export interface PactTestEnv {
   client: PactToolboxClient;

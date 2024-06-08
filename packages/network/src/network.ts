@@ -1,23 +1,22 @@
-import type { NetworkConfig, PactToolboxConfigObj } from '@pact-toolbox/config';
+import type { NetworkConfig, PactToolboxConfigObj } from "@pact-toolbox/config";
+import type { CreateDevProxyServerOptions, PactToolboxDevProxyServer } from "@pact-toolbox/proxy";
+
 import {
   getNetworkConfig,
   isDevNetworkConfig,
   isLocalChainwebNetworkConfig,
   isLocalNetwork,
   isPactServerNetworkConfig,
-} from '@pact-toolbox/config';
-import { deployPreludes, downloadPreludes, shouldDownloadPreludes } from '@pact-toolbox/prelude';
-import {
-  createDevProxyServer,
-  type CreateDevProxyServerOptions,
-  type PactToolboxDevProxyServer,
-} from '@pact-toolbox/proxy';
-import { PactToolboxClient } from '@pact-toolbox/runtime';
-import { logger } from '@pact-toolbox/utils';
-import { LocalChainwebNetwork } from './networks/chainweb';
-import { LocalDevNetNetwork } from './networks/devnet';
-import { PactServerNetwork } from './networks/pactServer';
-import type { ToolboxNetworkApi, ToolboxNetworkStartOptions } from './types';
+} from "@pact-toolbox/config";
+import { deployPreludes, downloadPreludes, shouldDownloadPreludes } from "@pact-toolbox/prelude";
+import { createDevProxyServer } from "@pact-toolbox/proxy";
+import { PactToolboxClient } from "@pact-toolbox/runtime";
+import { logger } from "@pact-toolbox/utils";
+
+import type { ToolboxNetworkApi, ToolboxNetworkStartOptions } from "./types";
+import { LocalChainwebNetwork } from "./networks/chainweb";
+import { LocalDevNetNetwork } from "./networks/devnet";
+import { PactServerNetwork } from "./networks/pactServer";
 
 export function createPactToolboxNetwork(network: NetworkConfig): ToolboxNetworkApi {
   if (isPactServerNetworkConfig(network)) {
@@ -41,7 +40,7 @@ export interface StartLocalNetworkOptions extends ToolboxNetworkStartOptions {
 }
 
 export class PactToolboxNetwork implements ToolboxNetworkApi {
-  public id = 'pact-toolbox';
+  public id = "pact-toolbox";
   private networkApi: ToolboxNetworkApi;
   private networkConfig: NetworkConfig;
   private devProxy?: PactToolboxDevProxyServer;
@@ -104,7 +103,7 @@ export class PactToolboxNetwork implements ToolboxNetworkApi {
 
   async start(options?: ToolboxNetworkStartOptions) {
     const preludes = this.toolboxConfig.preludes ?? [];
-    const contractsDir = this.toolboxConfig.contractsDir ?? 'contracts';
+    const contractsDir = this.toolboxConfig.contractsDir ?? "contracts";
     const preludeConfig = {
       client: this.client,
       contractsDir,
@@ -133,7 +132,7 @@ export class PactToolboxNetwork implements ToolboxNetworkApi {
         logger.log(`Account: ${signer.account}`);
         logger.log(`Public: ${signer.publicKey}`);
         logger.log(`Secret: ${signer.secretKey}`);
-        logger.log('--------------------------------');
+        logger.log("--------------------------------");
       }
     }
   }

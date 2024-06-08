@@ -1,10 +1,9 @@
-import { logger } from '@pact-toolbox/utils';
-import { exec } from 'child_process';
-import { loadFile } from 'magicast';
-import { addVitePlugin } from 'magicast/helpers';
-import { writeFile } from 'node:fs/promises';
-import { addDependency, detectPackageManager } from 'nypm';
-import { join } from 'pathe';
+import { exec } from "child_process";
+import { writeFile } from "node:fs/promises";
+import { loadFile } from "magicast";
+import { addVitePlugin } from "magicast/helpers";
+import { addDependency, detectPackageManager } from "nypm";
+import { join } from "pathe";
 import {
   readPackageJSON,
   readTSConfig,
@@ -12,8 +11,11 @@ import {
   resolveTSConfig,
   writePackageJSON,
   writeTSConfig,
-} from 'pkg-types';
-import { createHelloWorld } from './hello';
+} from "pkg-types";
+
+import { logger } from "@pact-toolbox/utils";
+
+import { createHelloWorld } from "./hello";
 
 export function defaultConfigTemplate(contractDir: string) {
   return `{
@@ -65,20 +67,20 @@ export function generateConfigTemplate(contractDir: string, isCJS: boolean) {
 }
 
 export async function updateViteConfig() {
-  const viteConfig = await loadFile('vite.config.ts');
+  const viteConfig = await loadFile("vite.config.ts");
   addVitePlugin(viteConfig, {
-    constructor: 'pactVitePlugin',
-    from: '@pact-toolbox/unplugin/vite',
+    constructor: "pactVitePlugin",
+    from: "@pact-toolbox/unplugin/vite",
     options: {},
   });
 }
 
 export const NPM_SCRIPTS = {
-  'pact:start': 'pact-toolbox start',
-  'pact:run': 'pact-toolbox run',
-  'pact:prelude': 'pact-toolbox prelude',
-  'pact:types': 'pact-toolbox types',
-  'pact:test': 'pact-toolbox test',
+  "pact:start": "pact-toolbox start",
+  "pact:run": "pact-toolbox run",
+  "pact:prelude": "pact-toolbox prelude",
+  "pact:types": "pact-toolbox types",
+  "pact:test": "pact-toolbox test",
 };
 
 export interface InitToolboxArgs {
@@ -87,9 +89,9 @@ export interface InitToolboxArgs {
 }
 
 async function installDeps(args: InitToolboxArgs) {
-  const deps = ['@kadena/client', '@pact-toolbox/client-utils', '@pact-toolbox/wallet'];
-  const devDeps = ['pact-toolbox', '@pact-toolbox/unplugin'];
-  logger.start(`Installing dependencies ${deps.join(', ')} ...`);
+  const deps = ["@kadena/client", "@pact-toolbox/client-utils", "@pact-toolbox/wallet"];
+  const devDeps = ["pact-toolbox", "@pact-toolbox/unplugin"];
+  logger.start(`Installing dependencies ${deps.join(", ")} ...`);
   const packageManager = await detectPackageManager(args.cwd, {
     includeParentDirs: true,
   });
@@ -114,11 +116,11 @@ export async function initToolbox(args: InitToolboxArgs) {
   const packageJson = await readPackageJSON(packageJsonPath);
   const tsConfig = await readTSConfig(tsConfigPath);
 
-  const isCJS = packageJson.type !== 'module';
+  const isCJS = packageJson.type !== "module";
   const isTypescript = !!tsConfig;
   const template = generateConfigTemplate(args.contractsDir, isCJS);
 
-  const configPath = isTypescript ? 'pact-toolbox.config.ts' : 'pact-toolbox.config.js';
+  const configPath = isTypescript ? "pact-toolbox.config.ts" : "pact-toolbox.config.js";
   await writeFile(join(args.cwd, configPath), template);
   logger.success(`Config file created at ${configPath}`);
 
@@ -139,8 +141,8 @@ export async function initToolbox(args: InitToolboxArgs) {
     if (tsConfig) {
       tsConfig.compilerOptions = tsConfig.compilerOptions || {};
       tsConfig.compilerOptions.types = tsConfig.compilerOptions.types || [];
-      if (!tsConfig.compilerOptions.types.includes('.kadena/pactjs-generated')) {
-        tsConfig.compilerOptions.types.push('.kadena/pactjs-generated');
+      if (!tsConfig.compilerOptions.types.includes(".kadena/pactjs-generated")) {
+        tsConfig.compilerOptions.types.push(".kadena/pactjs-generated");
       }
       await writeTSConfig(tsConfigPath, tsConfig);
       logger.success(`Added ".kadena/pactjs-generated" to the types array in tsconfig.json`);
@@ -156,6 +158,6 @@ export async function initToolbox(args: InitToolboxArgs) {
 
   // fetch preludes
   logger.start(`Fetching preludes...`);
-  exec('npm run pact:prelude', { cwd: args.cwd });
+  exec("npm run pact:prelude", { cwd: args.cwd });
   logger.box(`You are ready to go!`);
 }

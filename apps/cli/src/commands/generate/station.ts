@@ -1,61 +1,62 @@
-import { resolveConfig } from '@pact-toolbox/config';
-import { generateGasStation } from '@pact-toolbox/fabricator';
-import { logger, writeFileAtPath } from '@pact-toolbox/utils';
-import { defineCommand } from 'citty';
-import { existsSync } from 'fs';
-import { join } from 'pathe';
+import { existsSync } from "fs";
+import { defineCommand } from "citty";
+import { join } from "pathe";
+
+import { resolveConfig } from "@pact-toolbox/config";
+import { generateGasStation } from "@pact-toolbox/fabricator";
+import { logger, writeFileAtPath } from "@pact-toolbox/utils";
 
 export const stationCommand = defineCommand({
   meta: {
-    name: 'station',
-    description: 'Generate gas station contract',
+    name: "station",
+    description: "Generate gas station contract",
   },
   args: {
     name: {
-      type: 'positional',
-      description: 'Name of the gas station',
-      valueHint: 'my-gas-station',
-      default: 'my-gas-station',
+      type: "positional",
+      description: "Name of the gas station",
+      valueHint: "my-gas-station",
+      default: "my-gas-station",
       required: false,
     },
     namespace: {
-      type: 'string',
-      description: 'Namespace of the gas station',
-      valueHint: 'free',
-      default: 'free',
+      type: "string",
+      description: "Namespace of the gas station",
+      valueHint: "free",
+      default: "free",
     },
-    'admin-keyset': {
-      type: 'string',
-      description: 'Admin keyset for the gas station',
-      valueHint: 'admin-keyset',
-      default: 'admin-keyset',
+    "admin-keyset": {
+      type: "string",
+      description: "Admin keyset for the gas station",
+      valueHint: "admin-keyset",
+      default: "admin-keyset",
     },
     account: {
-      type: 'string',
-      description: 'K account for the gas station',
+      type: "string",
+      description: "K account for the gas station",
       required: true,
-      valueHint: 'k:3a9dd....',
+      valueHint: "k:3a9dd....",
     },
     module: {
-      type: 'string',
-      description: 'Module for the gas station',
-      valueHint: 'my-module',
-      default: 'my-module',
+      type: "string",
+      description: "Module for the gas station",
+      valueHint: "my-module",
+      default: "my-module",
     },
     force: {
-      type: 'boolean',
-      description: 'Force overwrite existing gas station',
+      type: "boolean",
+      description: "Force overwrite existing gas station",
       default: false,
-      alias: ['f'],
+      alias: ["f"],
     },
   },
   run: async ({ args }) => {
     // Generate gas station
     const config = await resolveConfig();
-    const contractDir = config.contractsDir || 'pact';
+    const contractDir = config.contractsDir || "pact";
     const code = generateGasStation({
       namespace: args.namespace,
-      adminKeyset: args['admin-keyset'],
+      adminKeyset: args["admin-keyset"],
       account: args.account,
       module: args.module,
       name: args.name,

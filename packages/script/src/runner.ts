@@ -1,12 +1,13 @@
-import type { PactToolboxConfigObj } from '@pact-toolbox/config';
-import { resolveConfig } from '@pact-toolbox/config';
-import type { StartLocalNetworkOptions } from '@pact-toolbox/network';
-import { startLocalNetwork } from '@pact-toolbox/network';
-import { PactToolboxClient } from '@pact-toolbox/runtime';
-import { logger } from '@pact-toolbox/utils';
-import defu from 'defu';
-import createJiti from 'jiti';
-import { join } from 'pathe';
+import type { PactToolboxConfigObj } from "@pact-toolbox/config";
+import type { StartLocalNetworkOptions } from "@pact-toolbox/network";
+import defu from "defu";
+import createJiti from "jiti";
+import { join } from "pathe";
+
+import { resolveConfig } from "@pact-toolbox/config";
+import { startLocalNetwork } from "@pact-toolbox/network";
+import { PactToolboxClient } from "@pact-toolbox/runtime";
+import { logger } from "@pact-toolbox/utils";
 
 export interface ToolboxScriptContext<Args = Record<string, unknown>> {
   client: PactToolboxClient;
@@ -45,12 +46,12 @@ export async function runScript(
   if (!config) {
     config = await resolveConfig();
   }
-  const scriptsDir = config.scriptsDir ?? 'scripts';
+  const scriptsDir = config.scriptsDir ?? "scripts";
   const jiti = createJiti(undefined as unknown as string, {
     interopDefault: true,
     requireCache: false,
     esmResolve: true,
-    extensions: ['.js', '.mjs', '.cjs', '.ts', '.mts', '.cts'],
+    extensions: [".js", ".mjs", ".cjs", ".ts", ".mts", ".cts"],
   });
   const tryResolve = (id: string) => {
     try {
@@ -65,7 +66,7 @@ export async function runScript(
   }
 
   const scriptObject = jiti(scriptPath);
-  if (typeof scriptObject !== 'object') {
+  if (typeof scriptObject !== "object") {
     throw new Error(`Script ${script} should export an object with run method`);
   }
   const options = defu(scriptOptions, scriptObject) as ToolboxScript;

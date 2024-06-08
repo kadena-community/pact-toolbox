@@ -32,8 +32,8 @@
   "scripts": {
     "build": "tsup && cp -r ./configs ./dist/configs",
     "dev": "tsup --watch",
-    "lint": "oxlint --import-plugin  -D all && prettier -c src",
-    "lint:fix": "oxlint --import-plugin  -D all --fix && prettier -c src -w",
+    "lint": "oxlint --import-plugin --deny-warnings",
+    "format": "prettier --check . --ignore-path ../../.gitignore",
     "prepack": "pnpm run build",
     "release": "pnpm test && pnpm publish",
     "test:watch": "vitest",
@@ -47,12 +47,14 @@
     "listhen": "^1.7.2"
   },
   "devDependencies": {
+    "@pact-toolbox/prettier-config": "workspace:*",
     "@pact-toolbox/tsconfig": "workspace:*",
-    "@vitest/coverage-v8": "^1.5.2",
-    "lint-staged": "^15.2.2",
-    "oxlint": "^0.3.1",
-    "tsup": "^8.0.2",
+    "@vitest/coverage-v8": "^1.6.0",
+    "lint-staged": "^15.2.5",
+    "oxlint": "^0.4.3",
+    "tsup": "^8.1.0",
     "typescript": "^5.4.5",
-    "vitest": "^1.5.2"
-  }
+    "vitest": "^1.6.0"
+  },
+  "prettier": "@pact-toolbox/prettier-config"
 }

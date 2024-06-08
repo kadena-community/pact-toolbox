@@ -1,11 +1,11 @@
-import { installPact } from '@pact-toolbox/installer';
-import { isAnyPactInstalled, isDockerInstalled, logger } from '@pact-toolbox/utils';
-import { defineCommand } from 'citty';
+import { defineCommand } from "citty";
+
+import { installPact, isAnyPactInstalled, isDockerInstalled, logger } from "@pact-toolbox/utils";
 
 export const doctorCommand = defineCommand({
   meta: {
-    name: 'doctor',
-    description: 'Check if your system is ready to develop with Pact',
+    name: "doctor",
+    description: "Check if your system is ready to develop with Pact",
   },
   run: async () => {
     // check if pact is installed
@@ -13,7 +13,7 @@ export const doctorCommand = defineCommand({
     if (!isInstalled) {
       logger.warn(`Pact is not installed!`);
       const answer = await logger.prompt(`Would you like to install pact latest version?`, {
-        type: 'confirm',
+        type: "confirm",
         default: true,
       });
       if (answer === true) {
@@ -27,6 +27,6 @@ export const doctorCommand = defineCommand({
         `We could not establish a connection to docker daemon! make sure it is installed and running on your system.`,
       );
     }
-    logger.box('Your system is ready to develop with Pact!');
+    logger.box("Your system is ready to develop with Pact!");
   },
 });

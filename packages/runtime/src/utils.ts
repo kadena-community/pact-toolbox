@@ -1,6 +1,6 @@
-import { Signer } from '@pact-toolbox/client-utils';
+import { Signer } from "@pact-toolbox/client-utils";
 
-export function getSignerFromEnvVars(prefix: string = 'PACT_TOOLBOX'): Partial<Signer> {
+export function getSignerFromEnvVars(prefix: string = "PACT_TOOLBOX"): Partial<Signer> {
   const publicKey = process.env[`${prefix}_PUBLIC_KEY`];
   const secretKey = process.env[`${prefix}_SECRET_KEY`];
 
@@ -22,7 +22,7 @@ export function getSignerFromArgs(args: Record<string, unknown>): Partial<Signer
   };
 }
 
-export function getSignerFromEnv(args: Record<string, unknown> = {}, prefix: string = 'PACT_TOOLBOX'): Partial<Signer> {
+export function getSignerFromEnv(args: Record<string, unknown> = {}, prefix: string = "PACT_TOOLBOX"): Partial<Signer> {
   const signerFromEnv = getSignerFromEnvVars(prefix);
   const signerFromArgs = getSignerFromArgs(args);
 

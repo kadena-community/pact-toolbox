@@ -1,6 +1,7 @@
-import { Pact } from '@kadena/client';
-import { addDefaultMeta, createKadenaClient, createKdaClientHelpers, getUuid } from '@pact-toolbox/client-utils';
-import { ToolboxWallet } from '@pact-toolbox/wallet';
+import { Pact } from "@kadena/client";
+
+import { addDefaultMeta, createKadenaClient, createKdaClientHelpers, getUuid } from "@pact-toolbox/client-utils";
+import { ToolboxWallet } from "@pact-toolbox/wallet";
 
 const getClient = createKadenaClient();
 const wallet = new ToolboxWallet();
@@ -61,7 +62,7 @@ export async function deleteTodoById(id: string) {
 export async function createTodo(title: string, id: string = getUuid()) {
   const signer = await wallet.getSigner();
   const tx = addDefaultMeta(Pact.builder.execution(`(free.todos.new-todo "${id}" "${title}")`))
-    .addSigner(signer.publicKey, (signFor) => [signFor('coin.GAS')])
+    .addSigner(signer.publicKey, (signFor) => [signFor("coin.GAS")])
     .setMeta({
       senderAccount: signer.address,
     })

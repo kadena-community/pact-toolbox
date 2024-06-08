@@ -1,3 +1,4 @@
+import { readFile, stat } from "node:fs/promises";
 import type {
   ChainId,
   IBuilder,
@@ -6,14 +7,21 @@ import type {
   IKeyPair,
   ITransactionDescriptor,
   IUnsignedCommand,
-} from '@kadena/client';
-import { Pact, createClient, createSignWithKeypair, isSignedTransaction } from '@kadena/client';
-import { Signer, getCmdDataOrFail } from '@pact-toolbox/client-utils';
-import type { KeysetConfig, NetworkConfig, NetworkMeta, PactToolboxConfigObj } from '@pact-toolbox/config';
-import { createRpcUrlGetter, defaultMeta, getNetworkConfig, isPactServerNetworkConfig } from '@pact-toolbox/config';
-import { readFile, stat } from 'node:fs/promises';
-import { isAbsolute, join } from 'pathe';
-import { getSignerFromEnv, isValidateSigner } from './utils';
+} from "@kadena/client";
+import type { KeysetConfig, NetworkConfig, NetworkMeta, PactToolboxConfigObj } from "@pact-toolbox/config";
+import { createClient, createSignWithKeypair, isSignedTransaction, Pact } from "@kadena/client";
+import { isAbsolute, join } from "pathe";
+
+import { getCmdDataOrFail, Signer } from "@pact-toolbox/client-utils";
+import {
+  createRpcUrlGetter,
+  defaultConfig,
+  defaultMeta,
+  getNetworkConfig,
+  isPactServerNetworkConfig,
+} from "@pact-toolbox/config";
+
+import { getSignerFromEnv, isValidateSigner } from "./utils";
 
 export interface TransactionBuilderData extends Partial<NetworkMeta> {
   senderAccount?: string;
@@ -47,7 +55,7 @@ export class PactToolboxClient {
   private networkConfig: NetworkConfig;
 
   constructor(
-    private config: PactToolboxConfigObj,
+    private config: PactToolboxConfigObj = defaultConfig,
     network?: string,
   ) {
     this.networkConfig = getNetworkConfig(config, network);
@@ -60,7 +68,7 @@ export class PactToolboxClient {
     this.kdaClient = createClient(createRpcUrlGetter(this.networkConfig));
   }
 
-  get network() {
+  getNetworkConfig() {
     return this.networkConfig;
   }
 
@@ -69,19 +77,19 @@ export class PactToolboxClient {
   }
 
   isChainwebNetwork() {
-    return this.networkConfig.type.includes('chainweb');
+    return this.networkConfig.type.includes("chainweb");
   }
 
   getContactsDir() {
-    return this.config.contractsDir ?? 'pact';
+    return this.config.contractsDir ?? "pact";
   }
 
   getScriptsDir() {
-    return this.config.scriptsDir ?? 'scripts';
+    return this.config.scriptsDir ?? "scripts";
   }
 
   getPreludeDir() {
-    return join(this.getContactsDir(), 'prelude');
+    return join(this.getContactsDir(), "prelude");
   }
 
   getConfig() {
@@ -92,12 +100,12 @@ export class PactToolboxClient {
     address: T | string = this.networkConfig.senderAccount,
     args: Record<string, unknown> = {},
   ): T {
-    if (typeof address === 'object') {
+    if (typeof address === "object") {
       return address;
     }
     const signer =
       this.networkConfig.signers.find((s) => s.account === address) ??
-      getSignerFromEnv(args, this.network.name?.toUpperCase());
+      getSignerFromEnv(args, this.networkConfig.name?.toUpperCase());
     return signer as T;
   }
 
@@ -135,7 +143,7 @@ export class PactToolboxClient {
     return getCmdDataOrFail<T>(res);
   }
 
-  async preflight(tx: IUnsignedCommand | ICommand): ReturnType<IClient['preflight']> {
+  async preflight(tx: IUnsignedCommand | ICommand): ReturnType<IClient["preflight"]> {
     return this.kdaClient.preflight(tx);
   }
 
@@ -143,7 +151,7 @@ export class PactToolboxClient {
     if (isSignedTransaction(tx)) {
       return this.kdaClient.submit(tx);
     } else {
-      throw new Error('Transaction must be signed');
+      throw new Error("Transaction must be signed");
     }
   }
 
@@ -158,7 +166,7 @@ export class PactToolboxClient {
       const response = await this.kdaClient.listen(request);
       return getCmdDataOrFail<T>(response);
     } else {
-      throw new Error('Transaction must be signed');
+      throw new Error("Transaction must be signed");
     }
   }
 
@@ -187,19 +195,19 @@ export class PactToolboxClient {
   ) {
     let txBuilder = this.execution(code);
     signer = this.getSigner(signer);
-    if (typeof prepareTx === 'function') {
+    if (typeof prepareTx === "function") {
       txBuilder = await prepareTx(txBuilder);
     } else {
       const {
         senderAccount,
-        chainId = this.networkConfig.meta?.chainId ?? '0',
+        chainId = this.networkConfig.meta?.chainId ?? "0",
         init = false,
         namespace,
         keysets,
         data,
         upgrade = false,
       } = prepareTx ?? {};
-      txBuilder.addData('upgrade', upgrade).addData('init', init);
+      txBuilder.addData("upgrade", upgrade).addData("init", init);
       if (chainId) {
         txBuilder.setMeta({ chainId: targetChainId ?? chainId });
       }
@@ -207,8 +215,8 @@ export class PactToolboxClient {
         txBuilder.setMeta({ senderAccount });
       }
       if (namespace) {
-        txBuilder.addData('namespace', namespace);
-        txBuilder.addData('ns', namespace);
+        txBuilder.addData("namespace", namespace);
+        txBuilder.addData("ns", namespace);
       }
       if (keysets) {
         for (const [keysetName, keyset] of Object.entries(keysets)) {
@@ -227,13 +235,13 @@ export class PactToolboxClient {
 
     let tx = txBuilder.createTransaction();
     if (!skipSign) {
-      tx = typeof signTx === 'function' ? await signTx(tx, signer) : await this.sign(tx, signer);
+      tx = typeof signTx === "function" ? await signTx(tx, signer) : await this.sign(tx, signer);
     }
 
     if (preflight) {
       const res = await this.preflight(tx);
       if (res.preflightWarnings) {
-        console.warn('Preflight warnings:', res.preflightWarnings?.join('\n'));
+        console.warn("Preflight warnings:", res.preflightWarnings?.join("\n"));
       }
     }
 
@@ -242,7 +250,7 @@ export class PactToolboxClient {
 
   deployCode(
     code: string,
-    { targetChains = [this.network.meta?.chainId ?? '0'], ...params }: DeployContractMultiChainOptions = {},
+    { targetChains = [this.networkConfig.meta?.chainId ?? "0"], ...params }: DeployContractMultiChainOptions = {},
   ) {
     return Promise.all(targetChains.map((chainId) => this._deployCode(code, params, chainId)));
   }
@@ -258,7 +266,7 @@ export class PactToolboxClient {
 
   async isNamespaceDefined(namespace: string) {
     const res = await this.describeNamespace(namespace);
-    if (res.result.status === 'success') {
+    if (res.result.status === "success") {
       return true;
     }
     return false;
@@ -266,14 +274,14 @@ export class PactToolboxClient {
 
   async isContractDeployed(module: string) {
     const res = await this.describeModule(module);
-    if (res.result.status === 'success') {
+    if (res.result.status === "success") {
       return true;
     }
     return false;
   }
 
   async getContractCode(contractPath: string) {
-    const contractsDir = this.config.contractsDir ?? 'pact';
+    const contractsDir = this.config.contractsDir ?? "pact";
     contractPath =
       isAbsolute(contractPath) || contractPath.startsWith(contractsDir)
         ? contractPath
@@ -283,7 +291,7 @@ export class PactToolboxClient {
     } catch (e) {
       throw new Error(`Contract file not found: ${contractPath}`);
     }
-    return readFile(contractPath, 'utf-8');
+    return readFile(contractPath, "utf-8");
   }
 
   async deployContract(contract: string, params?: DeployContractMultiChainOptions) {

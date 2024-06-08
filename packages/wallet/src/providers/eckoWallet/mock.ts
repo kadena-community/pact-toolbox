@@ -1,5 +1,3 @@
-import { signingRequestToPactCommand } from '../../utils';
-import { ToolboxWallet } from '../toolbox';
 import type {
   KdaCheckStatusRequest,
   KdaConnectRequest,
@@ -8,14 +6,16 @@ import type {
   KdaRequestSignRequest,
   WalletApi,
   WalletRequest,
-} from './types';
+} from "./types";
+import { signingRequestToPactCommand } from "../../utils";
+import { ToolboxWallet } from "../toolbox";
 
 const toolboxWallet = new ToolboxWallet();
 
 async function handleKdaConnect(request: KdaConnectRequest) {
   const account = await toolboxWallet.connect(request.networkId);
   return {
-    status: 'success',
+    status: "success",
     account,
   };
 }
@@ -23,7 +23,7 @@ async function handleKdaConnect(request: KdaConnectRequest) {
 async function handleKdaRequestAccount(request: KdaRequestAccountRequest) {
   const wallet = await toolboxWallet.getAccountDetails(request.networkId);
   return {
-    status: 'success',
+    status: "success",
     wallet,
   };
 }
@@ -32,8 +32,8 @@ async function handleKdaCheckStatus(request: KdaCheckStatusRequest) {
   const isConnected = await toolboxWallet.isConnected();
   const wallet = isConnected ? await toolboxWallet.getAccountDetails(request.networkId) : undefined;
   return {
-    status: isConnected ? 'success' : 'fail',
-    message: isConnected ? 'connected' : 'disconnected',
+    status: isConnected ? "success" : "fail",
+    message: isConnected ? "connected" : "disconnected",
     wallet,
   };
 }
@@ -41,8 +41,8 @@ async function handleKdaCheckStatus(request: KdaCheckStatusRequest) {
 async function handleKdaDisconnect(request: KdaDisconnectRequest) {
   await toolboxWallet.disconnect(request.networkId);
   return {
-    status: 'success',
-    message: 'disconnected',
+    status: "success",
+    message: "disconnected",
   };
 }
 
@@ -50,7 +50,7 @@ async function handleKdaSign(request: KdaRequestSignRequest) {
   const cmd = signingRequestToPactCommand(request, await toolboxWallet.getSigner(request.data.signingCmd.sender));
   const signedCmd = await toolboxWallet.sign(cmd);
   return {
-    status: 'success',
+    status: "success",
     signedCmd,
   };
 }
@@ -65,26 +65,26 @@ async function handleKdaSign(request: KdaRequestSignRequest) {
 
 async function handleWalletRequest(request: WalletRequest) {
   switch (request.method) {
-    case 'kda_connect': {
+    case "kda_connect": {
       return handleKdaConnect(request);
     }
-    case 'kda_requestAccount': {
+    case "kda_requestAccount": {
       return handleKdaRequestAccount(request);
     }
-    case 'kda_checkStatus': {
+    case "kda_checkStatus": {
       return handleKdaCheckStatus(request);
     }
-    case 'kda_disconnect': {
+    case "kda_disconnect": {
       return handleKdaDisconnect(request);
     }
-    case 'kda_getNetwork': {
+    case "kda_getNetwork": {
       return toolboxWallet.getNetwork();
     }
-    case 'kda_requestSign': {
+    case "kda_requestSign": {
       return handleKdaSign(request);
     }
     default: {
-      return Promise.reject(new Error('Invalid method'));
+      return Promise.reject(new Error("Invalid method"));
     }
   }
 }

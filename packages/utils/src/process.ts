@@ -1,6 +1,7 @@
-import type { ChildProcessWithoutNullStreams } from 'child_process';
-import { spawn } from 'child_process';
-import find from 'find-process';
+import { spawn } from "child_process";
+import type { ChildProcessWithoutNullStreams } from "child_process";
+import find from "find-process";
+
 export interface RunBinOptions {
   silent?: boolean;
   cwd?: string;
@@ -14,7 +15,7 @@ export function runBin(
 ): Promise<ChildProcessWithoutNullStreams> {
   return new Promise((resolve, reject) => {
     const child = spawn(bin, args, { cwd, env });
-    child.stdout.on('data', (data) => {
+    child.stdout.on("data", (data) => {
       const s = data.toString();
       if (resolveIf(s)) {
         resolve(child);
@@ -24,31 +25,31 @@ export function runBin(
       }
     });
 
-    child.stderr.on('data', (data) => {
+    child.stderr.on("data", (data) => {
       const s = data.toString();
-      if (!s.includes('chainweb-node: SignalException 15')) {
+      if (!s.includes("chainweb-node: SignalException 15")) {
         console.error(data.toString());
       }
     });
 
-    child.on('error', (err) => {
+    child.on("error", (err) => {
       reject(err);
     });
 
     cleanUpProcess(async (signal) => {
       child.kill(signal);
-      await new Promise((resolve) => child.on('exit', resolve));
+      await new Promise((resolve) => child.on("exit", resolve));
     });
   });
 }
 
 export function cleanUpProcess(clean: (signal?: NodeJS.Signals) => Promise<void>) {
-  process.once('SIGINT', async () => {
-    await clean('SIGINT');
+  process.once("SIGINT", async () => {
+    await clean("SIGINT");
   });
 
-  process.once('SIGTERM', async () => {
-    await clean('SIGTERM');
+  process.once("SIGTERM", async () => {
+    await clean("SIGTERM");
   });
 }
 
@@ -61,13 +62,13 @@ export interface ProcessQuery {
 export function findProcess(query: ProcessQuery) {
   const { name, port, pid } = query;
   if (name) {
-    return find('name', name);
+    return find("name", name);
   }
   if (port) {
-    return find('port', port);
+    return find("port", port);
   }
   if (pid) {
-    return find('pid', pid);
+    return find("pid", pid);
   }
   return;
 }
@@ -75,7 +76,7 @@ export function findProcess(query: ProcessQuery) {
 export async function killProcess(query: ProcessQuery) {
   const proc = await findProcess(query);
   if (proc) {
-    const p = proc.find((p) => p.name === query.name) ?? proc[0];
+    const p = proc.find((p) => p.name === query.name) ?? proc[0]!;
     process.kill(p.pid);
   }
 }

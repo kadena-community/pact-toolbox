@@ -1,6 +1,7 @@
-import { parseYAML } from 'confbox';
-import { readFile } from 'fs/promises';
-import { join } from 'pathe';
+import { readFile } from "fs/promises";
+import { parseYAML } from "confbox";
+import { join } from "pathe";
+
 import type {
   ChainwebNetworkConfig,
   DevNetworkConfig,
@@ -9,33 +10,33 @@ import type {
   NetworkConfig,
   PactServerNetworkConfig,
   PactToolboxConfigObj,
-} from './config';
+} from "./config";
 
 export function isPactServerNetworkConfig(config: NetworkConfig): config is PactServerNetworkConfig {
-  return config?.type === 'pact-server';
+  return config?.type === "pact-server";
 }
 
 export function isDevNetworkConfig(config: NetworkConfig): config is DevNetworkConfig {
-  return config?.type === 'chainweb-devnet';
+  return config?.type === "chainweb-devnet";
 }
 
 export function isChainwebNetworkConfig(config: NetworkConfig): config is ChainwebNetworkConfig {
-  return config?.type === 'chainweb';
+  return config?.type === "chainweb";
 }
 
 export function hasOnDemandMining(config: NetworkConfig): config is DevNetworkConfig | LocalChainwebNetworkConfig {
-  return 'onDemandMining' in config && !!config.onDemandMining;
+  return "onDemandMining" in config && !!config.onDemandMining;
 }
 
 export function isLocalChainwebNetworkConfig(config: NetworkConfig): config is LocalChainwebNetworkConfig {
-  return config?.type === 'chainweb-local';
+  return config?.type === "chainweb-local";
 }
 
 export function isLocalNetwork(
   config: NetworkConfig,
 ): config is PactServerNetworkConfig | LocalChainwebNetworkConfig | DevNetworkConfig {
   return (
-    (config?.type === 'pact-server' || config?.type === 'chainweb-local' || config?.type === 'chainweb-devnet') &&
+    (config?.type === "pact-server" || config?.type === "chainweb-local" || config?.type === "chainweb-devnet") &&
     !!config.autoStart
   );
 }
@@ -49,9 +50,9 @@ export function getNetworkPort(networkConfig: NetworkConfig): string {
         : isPactServerNetworkConfig(networkConfig)
           ? networkConfig.serverConfig?.port
           : undefined;
-    return port?.toString() ?? '8080';
+    return port?.toString() ?? "8080";
   }
-  return '8080';
+  return "8080";
 }
 
 export function getNetworkRpcUrl(networkConfig: NetworkConfig) {
@@ -62,9 +63,9 @@ export function getNetworkRpcUrl(networkConfig: NetworkConfig) {
 
 export function createRpcUrlGetter(networkConfig: NetworkConfig): (params: GetRpcUrlParams) => string {
   const rpcUrl = getNetworkRpcUrl(networkConfig);
-  return ({ networkId = networkConfig.networkId, chainId = networkConfig.meta?.chainId ?? '0' }) => {
+  return ({ networkId = networkConfig.networkId, chainId = networkConfig.meta?.chainId ?? "0" }) => {
     // rpcUrl could contain placeholders like {chainId} and {networkId}
-    return rpcUrl.replace(/{networkId}|{chainId}/g, (match: string) => (match === '{networkId}' ? networkId : chainId));
+    return rpcUrl.replace(/{networkId}|{chainId}/g, (match: string) => (match === "{networkId}" ? networkId : chainId));
   };
 }
 
@@ -72,17 +73,20 @@ interface ChainwebRpcUrlTemplate extends GetRpcUrlParams {
   host?: string;
 }
 export function createChainwebRpcUrl({
-  host = 'http://localhost:{port}',
-  chainId = '{chainId}',
-  networkId = '{networkId}',
+  host = "http://localhost:{port}",
+  chainId = "{chainId}",
+  networkId = "{networkId}",
 }: ChainwebRpcUrlTemplate = {}) {
   return `${host}/chainweb/0.0/${networkId}/chain/${chainId}/pact`;
 }
 
 export function getNetworkConfig(config: PactToolboxConfigObj, network?: string) {
-  const networkName = network ?? process.env.PACT_TOOLBOX_NETWORK ?? config.defaultNetwork ?? 'local';
+  const networkName = network ?? process.env.PACT_TOOLBOX_NETWORK ?? config.defaultNetwork ?? "local";
   const found = config.networks[networkName];
   config.defaultNetwork = networkName;
+  if (!found) {
+    throw new Error(`Network ${networkName} not found in config`);
+  }
   found.name = networkName;
   return found;
 }
@@ -111,11 +115,11 @@ interface kadenaCliNetwork {
   networkExplorerUrl: string;
 }
 
-export async function getKadenaCliNetwork(name: string, kadenaFolder = join(process.cwd(), '.kadena')) {
-  if (!name.endsWith('.yaml')) {
+export async function getKadenaCliNetwork(name: string, kadenaFolder = join(process.cwd(), ".kadena")) {
+  if (!name.endsWith(".yaml")) {
     name = `${name}.yaml`;
   }
-  const content = await readFile(join(kadenaFolder, 'networks', name), 'utf8');
+  const content = await readFile(join(kadenaFolder, "networks", name), "utf8");
   return parseYAML(content) as kadenaCliNetwork;
 }
 

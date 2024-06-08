@@ -1,4 +1,4 @@
-import { fillTemplatePlaceholders } from '@pact-toolbox/utils';
+import { fillTemplatePlaceholders } from "@pact-toolbox/utils";
 
 const TEMPLATE = `
 (namespace "{{namespace}}")

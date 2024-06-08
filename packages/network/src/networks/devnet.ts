@@ -1,36 +1,38 @@
-import type { DevNetContainerConfig, DevNetMiningConfig, DevNetworkConfig } from '@pact-toolbox/config';
-import type { DockerContainer } from '@pact-toolbox/utils';
+import type { DevNetContainerConfig, DevNetMiningConfig, DevNetworkConfig } from "@pact-toolbox/config";
+import type { DockerContainer } from "@pact-toolbox/utils";
+
 import {
-  DockerService,
   cleanUpProcess,
+  DockerService,
   getUuid,
   isChainWebAtHeight,
   isChainWebNodeOk,
   isDockerInstalled,
   pollFn,
-} from '@pact-toolbox/utils';
-import type { ToolboxNetworkApi, ToolboxNetworkStartOptions } from '../types';
+} from "@pact-toolbox/utils";
+
+import type { ToolboxNetworkApi, ToolboxNetworkStartOptions } from "../types";
 
 export function devNetMiningConfigToEnvVars(miningConfig?: DevNetMiningConfig): Record<string, string> {
   const envVars: Record<string, string> = {};
 
   if (miningConfig?.batchPeriod) {
-    envVars['MINING_BATCH_PERIOD'] = miningConfig.batchPeriod.toString();
+    envVars["MINING_BATCH_PERIOD"] = miningConfig.batchPeriod.toString();
   }
   if (miningConfig?.confirmationCount) {
-    envVars['MINING_CONFIRMATION_COUNT'] = miningConfig.confirmationCount.toString();
+    envVars["MINING_CONFIRMATION_COUNT"] = miningConfig.confirmationCount.toString();
   }
   if (miningConfig?.confirmationPeriod) {
-    envVars['MINING_CONFIRMATION_PERIOD'] = miningConfig.confirmationPeriod.toString();
+    envVars["MINING_CONFIRMATION_PERIOD"] = miningConfig.confirmationPeriod.toString();
   }
   if (miningConfig?.disableConfirmation) {
-    envVars['MINING_DISABLE_CONFIRMATION'] = miningConfig.disableConfirmation.toString();
+    envVars["MINING_DISABLE_CONFIRMATION"] = miningConfig.disableConfirmation.toString();
   }
   if (miningConfig?.disableIdle) {
-    envVars['MINING_DISABLE_IDLE'] = miningConfig.disableIdle.toString();
+    envVars["MINING_DISABLE_IDLE"] = miningConfig.disableIdle.toString();
   }
   if (miningConfig?.idlePeriod) {
-    envVars['MINING_IDLE_PERIOD'] = miningConfig.idlePeriod.toString();
+    envVars["MINING_IDLE_PERIOD"] = miningConfig.idlePeriod.toString();
   }
 
   return envVars;
@@ -46,10 +48,10 @@ export class LocalDevNetNetwork implements ToolboxNetworkApi {
   constructor(private network: DevNetworkConfig) {
     this.containerConfig = {
       port: 8080,
-      image: 'kadena/devnet',
-      name: 'devnet',
-      tag: 'latest',
-      volume: 'kadena_devnet',
+      image: "kadena/devnet",
+      name: "devnet",
+      tag: "latest",
+      volume: "kadena_devnet",
       ...this.network.containerConfig,
     };
     this.containerEnv = devNetMiningConfigToEnvVars(this.network.miningConfig);
@@ -86,7 +88,7 @@ export class LocalDevNetNetwork implements ToolboxNetworkApi {
   private async prepareContainer() {
     if (!isDockerInstalled()) {
       throw new Error(
-        'Seems like Docker is not installed or running, please make sure Docker is installed and running',
+        "Seems like Docker is not installed or running, please make sure Docker is installed and running",
       );
     }
 
@@ -94,7 +96,7 @@ export class LocalDevNetNetwork implements ToolboxNetworkApi {
     if (this.volume) {
       await dockerService.createVolumeIfNotExists(this.volume);
     }
-    await dockerService.removeContainerIfExists(this.containerConfig.name ?? 'devnet');
+    await dockerService.removeContainerIfExists(this.containerConfig.name ?? "devnet");
     return dockerService.createContainer(this.containerConfig, this.containerEnv);
   }
 
@@ -114,7 +116,7 @@ export class LocalDevNetNetwork implements ToolboxNetworkApi {
       await pollFn(() => isChainWebNodeOk(this.getServiceUrl()), 10000);
     } catch (e) {
       await this.stop();
-      throw new Error('DevNet did not start in time');
+      throw new Error("DevNet did not start in time");
     }
 
     // if (this.hasOnDemandMining()) {
@@ -135,7 +137,7 @@ export class LocalDevNetNetwork implements ToolboxNetworkApi {
     try {
       await pollFn(() => isChainWebAtHeight(20, this.getServiceUrl()), 10000);
     } catch (e) {
-      throw new Error('Chainweb node did not reach height 20');
+      throw new Error("Chainweb node did not reach height 20");
     }
   }
 

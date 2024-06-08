@@ -1,14 +1,16 @@
-import type { ChainwebMiningClientConfig, ChainwebNodeConfig, LocalChainwebNetworkConfig } from '@pact-toolbox/config';
-import { createChainWebMiningClientConfig, createChainwebNodeConfig } from '@pact-toolbox/config';
-import { didMakeBlocks, getUuid, isChainWebAtHeight, isChainWebNodeOk, pollFn, runBin } from '@pact-toolbox/utils';
-import type { ChildProcessWithoutNullStreams } from 'node:child_process';
-import { existsSync } from 'node:fs';
-import { rm } from 'node:fs/promises';
-import { join } from 'pathe';
-import type { ToolboxNetworkApi } from '../types';
+import { existsSync } from "node:fs";
+import { rm } from "node:fs/promises";
+import type { ChainwebMiningClientConfig, ChainwebNodeConfig, LocalChainwebNetworkConfig } from "@pact-toolbox/config";
+import type { ChildProcessWithoutNullStreams } from "node:child_process";
+import { join } from "pathe";
 
-const chainwebNodeBin = 'chainweb-node';
-const chainwebMiningClientBin = 'chainweb-mining-client';
+import { createChainWebMiningClientConfig, createChainwebNodeConfig } from "@pact-toolbox/config";
+import { didMakeBlocks, getUuid, isChainWebAtHeight, isChainWebNodeOk, pollFn, runBin } from "@pact-toolbox/utils";
+
+import type { ToolboxNetworkApi } from "../types";
+
+const chainwebNodeBin = "chainweb-node";
+const chainwebMiningClientBin = "chainweb-mining-client";
 
 export async function startChainWebNode(config: ChainwebNodeConfig, id: string, silent = true) {
   const knownPeerInfo = config.knownPeerInfo.replace(/:\d+/, `:${config.p2pPort}`);
@@ -29,11 +31,11 @@ export async function startChainWebNode(config: ChainwebNodeConfig, id: string, 
       `--mining-public-key=${config.miningPublicKey}`,
       `--service-port=${config.servicePort}`,
       `--database-directory=${join(config.databaseDirectory, id)}`,
-      config.headerStream ? `--header-stream` : '',
-      config.rosetta ? `--rosetta` : '',
-      config.allowReadsInLocal ? `--allowReadsInLocal` : '',
-      config.disablePow ? `--disable-pow` : '',
-      config.enableMiningCoordination ? `--enable-mining-coordination` : '',
+      config.headerStream ? `--header-stream` : "",
+      config.rosetta ? `--rosetta` : "",
+      config.allowReadsInLocal ? `--allowReadsInLocal` : "",
+      config.disablePow ? `--disable-pow` : "",
+      config.enableMiningCoordination ? `--enable-mining-coordination` : "",
     ].filter(Boolean),
     { silent },
   );
@@ -51,7 +53,7 @@ export async function startChainWebMiningClient(config: ChainwebMiningClientConf
       `--constant-delay-block-time=${config.constantDelayBlockTime}`,
       `--thread-count=${config.threadCount}`,
       `--log-level=${config.logLevel}`,
-      config.noTls ? `--no-tls` : '',
+      config.noTls ? `--no-tls` : "",
     ],
     { silent },
   );
@@ -78,7 +80,7 @@ export class LocalChainwebNetwork implements ToolboxNetworkApi {
   }
 
   hasOnDemandMining(): boolean {
-    return this.miningClientConfig.worker === 'on-demand';
+    return this.miningClientConfig.worker === "on-demand";
   }
 
   getOnDemandMiningUrl() {
@@ -95,11 +97,11 @@ export class LocalChainwebNetwork implements ToolboxNetworkApi {
 
   async start() {
     // clean up old db
-    const dbDir = join(this.nodeConfig.databaseDirectory, this.isStateless ? this.id : '');
+    const dbDir = join(this.nodeConfig.databaseDirectory, this.isStateless ? this.id : "");
     if (!this.nodeConfig.persistDb && existsSync(dbDir)) {
       await rm(dbDir, { recursive: true, force: true });
     }
-    this.chainwebNodeProcess = await startChainWebNode(this.nodeConfig, this.isStateless ? this.id : '', this.silent);
+    this.chainwebNodeProcess = await startChainWebNode(this.nodeConfig, this.isStateless ? this.id : "", this.silent);
     await pollFn(() => isChainWebNodeOk(this.getServiceUrl()), 10000);
     const node = `127.0.0.1:${this.nodeConfig.servicePort}`;
     this.miningClientProcess = await startChainWebMiningClient(this.miningClientConfig, node, this.silent);
@@ -115,14 +117,14 @@ export class LocalChainwebNetwork implements ToolboxNetworkApi {
           10000,
         );
       } catch (e) {
-        throw new Error('Could not make initial blocks for on-demand mining');
+        throw new Error("Could not make initial blocks for on-demand mining");
       }
     }
 
     try {
       await pollFn(() => isChainWebAtHeight(20, this.getServiceUrl()), 10000);
     } catch (e) {
-      throw new Error('Chainweb node did not reach height 20');
+      throw new Error("Chainweb node did not reach height 20");
     }
   }
 

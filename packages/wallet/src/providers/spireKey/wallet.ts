@@ -1,5 +1,6 @@
-import { IUnsignedCommand } from '@kadena/client';
-export const ERROR = Symbol('ERROR');
+import { IUnsignedCommand } from "@kadena/client";
+
+export const ERROR = Symbol("ERROR");
 
 export class KadenaSpireKey {
   private _returnUrl: string;
@@ -39,8 +40,8 @@ export class KadenaSpireKey {
   update(location: Location) {
     const searchParams = new URLSearchParams(location.search);
 
-    if (searchParams.has('user')) {
-      const userSearch = searchParams.get('user');
+    if (searchParams.has("user")) {
+      const userSearch = searchParams.get("user");
       if (userSearch && userSearch?.length > 0) {
         const parsedUser = tryParse<IUser>(decodeBase64(userSearch));
 
@@ -48,21 +49,21 @@ export class KadenaSpireKey {
       }
     }
 
-    if (searchParams.has('transaction')) {
-      const transactionSearch = searchParams.get('transaction');
+    if (searchParams.has("transaction")) {
+      const transactionSearch = searchParams.get("transaction");
       if (transactionSearch && transactionSearch?.length > 0) {
         const parsedTransaction = tryParse<IUnsignedCommand>(decodeBase64(transactionSearch));
         if (parsedTransaction === ERROR) {
           return;
         }
-        console.log('retrieved transaction from querystring parameters', JSON.stringify(parsedTransaction, null, 2));
+        console.log("retrieved transaction from querystring parameters", JSON.stringify(parsedTransaction, null, 2));
 
         this._transactions[parsedTransaction.hash] = parsedTransaction;
       }
     }
     this._saveToLocalStorage();
     // clear querystring parameters
-    this._history.pushState({}, '', location.pathname);
+    this._history.pushState({}, "", location.pathname);
   }
 
   login() {
@@ -89,18 +90,18 @@ export class KadenaSpireKey {
   }
 
   private _saveToLocalStorage() {
-    this._storage.setItem('spirekey_user', JSON.stringify(this._user));
-    this._storage.setItem('spirekey_transactions', JSON.stringify(this._transactions));
+    this._storage.setItem("spirekey_user", JSON.stringify(this._user));
+    this._storage.setItem("spirekey_transactions", JSON.stringify(this._transactions));
   }
 
   private _loadFromLocalStorage() {
-    const user = this._storage.getItem('spirekey_user');
+    const user = this._storage.getItem("spirekey_user");
     if (user) {
       const parsedUser = tryParse<IUser>(user);
       if (parsedUser !== ERROR) this._user = parsedUser;
     }
 
-    const transactions = this._storage.getItem('spirekey_transactions');
+    const transactions = this._storage.getItem("spirekey_transactions");
     if (transactions) {
       const parsedTransactions = tryParse<Record<string, IUnsignedCommand>>(transactions);
 
@@ -109,8 +110,8 @@ export class KadenaSpireKey {
   }
 
   private _clearLocalStorage() {
-    this._storage.removeItem('spirekey_user');
-    this._storage.removeItem('spirekey_transactions');
+    this._storage.removeItem("spirekey_user");
+    this._storage.removeItem("spirekey_transactions");
   }
 }
 
@@ -188,10 +189,10 @@ function tryParse<T>(msg: string): T | typeof ERROR {
   } catch (e: any) {
     console.warn(
       `an error occurred while decoding the user from the querystring parameters${
-        'message' in e ? '\n' + e.message : ''
+        "message" in e ? "\n" + e.message : ""
       }`,
     );
-    if ('stack' in e) console.warn(e.stack);
+    if ("stack" in e) console.warn(e.stack);
     return ERROR;
   }
 }

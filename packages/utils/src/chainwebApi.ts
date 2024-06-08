@@ -3,7 +3,7 @@ export async function isChainWebNodeOk(serviceUrl: string) {
     const res = await fetch(`${serviceUrl}/health-check`);
     if (res.ok) {
       const message = await res.text();
-      if (message.includes('Health check OK.')) {
+      if (message.includes("Health check OK.")) {
         return true;
       }
     }
@@ -35,10 +35,10 @@ export interface MakeBlocksParams {
   chainIds?: string[];
   onDemandUrl: string;
 }
-export async function makeBlocks({ count = 1, chainIds = ['0'], onDemandUrl }: MakeBlocksParams) {
+export async function makeBlocks({ count = 1, chainIds = ["0"], onDemandUrl }: MakeBlocksParams) {
   const body = JSON.stringify(chainIds.reduce((acc, chainId) => ({ ...acc, [chainId]: count }), {}));
   const res = await fetch(`${onDemandUrl}/make-blocks`, {
-    method: 'POST',
+    method: "POST",
     body: body,
   });
   if (res.ok) {

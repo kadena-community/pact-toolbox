@@ -1,9 +1,10 @@
-import type { Router } from 'h3';
-import { createApp, createRouter, toNodeListener } from 'h3';
-import type { ListenOptions, Listener } from 'listhen';
-import { listen } from 'listhen';
-import { setupRoutes, setupWildCardProxy } from './routes';
-import type { PactToolboxNetworkApiLike } from './types';
+import type { Router } from "h3";
+import type { Listener, ListenOptions } from "listhen";
+import { createApp, createRouter, toNodeListener } from "h3";
+import { listen } from "listhen";
+
+import type { PactToolboxNetworkApiLike } from "./types";
+import { setupRoutes, setupWildCardProxy } from "./routes";
 
 export interface CreateDevProxyServerOptions extends Partial<ListenOptions> {
   port?: number | string;
@@ -23,7 +24,7 @@ export class PactToolboxDevProxyServer {
 
   addRoute(setup: (router: Router) => void) {
     if (this.listener) {
-      throw new Error('Cannot add routes after server has started');
+      throw new Error("Cannot add routes after server has started");
     }
     setup(this.router);
   }
@@ -39,7 +40,7 @@ export class PactToolboxDevProxyServer {
         port: this.options.port ?? 8080,
       });
     } catch (e) {
-      throw new Error('Failed to start proxy server');
+      throw new Error("Failed to start proxy server");
     }
     return this.listener;
   }

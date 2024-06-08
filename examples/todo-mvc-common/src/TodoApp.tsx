@@ -1,16 +1,17 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { createTodo } from './api/api';
-import { TodoInput } from './components/TodoInput';
-import { TodoList } from './components/TodoList';
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+
+import { createTodo } from "./api/api";
+import { TodoInput } from "./components/TodoInput";
+import { TodoList } from "./components/TodoList";
 
 export function TodoApp() {
   const queryClient = useQueryClient();
   const { mutateAsync: addTodo, isPending } = useMutation({
-    mutationKey: ['todos/createTodo'],
+    mutationKey: ["todos/createTodo"],
     mutationFn: createTodo,
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ['todos/readTodos'],
+        queryKey: ["todos/readTodos"],
       });
     },
   });

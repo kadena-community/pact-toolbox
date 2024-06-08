@@ -67,7 +67,7 @@ const TEMPLATE = `
 `;
 export function generateFungible(context: FungibleTemplateContext): string {
   return TEMPLATE.trim()
-    .replace(/{{namespace}}/g, context.namespace ?? 'free')
+    .replace(/{{namespace}}/g, context.namespace ?? "free")
     .replace(/{{adminKeyset}}/g, context.adminKeyset ?? `${context.module}-admin-keyset`)
     .replace(/{{gasStationAccount}}/g, context.gasStationAccount)
     .replace(/{{module}}/g, context.module);

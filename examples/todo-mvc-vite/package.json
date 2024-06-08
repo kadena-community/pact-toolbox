@@ -5,10 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "NODE_OPTIONS='--import tsx' vite",
-    "dev:local": "PACT_TOOLBOX_NETWORK='devnetOnDemand' vite",
     "build": "NODE_OPTIONS='--import tsx' vite build",
-    "lint": "oxlint --import-plugin  -D all && prettier -c src",
-    "lint:fix": "oxlint --import-plugin  -D all --fix && prettier -c src -w",
+    "lint": "oxlint --import-plugin --deny-warnings",
+    "format": "prettier --check . --ignore-path ../../.gitignore",
     "preview": "NODE_OPTIONS='--import tsx' vite preview",
     "verify": "tsc --noEmit",
     "pact:start": "pact-toolbox start",
@@ -18,25 +17,28 @@
     "pact:run": "pact-toolbox run"
   },
   "dependencies": {
-    "@tanstack/react-query": "^5.32.0",
+    "@tanstack/react-query": "^5.40.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "todo-mvc-common": "workspace:*"
   },
   "devDependencies": {
+    "@pact-toolbox/prettier-config": "workspace:*",
     "@pact-toolbox/test": "workspace:*",
     "@pact-toolbox/unplugin": "workspace:*",
-    "@testing-library/react": "~15.0.5",
+    "@testing-library/react": "~16.0.0",
     "@testing-library/user-event": "~14.5.2",
-    "@types/react": "^18.3.1",
+    "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
-    "@vitejs/plugin-react-swc": "^3.6.0",
-    "happy-dom": "^14.7.1",
-    "oxlint": "^0.3.1",
+    "@vitejs/plugin-react-swc": "^3.7.0",
+    "happy-dom": "^14.12.0",
+    "oxlint": "^0.4.3",
     "pact-toolbox": "workspace:*",
+    "prettier": "^3.3.1",
     "typescript": "^5.4.5",
-    "vite": "^5.2.10",
-    "vitest": "^1.5.2",
+    "vite": "^5.2.13",
+    "vitest": "^1.6.0",
     "vitest-dom": "^0.1.1"
-  }
+  },
+  "prettier": "@pact-toolbox/prettier-config"
 }

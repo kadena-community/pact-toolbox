@@ -1,7 +1,8 @@
-import type { ChainId, IExecutionPayloadObject, IPactCommand, IUnsignedCommand } from '@kadena/client';
-import { hash } from '@kadena/cryptography-utils';
-import type { KdaRequestSignRequest } from './providers/eckoWallet/types';
-import type { WalletSigner } from './wallet';
+import type { ChainId, IExecutionPayloadObject, IPactCommand, IUnsignedCommand } from "@kadena/client";
+import { hash } from "@kadena/cryptography-utils";
+
+import type { KdaRequestSignRequest } from "./providers/eckoWallet/types";
+import type { WalletSigner } from "./wallet";
 
 export function signingRequestToPactCommand(request: KdaRequestSignRequest, signer: WalletSigner): IUnsignedCommand {
   const signingCmd = request.data.signingCmd;
@@ -29,7 +30,7 @@ export function signingRequestToPactCommand(request: KdaRequestSignRequest, sign
     },
     signers,
     networkId: request.data.networkId,
-    nonce: signingCmd.nonce ?? '',
+    nonce: signingCmd.nonce ?? "",
   };
   const cmdStr = JSON.stringify(cmd);
   return {

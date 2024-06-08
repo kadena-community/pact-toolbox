@@ -1,8 +1,9 @@
-import type { PactToolboxConfigObj } from '@pact-toolbox/config';
-import { resolveConfig } from '@pact-toolbox/config';
-import { execAsync, logger } from '@pact-toolbox/utils';
-import { join } from 'pathe';
-import readdir from 'tiny-readdir-glob';
+import type { PactToolboxConfigObj } from "@pact-toolbox/config";
+import { join } from "pathe";
+import readdir from "tiny-readdir-glob";
+
+import { resolveConfig } from "@pact-toolbox/config";
+import { execAsync, logger } from "@pact-toolbox/utils";
 
 export async function runReplTests(config?: Required<PactToolboxConfigObj>) {
   if (!config) {
@@ -16,7 +17,7 @@ export async function runReplTests(config?: Required<PactToolboxConfigObj>) {
     depth: 20,
     limit: 1_000_000,
     followSymlinks: true,
-    ignore: ['prelude/**'],
+    ignore: ["prelude/**"],
     signal: aborter.signal,
   });
   for (const file of result.files) {

@@ -1,6 +1,7 @@
-import type { App, Router } from 'h3';
-import { eventHandler } from 'h3';
-import type { PactToolboxNetworkApiLike } from './types';
+import type { App, Router } from "h3";
+import { eventHandler } from "h3";
+
+import type { PactToolboxNetworkApiLike } from "./types";
 
 export function setupRoutes(router: Router, networkApi: PactToolboxNetworkApiLike) {
   // if (networkApi.hasOnDemandMining()) {
@@ -12,10 +13,10 @@ export function setupRoutes(router: Router, networkApi: PactToolboxNetworkApiLik
   //   );
   // }
   router.post(
-    '/pact-toolbox/restart',
+    "/pact-toolbox/restart",
     eventHandler(async () => {
       await networkApi.restart();
-      return { status: 'ok' };
+      return { status: "ok" };
     }),
   );
 }

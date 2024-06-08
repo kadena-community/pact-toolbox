@@ -1,10 +1,10 @@
-import { getPort } from 'get-port-please';
+import { getPort } from "get-port-please";
 
-export async function getRandomNetworkPorts(host: string = '127.0.0.1') {
+export async function getRandomNetworkPorts(host: string = "127.0.0.1") {
   const proxy = await getPort({
     host,
     random: true,
-    name: 'proxy',
+    name: "proxy",
   });
   const startGap = 10;
   const endGap = 100;
@@ -12,27 +12,27 @@ export async function getRandomNetworkPorts(host: string = '127.0.0.1') {
     port: proxy + startGap,
     host,
     portRange: [proxy + startGap, proxy + endGap],
-    name: 'service',
+    name: "service",
   });
   const onDemand = await getPort({
     port: service + startGap,
     host,
     portRange: [service + startGap, service + endGap],
-    name: 'onDemand',
+    name: "onDemand",
   });
 
   const stratum = await getPort({
     port: onDemand + startGap,
     host,
     portRange: [onDemand + startGap, onDemand + endGap],
-    name: 'stratum',
+    name: "stratum",
   });
 
   const p2p = await getPort({
     port: stratum + startGap,
     host,
     portRange: [stratum + startGap, stratum + endGap],
-    name: 'p2p',
+    name: "p2p",
   });
 
   return {

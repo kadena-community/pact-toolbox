@@ -1,35 +1,39 @@
-import type { GitInfo } from 'giget';
-import Handlebars from 'handlebars';
-import type { PactDependency, PactPrelude } from './types';
+import type { GitInfo } from "giget";
+import Handlebars from "handlebars";
+
+import type { PactDependency, PactPrelude } from "./types";
 
 const inputRegex = /^(?<provider>[\w-.]+):(?<repo>[\w.-]+\/[\w.-]+)(?<subdir>[^#]+)?#?(?<ref>[\w./-]+)?/;
 const providerShortcuts: Record<string, string> = {
-  gh: 'github',
-  gl: 'gitlab',
-  bb: 'bitbucket',
-  sh: 'sourcehut',
+  gh: "github",
+  gl: "gitlab",
+  bb: "bitbucket",
+  sh: "sourcehut",
 };
 
 export function parseGitURI(input: string): GitInfo {
   const m = input.match(inputRegex)?.groups || {};
-  const provider = m.provider || 'github';
+  const provider = m.provider || "github";
   return {
-    provider: (providerShortcuts[provider] || provider) as GitInfo['provider'],
-    repo: m.repo,
-    subdir: m.subdir || '/',
-    ref: m.ref ?? 'main',
+    provider: (providerShortcuts[provider] || provider) as GitInfo["provider"],
+    repo: m.repo || "",
+    subdir: m.subdir || "/",
+    ref: m.ref ?? "main",
   };
 }
 
 export function getBaseRepo(uri: string) {
   const { provider, repo, ref } = parseGitURI(uri);
+  console.log("provider:", provider);
+  console.log("repo:", repo);
+  console.log("ref:", ref);
   return `${provider}:${repo}#${ref}`;
 }
 
 export function preludeSpec(
   name: string,
   uri: string,
-  group: string = 'root',
+  group: string = "root",
   requires: PactDependency[] = [],
 ): PactDependency {
   return {

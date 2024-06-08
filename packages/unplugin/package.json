@@ -101,8 +101,8 @@
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch src",
-    "lint": "oxlint --import-plugin  -D all && prettier -c src",
-    "lint:fix": "oxlint --import-plugin  -D all --fix && prettier -c src -w",
+    "lint": "oxlint --import-plugin --deny-warnings",
+    "format": "prettier --check . --ignore-path ../../.gitignore",
     "prepack": "pnpm run build",
     "release": "pnpm test && pnpm publish",
     "test:watch": "vitest",
@@ -111,7 +111,7 @@
     "build:fix": "tsx scripts/postbuild.ts"
   },
   "dependencies": {
-    "@kadena/pactjs-generator": "^1.11.0",
+    "@kadena/pactjs-generator": "^1.11.2",
     "@pact-toolbox/config": "workspace:*",
     "@pact-toolbox/network": "workspace:*",
     "@pact-toolbox/runtime": "workspace:*",
@@ -163,21 +163,23 @@
   "devDependencies": {
     "@nuxt/kit": "^3.11.2",
     "@nuxt/schema": "^3.11.2",
+    "@pact-toolbox/prettier-config": "workspace:*",
     "@pact-toolbox/tsconfig": "workspace:*",
-    "@rsbuild/core": "0.6.7",
-    "@rspack/core": "^0.6.3",
-    "@types/node": "^20.12.7",
-    "@vitest/coverage-v8": "^1.5.2",
+    "@rsbuild/core": "0.7.3",
+    "@rspack/core": "^0.7.1",
+    "@types/node": "^20.14.2",
+    "@vitest/coverage-v8": "^1.6.0",
     "fast-glob": "^3.3.2",
-    "lint-staged": "^15.2.2",
+    "lint-staged": "^15.2.5",
     "next": "^14.2.3",
-    "oxlint": "^0.3.1",
-    "rollup": "^4.17.0",
-    "tsup": "^8.0.2",
-    "tsx": "^4.7.3",
+    "oxlint": "^0.4.3",
+    "rollup": "^4.18.0",
+    "tsup": "^8.1.0",
+    "tsx": "^4.14.1",
     "typescript": "^5.4.5",
-    "vite": "^5.2.10",
-    "vitest": "^1.5.2",
+    "vite": "^5.2.13",
+    "vitest": "^1.6.0",
     "webpack": "^5.91.0"
-  }
+  },
+  "prettier": "@pact-toolbox/prettier-config"
 }

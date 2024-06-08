@@ -1,5 +1,6 @@
-import { IKeyPair, ISingleSignFunction } from '@kadena/client';
-import { KdaClient, dirtyReadOrFail, execution, generateKAccount, submitAndListen } from './utils';
+import { IKeyPair, ISingleSignFunction } from "@kadena/client";
+
+import { dirtyReadOrFail, execution, generateKAccount, KdaClient, submitAndListen } from "./utils";
 
 export interface CoinAccountDetails {
   balance: string;
@@ -32,14 +33,14 @@ export async function createAccount(
   const kAddress = `k:${keyPair.publicKey}`;
   const tx = execution(`(coin.create-account "${kAddress}" (read-keyset 'ks))`)
     .setMeta({ senderAccount: kAddress })
-    .addKeyset('ks', 'key-all', keyPair.publicKey)
+    .addKeyset("ks", "key-all", keyPair.publicKey)
     .addSigner(keyPair.publicKey)
     .createTransaction();
   const signedTx = await sign(tx);
   const data = await submitAndListen(client, signedTx);
   console.log(data);
   return {
-    balance: '0',
+    balance: "0",
     account: kAddress,
   };
 }

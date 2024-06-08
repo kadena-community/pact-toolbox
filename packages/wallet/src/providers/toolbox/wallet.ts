@@ -7,8 +7,9 @@ import {
   getSignerAccount,
   getToolboxNetworkConfig,
   isToolboxInstalled,
-} from '@pact-toolbox/client-utils';
-import type { Wallet } from '../../wallet';
+} from "@pact-toolbox/client-utils";
+
+import type { Wallet } from "../../wallet";
 
 //const signers = generateKAccounts(10);
 export class ToolboxWallet implements Wallet {
@@ -33,13 +34,13 @@ export class ToolboxWallet implements Wallet {
     const signer = getSignerAccount();
     try {
       const account = await details(this.kdaClient, `k:${signer.publicKey}`);
-      console.log('account found', account);
+      console.log("account found", account);
       return {
         address: account.account,
         publicKey: signer.publicKey,
       };
     } catch (e) {
-      console.log('creating account', signer);
+      console.log("creating account", signer);
       const account = await createAccount(this.kdaClient, this.sign, signer);
       return {
         address: account.account,
