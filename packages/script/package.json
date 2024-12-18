@@ -46,19 +46,20 @@
     "@pact-toolbox/runtime": "workspace:*",
     "@pact-toolbox/utils": "workspace:*",
     "defu": "^6.1.4",
-    "jiti": "^1.21.3",
+    "jiti": "^2.4.0",
+    "mlly": "^1.7.3",
     "pathe": "^1.1.2"
   },
   "devDependencies": {
-    "@kadena/types": "^0.6.2",
+    "@kadena/types": "^0.7.0",
     "@pact-toolbox/prettier-config": "workspace:*",
     "@pact-toolbox/tsconfig": "workspace:*",
-    "@vitest/coverage-v8": "^1.6.0",
-    "lint-staged": "^15.2.5",
-    "oxlint": "^0.4.3",
-    "tsup": "^8.1.0",
-    "typescript": "^5.4.5",
-    "vitest": "^1.6.0"
+    "@vitest/coverage-v8": "^2.1.5",
+    "oxlint": "^0.13.0",
+    "prettier": "^3.3.3",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.5"
   },
   "prettier": "@pact-toolbox/prettier-config"
 }

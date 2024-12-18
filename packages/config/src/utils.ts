@@ -1,11 +1,8 @@
-import { readFile } from "fs/promises";
-import { parseYAML } from "confbox";
-import { join } from "pathe";
+import type { GetRpcUrlParams, SerializableNetworkConfig } from "@pact-toolbox/types";
 
 import type {
   ChainwebNetworkConfig,
   DevNetworkConfig,
-  GetRpcUrlParams,
   LocalChainwebNetworkConfig,
   NetworkConfig,
   PactServerNetworkConfig,
@@ -55,7 +52,7 @@ export function getNetworkPort(networkConfig: NetworkConfig): string {
   return "8080";
 }
 
-export function getNetworkRpcUrl(networkConfig: NetworkConfig) {
+export function getNetworkRpcUrl(networkConfig: NetworkConfig): string {
   const port = getNetworkPort(networkConfig);
   const rpcUrl = networkConfig.rpcUrl ?? `http://localhost:{port}`;
   return rpcUrl.replace(/{port}/g, port);
@@ -80,7 +77,7 @@ export function createChainwebRpcUrl({
   return `${host}/chainweb/0.0/${networkId}/chain/${chainId}/pact`;
 }
 
-export function getNetworkConfig(config: PactToolboxConfigObj, network?: string) {
+export function getNetworkConfig(config: PactToolboxConfigObj, network?: string): NetworkConfig {
   const networkName = network ?? process.env.PACT_TOOLBOX_NETWORK ?? config.defaultNetwork ?? "local";
   const found = config.networks[networkName];
   config.defaultNetwork = networkName;
@@ -91,9 +88,9 @@ export function getNetworkConfig(config: PactToolboxConfigObj, network?: string)
   return found;
 }
 
-export function getSerializableNetworkConfig(config: PactToolboxConfigObj, isDev = true) {
+export function getSerializableNetworkConfig(config: PactToolboxConfigObj, isDev = true): SerializableNetworkConfig {
   const network = getNetworkConfig(config);
-  const devProxyUrl = `http://localhost:${config.devProxyPort}`;
+  const devProxyUrl: string = `http://localhost:${config.devProxyPort}`;
   return {
     networkId: network.networkId,
     meta: network.meta,
@@ -103,34 +100,7 @@ export function getSerializableNetworkConfig(config: PactToolboxConfigObj, isDev
     keysets: network.keysets,
     name: network.name,
     devProxyUrl,
-    isDevProxyEnabled: config.enableDevProxy,
-    ...(isDev ? { signers: network.signers } : {}),
+    isDevProxyEnabled: !!config.enableDevProxy,
+    keyPairs: isDev ? network.keyPairs : [],
   };
 }
-
-interface kadenaCliNetwork {
-  network: string;
-  networkId: string;
-  networkHost: string;
-  networkExplorerUrl: string;
-}
-
-export async function getKadenaCliNetwork(name: string, kadenaFolder = join(process.cwd(), ".kadena")) {
-  if (!name.endsWith(".yaml")) {
-    name = `${name}.yaml`;
-  }
-  const content = await readFile(join(kadenaFolder, "networks", name), "utf8");
-  return parseYAML(content) as kadenaCliNetwork;
-}
-
-// export async function getkadenaCliNetworks(
-//   kadenaFolder = join(process.cwd(), '.kadena'),
-// ) {
-//   const networks: Record<string, NetworkConfig> = {};
-//   const files = await readdir(join(kadenaFolder, 'networks'));
-//   for (const file of files) {
-//     const networkConfig = await getKadenaCliNetwork(file);
-//   }
-
-//   return networks;
-// }

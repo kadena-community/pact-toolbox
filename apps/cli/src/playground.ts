@@ -21,13 +21,12 @@ await bench("localPactServer", async () => {
   });
   await local.start();
   await local.client.deployContract("hello-world.pact");
-  const signer = local.client.getValidateSigner();
-  const tx = local.client
+  const signer = local.client.getSignerKeys();
+  await local.client
     .execution('(free.hello-world.say-hello "Salama")')
-    .addSigner(signer.publicKey)
-    .createTransaction();
-  const signedTx = await local.client.sign(tx);
-  console.log(await local.client.submitAndListen(signedTx));
+    .withSigner(signer.publicKey)
+    .sign()
+    .submitAndListen();
   await local.stop();
 });
 
@@ -55,13 +54,13 @@ await bench("devnetOnDemand", async () => {
   });
   await devnetOnDemand.start();
   await devnetOnDemand.client.deployContract("hello-world.pact");
-  const signer = devnetOnDemand.client.getValidateSigner();
-  const tx = devnetOnDemand.client
+  const signer = devnetOnDemand.client.getSignerKeys();
+  await devnetOnDemand.client
     .execution('(free.hello-world.say-hello "Salama")')
-    .addSigner(signer.publicKey)
-    .createTransaction();
-  const signedTx = await devnetOnDemand.client.sign(tx);
-  console.log(await devnetOnDemand.client.submitAndListen(signedTx));
+    .withSigner(signer.publicKey)
+    .sign()
+    .submitAndListen();
+
   await devnetOnDemand.stop();
 });
 
@@ -72,14 +71,13 @@ await bench("devnet", async () => {
   });
   await devnet.start();
   await devnet.client.deployContract("hello-world.pact");
-  const signer = devnet.client.getValidateSigner();
-  const tx = devnet.client
+  const signer = devnet.client.getSignerKeys();
+  await devnet.client
     .execution('(free.hello-world.say-hello "Salama")')
-    .addSigner(signer.publicKey)
-    .createTransaction();
+    .withSigner(signer.publicKey)
+    .sign()
+    .submitAndListen();
 
-  const signedTx = await devnet.client.sign(tx);
-  console.log(await devnet.client.submitAndListen(signedTx));
   await devnet.stop();
 });
 

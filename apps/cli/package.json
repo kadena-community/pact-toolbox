@@ -55,11 +55,11 @@
     "verify": "tsc --noEmit --skipLibCheck"
   },
   "dependencies": {
-    "@kadena/client": "^1.11.2",
+    "@kadena/client": "^1.15.0",
     "@kadena/pactjs": "^0.4.3",
-    "@kadena/pactjs-cli": "^1.11.2",
-    "@kadena/types": "^0.6.2",
-    "@pact-toolbox/client-utils": "workspace:*",
+    "@kadena/pactjs-cli": "^1.15.0",
+    "@kadena/types": "^0.7.0",
+    "@pact-toolbox/client": "workspace:*",
     "@pact-toolbox/config": "workspace:*",
     "@pact-toolbox/fabricator": "workspace:*",
     "@pact-toolbox/init": "workspace:*",
@@ -76,14 +76,14 @@
   "devDependencies": {
     "@pact-toolbox/prettier-config": "workspace:*",
     "@pact-toolbox/tsconfig": "workspace:*",
-    "@types/node": "^20.14.2",
-    "@vitest/coverage-v8": "^1.6.0",
-    "oxlint": "^0.4.3",
-    "prettier": "^3.3.1",
-    "tsup": "^8.1.0",
-    "tsx": "^4.14.1",
-    "typescript": "^5.4.5",
-    "vitest": "^1.6.0"
+    "@types/node": "^22.9.1",
+    "@vitest/coverage-v8": "^2.1.5",
+    "oxlint": "^0.13.0",
+    "prettier": "^3.3.3",
+    "tsup": "^8.3.5",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.5"
   },
   "peerDependencies": {
     "vitest": "^1.2.2"

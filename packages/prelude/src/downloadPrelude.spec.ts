@@ -9,10 +9,10 @@ import { writeFileAtPath } from "@pact-toolbox/utils";
 
 import type { CommonPreludeOptions, PactDependency, PactPrelude } from "./types";
 import {
+  downloadAllPreludes,
   downloadGitRepo,
   downloadPactDependency,
   downloadPrelude,
-  downloadPreludes,
   groupByBaseRepo,
   isPreludeDownloaded,
   shouldDownloadPreludes,
@@ -203,7 +203,7 @@ describe("downloadPrelude", () => {
           },
         ],
       };
-      await downloadPreludes(config);
+      await downloadAllPreludes(config);
       expect(downloadTemplateMock).toHaveBeenCalledWith("github:owner/repo-uri#main", {
         dir: join(process.cwd(), ".pact-toolbox/tmp", "prelude"),
         cwd: process.cwd(),

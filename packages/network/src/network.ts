@@ -8,7 +8,7 @@ import {
   isLocalNetwork,
   isPactServerNetworkConfig,
 } from "@pact-toolbox/config";
-import { deployPreludes, downloadPreludes, shouldDownloadPreludes } from "@pact-toolbox/prelude";
+import { deployPreludes, downloadAllPreludes, shouldDownloadPreludes } from "@pact-toolbox/prelude";
 import { createDevProxyServer } from "@pact-toolbox/proxy";
 import { PactToolboxClient } from "@pact-toolbox/runtime";
 import { logger } from "@pact-toolbox/utils";
@@ -77,31 +77,31 @@ export class PactToolboxNetwork implements ToolboxNetworkApi {
     this.networkConfig = networkConfig;
   }
 
-  getServicePort() {
+  getServicePort(): number | string {
     return this.networkApi.getServicePort();
   }
 
-  hasOnDemandMining() {
+  hasOnDemandMining(): boolean {
     return this.networkApi.hasOnDemandMining();
   }
 
-  getOnDemandMiningUrl() {
+  getOnDemandMiningUrl(): string {
     return this.networkApi.getOnDemandMiningUrl();
   }
 
-  getServiceUrl() {
+  getServiceUrl(): string {
     return this.networkApi.getServiceUrl();
   }
 
-  getDevProxyUrl() {
+  getDevProxyUrl(): string {
     return `http://localhost:${this.devProxyPort}`;
   }
 
-  getDevProxyPort() {
+  getDevProxyPort(): string | number {
     return this.devProxyPort;
   }
 
-  async start(options?: ToolboxNetworkStartOptions) {
+  async start(options?: ToolboxNetworkStartOptions): Promise<void> {
     const preludes = this.toolboxConfig.preludes ?? [];
     const contractsDir = this.toolboxConfig.contractsDir ?? "contracts";
     const preludeConfig = {
@@ -113,7 +113,7 @@ export class PactToolboxNetwork implements ToolboxNetworkApi {
 
     if (needDownloadPreludes) {
       // download preludes
-      await downloadPreludes(preludeConfig);
+      await downloadAllPreludes(preludeConfig);
     }
     await this.networkApi.start({
       ...this.startOptions,
@@ -127,7 +127,7 @@ export class PactToolboxNetwork implements ToolboxNetworkApi {
 
     if (this.startOptions.logAccounts) {
       // log all signers and keys
-      const signers = this.networkConfig.signers;
+      const signers = this.networkConfig.keyPairs ?? [];
       for (const signer of signers) {
         logger.log(`Account: ${signer.account}`);
         logger.log(`Public: ${signer.publicKey}`);
@@ -137,23 +137,26 @@ export class PactToolboxNetwork implements ToolboxNetworkApi {
     }
   }
 
-  async restart() {
+  async restart(): Promise<void> {
     await this.networkApi.restart();
     logger.success(`Network ${this.networkConfig.name} restarted at ${this.getServiceUrl()}`);
   }
 
-  async stop() {
+  async stop(): Promise<void> {
     await this.networkApi.stop();
     await this.devProxy?.stop();
     logger.success(`Network ${this.networkConfig.name} stopped!`);
   }
 
-  async isOk() {
+  async isOk(): Promise<boolean> {
     return this.networkApi.isOk();
   }
 }
 
-export async function startLocalNetwork(config: PactToolboxConfigObj, options: StartLocalNetworkOptions = {}) {
+export async function startLocalNetwork(
+  config: PactToolboxConfigObj,
+  options: StartLocalNetworkOptions = {},
+): Promise<PactToolboxNetwork> {
   const network = new PactToolboxNetwork(config, options);
   try {
     await network.start(options);

@@ -1,9 +1,9 @@
 import type { NextConfig } from "next";
 
-import type { Options } from "./core/options";
+import type { PluginOptions } from "./plugin/types";
 import webpackPlugin from "./webpack";
 
-function withPactToolbox(pluginOptions?: Options) {
+function withPactToolbox(pluginOptions?: PluginOptions) {
   return (nextConfig: NextConfig = {}) => {
     return {
       ...nextConfig,
@@ -14,7 +14,7 @@ function withPactToolbox(pluginOptions?: Options) {
         }
         return config;
       },
-    };
+    } as NextConfig;
   };
 }
 

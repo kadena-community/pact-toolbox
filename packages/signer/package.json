@@ -1,0 +1,61 @@
+{
+  "name": "@pact-toolbox/signers",
+  "version": "0.0.4",
+  "repository": "kadena-community/pact-toolbox",
+  "author": "Salama Ashoush <salamaashoush@gmail.com>",
+  "license": "MIT",
+  "type": "module",
+  "private": false,
+  "main": "./src/index.ts",
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": {
+          "types": "./dist/index.d.ts",
+          "default": "./dist/index.js"
+        },
+        "require": {
+          "types": "./dist/index.d.cts",
+          "default": "./dist/index.cjs"
+        }
+      }
+    },
+    "main": "./dist/index.cjs",
+    "module": "./dist/index.js",
+    "types": "./dist/index.d.ts"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "lint": "oxlint --import-plugin --deny-warnings",
+    "format": "prettier --check . --ignore-path ../../.gitignore",
+    "prepack": "pnpm run build",
+    "release": "pnpm test && pnpm publish",
+    "test:watch": "tsx --test --watch --experimental-test-module-mocks src/**/*.spec.ts",
+    "test": "tsx --test --experimental-test-module-mocks src/**/*.spec.ts",
+    "verify": "tsc --noEmit --skipLibCheck"
+  },
+  "dependencies": {
+    "@pact-toolbox/crypto": "workspace:*"
+  },
+  "devDependencies": {
+    "@kadena/client": "^1.15.0",
+    "@kadena/cryptography-utils": "^0.4.4",
+    "@pact-toolbox/prettier-config": "workspace:*",
+    "@pact-toolbox/tsconfig": "workspace:*",
+    "@pact-toolbox/types": "workspace:*",
+    "@types/node": "^22.9.1",
+    "oxlint": "^0.13.0",
+    "prettier": "^3.3.3",
+    "tinybench": "^3.0.6",
+    "tsup": "^8.3.5",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  },
+  "prettier": "@pact-toolbox/prettier-config"
+}

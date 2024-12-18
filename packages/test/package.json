@@ -45,19 +45,18 @@
     "@pact-toolbox/network": "workspace:*",
     "@pact-toolbox/runtime": "workspace:*",
     "@pact-toolbox/utils": "workspace:*",
-    "@pact-toolbox/wallet": "workspace:*",
     "pathe": "^1.1.2",
     "tiny-readdir-glob": "^1.22.24"
   },
   "devDependencies": {
     "@pact-toolbox/prettier-config": "workspace:*",
     "@pact-toolbox/tsconfig": "workspace:*",
-    "@vitest/coverage-v8": "^1.6.0",
-    "lint-staged": "^15.2.5",
-    "oxlint": "^0.4.3",
-    "tsup": "^8.1.0",
-    "typescript": "^5.4.5",
-    "vitest": "^1.6.0"
+    "@vitest/coverage-v8": "^2.1.5",
+    "oxlint": "^0.13.0",
+    "prettier": "^3.3.3",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.5"
   },
   "peerDependencies": {
     "vitest": "^1.2.2"

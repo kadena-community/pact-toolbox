@@ -28,6 +28,7 @@
 ## Marketing Strategy
 
 <!-- NOTE I dent fully understand what I need to write here but chatgpt helped with these :D  -->
+
 ### Target Audience Identification
 
 - Primary Audience: Developers with experience in Web2 and Ethereum ecosystem looking to transition into developing DApps on Kadena.
@@ -46,32 +47,29 @@
 - **Network Management Tools** (`@pact-toolbox/network`): Facilitate the starting and managing of various Kadena local networks (Pact server, Devnet, etc.). (test, document)
 - **Frontend Build System Integration** (`@pact-toolbox/unplugin`): Bundler plugins to inject network configs and enables direct import of Pact files into frontend applications, streamlining smart contract interaction. (fix, test, document)
 - **Development Proxy Server** (`@pact-toolbox/proxy`): Provide development dev server api to debugs and manage running networks (repurpose).
-- **DApp Testing Utilities** (`@pact-toolbox/test`): Prepare a pact testing env for testing code that interacts with local networks  (test, document).
-- **Web/Browser Utilities** (`@pact-toolbox/client-utils`): Enhances integration with the `@kadena/client` and `@kadena/client-utils`  (wip, test, document).
+- **DApp Testing Utilities** (`@pact-toolbox/test`): Prepare a pact testing env for testing code that interacts with local networks (test, document).
+- **Web/Browser Utilities** (`@pact-toolbox/client-utils`): Enhances integration with the `@kadena/client` and `@kadena/client-utils` (wip, test, document).
 - **Node Runtime Utilities** (`@pact-toolbox/runtime`): General utils to interact with networks, eg deployment, simulations, etc (test, document).
 - **Script Runner** (`@pact-toolbox/script`): Simplifies contract deployment and simulations through JS/TS scripts (test, document).
-- **Standard Contract Management** (`@pact-toolbox/prelude`): Streamlines the downloading and deployment of standard Kadena contracts  (test, document).
+- **Standard Contract Management** (`@pact-toolbox/prelude`): Streamlines the downloading and deployment of standard Kadena contracts (test, document).
 - **Wallet Integration and Mocks** (`@pact-toolbox/wallet`): Provide unified wallet APIs and mocks(proxy to toolbox signing in tests) (eckoWallet, metamask, spireKey, etc). (wip, test, document)
-- **Pact Installer** (`@pact-toolbox/installer`): Eases the installation and upgrade of Pact across different systems  (test, document).
-- **CLI Tools** (`@pact-toolbox/cli`): A comprehensive CLI for project initialization, Pact management, and network operation ,eventually will be part of kadena-cli (test, document) (test, document).
+- **CLI Tools** (`@pact-toolbox/cli`): A comprehensive CLI for project initialization, and network operation ,eventually will be part of kadena-cli (test, document) (test, document).
 - **Application Templates/Components**: Offers ready-to-use templates for common application patterns, including NFTs, gas stations, fungible tokens, and more. (n/a)
   - `pact-toolbox generate gas-station`
   - `pact-toolbox generate fungible-token`
   - `pact-toolbox generate nft`
 - **Devtools UI** InApp devtools to help you debug transactions and manage networks from your app ui during development (similar to react-query devtools) (n/a).
-  
+
 ### First Milestone
 
 - Development of:
   - `@pact-toolbox/cli`
   - `@pact-toolbox/network`
-  - `@pact-toolbox/proxy`
   - `@pact-toolbox/unplugin` maybe with direct import for pact files.
   - `@pact-toolbox/client-utils`
   - `@pact-toolbox/runtime`
   - `@pact-toolbox/script`
   - `@pact-toolbox/wallet` staring with ecko wallet only.
-  - `@pact-toolbox/installer`
 - Test coverage and Code docs.
 - Initial documentation covering setup, configuration, and basic usage.
 - Internal release and testing.
@@ -91,4 +89,5 @@
 Most of the mentioned packages already in WIP state and almost complete, but I still need lots of testing and refactoring here and there to make sure everything works smoothly.
 
 <!-- This is an example, depending of the time and process could be different still need to check -->
+
 The targeted timeline for the v1 release of the Pact Toolbox Project is Q2 2024. This will include the completion of the first milestone, with ongoing development towards the second milestone and continuous updates based on community feedback and evolving development needs.

@@ -10,14 +10,14 @@ import type {
   PactServerConfig,
   PactServerNetworkConfig,
 } from "./config";
-import { chainwebConfigDir, defaultKeysets, defaultMeta, defaultSigners, latestDevNetContainer } from "./defaults";
+import { chainwebConfigDir, defaultKeyPairs, defaultKeysets, defaultMeta, latestDevNetContainer } from "./defaults";
 import { createChainwebRpcUrl } from "./utils";
 
 export function createPactServerConfig(overrides?: Partial<PactServerConfig>): Required<PactServerConfig> {
   const defaults = {
     port: 9091,
-    logDir: ".kadena/toolbox/pact/logs",
-    persistDir: ".kadena/toolbox/pact/persist",
+    // logDir: ".pact-toolbox/pact/logs",
+    // persistDir: ".pact-toolbox/pact/persist",
     verbose: true,
     pragmas: [],
     execConfig: ["DisablePact44", "AllowReadInLocal"],
@@ -33,7 +33,7 @@ export function createLocalNetworkConfig(overrides?: Partial<PactServerNetworkCo
     type: "pact-server",
     rpcUrl: "http://localhost:{port}",
     networkId: "development",
-    signers: defaultSigners,
+    keyPairs: defaultKeyPairs,
     keysets: defaultKeysets,
     senderAccount: "sender00",
     autoStart: true,
@@ -48,7 +48,7 @@ export function createDevNetNetworkConfig(overrides?: Partial<DevNetworkConfig>)
     type: "chainweb-devnet",
     rpcUrl: createChainwebRpcUrl(),
     networkId: "development",
-    signers: defaultSigners,
+    keyPairs: defaultKeyPairs,
     keysets: defaultKeysets,
     senderAccount: "sender00",
     autoStart: true,
@@ -60,7 +60,7 @@ export function createDevNetNetworkConfig(overrides?: Partial<DevNetworkConfig>)
 
 export function createChainwebNodeConfig(
   overrides?: Partial<ChainwebNodeConfig>,
-  configDir = chainwebConfigDir,
+  configDir: string = chainwebConfigDir,
 ): ChainwebNodeConfig {
   const defaults = {
     persistDb: true,
@@ -78,9 +78,8 @@ export function createChainwebNodeConfig(
     enableMiningCoordination: true,
     miningPublicKey: "f89ef46927f506c70b6a58fd322450a936311dc6ac91f4ec3d8ef949608dbf1f",
     headerStream: true,
-    rosetta: false,
     allowReadsInLocal: true,
-    databaseDirectory: join(process.cwd(), ".kadena/toolbox/chainweb/db"),
+    databaseDirectory: join(process.cwd(), ".pact-toolbox/chainweb/db"),
     disablePow: true,
     servicePort: 1848,
   } satisfies ChainwebNodeConfig;
@@ -116,7 +115,7 @@ export function createLocalChainwebNetworkConfig(
     type: "chainweb-local",
     rpcUrl: createChainwebRpcUrl(),
     networkId: "development",
-    signers: defaultSigners,
+    keyPairs: defaultKeyPairs,
     keysets: defaultKeysets,
     senderAccount: "sender00",
     autoStart: true,
@@ -134,7 +133,7 @@ export function createChainwebNetworkConfig(overrides?: Partial<ChainwebNetworkC
       host: "https://testnet.chainweb.com",
     }),
     networkId: "testnet04",
-    signers: [],
+    keyPairs: [],
     keysets: {},
     senderAccount: "",
     meta: defaultMeta,
@@ -149,7 +148,7 @@ export function createTestNetNetworkConfig(overrides?: Partial<ChainwebNetworkCo
       host: "https://testnet.chainweb.com",
     }),
     networkId: "testnet04",
-    signers: [],
+    keyPairs: [],
     keysets: {},
     senderAccount: "",
     meta: defaultMeta,
@@ -165,7 +164,7 @@ export function createMainNetNetworkConfig(overrides?: Partial<ChainwebNetworkCo
       host: "https://mainnet.chainweb.com",
     }),
     networkId: "mainnet01",
-    signers: [],
+    keyPairs: [],
     keysets: {},
     senderAccount: "",
     meta: defaultMeta,

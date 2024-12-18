@@ -2,7 +2,7 @@ import { defineCommand } from "citty";
 import { join } from "pathe";
 
 import { resolveConfig } from "@pact-toolbox/config";
-import { downloadPreludes } from "@pact-toolbox/prelude";
+import { downloadAllPreludes } from "@pact-toolbox/prelude";
 import { PactToolboxClient } from "@pact-toolbox/runtime";
 import { logger } from "@pact-toolbox/utils";
 
@@ -15,7 +15,7 @@ export const preludeCommand = defineCommand({
     const config = await resolveConfig();
     const client = new PactToolboxClient(config);
     const start = performance.now();
-    await downloadPreludes({
+    await downloadAllPreludes({
       client,
       contractsDir: config.contractsDir ?? "pact",
       preludes: config.preludes ?? [],

@@ -1,9 +1,10 @@
+import type { KeyPair, NetworkMeta, PactKeyset } from "@pact-toolbox/types";
 import { join } from "pathe";
 
-import type { KeysetConfig, NetworkMeta, PactToolboxConfigObj, Signer } from "./config";
+import type { PactToolboxConfigObj } from "./config";
 import { createLocalNetworkConfig } from "./factories";
 
-export const defaultSigners: Signer[] = [
+export const defaultKeyPairs: KeyPair[] = [
   {
     account: "sender00",
     publicKey: "368820f80c324bbc7c2b0610688a7da43e39f91d118732671cd9c7500ff43cca",
@@ -56,7 +57,7 @@ export const defaultSigners: Signer[] = [
   },
 ];
 
-export const defaultKeysets: Record<string, KeysetConfig> = defaultSigners.reduce(
+export const defaultKeysets: Record<string, PactKeyset> = defaultKeyPairs.reduce(
   (acc, signer) => ({
     ...acc,
     [signer.account]: {
@@ -90,7 +91,7 @@ export const minimalDevNetContainer = {
   name: "devnet_minimal",
 };
 
-export const chainwebConfigDir = join(process.cwd(), ".kadena/toolbox/chainweb");
+export const chainwebConfigDir: string = join(process.cwd(), ".pact-toolbox/chainweb");
 
 export const defaultConfig: PactToolboxConfigObj = {
   defaultNetwork: "local",

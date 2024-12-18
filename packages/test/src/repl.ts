@@ -5,15 +5,15 @@ import readdir from "tiny-readdir-glob";
 import { resolveConfig } from "@pact-toolbox/config";
 import { execAsync, logger } from "@pact-toolbox/utils";
 
-export async function runReplTests(config?: Required<PactToolboxConfigObj>) {
+export async function runReplTests(config?: Required<PactToolboxConfigObj>): Promise<void> {
   if (!config) {
     config = await resolveConfig();
   }
   logger.start(`Running REPL tests`);
-  const contractsDir = join(process.cwd(), config.contractsDir);
+  const cwd = join(process.cwd(), config.contractsDir);
   const aborter = new AbortController();
-  console.log(contractsDir);
   const result = await readdir(`${config.contractsDir}/**/*.repl`, {
+    cwd,
     depth: 20,
     limit: 1_000_000,
     followSymlinks: true,

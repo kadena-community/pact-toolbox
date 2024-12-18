@@ -1,0 +1,38 @@
+{
+  "name": "@pact-toolbox/tsup",
+  "version": "0.0.0",
+  "private": true,
+  "files": [
+    "base-config.ts",
+    "dev-flag.ts",
+    "tsup.config.browser.ts",
+    "tsup.config.library.ts",
+    "tsup.config.package.ts"
+  ],
+  "exports": {
+    ".": {
+      "import": "./base-config.ts",
+      "require": "./base-config.ts"
+    },
+    "./browser": {
+      "import": "./tsup.config.browser.ts",
+      "require": "./tsup.config.browser.ts"
+    },
+    "./library": {
+      "import": "./tsup.config.library.ts",
+      "require": "./tsup.config.library.ts"
+    },
+    "./package": {
+      "import": "./tsup.config.package.ts",
+      "require": "./tsup.config.package.ts"
+    }
+  },
+  "devDependencies": {
+    "@pact-toolbox/tsconfig": "workspace:*",
+    "@types/jscodeshift": "^0.12.0",
+    "@types/node": "^22.9.1",
+    "browserslist-to-esbuild": "^2.1.1",
+    "jscodeshift": "^17.1.1",
+    "tsup": "^8.3.5"
+  }
+}

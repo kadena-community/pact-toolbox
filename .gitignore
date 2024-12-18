@@ -3,7 +3,6 @@ coverage
 dist
 .turbo
 build
-types
 .vscode
 .DS_Store
 .eslintcache

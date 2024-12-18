@@ -2,54 +2,76 @@ import { spawn } from "child_process";
 import type { ChildProcessWithoutNullStreams } from "child_process";
 import find from "find-process";
 
+import { cleanupOnExit } from "./cleanup";
+import { logger } from "./logger";
+
 export interface RunBinOptions {
   silent?: boolean;
   cwd?: string;
   env?: NodeJS.ProcessEnv;
+  resolveOnStart?: boolean;
   resolveIf?: (data: string) => boolean;
 }
+
 export function runBin(
   bin: string,
   args: string[],
-  { cwd = process.cwd(), silent = false, env = process.env, resolveIf = () => true }: RunBinOptions,
+  options: RunBinOptions = {},
 ): Promise<ChildProcessWithoutNullStreams> {
+  const { cwd = process.cwd(), silent = false, env = process.env, resolveOnStart = true, resolveIf } = options;
+
   return new Promise((resolve, reject) => {
     const child = spawn(bin, args, { cwd, env });
-    child.stdout.on("data", (data) => {
-      const s = data.toString();
-      if (resolveIf(s)) {
+
+    let resolved = false;
+
+    const handleStdout = (data: Buffer) => {
+      const output = data.toString();
+      if (!silent) {
+        console.log(output);
+      }
+      if (resolveIf && !resolved && resolveIf(output)) {
+        resolved = true;
         resolve(child);
       }
-      if (!silent) {
-        console.log(s);
+    };
+
+    const handleStderr = (data: Buffer) => {
+      const errorOutput = data.toString();
+      logger.error(errorOutput);
+    };
+
+    const handleError = (err: Error) => {
+      // Always log errors, regardless of the 'silent' flag
+      logger.error("Child process error:", err);
+      if (!resolved) {
+        reject(err);
+      }
+    };
+
+    const handleExit = (_code: number | null, _signal: NodeJS.Signals | null) => {
+      if (!resolved) {
+        resolved = true;
+        resolve(child);
+      }
+    };
+
+    child.stdout.on("data", handleStdout);
+    child.stderr.on("data", handleStderr);
+    child.on("error", handleError);
+    child.on("exit", handleExit);
+
+    // Register cleanup function for this child process
+    cleanupOnExit(() => {
+      if (!child.killed) {
+        child.kill("SIGTERM");
       }
     });
 
-    child.stderr.on("data", (data) => {
-      const s = data.toString();
-      if (!s.includes("chainweb-node: SignalException 15")) {
-        console.error(data.toString());
-      }
-    });
-
-    child.on("error", (err) => {
-      reject(err);
-    });
-
-    cleanUpProcess(async (signal) => {
-      child.kill(signal);
-      await new Promise((resolve) => child.on("exit", resolve));
-    });
-  });
-}
-
-export function cleanUpProcess(clean: (signal?: NodeJS.Signals) => Promise<void>) {
-  process.once("SIGINT", async () => {
-    await clean("SIGINT");
-  });
-
-  process.once("SIGTERM", async () => {
-    await clean("SIGTERM");
+    if (resolveOnStart && !resolved) {
+      resolved = true;
+      resolve(child);
+    }
   });
 }
 
@@ -59,28 +81,37 @@ export interface ProcessQuery {
   pid?: number;
 }
 
-export function findProcess(query: ProcessQuery) {
+interface ProcessInfo {
+  pid: number;
+  ppid?: number;
+  uid?: number;
+  gid?: number;
+  name: string;
+  cmd: string;
+}
+export async function findProcess(query: ProcessQuery): Promise<ProcessInfo[]> {
   const { name, port, pid } = query;
   if (name) {
-    return find("name", name);
+    return find("name", name) ?? [];
   }
   if (port) {
-    return find("port", port);
+    return find("port", port) ?? [];
   }
   if (pid) {
-    return find("pid", pid);
+    return find("pid", pid) ?? [];
   }
-  return;
+  return [];
 }
 
-export async function killProcess(query: ProcessQuery) {
-  const proc = await findProcess(query);
-  if (proc) {
-    const p = proc.find((p) => p.name === query.name) ?? proc[0]!;
-    process.kill(p.pid);
+export async function killProcess(query: ProcessQuery): Promise<void> {
+  const procs = await findProcess(query);
+  if (procs.length > 0) {
+    const proc = procs.find((p) => p.name === query.name) ?? procs[0]!;
+    process.kill(proc.pid);
   }
 }
-export function isProcessRunning(query: ProcessQuery) {
-  const proc = findProcess(query);
-  return proc !== null;
+
+export async function isProcessRunning(query: ProcessQuery): Promise<boolean> {
+  const procs = await findProcess(query);
+  return procs.length > 0;
 }
