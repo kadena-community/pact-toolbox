@@ -2,17 +2,20 @@ import type { UnpluginFactory, WebpackPluginInstance } from "unplugin";
 import { createWebpackPlugin } from "unplugin";
 import webpack from "webpack";
 
-import { getSerializableNetworkConfig, resolveConfig } from "@pact-toolbox/config";
+import { getNetworkConfig, getSerializableNetworkConfig, resolveConfig } from "@pact-toolbox/config";
+import { PactToolboxClient } from "@pact-toolbox/runtime";
 
-import type { Options } from "./core/options";
-import { PLUGIN_NAME, startToolboxNetwork } from "./core";
+import type { PluginOptions } from "./plugin/types";
+import { PLUGIN_NAME, startToolboxNetwork } from "./plugin/utils";
 
-const unpluginFactory: UnpluginFactory<Options | undefined> = (options) => {
+const unpluginFactory: UnpluginFactory<PluginOptions | undefined> = (options) => {
   return {
     name: PLUGIN_NAME,
     enforce: "post",
     webpack: async (compiler) => {
       const toolboxConfig = await resolveConfig();
+      const network = getNetworkConfig(toolboxConfig);
+      const client = new PactToolboxClient(toolboxConfig);
       compiler.hooks.done.tapPromise(PLUGIN_NAME, async () => {
         const networkConfig = getSerializableNetworkConfig(toolboxConfig);
         const define = new webpack.DefinePlugin({
@@ -23,11 +26,11 @@ const unpluginFactory: UnpluginFactory<Options | undefined> = (options) => {
       });
       compiler.hooks.afterDone.tap(PLUGIN_NAME, async () => {
         if (compiler.options.mode === "development") {
-          await startToolboxNetwork({ isServe: true, isTest: false }, toolboxConfig, options!);
+          await startToolboxNetwork({ isServe: true, isTest: false, client, network }, toolboxConfig, options!);
         }
       });
     },
   };
 };
 
-export default createWebpackPlugin(unpluginFactory) as (options?: Options) => WebpackPluginInstance;
+export default createWebpackPlugin(unpluginFactory) as (options?: PluginOptions) => WebpackPluginInstance;

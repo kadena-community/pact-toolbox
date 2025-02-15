@@ -9,7 +9,7 @@ import {
 } from "@pact-toolbox/config";
 import { getRandomNetworkPorts } from "@pact-toolbox/utils";
 
-export function disablePersistance(network: NetworkConfig) {
+export function disablePersistance(network: NetworkConfig): NetworkConfig {
   if (isPactServerNetworkConfig(network) && network.serverConfig?.persistDir) {
     network.serverConfig.persistDir = undefined;
   }
@@ -36,12 +36,12 @@ export function getConfigOverrides(
   return configOverrides || {};
 }
 
-export function injectNetworkConfig(config: PactToolboxConfigObj) {
+export function injectNetworkConfig(config: PactToolboxConfigObj): void {
   const network = getSerializableNetworkConfig(config);
   (globalThis as any).__PACT_TOOLBOX_NETWORK_CONFIG__ = network;
 }
 
-export async function updatePorts(config: PactToolboxConfigObj) {
+export async function updatePorts(config: PactToolboxConfigObj): Promise<NetworkConfig> {
   const ports = await getRandomNetworkPorts();
   config.devProxyPort = config.enableDevProxy ? ports.proxy : ports.service;
   const network = getNetworkConfig(config);

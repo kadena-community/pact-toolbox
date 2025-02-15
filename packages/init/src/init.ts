@@ -62,11 +62,11 @@ export function generateESMConfigTemplate(contractDir: string) {
 export default defineConfig(${defaultConfigTemplate(contractDir)});`;
 }
 
-export function generateConfigTemplate(contractDir: string, isCJS: boolean) {
+export function generateConfigTemplate(contractDir: string, isCJS: boolean): string {
   return isCJS ? generateCJSConfigTemplate(contractDir) : generateESMConfigTemplate(contractDir);
 }
 
-export async function updateViteConfig() {
+export async function updateViteConfig(): Promise<void> {
   const viteConfig = await loadFile("vite.config.ts");
   addVitePlugin(viteConfig, {
     constructor: "pactVitePlugin",
@@ -89,7 +89,7 @@ export interface InitToolboxArgs {
 }
 
 async function installDeps(args: InitToolboxArgs) {
-  const deps = ["@kadena/client", "@pact-toolbox/client-utils", "@pact-toolbox/wallet"];
+  const deps = ["@kadena/client", "@pact-toolbox/client"];
   const devDeps = ["pact-toolbox", "@pact-toolbox/unplugin"];
   logger.start(`Installing dependencies ${deps.join(", ")} ...`);
   const packageManager = await detectPackageManager(args.cwd, {
@@ -109,7 +109,7 @@ async function installDeps(args: InitToolboxArgs) {
     logger.success(`Installed ${dep}`);
   }
 }
-export async function initToolbox(args: InitToolboxArgs) {
+export async function initToolbox(args: InitToolboxArgs): Promise<void> {
   await installDeps(args);
   const packageJsonPath = await resolvePackageJSON();
   const tsConfigPath = await resolveTSConfig();
@@ -136,20 +136,20 @@ export async function initToolbox(args: InitToolboxArgs) {
     logger.warn(`Failed to add pact:* scripts to package.json at ${packageJsonPath}, please add manually`);
   }
 
-  // update tsconfig.json to add ".kadena/pactjs-generated" in the types array
+  // update tsconfig.json to add ".pact-toolbox/pactjs-generated" in the types array
   try {
     if (tsConfig) {
       tsConfig.compilerOptions = tsConfig.compilerOptions || {};
       tsConfig.compilerOptions.types = tsConfig.compilerOptions.types || [];
-      if (!tsConfig.compilerOptions.types.includes(".kadena/pactjs-generated")) {
-        tsConfig.compilerOptions.types.push(".kadena/pactjs-generated");
+      if (!tsConfig.compilerOptions.types.includes(".pact-toolbox/pactjs-generated")) {
+        tsConfig.compilerOptions.types.push(".pact-toolbox/pactjs-generated");
       }
       await writeTSConfig(tsConfigPath, tsConfig);
-      logger.success(`Added ".kadena/pactjs-generated" to the types array in tsconfig.json`);
+      logger.success(`Added ".pact-toolbox/pactjs-generated" to the types array in tsconfig.json`);
     }
   } catch (e) {
     logger.warn(
-      `Failed to add ".kadena/pactjs-generated" to the types array in tsconfig.json at ${tsConfigPath}, please add manually`,
+      `Failed to add ".pact-toolbox/pactjs-generated" to the types array in tsconfig.json at ${tsConfigPath}, please add manually`,
     );
   }
 

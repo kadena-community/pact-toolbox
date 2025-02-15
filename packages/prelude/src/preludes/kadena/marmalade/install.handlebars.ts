@@ -1,4 +1,4 @@
-export const template = `
+export const template: string = `
 (begin-tx)
   (define-namespace 'kip (sig-keyset) (sig-keyset))
   (load "kip/account-protocols-v1.pact")

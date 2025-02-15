@@ -1,6 +1,6 @@
 import { defineConfig } from "tsup";
 
-import { dependencies, devDependencies } from "./package.json";
+import { devDependencies } from "./package.json";
 
 export default defineConfig({
   entry: ["src/index.ts"],
@@ -13,6 +13,6 @@ export default defineConfig({
   dts: true,
   target: "es2022",
   platform: "node",
-  external: Object.keys(dependencies).concat(Object.keys(devDependencies)),
+  external: Object.keys(devDependencies),
   clean: true,
 });

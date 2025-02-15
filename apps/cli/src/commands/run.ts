@@ -29,18 +29,24 @@ export const runCommand = defineCommand({
       alias: "n",
       description: "Network to use",
       required: false,
-      default: "local",
     },
   },
   run: async ({ args }) => {
     const { script, network, start, ...rest } = args;
-    logger.start(`Running script ${script} on network ${network}`);
-    await runScript(script, {
-      network,
-      args: rest,
-      scriptOptions: {
-        autoStartNetwork: start,
-      },
-    });
+    logger.start(`Running script ${script} ${network ? `on network ${network}` : ""}`);
+    try {
+      await runScript(script, {
+        network,
+        args: rest,
+        scriptOptions: {
+          autoStartNetwork: start,
+        },
+      });
+    } catch (error) {
+      logger.error(`Error running script ${script}:`, error);
+      process.exit(1);
+    }
+    logger.success(`Script ${script} finished`);
+    process.exit(0);
   },
 });

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import "../src";
+import "../src/plugin/factory";
 
 describe("test", () => {
   it.todo("pass", () => {

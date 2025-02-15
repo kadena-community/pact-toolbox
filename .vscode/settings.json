@@ -1,8 +1,27 @@
 {
+  "eslint.workingDirectories": [
+    {
+      "mode": "auto"
+    }
+  ],
   "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "always",
     "source.organizeImports": "always"
+  },
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "eslint.useFlatConfig": true,
+  "[ignore]": {
+    "editor.defaultFormatter": "foxundermoon.shell-format"
+  },
+  "[dotenv]": {
+    "editor.defaultFormatter": "foxundermoon.shell-format"
+  },
+  "[shellscript]": {
+    "editor.defaultFormatter": "foxundermoon.shell-format"
   },
   "coverage-gutters.showLineCoverage": false,
   "coverage-gutters.showRulerCoverage": false,
-  "coverage-gutters.showGutterCoverage": false
+  "coverage-gutters.showGutterCoverage": false,
+  "pact.executable": "/home/salama/Workspace/Kadena/pact-5/result/bin/pact"
 }

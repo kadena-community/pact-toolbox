@@ -6,28 +6,27 @@
   "license": "MIT",
   "type": "module",
   "private": false,
-  "main": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    }
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "files": [
     "dist"
   ],
   "publishConfig": {
-    "access": "public",
-    "exports": {
-      ".": {
-        "types": "./dist/index.d.ts",
-        "import": {
-          "types": "./dist/index.d.ts",
-          "default": "./dist/index.js"
-        },
-        "require": {
-          "types": "./dist/index.d.cts",
-          "default": "./dist/index.cjs"
-        }
-      }
-    },
-    "main": "./dist/index.cjs",
-    "module": "./dist/index.js",
-    "types": "./dist/index.d.ts"
+    "access": "public"
   },
   "scripts": {
     "build": "tsup",
@@ -45,19 +44,18 @@
     "@pact-toolbox/network": "workspace:*",
     "@pact-toolbox/runtime": "workspace:*",
     "@pact-toolbox/utils": "workspace:*",
-    "@pact-toolbox/wallet": "workspace:*",
-    "pathe": "^1.1.2",
+    "pathe": "^2.0.2",
     "tiny-readdir-glob": "^1.22.24"
   },
   "devDependencies": {
     "@pact-toolbox/prettier-config": "workspace:*",
     "@pact-toolbox/tsconfig": "workspace:*",
-    "@vitest/coverage-v8": "^1.6.0",
-    "lint-staged": "^15.2.5",
-    "oxlint": "^0.4.3",
-    "tsup": "^8.1.0",
-    "typescript": "^5.4.5",
-    "vitest": "^1.6.0"
+    "@vitest/coverage-v8": "^3.0.4",
+    "oxlint": "^0.15.7",
+    "prettier": "^3.4.2",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.3",
+    "vitest": "^3.0.4"
   },
   "peerDependencies": {
     "vitest": "^1.2.2"

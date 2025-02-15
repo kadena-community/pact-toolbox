@@ -1,0 +1,10 @@
+{
+  "extends": "@pact-toolbox/tsconfig/lib",
+  "compilerOptions": {
+    "lib": ["DOM", "ESNext"],
+    "jsx": "preserve",
+    "jsxImportSource": "solid-js",
+    "moduleResolution": "Bundler"
+  },
+  "include": ["src"]
+}

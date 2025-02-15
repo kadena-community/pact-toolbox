@@ -6,29 +6,28 @@
   "license": "MIT",
   "type": "module",
   "private": false,
-  "main": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    }
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "files": [
     "dist",
     "configs"
   ],
   "publishConfig": {
-    "access": "public",
-    "exports": {
-      ".": {
-        "types": "./dist/index.d.ts",
-        "import": {
-          "types": "./dist/index.d.ts",
-          "default": "./dist/index.js"
-        },
-        "require": {
-          "types": "./dist/index.d.cts",
-          "default": "./dist/index.cjs"
-        }
-      }
-    },
-    "main": "./dist/index.cjs",
-    "module": "./dist/index.js",
-    "types": "./dist/index.d.ts"
+    "access": "public"
   },
   "scripts": {
     "build": "tsup",
@@ -37,8 +36,8 @@
     "format": "prettier --check . --ignore-path ../../.gitignore",
     "prepack": "pnpm run build",
     "release": "pnpm test && pnpm publish",
-    "test:watch": "vitest",
-    "test": "vitest run",
+    "test:watch": "tsx --test --watch --experimental-test-module-mocks src/**/*.spec.ts",
+    "test": "tsx --test --experimental-test-module-mocks src/**/*.spec.ts",
     "verify": "tsc --noEmit --skipLibCheck"
   },
   "dependencies": {
@@ -47,17 +46,16 @@
     "@pact-toolbox/proxy": "workspace:*",
     "@pact-toolbox/runtime": "workspace:*",
     "@pact-toolbox/utils": "workspace:*",
-    "pathe": "^1.1.2"
+    "pathe": "^2.0.2"
   },
   "devDependencies": {
     "@pact-toolbox/prettier-config": "workspace:*",
     "@pact-toolbox/tsconfig": "workspace:*",
-    "@vitest/coverage-v8": "^1.6.0",
-    "lint-staged": "^15.2.5",
-    "oxlint": "^0.4.3",
-    "tsup": "^8.1.0",
-    "typescript": "^5.4.5",
-    "vitest": "^1.6.0"
+    "oxlint": "^0.15.7",
+    "prettier": "^3.4.2",
+    "tsup": "^8.3.5",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3"
   },
   "prettier": "@pact-toolbox/prettier-config"
 }

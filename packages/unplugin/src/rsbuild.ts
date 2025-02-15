@@ -1,14 +1,17 @@
 import type { RsbuildPlugin } from "@rsbuild/core";
 
-import { getSerializableNetworkConfig, resolveConfig } from "@pact-toolbox/config";
+import { getNetworkConfig, getSerializableNetworkConfig, resolveConfig } from "@pact-toolbox/config";
+import { PactToolboxClient } from "@pact-toolbox/runtime";
 
-import type { Options } from "./core/options";
-import { PLUGIN_NAME, startToolboxNetwork } from "./core";
+import type { PluginOptions } from "./plugin/types";
+import { PLUGIN_NAME, startToolboxNetwork } from "./plugin/utils";
 
-export const pluginPactToolbox = (options?: Options): RsbuildPlugin => ({
+export const pluginPactToolbox = (options?: PluginOptions): RsbuildPlugin => ({
   name: PLUGIN_NAME,
   async setup(api) {
     const toolboxConfig = await resolveConfig();
+    const network = getNetworkConfig(toolboxConfig);
+    const client = new PactToolboxClient(toolboxConfig);
     api.modifyRsbuildConfig((config) => {
       if (!config.source) {
         config.source = {};
@@ -22,6 +25,8 @@ export const pluginPactToolbox = (options?: Options): RsbuildPlugin => ({
     api.onAfterStartDevServer(async () => {
       await startToolboxNetwork(
         {
+          client,
+          network,
           isServe: true,
           isTest: false,
         },

@@ -16,7 +16,7 @@ import { getBaseRepo, parseGitURI, renderTemplate, sortPreludesNames } from "./u
  * @param specs - Array of PactDependency objects.
  * @returns An object where the keys are repository URLs and the values are arrays of PactDependency objects.
  */
-export function groupByBaseRepo(specs: PactDependency[]) {
+export function groupByBaseRepo(specs: PactDependency[]): Record<string, PactDependency[]> {
   const groups: Record<string, PactDependency[]> = {};
   for (const spec of specs) {
     const repo = getBaseRepo(spec.uri);
@@ -39,7 +39,7 @@ const tempDir = join(process.cwd(), ".pact-toolbox/tmp");
  * @param force - Whether to force download even if the destination exists.
  * @param preferOffline - Whether to prefer offline download.
  */
-export async function downloadGitRepo(dest: string, uri: string, force = false, preferOffline = false) {
+export async function downloadGitRepo(dest: string, uri: string, force = false, preferOffline = false): Promise<void> {
   if (!existsSync(dest) || force) {
     await downloadTemplate(uri, {
       dir: dest,
@@ -57,7 +57,7 @@ export async function downloadGitRepo(dest: string, uri: string, force = false, 
  * @param dep - The PactDependency object to download.
  * @param preludeDir - The directory to download the dependency into.
  */
-export async function downloadPactDependency(dep: PactDependency, preludeDir: string) {
+export async function downloadPactDependency(dep: PactDependency, preludeDir: string): Promise<void> {
   const dir = join(preludeDir, dep.group || "root");
   let uri = dep.uri;
   const { subdir, repo, provider, ref } = parseGitURI(dep.uri);
@@ -99,7 +99,7 @@ export async function downloadPrelude(
   client: PactToolboxClient,
   allPreludes: PactPrelude[] = [],
   downloaded: Set<string> = new Set(),
-) {
+): Promise<void> {
   if (downloaded.has(prelude.name)) {
     return;
   }
@@ -137,30 +137,17 @@ export async function downloadPrelude(
 }
 
 /**
- * Download all specified preludes based on the given configuration.
- *
- * @param config - The configuration options for downloading preludes.
+ * Create a test tools file for the pact repl tests.
  */
-export async function downloadPreludes(config: CommonPreludeOptions) {
-  const downloaded = new Set<string>();
+export async function createReplTestTools(config: CommonPreludeOptions): Promise<void> {
   const { preludes, preludesDir } = await resolvePreludes(config);
-  // Clean temp dir
-  await rm(tempDir, { recursive: true, force: true });
-  // Clean preludes dir
-  await rm(preludesDir, { recursive: true, force: true });
-
-  // Download preludes
-  for (const prelude of preludes) {
-    await downloadPrelude(prelude, preludesDir, config.client, preludes, downloaded);
-  }
-
   // Write accounts repl
   await mkdir(join(preludesDir, "tools"), { recursive: true });
   const accountsTemplate = (await import("./accounts.handlebars")).template;
   await writeFileAtPath(
     join(preludesDir, "tools/test-accounts.repl"),
     renderTemplate(accountsTemplate, {
-      accounts: config.client.getNetworkConfig().signers ?? [],
+      accounts: config.client.getNetworkConfig().keyPairs ?? [],
     }),
   );
   const initTemplate = (await import("./init.handlebars")).template;
@@ -175,13 +162,32 @@ export async function downloadPreludes(config: CommonPreludeOptions) {
 }
 
 /**
+ * Download all specified preludes based on the given configuration.
+ *
+ * @param config - The configuration options for downloading preludes.
+ */
+export async function downloadAllPreludes(config: CommonPreludeOptions): Promise<void> {
+  const downloaded = new Set<string>();
+  const { preludes, preludesDir } = await resolvePreludes(config);
+  // Clean temp dir
+  await rm(tempDir, { recursive: true, force: true });
+  // Clean preludes dir
+  await rm(preludesDir, { recursive: true, force: true });
+
+  // Download preludes
+  for (const prelude of preludes) {
+    await downloadPrelude(prelude, preludesDir, config.client, preludes, downloaded);
+  }
+}
+
+/**
  * Check if a specific prelude has been downloaded.
  *
  * @param prelude - The PactPrelude object to check.
  * @param preludesDir - The directory to check for the prelude.
  * @returns A boolean indicating whether the prelude has been downloaded.
  */
-export function isPreludeDownloaded(prelude: PactPrelude, preludesDir: string) {
+export function isPreludeDownloaded(prelude: PactPrelude, preludesDir: string): boolean {
   const specs = Array.isArray(prelude.specs) ? prelude.specs : Object.values(prelude.specs).flat();
   const paths = specs.map((spec) => join(preludesDir, prelude.name, spec.group || "root", spec.name));
   return paths.every((p) => existsSync(p));
@@ -193,7 +199,7 @@ export function isPreludeDownloaded(prelude: PactPrelude, preludesDir: string) {
  * @param config - The configuration options.
  * @returns A boolean indicating whether any preludes need to be downloaded.
  */
-export async function shouldDownloadPreludes(config: CommonPreludeOptions) {
+export async function shouldDownloadPreludes(config: CommonPreludeOptions): Promise<boolean> {
   const { preludes, preludesDir } = await resolvePreludes(config);
   return preludes.some((p) => !isPreludeDownloaded(p, preludesDir));
 }

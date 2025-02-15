@@ -33,7 +33,7 @@ You can download the necessary preludes by using the downloadPreludes function. 
 Example:
 
 ```typescript
-import { downloadPreludes } from "@pact-toolbox/preludes";
+import { downloadAllPreludes } from "@pact-toolbox/preludes";
 import { PactToolboxClient } from "@pact-toolbox/runtime";
 
 const myPactToolboxClient = new PactToolboxClient();
@@ -43,7 +43,7 @@ const config = {
   client: myPactToolboxClient,
 };
 
-await downloadPreludes(config);
+await downloadAllPreludes(config);
 ```
 
 ### Deploying Preludes

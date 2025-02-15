@@ -1,0 +1,7 @@
+{
+  "extends": "@pact-toolbox/tsconfig/base",
+  "compilerOptions": {
+    "lib": ["ESNext"]
+  },
+  "include": ["src", "tests", "test/testSetup.ts"]
+}

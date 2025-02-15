@@ -12,7 +12,11 @@ import type { ToolboxNetworkApi } from "../types";
 const chainwebNodeBin = "chainweb-node";
 const chainwebMiningClientBin = "chainweb-mining-client";
 
-export async function startChainWebNode(config: ChainwebNodeConfig, id: string, silent = true) {
+export async function startChainWebNode(
+  config: ChainwebNodeConfig,
+  id: string,
+  silent = true,
+): Promise<ChildProcessWithoutNullStreams> {
   const knownPeerInfo = config.knownPeerInfo.replace(/:\d+/, `:${config.p2pPort}`);
   return runBin(
     chainwebNodeBin,
@@ -32,7 +36,6 @@ export async function startChainWebNode(config: ChainwebNodeConfig, id: string, 
       `--service-port=${config.servicePort}`,
       `--database-directory=${join(config.databaseDirectory, id)}`,
       config.headerStream ? `--header-stream` : "",
-      config.rosetta ? `--rosetta` : "",
       config.allowReadsInLocal ? `--allowReadsInLocal` : "",
       config.disablePow ? `--disable-pow` : "",
       config.enableMiningCoordination ? `--enable-mining-coordination` : "",
@@ -41,7 +44,11 @@ export async function startChainWebNode(config: ChainwebNodeConfig, id: string, 
   );
 }
 
-export async function startChainWebMiningClient(config: ChainwebMiningClientConfig, node: string, silent = true) {
+export async function startChainWebMiningClient(
+  config: ChainwebMiningClientConfig,
+  node: string,
+  silent = true,
+): Promise<ChildProcessWithoutNullStreams> {
   return runBin(
     chainwebMiningClientBin,
     [
@@ -60,7 +67,7 @@ export async function startChainWebMiningClient(config: ChainwebMiningClientConf
 }
 
 export class LocalChainwebNetwork implements ToolboxNetworkApi {
-  public id = getUuid();
+  public id: string = getUuid();
   private chainwebNodeProcess?: ChildProcessWithoutNullStreams;
   private miningClientProcess?: ChildProcessWithoutNullStreams;
   private nodeConfig: ChainwebNodeConfig;
@@ -75,7 +82,7 @@ export class LocalChainwebNetwork implements ToolboxNetworkApi {
     this.miningClientConfig = createChainWebMiningClientConfig(this.network.miningClientConfig);
   }
 
-  getServicePort() {
+  getServicePort(): number {
     return this.nodeConfig.servicePort;
   }
 
@@ -91,18 +98,20 @@ export class LocalChainwebNetwork implements ToolboxNetworkApi {
     return `http://localhost:${this.nodeConfig.servicePort}`;
   }
 
-  async isOk() {
+  async isOk(): Promise<boolean> {
     return isChainWebNodeOk(this.getServiceUrl());
   }
 
-  async start() {
+  async start(): Promise<void> {
     // clean up old db
     const dbDir = join(this.nodeConfig.databaseDirectory, this.isStateless ? this.id : "");
     if (!this.nodeConfig.persistDb && existsSync(dbDir)) {
       await rm(dbDir, { recursive: true, force: true });
     }
     this.chainwebNodeProcess = await startChainWebNode(this.nodeConfig, this.isStateless ? this.id : "", this.silent);
-    await pollFn(() => isChainWebNodeOk(this.getServiceUrl()), 10000);
+    await pollFn(() => isChainWebNodeOk(this.getServiceUrl()), {
+      timeout: 10000,
+    });
     const node = `127.0.0.1:${this.nodeConfig.servicePort}`;
     this.miningClientProcess = await startChainWebMiningClient(this.miningClientConfig, node, this.silent);
 
@@ -114,7 +123,9 @@ export class LocalChainwebNetwork implements ToolboxNetworkApi {
               count: 5,
               onDemandUrl: this.getOnDemandMiningUrl(),
             }),
-          10000,
+          {
+            timeout: 10000,
+          },
         );
       } catch (e) {
         throw new Error("Could not make initial blocks for on-demand mining");
@@ -122,13 +133,15 @@ export class LocalChainwebNetwork implements ToolboxNetworkApi {
     }
 
     try {
-      await pollFn(() => isChainWebAtHeight(20, this.getServiceUrl()), 10000);
+      await pollFn(() => isChainWebAtHeight(20, this.getServiceUrl()), {
+        timeout: 10000,
+      });
     } catch (e) {
       throw new Error("Chainweb node did not reach height 20");
     }
   }
 
-  async stop() {
+  async stop(): Promise<void> {
     this.chainwebNodeProcess?.kill();
     this.miningClientProcess?.kill();
     await rm(this.nodeConfig.databaseDirectory, {
@@ -137,13 +150,16 @@ export class LocalChainwebNetwork implements ToolboxNetworkApi {
     });
   }
 
-  async restart() {
+  async restart(): Promise<void> {
     await this.stop();
     await this.start();
   }
 }
 
-export async function startLocalChainWebNetwork(network: LocalChainwebNetworkConfig, silent = true) {
+export async function startLocalChainWebNetwork(
+  network: LocalChainwebNetworkConfig,
+  silent = true,
+): Promise<LocalChainwebNetwork> {
   const process = new LocalChainwebNetwork(network, silent);
   await process.start();
   return process;

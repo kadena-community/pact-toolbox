@@ -22,14 +22,14 @@ export class PactToolboxDevProxyServer {
     setupRoutes(this.router, network);
   }
 
-  addRoute(setup: (router: Router) => void) {
+  addRoute(setup: (router: Router) => void): void {
     if (this.listener) {
       throw new Error("Cannot add routes after server has started");
     }
     setup(this.router);
   }
 
-  async start() {
+  async start(): Promise<Listener> {
     this.app.use(this.router);
     setupWildCardProxy(this.app, this.network);
     try {
@@ -45,11 +45,14 @@ export class PactToolboxDevProxyServer {
     return this.listener;
   }
 
-  async stop() {
+  async stop(): Promise<void> {
     await this.listener?.close();
   }
 }
 
-export function createDevProxyServer(network: PactToolboxNetworkApiLike, options: CreateDevProxyServerOptions) {
+export function createDevProxyServer(
+  network: PactToolboxNetworkApiLike,
+  options: CreateDevProxyServerOptions,
+): PactToolboxDevProxyServer {
   return new PactToolboxDevProxyServer(network, options);
 }

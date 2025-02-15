@@ -1,37 +1,8 @@
-import type { ChainId, IKeyPair } from "@kadena/types";
+import type { CommonNetworkConfig, StandardPrelude } from "@pact-toolbox/types";
 import { loadConfig } from "c12";
 
 import { defaultConfig } from "./defaults";
 
-export interface KeysetConfig {
-  keys: string[];
-  pred: "keys-all" | "keys-any" | "keys-2" | "=";
-}
-
-export interface GetRpcUrlParams {
-  chainId?: string;
-  networkId?: string;
-}
-
-export interface Signer extends IKeyPair {
-  account: string | `k:${string}`;
-}
-
-export interface NetworkMeta {
-  chainId: ChainId;
-  gasLimit?: number;
-  gasPrice?: number;
-  ttl?: number;
-}
-export interface CommonNetworkConfig {
-  networkId: string;
-  rpcUrl: string;
-  name?: string;
-  senderAccount: string;
-  signers: Signer[];
-  keysets: Record<string, KeysetConfig>;
-  meta?: NetworkMeta;
-}
 export interface DevNetMiningConfig {
   /**
    * Wait for this period, in seconds, after receiving a transaction and then mine blocks on the chain where the transaction was received. This period is used to batch transactions and avoid mining a block for each transaction. Increasing this period also makes mining more realistic compared to the public networks
@@ -97,7 +68,6 @@ export interface ChainwebNodeConfig {
   enableMiningCoordination: boolean;
   miningPublicKey: string;
   headerStream: boolean;
-  rosetta: boolean;
   allowReadsInLocal: boolean;
   databaseDirectory: string;
   disablePow: boolean;
@@ -117,6 +87,7 @@ export interface LocalChainwebNetworkConfig extends CommonNetworkConfig, LocalNe
 export interface PactServerNetworkConfig extends CommonNetworkConfig, LocalNetworkCommonConfig {
   type: "pact-server";
   serverConfig?: PactServerConfig;
+  pactBin?: string;
 }
 
 export interface ChainwebNetworkConfig extends CommonNetworkConfig {
@@ -202,7 +173,6 @@ export interface DevNetContainerConfig {
   tag?: string;
 }
 
-export type StandardPrelude = "kadena/chainweb" | "kadena/marmalade";
 export interface PactToolboxConfigEnvOverrides<
   T extends Record<string, NetworkConfig> = Record<string, NetworkConfig>,
 > {
@@ -213,6 +183,7 @@ export interface PactToolboxConfigEnvOverrides<
   $production?: Partial<PactToolboxConfigObj<T>>;
   $env?: { [key: string]: Partial<PactToolboxConfigObj<T>> };
 }
+
 export interface PactToolboxConfigObj<T extends Record<string, NetworkConfig> = Record<string, NetworkConfig>> {
   defaultNetwork: keyof T;
   networks: T;
@@ -230,17 +201,42 @@ export type PactToolboxConfig<T extends Record<string, NetworkConfig> = {}> =
   | (Partial<PactToolboxConfigObj<T>> & PactToolboxConfigEnvOverrides<T>)
   | ((network: string) => Partial<PactToolboxConfigObj<T>> & PactToolboxConfigEnvOverrides<T>);
 
-export async function resolveConfig(overrides?: Partial<PactToolboxConfigObj>) {
+let __CONFIG__: Required<PactToolboxConfigObj> | undefined = undefined;
+function dedupeArrays(obj: Record<string, any>) {
+  for (const [key, value] of Object.entries(obj)) {
+    if (Array.isArray(value)) {
+      // remove duplicates from arrays
+      obj[key] = value.filter((v, i, a) => a.findIndex((t) => JSON.stringify(t) === JSON.stringify(v)) === i);
+    } else if (typeof value === "object") {
+      dedupeArrays(value);
+    }
+  }
+}
+export async function resolveConfig(
+  overrides?: Partial<PactToolboxConfigObj>,
+): Promise<Required<PactToolboxConfigObj>> {
+  if (__CONFIG__) {
+    return __CONFIG__;
+  }
   const configResult = await loadConfig<PactToolboxConfigObj>({
     name: "pact-toolbox",
     overrides: overrides as PactToolboxConfigObj,
-    defaultConfig: defaultConfig as PactToolboxConfigObj,
+    defaults: defaultConfig as PactToolboxConfigObj,
+    dotenv: true,
+    packageJson: true,
   });
-  return configResult.config as Required<PactToolboxConfigObj>;
+
+  configResult.config.networks = configResult.config.networks || {};
+  for (const [network, networkConfig] of Object.entries(configResult.config.networks)) {
+    configResult.config.networks[network] = networkConfig;
+    dedupeArrays(networkConfig);
+  }
+  __CONFIG__ = configResult.config as Required<PactToolboxConfigObj>;
+  return __CONFIG__;
 }
 
 export function defineConfig<T extends Record<string, NetworkConfig> = Record<string, NetworkConfig>>(
   config: PactToolboxConfig<T>,
-) {
+): PactToolboxConfig<T> {
   return config;
 }

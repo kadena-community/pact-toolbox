@@ -16,7 +16,7 @@ function renderComponent() {
 }
 describe("TodoList", async () => {
   const env = await createPactTestEnv({
-    network: "local",
+    network: "devnetOnDemand",
     enableProxy: false,
   });
 

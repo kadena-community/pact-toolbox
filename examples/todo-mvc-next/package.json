@@ -1,0 +1,38 @@
+{
+  "name": "todo-mvc-next",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev --turbopack",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "pact:start": "pact-toolbox start",
+    "pact:test": "pact-toolbox test",
+    "pact:prelude": "pact-toolbox prelude",
+    "pact:types": "pact-toolbox types",
+    "pact:run": "pact-toolbox run"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "^5.64.2",
+    "next": "15.1.6",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "todo-mvc-common": "workspace:*"
+  },
+  "devDependencies": {
+    "@pact-toolbox/prettier-config": "workspace:*",
+    "@pact-toolbox/test": "workspace:*",
+    "@pact-toolbox/unplugin": "workspace:*",
+    "@types/node": "^22.10.10",
+    "@types/react": "^19.0.8",
+    "@types/react-dom": "^19.0.3",
+    "pact-toolbox": "workspace:*",
+    "postcss": "^8",
+    "prettier": "^3.4.2",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5.7.3"
+  },
+  "prettier": "@pact-toolbox/prettier-config"
+}

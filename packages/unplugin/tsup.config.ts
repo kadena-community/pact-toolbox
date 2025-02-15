@@ -1,6 +1,6 @@
 import type { Options } from "tsup";
 
-import { dependencies, devDependencies } from "./package.json";
+import { devDependencies } from "./package.json";
 
 export default <Options>{
   entryPoints: ["src/*.ts"],
@@ -14,6 +14,6 @@ export default <Options>{
   dts: true,
   target: "es2022",
   platform: "node",
-  external: Object.keys(dependencies).concat(Object.keys(devDependencies)),
+  external: Object.keys(devDependencies),
   onSuccess: "pnpm build:fix",
 };
