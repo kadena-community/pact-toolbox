@@ -4,7 +4,7 @@ import { join } from "pathe";
 
 import { resolveConfig } from "@pact-toolbox/config";
 import { generateModule } from "@pact-toolbox/fabricator";
-import { logger, writeFileAtPath } from "@pact-toolbox/utils";
+import { logger, writeFile } from "@pact-toolbox/utils";
 
 export const moduleCommand = defineCommand({
   meta: {
@@ -51,7 +51,7 @@ export const moduleCommand = defineCommand({
       logger.error(`Module ${fileName} already exists in ${contractDir} directory.`);
       return;
     }
-    await writeFileAtPath(path, code);
+    await writeFile(path, code);
     logger.box(
       `Module ${fileName} generated in ${contractDir} directory.\nPlease review the generated code before deploying it.`,
     );

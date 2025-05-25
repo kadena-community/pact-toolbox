@@ -2,12 +2,32 @@ import { isAbsolute, join } from "pathe";
 
 import type { CommonPreludeOptions, PactPrelude } from "./types";
 
-export async function resolvePreludes({ contractsDir, preludes = [] }: CommonPreludeOptions) {
+interface ResolvePreludesOptions {
+  preludesDir: string;
+  preludes: PactPrelude[];
+}
+interface PreludesCache extends ResolvePreludesOptions {
+  resolved: boolean;
+}
+const __PRELUDES_CACHE__: PreludesCache = {
+  preludes: [],
+  preludesDir: "",
+  resolved: false,
+};
+
+export async function resolvePreludes({
+  contractsDir,
+  preludes = [],
+}: CommonPreludeOptions): Promise<ResolvePreludesOptions> {
+  if (__PRELUDES_CACHE__.resolved) {
+    return __PRELUDES_CACHE__;
+  }
   const preludesDir = isAbsolute(contractsDir)
     ? join(contractsDir as string, "prelude")
     : join(process.cwd(), contractsDir as string, "prelude");
+  __PRELUDES_CACHE__.preludesDir = preludesDir;
   const uniquePreludes = [...new Set(preludes)];
-  const resolved: PactPrelude[] = await Promise.all(
+  __PRELUDES_CACHE__.preludes = await Promise.all(
     uniquePreludes?.map((prelude) => {
       if (typeof prelude === "string") {
         switch (prelude) {
@@ -23,5 +43,5 @@ export async function resolvePreludes({ contractsDir, preludes = [] }: CommonPre
     }) ?? [],
   );
 
-  return { preludes: resolved, preludesDir };
+  return __PRELUDES_CACHE__;
 }

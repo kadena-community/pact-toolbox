@@ -1,60 +1,71 @@
 {
-  "name": "@pact-toolbox/wallet",
-  "version": "0.0.5",
+  "name": "@pact-toolbox/wallet-adaptor",
+  "version": "0.0.0",
   "repository": "kadena-community/pact-toolbox",
   "author": "Salama Ashoush <salamaashoush@gmail.com>",
   "license": "MIT",
   "type": "module",
   "private": false,
-  "main": "./src/index.ts",
+  "exports": {
+    "types": {
+      "require": "./dist/index.d.cts",
+      "import": "./dist/index.d.mts"
+    },
+    "browser": {
+      "import": "./dist/index.browser.mjs",
+      "require": "./dist/index.browser.cjs"
+    },
+    "node": {
+      "import": "./dist/index.node.mjs",
+      "require": "./dist/index.node.cjs"
+    },
+    "react-native": "./dist/index.native.mjs"
+  },
+  "main": "./dist/index.node.cjs",
+  "module": "./dist/index.node.mjs",
+  "react-native": "./dist/index.native.mjs",
+  "types": "./dist/index.d.mts",
   "files": [
-    "dist"
+    "./dist/"
+  ],
+  "keywords": [
+    "blockchain",
+    "kadena",
+    "pact",
+    "crypto",
+    "chainweb",
+    "web3"
   ],
   "publishConfig": {
-    "access": "public",
-    "exports": {
-      ".": {
-        "types": "./dist/index.d.ts",
-        "import": {
-          "types": "./dist/index.d.ts",
-          "default": "./dist/index.js"
-        },
-        "require": {
-          "types": "./dist/index.d.cts",
-          "default": "./dist/index.cjs"
-        }
-      }
-    },
-    "main": "./dist/index.cjs",
-    "module": "./dist/index.js",
-    "types": "./dist/index.d.ts"
+    "access": "public"
   },
   "scripts": {
-    "build": "tsup",
-    "dev": "tsup --watch",
+    "build": "tsdown --config ./node_modules/@pact-toolbox/tsdown/tsdown.config.package.ts",
+    "dev": "tsdown --watch --config ./node_modules/@pact-toolbox/tsdown/tsdown.config.package.ts",
     "lint": "oxlint --import-plugin --deny-warnings",
     "format": "prettier --check . --ignore-path ../../.gitignore",
     "prepack": "pnpm run build",
     "release": "pnpm test && pnpm publish",
-    "test:watch": "vitest",
-    "test": "vitest run",
+    "test:watch": "tsx --test --watch --experimental-test-module-mocks src/**/*.spec.ts",
+    "test": "tsx --test --experimental-test-module-mocks src/**/*.spec.ts",
     "verify": "tsc --noEmit --skipLibCheck"
   },
   "dependencies": {
-    "@kadena/client": "^1.11.2",
-    "@kadena/cryptography-utils": "^0.4.4",
-    "@pact-toolbox/client-utils": "workspace:*"
+    "@pact-toolbox/crypto": "workspace:*",
+    "@pact-toolbox/signers": "workspace:*",
+    "@wallet-standard/core": "^1.1.1",
+    "mitt": "^3.0.1"
   },
   "devDependencies": {
-    "@kadena/types": "^0.6.2",
     "@pact-toolbox/prettier-config": "workspace:*",
     "@pact-toolbox/tsconfig": "workspace:*",
-    "@vitest/coverage-v8": "^1.6.0",
-    "lint-staged": "^15.2.5",
-    "oxlint": "^0.4.3",
-    "tsup": "^8.1.0",
-    "typescript": "^5.4.5",
-    "vitest": "^1.6.0"
+    "@pact-toolbox/tsdown": "workspace:*",
+    "@pact-toolbox/types": "workspace:*",
+    "oxlint": "^0.18.0",
+    "prettier": "^3.5.3",
+    "tsdown": "^0.12.7",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3"
   },
   "prettier": "@pact-toolbox/prettier-config"
 }

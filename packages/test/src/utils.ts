@@ -4,26 +4,9 @@ import {
   getNetworkConfig,
   getSerializableNetworkConfig,
   isDevNetworkConfig,
-  isLocalChainwebNetworkConfig,
   isPactServerNetworkConfig,
 } from "@pact-toolbox/config";
 import { getRandomNetworkPorts } from "@pact-toolbox/utils";
-
-export function disablePersistance(network: NetworkConfig) {
-  if (isPactServerNetworkConfig(network) && network.serverConfig?.persistDir) {
-    network.serverConfig.persistDir = undefined;
-  }
-
-  if (isDevNetworkConfig(network) && network.containerConfig?.volume) {
-    network.containerConfig.volume = undefined;
-  }
-
-  if (isLocalChainwebNetworkConfig(network) && network.nodeConfig?.persistDb) {
-    network.nodeConfig.persistDb = false;
-  }
-
-  return network;
-}
 
 export function getConfigOverrides(
   configOverrides?: Partial<PactToolboxConfigObj> | string,
@@ -36,33 +19,23 @@ export function getConfigOverrides(
   return configOverrides || {};
 }
 
-export function injectNetworkConfig(config: PactToolboxConfigObj) {
+export function injectNetworkConfig(config: PactToolboxConfigObj): void {
   const network = getSerializableNetworkConfig(config);
   (globalThis as any).__PACT_TOOLBOX_NETWORK_CONFIG__ = network;
 }
 
-export async function updatePorts(config: PactToolboxConfigObj) {
+export async function updatePorts(config: PactToolboxConfigObj): Promise<NetworkConfig> {
   const ports = await getRandomNetworkPorts();
-  config.devProxyPort = config.enableDevProxy ? ports.proxy : ports.service;
+  config.devProxyPort = config.enableDevProxy ? ports.proxy.toString() : ports.service.toString();
   const network = getNetworkConfig(config);
   if (isPactServerNetworkConfig(network)) {
     if (network.serverConfig) {
-      network.serverConfig.port = ports.service;
+      network.serverConfig.port = ports.service.toString();
     }
   }
   if (isDevNetworkConfig(network)) {
     if (network.containerConfig) {
-      network.containerConfig.port = ports.service;
-    }
-  }
-  if (isLocalChainwebNetworkConfig(network)) {
-    if (network.miningClientConfig) {
-      network.miningClientConfig.onDemandPort = ports.onDemand;
-      network.miningClientConfig.stratumPort = ports.stratum;
-    }
-    if (network.nodeConfig) {
-      network.nodeConfig.servicePort = ports.service;
-      network.nodeConfig.p2pPort = ports.p2p;
+      network.containerConfig.port = ports.service.toString();
     }
   }
 

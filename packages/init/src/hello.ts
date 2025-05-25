@@ -2,7 +2,7 @@ import { existsSync } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "pathe";
 
-export const pactFile = `
+export const pactFile: string = `
 (namespace 'free )
 (module hello-world G
   (defcap G () true)
@@ -12,7 +12,7 @@ export const pactFile = `
 )
 `.trim();
 
-export const replFile = `
+export const replFile: string = `
 (load "prelude/init.repl")
 (begin-tx "Load hello-world module")
 (env-data {
@@ -23,7 +23,7 @@ export const replFile = `
 (commit-tx)
 `.trim();
 
-export async function createHelloWorld(contractFolder: string) {
+export async function createHelloWorld(contractFolder: string): Promise<void> {
   // check if contract folder exists
   if (!existsSync(contractFolder)) {
     await mkdir(contractFolder, { recursive: true });

@@ -4,7 +4,7 @@ import { join } from "pathe";
 
 import { resolveConfig } from "@pact-toolbox/config";
 import { generateGasStation } from "@pact-toolbox/fabricator";
-import { logger, writeFileAtPath } from "@pact-toolbox/utils";
+import { logger, writeFile } from "@pact-toolbox/utils";
 
 export const stationCommand = defineCommand({
   meta: {
@@ -67,7 +67,7 @@ export const stationCommand = defineCommand({
       logger.error(`Gas station ${fileName} already exists in ${contractDir} directory.`);
       return;
     }
-    await writeFileAtPath(path, code);
+    await writeFile(path, code);
     logger.box(
       `Gas station ${fileName} generated in ${contractDir} directory.\nPlease review the generated code before deploying it.`,
     );

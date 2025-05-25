@@ -3,7 +3,6 @@ coverage
 dist
 .turbo
 build
-types
 .vscode
 .DS_Store
 .eslintcache
@@ -14,3 +13,15 @@ types
 pact/prelude
 .pact-toolbox
 .kadena
+
+# Rust
+target/
+**/*.rs.bk
+
+# Wasm
+**/*.wasm
+
+# node_modules
+node_modules/
+npm/*/node_modules
+napi/*/npm-dir

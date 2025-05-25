@@ -21,15 +21,15 @@ npx pact-toolbox init
 ```typescript
 // NOTE: don't ovveride the existing file, just update the necessary parts.
 // import pact vite plugin
-import pactVitePlugin from '@pact-toolbox/unplugin/vite';
+import pactVitePlugin from "@pact-toolbox/unplugin/vite";
 
 export default defineConfig({
   plugins: [
     // add pact vite plugin
     pactVitePlugin({
       onReady: async (client) => {
-        const isDeployed = await client.isContractDeployed('free.hello-world');
-        await client.deployContract('hello-world.pact', {
+        const isDeployed = await client.isContractDeployed("free.hello-world");
+        await client.deployContract("hello-world.pact", {
           prepareTx: {
             upgrade: isDeployed,
           },
@@ -51,7 +51,7 @@ npx pact-toolbox doctor
 - to install pact
 
 ```bash
-npx pact-toolbox pact install 4.10
+npx pactup install 4.10
 ```
 
 ### Step 5: Start vite dev server.

@@ -21,7 +21,6 @@
 - [ ] Support switching networks at runtime.
 - [ ] Support switching wallets at runtime.
 
-
 ## Examples
 
 - [ ] NFT dApp

@@ -1,55 +1,65 @@
-import type { Router } from "h3";
 import type { Listener, ListenOptions } from "listhen";
-import { createApp, createRouter, toNodeListener } from "h3";
 import { listen } from "listhen";
 
+import { logger } from "@pact-toolbox/utils";
+import { H3, toNodeHandler } from "h3-nightly";
+import { MiningTrigger } from "./miningTrigger";
 import type { PactToolboxNetworkApiLike } from "./types";
-import { setupRoutes, setupWildCardProxy } from "./routes";
-
 export interface CreateDevProxyServerOptions extends Partial<ListenOptions> {
-  port?: number | string;
+  port?: number;
 }
 
 export class PactToolboxDevProxyServer {
-  private app = createApp();
-  private router = createRouter();
+  private app = new H3();
   private listener?: Listener;
+  private miningTrigger: MiningTrigger;
 
   constructor(
     private network: PactToolboxNetworkApiLike,
     private options: CreateDevProxyServerOptions,
   ) {
-    setupRoutes(this.router, network);
+    this.miningTrigger = new MiningTrigger(this.app, {
+      miningClientUrl: network.getMiningClientUrl(),
+      chainwebServiceEndpoint: network.getNodeServiceUrl(),
+      idleTriggerPeriodSec: 10,
+      confirmationTriggerPeriodSec: 10,
+      transactionBatchPeriodSec: 10,
+      miningCooldownSec: 10,
+      defaultConfirmationCount: 10,
+      disableIdleWorker: true,
+      disableConfirmationWorker: true,
+      devRequestLogger: false,
+      logger,
+    });
+    // setupRoutes(this.router, network);
   }
 
-  addRoute(setup: (router: Router) => void) {
-    if (this.listener) {
-      throw new Error("Cannot add routes after server has started");
-    }
-    setup(this.router);
-  }
-
-  async start() {
-    this.app.use(this.router);
-    setupWildCardProxy(this.app, this.network);
+  async start(): Promise<Listener> {
+    // setupWildCardProxy(this.app, this.network);
     try {
-      this.listener = await listen(toNodeListener(this.app), {
+      this.listener = await listen(toNodeHandler(this.app), {
         isProd: true,
         showURL: false,
         ...this.options,
         port: this.options.port ?? 8080,
       });
-    } catch (e) {
-      throw new Error("Failed to start proxy server");
+      await this.miningTrigger.start();
+    } catch (error) {
+      logger.error("Failed to start proxy server", error);
+      throw error;
     }
     return this.listener;
   }
 
-  async stop() {
+  async stop(): Promise<void> {
     await this.listener?.close();
+    await this.miningTrigger.stop();
   }
 }
 
-export function createDevProxyServer(network: PactToolboxNetworkApiLike, options: CreateDevProxyServerOptions) {
+export function createDevProxyServer(
+  network: PactToolboxNetworkApiLike,
+  options: CreateDevProxyServerOptions,
+): PactToolboxDevProxyServer {
   return new PactToolboxDevProxyServer(network, options);
 }

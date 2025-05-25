@@ -1,43 +1,14 @@
-import type { ChainId, IKeyPair } from "@kadena/types";
+import type { CommonNetworkConfig, StandardPrelude } from "@pact-toolbox/types";
 import { loadConfig } from "c12";
 
 import { defaultConfig } from "./defaults";
 
-export interface KeysetConfig {
-  keys: string[];
-  pred: "keys-all" | "keys-any" | "keys-2" | "=";
-}
-
-export interface GetRpcUrlParams {
-  chainId?: string;
-  networkId?: string;
-}
-
-export interface Signer extends IKeyPair {
-  account: string | `k:${string}`;
-}
-
-export interface NetworkMeta {
-  chainId: ChainId;
-  gasLimit?: number;
-  gasPrice?: number;
-  ttl?: number;
-}
-export interface CommonNetworkConfig {
-  networkId: string;
-  rpcUrl: string;
-  name?: string;
-  senderAccount: string;
-  signers: Signer[];
-  keysets: Record<string, KeysetConfig>;
-  meta?: NetworkMeta;
-}
 export interface DevNetMiningConfig {
   /**
    * Wait for this period, in seconds, after receiving a transaction and then mine blocks on the chain where the transaction was received. This period is used to batch transactions and avoid mining a block for each transaction. Increasing this period also makes mining more realistic compared to the public networks
-   * @default 5.0
+   * @default 0.05
    */
-  batchPeriod?: number;
+  transactionBatchPeriod?: number;
   /**
    * The number of blocks to mine faster after transactions; This makes it quicker to get a transaction confirmed.
    * @default 5
@@ -52,17 +23,22 @@ export interface DevNetMiningConfig {
    * Disable quick mining for confirming transactions. Note that if you want to mint the blocks containing transactions only and no further confirmations, don’t disable this option and use MINING_CONFIRMATION_COUNT=1 instead.
    * @default false
    */
-  disableConfirmation?: boolean;
+  disableConfirmationWorker?: boolean;
   /**
    * Disable periodic mining when the network is idle. Note that this is NOT RECOMMENDED for most cases, since in the absence of mining, the node’s current time will lag behind and transactions will not be accepted. Consider increasing MINING_IDLE_PERIOD instead.
    * @default false
    */
-  disableIdle?: boolean;
+  disableIdleWorker?: boolean;
   /**
    * The average time, in seconds, it takes to mine blocks and advance the block height by one while the network is idle (i.e. no incoming transactions)
-   * @default 30.0
+   * @default 10
    */
   idlePeriod?: number;
+  /**
+   * The average time, in seconds, it takes to mine blocks and advance the block height by one while the network is idle (i.e. no incoming transactions)
+   * @default 0.05
+   */
+  miningCooldown?: number;
 }
 export interface DevNetworkConfig extends CommonNetworkConfig, LocalNetworkCommonConfig {
   type: "chainweb-devnet";
@@ -70,65 +46,23 @@ export interface DevNetworkConfig extends CommonNetworkConfig, LocalNetworkCommo
   miningConfig?: DevNetMiningConfig;
 }
 
-export interface ChainwebMiningClientConfig {
-  publicKey: string;
-  worker: "constant-delay" | "on-demand";
-  stratumPort: number;
-  constantDelayBlockTime: number;
-  threadCount: number;
-  logLevel: "error" | "warn" | "info" | "debug";
-  noTls: boolean;
-  onDemandPort: number;
-}
-
-export interface ChainwebNodeConfig {
-  persistDb: boolean;
-  configFile: string;
-  p2pCertificateChainFile: string;
-  p2pCertificateKeyFile: string;
-  p2pHostname: string;
-  p2pPort: number;
-  bootstrapReachability: number;
-  clusterId: string;
-  p2pMaxSessionCount: number;
-  mempoolP2pMaxSessionCount: number;
-  knownPeerInfo: string;
-  logLevel: "error" | "warn" | "info" | "debug";
-  enableMiningCoordination: boolean;
-  miningPublicKey: string;
-  headerStream: boolean;
-  rosetta: boolean;
-  allowReadsInLocal: boolean;
-  databaseDirectory: string;
-  disablePow: boolean;
-  servicePort: number;
-}
-
 export interface LocalNetworkCommonConfig {
   autoStart?: boolean;
-}
-
-export interface LocalChainwebNetworkConfig extends CommonNetworkConfig, LocalNetworkCommonConfig {
-  type: "chainweb-local";
-  miningClientConfig?: ChainwebMiningClientConfig;
-  nodeConfig?: ChainwebNodeConfig;
 }
 
 export interface PactServerNetworkConfig extends CommonNetworkConfig, LocalNetworkCommonConfig {
   type: "pact-server";
   serverConfig?: PactServerConfig;
+  pactBin?: string;
 }
 
 export interface ChainwebNetworkConfig extends CommonNetworkConfig {
   type: "chainweb";
 }
 
-export type NetworkConfig =
-  | DevNetworkConfig
-  | PactServerNetworkConfig
-  | ChainwebNetworkConfig
-  | LocalChainwebNetworkConfig;
-export type NetwokConfigType = NetworkConfig["type"];
+export type NetworkConfig = DevNetworkConfig | PactServerNetworkConfig | ChainwebNetworkConfig;
+
+export type NetworkConfigType = NetworkConfig["type"];
 
 export type PactExecConfigFlags =
   | "AllowReadInLocal"
@@ -158,7 +92,7 @@ export interface PactServerConfig {
   /**
    * HTTP server port
    */
-  port?: string | number;
+  port?: number;
   /**
    * Directory for HTTP logs
    */
@@ -195,14 +129,12 @@ export interface PactServerConfig {
 }
 
 export interface DevNetContainerConfig {
-  port?: string | number;
-  volume?: string;
-  name?: string;
-  image: string;
-  tag?: string;
+  port?: number;
+  persistDb?: boolean;
+  onDemandMining?: boolean;
+  constantDelayBlockTime?: number;
 }
 
-export type StandardPrelude = "kadena/chainweb" | "kadena/marmalade";
 export interface PactToolboxConfigEnvOverrides<
   T extends Record<string, NetworkConfig> = Record<string, NetworkConfig>,
 > {
@@ -213,6 +145,7 @@ export interface PactToolboxConfigEnvOverrides<
   $production?: Partial<PactToolboxConfigObj<T>>;
   $env?: { [key: string]: Partial<PactToolboxConfigObj<T>> };
 }
+
 export interface PactToolboxConfigObj<T extends Record<string, NetworkConfig> = Record<string, NetworkConfig>> {
   defaultNetwork: keyof T;
   networks: T;
@@ -222,7 +155,7 @@ export interface PactToolboxConfigObj<T extends Record<string, NetworkConfig> = 
   preludes?: StandardPrelude[];
   downloadPreludes?: boolean;
   deployPreludes?: boolean;
-  devProxyPort?: string | number;
+  devProxyPort?: number;
   enableDevProxy?: boolean;
 }
 
@@ -230,17 +163,42 @@ export type PactToolboxConfig<T extends Record<string, NetworkConfig> = {}> =
   | (Partial<PactToolboxConfigObj<T>> & PactToolboxConfigEnvOverrides<T>)
   | ((network: string) => Partial<PactToolboxConfigObj<T>> & PactToolboxConfigEnvOverrides<T>);
 
-export async function resolveConfig(overrides?: Partial<PactToolboxConfigObj>) {
+let __CONFIG__: Required<PactToolboxConfigObj> | undefined = undefined;
+function dedupeArrays(obj: Record<string, any>) {
+  for (const [key, value] of Object.entries(obj)) {
+    if (Array.isArray(value)) {
+      // remove duplicates from arrays
+      obj[key] = value.filter((v, i, a) => a.findIndex((t) => JSON.stringify(t) === JSON.stringify(v)) === i);
+    } else if (typeof value === "object") {
+      dedupeArrays(value);
+    }
+  }
+}
+export async function resolveConfig(
+  overrides?: Partial<PactToolboxConfigObj>,
+): Promise<Required<PactToolboxConfigObj>> {
+  if (__CONFIG__) {
+    return __CONFIG__;
+  }
   const configResult = await loadConfig<PactToolboxConfigObj>({
     name: "pact-toolbox",
     overrides: overrides as PactToolboxConfigObj,
-    defaultConfig: defaultConfig as PactToolboxConfigObj,
+    defaults: defaultConfig as PactToolboxConfigObj,
+    dotenv: true,
+    packageJson: true,
   });
-  return configResult.config as Required<PactToolboxConfigObj>;
+
+  configResult.config.networks = configResult.config.networks || {};
+  for (const [network, networkConfig] of Object.entries(configResult.config.networks)) {
+    configResult.config.networks[network] = networkConfig;
+    dedupeArrays(networkConfig);
+  }
+  __CONFIG__ = configResult.config as Required<PactToolboxConfigObj>;
+  return __CONFIG__;
 }
 
 export function defineConfig<T extends Record<string, NetworkConfig> = Record<string, NetworkConfig>>(
   config: PactToolboxConfig<T>,
-) {
+): PactToolboxConfig<T> {
   return config;
 }

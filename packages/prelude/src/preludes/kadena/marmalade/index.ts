@@ -1,5 +1,5 @@
-import type { KeysetConfig } from "@pact-toolbox/config";
 import type { DeployContractOptions, PactToolboxClient } from "@pact-toolbox/runtime";
+import type { PactKeyset } from "@pact-toolbox/types";
 import { join } from "pathe";
 
 import { logger } from "@pact-toolbox/utils";
@@ -12,7 +12,14 @@ export function marmaladePath(path: string) {
   return `gh:salamaashoush/marmalade/pact/${path}#main`;
 }
 
-export const marmaladeSpecs = {
+type MarmaladeSpecs = {
+  kip: PactDependency[];
+  util: PactDependency[];
+  "marmalade-ns": PactDependency[];
+  "marmalade-v2": PactDependency[];
+  "marmalade-sale": PactDependency[];
+};
+export const marmaladeSpecs: MarmaladeSpecs = {
   kip: [
     preludeSpec("account-protocols-v1.pact", marmaladePath("kip/account-protocols-v1.pact"), "kip"),
     preludeSpec("manifest.pact", marmaladePath("kip/manifest.pact"), "kip"),
@@ -70,9 +77,9 @@ export const marmaladeSpecs = {
       "marmalade-sale",
     ),
   ],
-} satisfies Record<string, PactDependency[]>;
+};
 
-export default {
+const prelude: PactPrelude<MarmaladeSpecs> = {
   name: "kadena/marmalade",
   specs: marmaladeSpecs,
   requires: ["kadena/chainweb"],
@@ -84,7 +91,7 @@ export default {
     return defined.some((d) => !d) || deployed.some((d) => !d);
   },
   async repl(client: PactToolboxClient) {
-    const keys = client.getSigner();
+    const keys = client.getSignerKeys();
     const context = {
       publicKey: keys.publicKey,
     };
@@ -92,21 +99,22 @@ export default {
     return renderTemplate(installTemplate, context);
   },
   async deploy(client: PactToolboxClient, params: DeployContractOptions = {}) {
-    const signer = client.getValidateSigner(params.signer);
+    const { signer } = params;
+    const keys = client.getSignerKeys(signer);
     const keysets = {
       "marmalade-admin": {
-        keys: [signer.publicKey],
+        keys: [keys.publicKey],
         pred: "keys-all",
       },
       "marmalade-user": {
-        keys: [signer.publicKey],
+        keys: [keys.publicKey],
         pred: "keys-all",
       },
       "marmalade-contract-admin": {
-        keys: [signer.publicKey],
+        keys: [keys.publicKey],
         pred: "keys-all",
       },
-    } as Record<string, KeysetConfig>;
+    } as Record<string, PactKeyset>;
     const preludeDir = join(client.getPreludeDir(), "kadena/marmalade");
 
     const createNsSpec = marmaladeSpecs["marmalade-ns"].find((s) => s.name.includes("ns-marmalade.pact"));
@@ -115,7 +123,7 @@ export default {
     }
     await deployPactDependency(createNsSpec, preludeDir, client, {
       ...params,
-      prepareTx: {
+      build: {
         namespace: "kip",
         keysets,
       },
@@ -125,7 +133,7 @@ export default {
 
     await deployPactDependency(createNsSpec, preludeDir, client, {
       ...params,
-      prepareTx: {
+      build: {
         namespace: "util",
         keysets,
       },
@@ -136,7 +144,7 @@ export default {
     for (const dep of marmaladeSpecs.kip) {
       await deployPactDependency(dep, preludeDir, client, {
         ...params,
-        prepareTx: {
+        build: {
           namespace: "kip",
           keysets,
         },
@@ -149,12 +157,12 @@ export default {
     for (const dep of marmaladeSpecs["marmalade-ns"]) {
       await deployPactDependency(dep, preludeDir, client, {
         ...params,
-        prepareTx: {
+        build: {
           namespace: "marmalade-v2",
           keysets: {
             ...keysets,
             "marmalade-v2.marmalade-contract-admin": {
-              keys: [signer.publicKey],
+              keys: [keys.publicKey],
               pred: "keys-all",
             },
           },
@@ -168,12 +176,12 @@ export default {
     for (const dep of marmaladeSpecs["marmalade-ns"]) {
       await deployPactDependency(dep, preludeDir, client, {
         ...params,
-        prepareTx: {
+        build: {
           namespace: "marmalade-sale",
           keysets: {
             ...keysets,
             "marmalade-sale.marmalade-contract-admin": {
-              keys: [signer.publicKey],
+              keys: [keys.publicKey],
               pred: "keys-all",
             },
           },
@@ -187,7 +195,7 @@ export default {
     for (const dep of marmaladeSpecs.util) {
       await deployPactDependency(dep, preludeDir, client, {
         ...params,
-        prepareTx: {
+        build: {
           namespace: "kip",
           keysets,
         },
@@ -200,7 +208,7 @@ export default {
     for (const dep of marmaladeSpecs["marmalade-v2"]) {
       await deployPactDependency(dep, preludeDir, client, {
         ...params,
-        prepareTx: {
+        build: {
           namespace: "marmalade-v2",
           keysets,
         },
@@ -213,7 +221,7 @@ export default {
     for (const dep of marmaladeSpecs["marmalade-sale"]) {
       await deployPactDependency(dep, preludeDir, client, {
         ...params,
-        prepareTx: {
+        build: {
           namespace: "marmalade-sale",
           keysets,
         },
@@ -222,4 +230,6 @@ export default {
       logger.success(`Deployed ${dep.name}`);
     }
   },
-} as PactPrelude;
+};
+
+export default prelude;

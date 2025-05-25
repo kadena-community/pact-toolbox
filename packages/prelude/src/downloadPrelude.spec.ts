@@ -5,14 +5,14 @@ import { join } from "pathe";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { PactToolboxClient } from "@pact-toolbox/runtime";
-import { writeFileAtPath } from "@pact-toolbox/utils";
+import { writeFile } from "@pact-toolbox/utils";
 
 import type { CommonPreludeOptions, PactDependency, PactPrelude } from "./types";
 import {
+  downloadAllPreludes,
   downloadGitRepo,
   downloadPactDependency,
   downloadPrelude,
-  downloadPreludes,
   groupByBaseRepo,
   isPreludeDownloaded,
   shouldDownloadPreludes,
@@ -40,7 +40,7 @@ vi.mock("@pact-toolbox/utils", async (importOriginal) => {
   return {
     // @ts-ignore
     ...actual,
-    writeFileAtPath: vi.fn(),
+    writeFile: vi.fn(),
   };
 });
 
@@ -177,7 +177,7 @@ describe("downloadPrelude", () => {
       await downloadPrelude(prelude, preludesDir, client, allPreludes, downloaded);
       expect(downloadTemplateMock).toHaveBeenCalled();
       expect(cp).toHaveBeenCalled();
-      expect(writeFileAtPath).toHaveBeenCalled();
+      expect(writeFile).toHaveBeenCalled();
       expect(downloaded.has("prelude")).toBe(true);
     });
   });
@@ -203,7 +203,7 @@ describe("downloadPrelude", () => {
           },
         ],
       };
-      await downloadPreludes(config);
+      await downloadAllPreludes(config);
       expect(downloadTemplateMock).toHaveBeenCalledWith("github:owner/repo-uri#main", {
         dir: join(process.cwd(), ".pact-toolbox/tmp", "prelude"),
         cwd: process.cwd(),
@@ -213,7 +213,7 @@ describe("downloadPrelude", () => {
       });
       expect(rm).toHaveBeenCalledTimes(2);
       expect(mkdir).toHaveBeenCalled();
-      expect(writeFileAtPath).toHaveBeenCalled();
+      expect(writeFile).toHaveBeenCalled();
     });
   });
 

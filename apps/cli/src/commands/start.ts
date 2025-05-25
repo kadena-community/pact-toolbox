@@ -43,12 +43,11 @@ export const startCommand = defineCommand({
   run: async ({ args }) => {
     const config = await resolveConfig();
     const { network, quiet, tunnel, clipboard } = args;
-    //@ts-ignore
-    const _network = await startLocalNetwork(config, {
-      silent: quiet || tunnel,
+    await startLocalNetwork(config, {
+      isDetached: !quiet && !tunnel,
       logAccounts: true,
       network,
-      conflict: "replace",
+      conflictStrategy: "replace",
       devProxyOptions: {
         showURL: true,
         isProd: false,
@@ -56,5 +55,12 @@ export const startCommand = defineCommand({
         clipboard,
       },
     });
+    if (quiet || tunnel) {
+      process.exit(0);
+    } else {
+      await new Promise(() => {
+        // keep the process alive
+      });
+    }
   },
 });

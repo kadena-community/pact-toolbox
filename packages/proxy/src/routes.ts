@@ -3,7 +3,7 @@ import { eventHandler } from "h3";
 
 import type { PactToolboxNetworkApiLike } from "./types";
 
-export function setupRoutes(router: Router, networkApi: PactToolboxNetworkApiLike) {
+export function setupRoutes(router: Router, networkApi: PactToolboxNetworkApiLike): void {
   // if (networkApi.hasOnDemandMining()) {
   //   router.post(
   //     '/make-blocks',
@@ -21,7 +21,7 @@ export function setupRoutes(router: Router, networkApi: PactToolboxNetworkApiLik
   );
 }
 
-export function setupWildCardProxy(_app: App, _networkApi: PactToolboxNetworkApiLike) {
+export function setupWildCardProxy(_app: App, _networkApi: PactToolboxNetworkApiLike): void {
   // app.use(
   //   '*',
   //   eventHandler(async (event) => {

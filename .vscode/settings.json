@@ -1,8 +1,34 @@
 {
+  "eslint.workingDirectories": [
+    {
+      "mode": "auto"
+    }
+  ],
   "editor.codeActionsOnSave": {
-    "source.organizeImports": "always"
+    "source.fixAll.oxc": "always"
+  },
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "eslint.useFlatConfig": true,
+  "[ignore]": {
+    "editor.defaultFormatter": "foxundermoon.shell-format"
+  },
+  "[dotenv]": {
+    "editor.defaultFormatter": "foxundermoon.shell-format"
+  },
+  "[shellscript]": {
+    "editor.defaultFormatter": "foxundermoon.shell-format"
   },
   "coverage-gutters.showLineCoverage": false,
   "coverage-gutters.showRulerCoverage": false,
-  "coverage-gutters.showGutterCoverage": false
+  "coverage-gutters.showGutterCoverage": false,
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/bower_components": true,
+    "**/*.code-search": true,
+    "**/dist": true,
+    "**/build": true,
+    "**/coverage": true,
+    "**/.next": true
+  }
 }

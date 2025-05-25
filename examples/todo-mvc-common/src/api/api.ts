@@ -1,72 +1,35 @@
-import { Pact } from "@kadena/client";
+import { getUuid } from "@pact-toolbox/client";
 
-import { addDefaultMeta, createKadenaClient, createKdaClientHelpers, getUuid } from "@pact-toolbox/client-utils";
-import { ToolboxWallet } from "@pact-toolbox/wallet";
+// importing from pact files
+import { deleteTodo, editTodo, newTodo, readTodo, readTodos, toggleTodoStatus } from "../../pact/todos.pact";
 
-const getClient = createKadenaClient();
-const wallet = new ToolboxWallet();
-// const wallet = new EckoWalletProvider();
-const { dirtyReadOrFail, submitAndListen } = createKdaClientHelpers(getClient);
-export interface Todo {
-  title: string;
-  completed: boolean;
-  deleted: boolean;
-  id: string;
-}
-export async function readTodos() {
-  const tx = addDefaultMeta(Pact.builder.execution(`(free.todos.read-todos)`)).createTransaction();
-  return dirtyReadOrFail<Todo[]>(tx);
+export async function getAllTodos() {
+  return readTodos().build().dirtyRead();
 }
 
-export async function readTodoById(id: string) {
-  const tx = addDefaultMeta(Pact.builder.execution(`(free.todos.read-todo "${id}")`)).createTransaction();
-  return dirtyReadOrFail<Todo>(tx);
+export async function getTodoById(id: string) {
+  return readTodo(id).build().dirtyRead();
 }
 
 export async function editTodoById(id: string, title: string) {
-  const signer = await wallet.getSigner();
-  const tx = addDefaultMeta(Pact.builder.execution(`(free.todos.edit-todo "${id}" "${title}")`))
-    .addSigner(signer.publicKey)
-    .setMeta({
-      senderAccount: signer.address,
-    })
-    .createTransaction();
-  const signedTX = await wallet.sign(tx);
-  return submitAndListen(signedTX);
+  return editTodo(id, title).sign().submitAndListen();
 }
 
 export async function toggleTodoStatusById(id: string) {
-  const signer = await wallet.getSigner();
-  const tx = addDefaultMeta(Pact.builder.execution(`(free.todos.toggle-todo-status "${id}")`))
-    .addSigner(signer.publicKey)
-    .setMeta({
-      senderAccount: signer.address,
-    })
-    .createTransaction();
-  const signedTX = await wallet.sign(tx);
-  return submitAndListen(signedTX);
+  return toggleTodoStatus(id).sign().submitAndListen();
 }
 
 export async function deleteTodoById(id: string) {
-  const signer = await wallet.getSigner();
-  const tx = addDefaultMeta(Pact.builder.execution(`(free.todos.delete-todo "${id}")`))
-    .addSigner(signer.publicKey)
-    .setMeta({
-      senderAccount: signer.address,
-    })
-    .createTransaction();
-  const signedTX = await wallet.sign(tx);
-  return submitAndListen(signedTX);
+  return deleteTodo(id).sign().submitAndListen();
 }
 
 export async function createTodo(title: string, id: string = getUuid()) {
-  const signer = await wallet.getSigner();
-  const tx = addDefaultMeta(Pact.builder.execution(`(free.todos.new-todo "${id}" "${title}")`))
-    .addSigner(signer.publicKey, (signFor) => [signFor("coin.GAS")])
-    .setMeta({
-      senderAccount: signer.address,
-    })
-    .createTransaction();
-  const signedTX = await wallet.sign(tx);
-  return submitAndListen(signedTX);
+  console.log("creating todo", id, title);
+  return newTodo(id, title)
+    .sign()
+    .submitAndListen()
+    .then((tx) => {
+      console.log("created todo", tx);
+      return tx;
+    });
 }

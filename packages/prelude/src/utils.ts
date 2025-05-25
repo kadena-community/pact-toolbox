@@ -24,9 +24,6 @@ export function parseGitURI(input: string): GitInfo {
 
 export function getBaseRepo(uri: string) {
   const { provider, repo, ref } = parseGitURI(uri);
-  console.log("provider:", provider);
-  console.log("repo:", repo);
-  console.log("ref:", ref);
   return `${provider}:${repo}#${ref}`;
 }
 
@@ -44,7 +41,7 @@ export function preludeSpec(
   };
 }
 
-export function renderTemplate(template: string, data: any) {
+export function renderTemplate(template: string, data: any): string {
   const compiled = Handlebars.compile(template);
   return compiled(data);
 }
@@ -118,7 +115,7 @@ export function topologicSort<T>(edges: Iterable<[T, T]>): T[] {
   }
 }
 
-export function sortPreludesNames(preludes: PactPrelude[]) {
+export function sortPreludesNames(preludes: PactPrelude[]): string[] {
   // Convert to an array of edges
   const edges: [string, string][] = [];
   for (const prelude of preludes) {
@@ -136,7 +133,7 @@ export function sortPreludesNames(preludes: PactPrelude[]) {
   return topologicSort(edges);
 }
 
-export function sortPreludes(preludes: PactPrelude[]) {
+export function sortPreludes(preludes: PactPrelude[]): PactPrelude[] {
   const sortedNames = sortPreludesNames(preludes);
   const sortedPreludes: PactPrelude[] = [];
   for (const name of sortedNames) {

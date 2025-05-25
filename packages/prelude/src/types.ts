@@ -7,10 +7,11 @@ export interface PactDependency {
   group?: string;
   requires?: PactDependency[];
 }
-export type PactPreludeSpecs = Record<string, PactDependency[]>;
-export interface PactPrelude {
+export type PactPreludeSpecsMap = Record<string, PactDependency[]>;
+export type PactPreludeSpecs = PactPreludeSpecsMap | PactDependency[];
+export interface PactPrelude<Specs extends PactPreludeSpecs = PactPreludeSpecs> {
   name: string;
-  specs: PactDependency[] | PactPreludeSpecs;
+  specs: Specs;
   requires?: string[];
   /**
    * decides if prelude should be deployed to configured networks

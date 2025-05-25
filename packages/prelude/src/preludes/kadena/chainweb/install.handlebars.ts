@@ -1,4 +1,4 @@
-export const template = `
+export const template: string = `
 (env-exec-config ["DisablePact44", "DisablePact45"])
 (begin-tx "Load root contracts")
 (env-data {

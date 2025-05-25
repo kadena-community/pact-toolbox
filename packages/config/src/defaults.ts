@@ -1,9 +1,10 @@
+import type { KeyPair, NetworkMeta, PactKeyset } from "@pact-toolbox/types";
 import { join } from "pathe";
 
-import type { KeysetConfig, NetworkMeta, PactToolboxConfigObj, Signer } from "./config";
+import type { PactToolboxConfigObj } from "./config";
 import { createLocalNetworkConfig } from "./factories";
 
-export const defaultSigners: Signer[] = [
+export const defaultKeyPairs: KeyPair[] = [
   {
     account: "sender00",
     publicKey: "368820f80c324bbc7c2b0610688a7da43e39f91d118732671cd9c7500ff43cca",
@@ -56,7 +57,7 @@ export const defaultSigners: Signer[] = [
   },
 ];
 
-export const defaultKeysets: Record<string, KeysetConfig> = defaultSigners.reduce(
+export const defaultKeysets: Record<string, PactKeyset> = defaultKeyPairs.reduce(
   (acc, signer) => ({
     ...acc,
     [signer.account]: {
@@ -68,29 +69,13 @@ export const defaultKeysets: Record<string, KeysetConfig> = defaultSigners.reduc
 );
 
 export const defaultMeta: NetworkMeta = {
-  ttl: 30_000,
-  gasLimit: 100_000,
-  gasPrice: 0.000_000_01,
+  ttl: 15 * 60, // 15 minutes,
+  gasLimit: 150000,
+  gasPrice: 1e-8,
   chainId: "0",
 };
 
-export const latestDevNetContainer = {
-  port: 8080,
-  image: "kadena/devnet",
-  tag: "latest",
-  volume: "devnet_latest",
-  name: "devnet_latest",
-};
-
-export const minimalDevNetContainer = {
-  port: 8080,
-  image: "kadena/devnet",
-  tag: "minimal",
-  volume: "devnet_minimal",
-  name: "devnet_minimal",
-};
-
-export const chainwebConfigDir = join(process.cwd(), ".kadena/toolbox/chainweb");
+export const chainwebConfigDir: string = join(process.cwd(), ".pact-toolbox/chainweb");
 
 export const defaultConfig: PactToolboxConfigObj = {
   defaultNetwork: "local",
@@ -101,5 +86,6 @@ export const defaultConfig: PactToolboxConfigObj = {
   scriptsDir: "scripts",
   preludes: ["kadena/chainweb"],
   deployPreludes: true,
-  downloadPreludes: false,
+  downloadPreludes: true,
+  enableDevProxy: false,
 };

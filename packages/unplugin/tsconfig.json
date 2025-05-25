@@ -1,4 +1,7 @@
 {
-  "extends": "@pact-toolbox/tsconfig/base",
-  "include": ["src", "tests", "scripts"]
+  "extends": "@pact-toolbox/tsconfig/lib",
+  "compilerOptions": {
+    "types": ["node"]
+  },
+  "include": ["src", "tests", "scripts", "playground", "tsdown.config.ts"]
 }
