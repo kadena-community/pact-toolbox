@@ -1,14 +1,12 @@
 import * as p from "@clack/prompts";
-import { logger, writeFile, fillTemplatePlaceholders } from "@pact-toolbox/utils";
+import { logger, writeFile, fillTemplatePlaceholders, runBin } from "@pact-toolbox/utils";
 import { defineCommand, runMain } from "citty";
+import { readdir, readFile } from "node:fs/promises";
+import { resolve, dirname, join } from "pathe";
+import { fileURLToPath } from "node:url";
 import { glob } from "glob";
-import { readdir } from "node:fs/promises";
-import { readFile } from "node:fs/promises";
-import path from "path";
-import { fileURLToPath } from "url";
-
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const __dirname = dirname(__filename);
 
 const main = defineCommand({
   meta: {
@@ -28,6 +26,13 @@ const main = defineCommand({
       alias: "t",
       name: "template",
       description: "The template to use for the new project",
+    },
+    git: {
+      type: "boolean",
+      alias: "g",
+      name: "git",
+      defaultValue: true,
+      description: "Initialize a git repository",
     },
   },
 
@@ -53,7 +58,7 @@ const main = defineCommand({
     }
 
     if (!template) {
-      const templatesPath = path.resolve(__dirname, "..", "templates");
+      const templatesPath = resolve(__dirname, "..", "templates");
       const availableTemplates = await readdir(templatesPath);
       const selectedTemplate = await p.select({
         message: "Which template would you like to use?",
@@ -68,19 +73,19 @@ const main = defineCommand({
     }
 
     logger.info(`Creating a new Pact Toolbox app named ${projectName} with template ${template}`);
-    const projectPath = path.resolve(process.env.INIT_CWD || process.cwd(), projectName);
-    const templatePath = path.resolve(__dirname, "..", "templates", template);
+    const projectPath = resolve(process.env.INIT_CWD || process.cwd(), projectName);
+    const templatePath = resolve(__dirname, "..", "templates", template);
 
     try {
-      const templateFiles = await glob(`**/*`, {
+      const templateFiles = await glob("**/*", {
         cwd: templatePath,
         nodir: true,
         dot: true,
       });
 
       for (const file of templateFiles) {
-        const sourcePath = path.join(templatePath, file);
-        const destPath = path.join(projectPath, file);
+        const sourcePath = join(templatePath, file);
+        const destPath = join(projectPath, file);
 
         let content = await readFile(sourcePath, "utf-8");
 
@@ -89,6 +94,15 @@ const main = defineCommand({
         }
 
         await writeFile(destPath, content);
+      }
+
+      if (args.git) {
+        const s = p.spinner();
+        s.start("Initializing git repository");
+        await runBin("git", ["init"], { cwd: projectPath });
+        await runBin("git", ["add", "."], { cwd: projectPath });
+        await runBin("git", ["commit", "-m", "Initial commit"], { cwd: projectPath });
+        s.stop("Git repository initialized");
       }
 
       logger.success(`Successfully created ${projectName} at ${projectPath}`);
