@@ -16,7 +16,7 @@
     "format:fix": "turbo format --continue -- --write",
     "lint": "turbo lint --filter=./packages/*",
     "lint:fix": "turbo lint --continue -- --fix",
-    "verify": "turbo verify",
+    "verify": "turbo verify --filter=./packages/*",
     "prepack": "husky init",
     "changeset": "changeset",
     "ci:version": "changeset version",

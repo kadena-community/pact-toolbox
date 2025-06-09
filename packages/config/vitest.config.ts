@@ -1,5 +1,10 @@
-import { mergeConfig } from "vitest/config";
+import baseConfig from "@pact-toolbox/vitest-config/node";
+import { defineConfig } from "vitest/config";
 
-import node from "@pact-toolbox/vitest-config/node";
-
-export default mergeConfig(node, {});
+export default defineConfig({
+  ...baseConfig,
+  test: {
+    ...baseConfig.test,
+    include: ["tests/**/*.test.ts"],
+  },
+});
