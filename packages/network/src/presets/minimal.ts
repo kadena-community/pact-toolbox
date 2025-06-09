@@ -176,7 +176,7 @@ export function createMiningTriggerService({
   return {
     containerName: MINING_TRIGGER_SERVICE_NAME,
     image: MINING_TRIGGER_IMAGE,
-    entrypoint: ["/usr/local/bin/mining-trigger-rs"],
+    entrypoint: ["/usr/local/bin/mining-trigger"],
     command: [
       `--port=${miningTriggerPort}`,
       `--mining-client-url=${miningClientUrl}`,

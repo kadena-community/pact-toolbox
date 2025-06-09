@@ -1,0 +1,48 @@
+{
+  "name": "@pact-toolbox/pact-transformer-napi",
+  "version": "0.1.0",
+  "description": "High-performance Pact code transformer using tree-sitter with NAPI-RS bindings",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "napi": {
+    "name": "pact-transformer-napi",
+    "triples": {
+      "defaults": true,
+      "additional": [
+        "x86_64-unknown-linux-musl",
+        "aarch64-unknown-linux-gnu",
+        "i686-pc-windows-msvc",
+        "armv7-unknown-linux-gnueabihf",
+        "aarch64-apple-darwin",
+        "aarch64-pc-windows-msvc",
+        "aarch64-unknown-linux-musl",
+        "x86_64-unknown-freebsd"
+      ]
+    }
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@napi-rs/cli": "^2.18.4"
+  },
+  "engines": {
+    "node": ">= 16"
+  },
+  "scripts": {
+    "artifacts": "napi artifacts",
+    "build": "napi build --platform --release",
+    "build:debug": "napi build --platform",
+    "prepublishOnly": "napi prepublish -t npm",
+    "test": "node test.mjs",
+    "universal": "napi universal",
+    "version": "napi version"
+  },
+  "keywords": [
+    "pact",
+    "tree-sitter",
+    "transformer",
+    "native",
+    "performance",
+    "kadena",
+    "blockchain"
+  ]
+}
