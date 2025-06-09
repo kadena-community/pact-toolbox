@@ -1,5 +1,17 @@
 # @pact-toolbox/runtime
 
+## 0.1.0
+
+### Minor Changes
+
+- ebf24fb: publish new packages for an alpha test
+
+### Patch Changes
+
+- Updated dependencies [ebf24fb]
+  - @pact-toolbox/client@0.1.0
+  - @pact-toolbox/config@0.1.0
+
 ## 0.0.5
 
 ### Patch Changes

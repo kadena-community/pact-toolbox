@@ -1,5 +1,12 @@
 # todo-mvc-common
 
+## 0.0.6
+
+### Patch Changes
+
+- Updated dependencies [ebf24fb]
+  - @pact-toolbox/client@0.1.0
+
 ## 0.0.5
 
 ### Patch Changes
