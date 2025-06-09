@@ -7,7 +7,7 @@ describe("todos api", async () => {
   let id = getUuid();
   let title = "Learn pact";
   const env = await createPactTestEnv({
-    network: "local",
+    network: "pactServer",
   });
 
   beforeAll(async () => {

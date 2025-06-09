@@ -1,6 +1,6 @@
 {
   "name": "@pact-toolbox/test",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "repository": "kadena-community/pact-toolbox",
   "author": "Salama Ashoush <salamaashoush@gmail.com>",
   "license": "MIT",
@@ -49,6 +49,8 @@
     "@pact-toolbox/network": "workspace:*",
     "@pact-toolbox/runtime": "workspace:*",
     "@pact-toolbox/utils": "workspace:*",
+    "chalk": "^5.4.1",
+    "ora": "^8.2.0",
     "pathe": "^2.0.3",
     "tiny-readdir-glob": "^1.23.2"
   },

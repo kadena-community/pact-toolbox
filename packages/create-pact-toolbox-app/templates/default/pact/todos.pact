@@ -27,7 +27,7 @@
     })
   )
 
-  (defun toggle-todo:bool (id:string)
+  (defun toggle-todo:string (id:string)
     "Toggle completed status flag for todo at ID."
     (with-read todo-table id { "completed":= state }
       (update todo-table id { "completed": (not state) })

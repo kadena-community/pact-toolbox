@@ -34,20 +34,20 @@ export const testCommand = defineCommand({
       required: false,
       default: false,
     },
-    repl: {
+    replOnly: {
       type: "boolean",
-      name: "repl",
+      name: "repl-only",
       alias: "r",
-      description: "Run  REPL tests only",
+      description: "Run REPL tests only",
       required: false,
       default: false,
     },
   },
   run: async ({ args }) => {
-    const { repl, watch } = args;
+    const { replOnly, watch } = args;
     const config = await resolveConfig();
     await runReplTests(config);
-    if (repl === true) {
+    if (replOnly === true) {
       return;
     }
     await runVitest({ watch });
