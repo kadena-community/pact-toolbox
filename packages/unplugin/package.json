@@ -130,6 +130,14 @@
       },
       "import": "./dist/network-worker.js",
       "require": "./dist/network-worker.cjs"
+    },
+    "./transform": {
+      "types": {
+        "require": "./dist/transform.d.cts",
+        "import": "./dist/transform.d.ts"
+      },
+      "import": "./dist/transform.js",
+      "require": "./dist/transform.cjs"
     }
   },
   "main": "dist/index.cjs",
@@ -162,6 +170,7 @@
     "@pact-toolbox/network": "workspace:*",
     "@pact-toolbox/runtime": "workspace:*",
     "@pact-toolbox/utils": "workspace:*",
+    "@pact-toolbox/pact-transformer-napi": "workspace:*",
     "defu": "^6.1.4",
     "picomatch": "^4.0.2",
     "scule": "^1.3.0",

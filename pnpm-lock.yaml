@@ -132,6 +132,12 @@ importers:
 
   apps/pactlings: {}
 
+  crates/pact-transformer-napi:
+    devDependencies:
+      '@napi-rs/cli':
+        specifier: ^2.18.4
+        version: 2.18.4
+
   examples/todo-mvc-common:
     dependencies:
       '@kadena/client':
@@ -1023,6 +1029,9 @@ importers:
       '@pact-toolbox/network':
         specifier: workspace:*
         version: link:../network
+      '@pact-toolbox/pact-transformer-napi':
+        specifier: workspace:*
+        version: link:../../crates/pact-transformer-napi
       '@pact-toolbox/runtime':
         specifier: workspace:*
         version: link:../runtime
@@ -2052,6 +2061,11 @@ packages:
 
   '@module-federation/webpack-bundler-runtime@0.14.3':
     resolution: {integrity: sha512-hIyJFu34P7bY2NeMIUHAS/mYUHEY71VTAsN0A0AqEJFSVPszheopu9VdXq0VDLrP9KQfuXT8SDxeYeJXyj0mgA==}
+
+  '@napi-rs/cli@2.18.4':
+    resolution: {integrity: sha512-SgJeA4df9DE2iAEpr3M2H0OKl/yjtg1BnRI5/JyowS71tUWhrfSu2LT0V3vlHET+g1hBVlrO60PmEXwUEKp8Mg==}
+    engines: {node: '>= 10'}
+    hasBin: true
 
   '@napi-rs/wasm-runtime@0.2.10':
     resolution: {integrity: sha512-bCsCyeZEwVErsGmyPNSzwfwFn4OdxBj0mmv6hOFucB/k81Ojdu68RbZdxYsRQUPc9l6SU5F/cG+bXgWs3oUgsQ==}
@@ -6974,6 +6988,8 @@ snapshots:
     dependencies:
       '@module-federation/runtime': 0.14.3
       '@module-federation/sdk': 0.14.3
+
+  '@napi-rs/cli@2.18.4': {}
 
   '@napi-rs/wasm-runtime@0.2.10':
     dependencies:

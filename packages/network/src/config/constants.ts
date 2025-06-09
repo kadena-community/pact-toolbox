@@ -8,8 +8,7 @@ export const MINING_CLIENT_IMAGE: string =
 export const DEVNET_PROXY_PORT: number = process.env.DEVNET_PROXY_PORT ? Number(process.env.DEVNET_PROXY_PORT) : 8080;
 export const CHAINWEB_NODE_IMAGE: string =
   process.env.CHAINWEB_NODE_IMAGE || "ghcr.io/kadena-io/chainweb-node/ubuntu:latest";
-export const MINING_TRIGGER_IMAGE: string =
-  process.env.MINING_TRIGGER_IMAGE || "salamaashoush/mining-trigger-rs:latest";
+export const MINING_TRIGGER_IMAGE: string = process.env.MINING_TRIGGER_IMAGE || "salamaashoush/mining-trigger:latest";
 export const DEVNET_CONFIGS_DIR: string = path.resolve(CWD, ".pact-toolbox", "configs");
 export const CHAINWEB_DB_DIR: string = path.resolve(CWD, ".pact-toolbox", "chainweb", "db");
 export const MINIMAL_NETWORK_NAME: string = "devnet-minimal-network";
