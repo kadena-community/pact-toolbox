@@ -1,5 +1,11 @@
 # @pact-toolbox/prelude
 
+## 1.1.0
+
+### Minor Changes
+
+- force publish
+
 ## 1.0.0
 
 ### Minor Changes
