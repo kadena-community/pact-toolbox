@@ -1,14 +1,15 @@
-import { resolveConfig } from '@pact-toolbox/config';
-import { runReplTests } from '@pact-toolbox/test';
-import { defineCommand } from 'citty';
-import { startVitest } from 'vitest/node';
+import { defineCommand } from "citty";
+import { startVitest } from "vitest/node";
+
+import { resolveConfig } from "@pact-toolbox/config";
+import { runReplTests } from "@pact-toolbox/test";
 
 export interface RunVitestOptions {
-  mode?: 'test' | 'benchmark';
+  mode?: "test" | "benchmark";
   watch?: boolean;
   filters?: string[];
 }
-export async function runVitest({ mode = 'test', watch = false, filters = [] }: RunVitestOptions = {}) {
+export async function runVitest({ mode = "test", watch = false, filters = [] }: RunVitestOptions = {}) {
   const vitest = await startVitest(mode, filters, {
     watch,
     run: !watch,
@@ -21,23 +22,23 @@ export async function runVitest({ mode = 'test', watch = false, filters = [] }: 
 
 export const testCommand = defineCommand({
   meta: {
-    name: 'test',
-    description: 'Run tests using the configured test runner and network',
+    name: "test",
+    description: "Run tests using the configured test runner and network",
   },
   args: {
     watch: {
-      type: 'boolean',
-      name: 'watch',
-      alias: 'w',
-      description: 'Watch for changes and re-run tests',
+      type: "boolean",
+      name: "watch",
+      alias: "w",
+      description: "Watch for changes and re-run tests",
       required: false,
       default: false,
     },
     repl: {
-      type: 'boolean',
-      name: 'repl',
-      alias: 'r',
-      description: 'Run  REPL tests only',
+      type: "boolean",
+      name: "repl",
+      alias: "r",
+      description: "Run  REPL tests only",
       required: false,
       default: false,
     },

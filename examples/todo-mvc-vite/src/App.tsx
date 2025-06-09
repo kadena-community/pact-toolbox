@@ -1,7 +1,7 @@
-import { TodoApp } from 'todo-mvc-common';
+import { TodoList } from "todo-mvc-common";
 
 function App() {
-  return <TodoApp />;
+  return <TodoList />;
 }
 
 export default App;

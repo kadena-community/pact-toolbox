@@ -1,4 +1,4 @@
-(namespace 'free )
+(namespace 'free)
 
 (module hello-world G
   (defcap G () true)
@@ -6,3 +6,4 @@
     (format "Hello, {}!" [name])
   )
 )
+(hello-world.say-hello "world")

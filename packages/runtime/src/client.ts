@@ -1,297 +1,353 @@
+import { readFile, stat } from "node:fs/promises";
+import type { ChainId, ITransactionDescriptor } from "@kadena/client";
+import type { PactTransactionBuilder, ToolboxNetworkContext } from "@pact-toolbox/client";
+import type { NetworkConfig, PactToolboxConfigObj } from "@pact-toolbox/config";
 import type {
-  ChainId,
-  IBuilder,
-  IClient,
-  ICommand,
-  IKeyPair,
-  ITransactionDescriptor,
-  IUnsignedCommand,
-} from '@kadena/client';
-import { Pact, createClient, createSignWithKeypair, isSignedTransaction } from '@kadena/client';
-import { Signer, getCmdDataOrFail } from '@pact-toolbox/client-utils';
-import type { KeysetConfig, NetworkConfig, NetworkMeta, PactToolboxConfigObj } from '@pact-toolbox/config';
-import { createRpcUrlGetter, defaultMeta, getNetworkConfig, isPactServerNetworkConfig } from '@pact-toolbox/config';
-import { readFile, stat } from 'node:fs/promises';
-import { isAbsolute, join } from 'pathe';
-import { getSignerFromEnv, isValidateSigner } from './utils';
+  KeyPair,
+  PactCmdPayload,
+  PactExecPayload,
+  PactKeyset,
+  PactSignerLike,
+  Serializable,
+  WalletLike,
+} from "@pact-toolbox/types";
+import { isAbsolute, join, resolve } from "pathe";
 
-export interface TransactionBuilderData extends Partial<NetworkMeta> {
+import { createToolboxNetworkContext, execution, getKAccountKey } from "@pact-toolbox/client";
+import {
+  defaultConfig,
+  defaultMeta,
+  getNetworkConfig,
+  getSerializableNetworkConfig,
+  isPactServerNetworkConfig,
+} from "@pact-toolbox/config";
+
+import { getSignerFromEnvVars, isKeyPair } from "./utils";
+
+export interface TransactionBuilderData {
   senderAccount?: string;
-  networkId?: string;
-  upgrade?: boolean;
+  chainId?: ChainId;
   init?: boolean;
   namespace?: string;
-  keysets?: Record<string, KeysetConfig>;
-  data?: Record<string, any>;
+  keysets?: Record<string, PactKeyset>;
+  data?: Record<string, Serializable>;
+  upgrade?: boolean;
 }
+
 export interface DeployContractOptions {
   preflight?: boolean;
   listen?: boolean;
-  signer?: string | Signer;
-  caps?: string[][];
   skipSign?: boolean;
-  prepareTx?: ((builder: IBuilder<any>) => Promise<IBuilder<any>>) | TransactionBuilderData;
-  signTx?: (tx: IUnsignedCommand, keyPair: IKeyPair) => Promise<ICommand>;
+  signer?: PactSignerLike | KeyPair;
+  sign?: WalletLike;
+  build?:
+    | TransactionBuilderData
+    | (<T extends PactCmdPayload>(
+        tx: PactTransactionBuilder<T>,
+      ) => PactTransactionBuilder<T> | Promise<PactTransactionBuilder<T>>);
 }
 
-export interface DeployContractMultiChainOptions extends DeployContractOptions {
-  targetChains?: ChainId[];
-}
 export interface LocalOptions {
   preflight?: boolean;
   signatureVerification?: boolean;
 }
 
 export class PactToolboxClient {
-  private kdaClient: IClient;
   private networkConfig: NetworkConfig;
+  public context: ToolboxNetworkContext;
 
   constructor(
-    private config: PactToolboxConfigObj,
+    private config: PactToolboxConfigObj = defaultConfig,
     network?: string,
   ) {
     this.networkConfig = getNetworkConfig(config, network);
-    this.kdaClient = createClient(createRpcUrlGetter(this.networkConfig));
+    this.context = createToolboxNetworkContext(getSerializableNetworkConfig(config), true);
   }
 
-  setConfig(config: PactToolboxConfigObj) {
+  setConfig(config: PactToolboxConfigObj): void {
     this.config = config;
     this.networkConfig = getNetworkConfig(config);
-    this.kdaClient = createClient(createRpcUrlGetter(this.networkConfig));
+    this.context = createToolboxNetworkContext(getSerializableNetworkConfig(config), true);
   }
 
-  get network() {
+  getContext(): ToolboxNetworkContext {
+    return this.context;
+  }
+
+  getNetworkConfig(): NetworkConfig {
     return this.networkConfig;
   }
 
-  isPactServerNetwork() {
+  isPactServerNetwork(): boolean {
     return isPactServerNetworkConfig(this.networkConfig);
   }
 
-  isChainwebNetwork() {
-    return this.networkConfig.type.includes('chainweb');
+  isChainwebNetwork(): boolean {
+    return this.networkConfig.type.includes("chainweb");
   }
 
-  getContactsDir() {
-    return this.config.contractsDir ?? 'pact';
+  getContractsDir(): string {
+    return this.config.contractsDir ?? "pact";
   }
 
-  getScriptsDir() {
-    return this.config.scriptsDir ?? 'scripts';
+  getScriptsDir(): string {
+    return this.config.scriptsDir ?? "scripts";
   }
 
-  getPreludeDir() {
-    return join(this.getContactsDir(), 'prelude');
+  getPreludeDir(): string {
+    return join(this.getContractsDir(), "prelude");
   }
 
-  getConfig() {
+  getConfig(): PactToolboxConfigObj<Record<string, NetworkConfig>> {
     return this.config;
   }
 
-  getSigner<T extends Partial<Signer>>(
-    address: T | string = this.networkConfig.senderAccount,
-    args: Record<string, unknown> = {},
-  ): T {
-    if (typeof address === 'object') {
-      return address;
+  /**
+   * Retrieves a signer based on the provided address or defaults to the sender account.
+   * @param address - The signer address or key pair.
+   * @param args - Additional arguments for environment-based signer retrieval.
+   * @returns The signer key pair.
+   */
+  getSignerKeys(signerLike?: PactSignerLike | KeyPair): KeyPair {
+    if (isKeyPair(signerLike)) {
+      return signerLike;
     }
-    const signer =
-      this.networkConfig.signers.find((s) => s.account === address) ??
-      getSignerFromEnv(args, this.network.name?.toUpperCase());
-    return signer as T;
+    if (typeof signerLike === "string") {
+      return this.context.getSignerKeys(signerLike);
+    }
+
+    if (typeof signerLike === "object") {
+      return this.context.getSignerKeys(signerLike.address ?? getKAccountKey(signerLike.pubKey));
+    }
+
+    const fromEnv = getSignerFromEnvVars(this.networkConfig.name?.toUpperCase());
+    if (fromEnv?.secretKey && fromEnv?.publicKey) {
+      return {
+        publicKey: fromEnv.publicKey,
+        secretKey: fromEnv.secretKey,
+        account: fromEnv.account ?? getKAccountKey(fromEnv.publicKey),
+      };
+    }
+    const account =
+      fromEnv?.account || (fromEnv?.publicKey ? getKAccountKey(fromEnv?.publicKey) : this.networkConfig.senderAccount);
+    return this.context.getSignerKeys(account);
   }
 
-  getValidateSigner(signer?: string | Signer, args: Record<string, unknown> = {}) {
-    signer = this.getSigner(signer, args);
-    if (!isValidateSigner(signer)) {
-      throw new Error(`Invalid signer: ${JSON.stringify(signer)}`);
-    }
-    return signer;
-  }
-
-  execution<T extends IBuilder<any>>(command: string): T {
-    return Pact.builder
-      .execution(command)
-      .setMeta({
+  /**
+   * Creates an execution builder with default metadata.
+   * @param command - The Pact command to execute.
+   * @returns A PactTransactionBuilder instance.
+   */
+  execution<Result = unknown>(command: string): PactTransactionBuilder<PactExecPayload, Result> {
+    return execution<Result>(command, this.context)
+      .withContext(this.context)
+      .withMeta({
         ...defaultMeta,
         ...this.networkConfig.meta,
-        senderAccount: this.networkConfig.senderAccount,
+        sender: this.networkConfig.senderAccount,
       })
-      .setNetworkId(this.networkConfig.networkId) as T;
+      .withNetworkId(this.networkConfig.networkId);
   }
 
-  async sign(tx: IUnsignedCommand, signer?: Signer) {
-    signer = signer ?? this.getValidateSigner(this.networkConfig.senderAccount);
-    return createSignWithKeypair(signer)(tx);
-  }
+  /**
+   * Deploys Pact code to the specified chains.
+   * @param code - The Pact code to deploy.
+   * @param options - Deployment options.
+   * @returns An array of transaction descriptors or identifiers.
+   */
 
-  async dirtyRead<T>(tx: IUnsignedCommand | ICommand) {
-    const res = await this.kdaClient.dirtyRead(tx);
-    return getCmdDataOrFail<T>(res);
-  }
-
-  async local<T>(tx: IUnsignedCommand | ICommand, options?: LocalOptions) {
-    const res = await this.kdaClient.local(tx, options);
-    return getCmdDataOrFail<T>(res);
-  }
-
-  async preflight(tx: IUnsignedCommand | ICommand): ReturnType<IClient['preflight']> {
-    return this.kdaClient.preflight(tx);
-  }
-
-  async submit(tx: ICommand | IUnsignedCommand) {
-    if (isSignedTransaction(tx)) {
-      return this.kdaClient.submit(tx);
-    } else {
-      throw new Error('Transaction must be signed');
-    }
-  }
-
-  async listen<T>(request: ITransactionDescriptor) {
-    const res = await this.kdaClient.listen(request);
-    return getCmdDataOrFail<T>(res);
-  }
-
-  async submitAndListen<T>(tx: ICommand | IUnsignedCommand) {
-    if (isSignedTransaction(tx)) {
-      const request = await this.kdaClient.submit(tx);
-      const response = await this.kdaClient.listen(request);
-      return getCmdDataOrFail<T>(response);
-    } else {
-      throw new Error('Transaction must be signed');
-    }
-  }
-
-  async runPact(code: string, data: Record<string, any> = {}) {
-    const builder = this.execution(code);
-    if (data) {
-      for (const [key, value] of Object.entries(data)) {
-        builder.addData(key, value);
-      }
-    }
-    return this.kdaClient.dirtyRead(builder.createTransaction());
-  }
-
-  private async _deployCode(
+  async deployCode(
     code: string,
-    {
-      caps = [],
-      preflight = false,
-      signer = this.networkConfig.senderAccount,
-      skipSign = false,
-      listen = true,
-      signTx,
-      prepareTx,
-    }: DeployContractOptions = {},
-    targetChainId?: ChainId,
-  ) {
-    let txBuilder = this.execution(code);
-    signer = this.getSigner(signer);
-    if (typeof prepareTx === 'function') {
-      txBuilder = await prepareTx(txBuilder);
-    } else {
-      const {
-        senderAccount,
-        chainId = this.networkConfig.meta?.chainId ?? '0',
-        init = false,
-        namespace,
-        keysets,
-        data,
-        upgrade = false,
-      } = prepareTx ?? {};
-      txBuilder.addData('upgrade', upgrade).addData('init', init);
-      if (chainId) {
-        txBuilder.setMeta({ chainId: targetChainId ?? chainId });
-      }
-      if (senderAccount) {
-        txBuilder.setMeta({ senderAccount });
-      }
-      if (namespace) {
-        txBuilder.addData('namespace', namespace);
-        txBuilder.addData('ns', namespace);
-      }
-      if (keysets) {
-        for (const [keysetName, keyset] of Object.entries(keysets)) {
-          txBuilder.addKeyset(keysetName, keyset.pred, ...keyset.keys);
-        }
-      }
-      if (data) {
-        for (const [key, value] of Object.entries(data)) {
-          txBuilder.addData(key, value as any);
-        }
-      }
-    }
-    if (signer && !skipSign) {
-      txBuilder.addSigner(signer.publicKey, (signFor) => caps.map((capArgs) => signFor.apply(null, capArgs as any)));
-    }
-
-    let tx = txBuilder.createTransaction();
-    if (!skipSign) {
-      tx = typeof signTx === 'function' ? await signTx(tx, signer) : await this.sign(tx, signer);
-    }
-
-    if (preflight) {
-      const res = await this.preflight(tx);
-      if (res.preflightWarnings) {
-        console.warn('Preflight warnings:', res.preflightWarnings?.join('\n'));
-      }
-    }
-
-    return listen ? this.submitAndListen(tx) : this.submit(tx);
-  }
-
-  deployCode(
+    options?: DeployContractOptions,
+    chainId?: ChainId,
+  ): Promise<ITransactionDescriptor | string>;
+  async deployCode(
     code: string,
-    { targetChains = [this.network.meta?.chainId ?? '0'], ...params }: DeployContractMultiChainOptions = {},
-  ) {
-    return Promise.all(targetChains.map((chainId) => this._deployCode(code, params, chainId)));
-  }
-
-  async describeModule(module: string) {
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    return this.runPact(`(describe-module "${module}")`);
-  }
-
-  async describeNamespace(namespace: string) {
-    return this.runPact(`(describe-namespace "${namespace}")`);
-  }
-
-  async isNamespaceDefined(namespace: string) {
-    const res = await this.describeNamespace(namespace);
-    if (res.result.status === 'success') {
-      return true;
+    options?: DeployContractOptions,
+    chainId?: ChainId[],
+  ): Promise<ITransactionDescriptor[] | string[]>;
+  async deployCode(
+    code: string,
+    options: DeployContractOptions = {},
+    chainId?: ChainId | ChainId[],
+  ): Promise<ITransactionDescriptor | ITransactionDescriptor[] | string | string[]> {
+    const { preflight, listen = true, skipSign, sign, build, signer } = options;
+    let txBuilder = this.execution<string>(code).withContext(this.context);
+    if (typeof build === "function") {
+      await build(txBuilder);
+    } else {
+      this.prepareTransaction(txBuilder, build);
     }
-    return false;
-  }
 
-  async isContractDeployed(module: string) {
-    const res = await this.describeModule(module);
-    if (res.result.status === 'success') {
-      return true;
+    if (skipSign) {
+      return listen
+        ? txBuilder.build().submitAndListen(chainId as any, preflight)
+        : txBuilder.build().submit(chainId as any, preflight);
     }
-    return false;
-  }
 
-  async getContractCode(contractPath: string) {
-    const contractsDir = this.config.contractsDir ?? 'pact';
-    contractPath =
-      isAbsolute(contractPath) || contractPath.startsWith(contractsDir)
-        ? contractPath
-        : join(contractsDir, contractPath);
-    try {
-      await stat(contractPath);
-    } catch (e) {
-      throw new Error(`Contract file not found: ${contractPath}`);
+    if (signer) {
+      txBuilder = txBuilder.withSigner(isKeyPair(signer) ? signer.publicKey : signer);
     }
-    return readFile(contractPath, 'utf-8');
+    return listen
+      ? txBuilder.sign(sign).submitAndListen(chainId as any, preflight)
+      : txBuilder.sign(sign).submit(chainId as any, preflight);
   }
 
-  async deployContract(contract: string, params?: DeployContractMultiChainOptions) {
+  /**
+   * Deploys a single contract.
+   * @param contract - The path to the contract file.
+   * @param options - Deployment options.
+   * @returns An array of transaction descriptors or identifiers.
+   */
+  async deployContract(
+    contract: string,
+    options?: DeployContractOptions,
+    chainId?: ChainId,
+  ): Promise<ITransactionDescriptor | string>;
+  async deployContract(
+    contract: string,
+    options?: DeployContractOptions,
+    chainId?: ChainId[],
+  ): Promise<ITransactionDescriptor[] | string[]>;
+  async deployContract(
+    contract: string,
+    options?: DeployContractOptions,
+    chainId?: ChainId | ChainId[],
+  ): Promise<ITransactionDescriptor | ITransactionDescriptor[] | string | string[]> {
     const contractCode = await this.getContractCode(contract);
-    return this.deployCode(contractCode, params);
+    return this.deployCode(contractCode, options, chainId as any);
   }
 
-  async deployContracts(contracts: string[], params?: DeployContractOptions) {
-    return Promise.all(contracts.map((c) => this.deployContract(c, params)));
+  /**
+   * Deploys multiple contracts.
+   * @param contracts - An array of contract file paths.
+   * @param options - Deployment options.
+   * @returns An array of transaction descriptors or identifiers.
+   */
+  async deployContracts(
+    contracts: string[],
+    options?: DeployContractOptions,
+    chainId?: ChainId,
+  ): Promise<(ITransactionDescriptor | string)[]>;
+  async deployContracts(
+    contracts: string[],
+    options?: DeployContractOptions,
+    chainId?: ChainId[],
+  ): Promise<(ITransactionDescriptor[] | string[])[]>;
+  async deployContracts(
+    contracts: string[],
+    options?: DeployContractOptions,
+    chainId?: ChainId | ChainId[],
+  ): Promise<(ITransactionDescriptor | string)[] | (ITransactionDescriptor[] | string[])[]> {
+    const results = await Promise.all(
+      contracts.map((contract) => this.deployContract(contract, options, chainId as any)),
+    );
+    return results.flat();
+  }
+
+  /**
+   * Prepares the transaction builder with the provided data.
+   * @param txBuilder - The transaction builder.
+   * @param data - The data to prepare the transaction.
+   * @returns The prepared transaction builder.
+   */
+  private prepareTransaction(
+    txBuilder: PactTransactionBuilder<any>,
+    data?: TransactionBuilderData,
+  ): PactTransactionBuilder<any> {
+    const {
+      senderAccount,
+      chainId = this.networkConfig.meta?.chainId ?? "0",
+      init = true,
+      namespace,
+      keysets,
+      data: txData,
+      upgrade = false,
+    } = data ?? {};
+
+    txBuilder.withData("upgrade", upgrade).withData("init", init);
+
+    if (chainId) {
+      txBuilder.withMeta({ chainId });
+    }
+
+    if (senderAccount) {
+      txBuilder.withMeta({ sender: senderAccount });
+    }
+
+    if (namespace) {
+      txBuilder.withData("namespace", namespace).withData("ns", namespace);
+    }
+
+    if (keysets) {
+      txBuilder.withKeysetMap(keysets);
+    }
+
+    if (txData) {
+      txBuilder.withDataMap(txData);
+    }
+
+    return txBuilder;
+  }
+
+  async listModules(): Promise<string[]> {
+    return this.execution<string[]>(`(list-modules)`).build().dirtyRead();
+  }
+
+  async describeModule(module: string): Promise<string> {
+    return this.execution<string>(`(describe-module "${module}")`).build().dirtyRead();
+  }
+
+  async describeNamespace(namespace: string): Promise<string> {
+    return this.execution<string>(`(describe-namespace "${namespace}")`).build().dirtyRead();
+  }
+
+  async isNamespaceDefined(namespace: string): Promise<boolean> {
+    try {
+      await this.describeNamespace(namespace);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Checks if a contract is deployed.
+   * @param module - The module name.
+   * @returns True if deployed, false otherwise.
+   */
+  async isContractDeployed(module: string): Promise<boolean> {
+    try {
+      await this.describeModule(module);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Retrieves the contract code from the filesystem.
+   * @param contractPath - The path to the contract file.
+   * @returns The contract code as a string.
+   * @throws Error if the contract file is not found.
+   */
+  async getContractCode(contractPath: string): Promise<string> {
+    const contractsDir = this.getContractsDir();
+    let resolvedPath =
+      isAbsolute(contractPath) || contractPath.startsWith(contractsDir)
+        ? resolve(contractPath)
+        : resolve(contractsDir, contractPath);
+
+    if (!resolvedPath.endsWith(".pact")) {
+      console.warn("Contract file does not have a .pact extension, appending .pact");
+      resolvedPath += ".pact";
+    }
+
+    try {
+      await stat(resolvedPath);
+    } catch {
+      throw new Error(`Contract file not found: ${resolvedPath}`);
+    }
+    return readFile(resolvedPath, "utf-8");
   }
 }

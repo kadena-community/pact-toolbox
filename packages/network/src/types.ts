@@ -1,18 +1,31 @@
-export type ConflictStrategy = 'error' | 'replace' | 'ignore';
+import type { DockerServiceConfig } from "@pact-toolbox/utils";
+
+export type ConflictStrategy = "error" | "replace" | "ignore";
 
 export interface ToolboxNetworkStartOptions {
-  silent?: boolean;
+  isDetached?: boolean;
   isStateless?: boolean;
-  conflict?: ConflictStrategy;
+  conflictStrategy?: ConflictStrategy;
 }
 export interface ToolboxNetworkApi {
   stop: () => Promise<void>;
   start: (options?: ToolboxNetworkStartOptions) => Promise<void>;
   restart: (options?: ToolboxNetworkStartOptions) => Promise<void>;
   isOk: () => Promise<boolean>;
-  getServicePort: () => number | string;
+  getServicePort: () => number;
   hasOnDemandMining: () => boolean;
-  getOnDemandMiningUrl: () => string;
-  getServiceUrl: () => string;
+  getMiningClientUrl: () => string;
+  getNodeServiceUrl: () => string;
   id: number | string;
+}
+
+export interface DevNetServiceDefinition {
+  networkName: string;
+  clusterId: string;
+  services: {
+    bootstrapNode: DockerServiceConfig;
+    miningClient: DockerServiceConfig;
+    apiProxy: DockerServiceConfig;
+    [key: string]: DockerServiceConfig;
+  };
 }

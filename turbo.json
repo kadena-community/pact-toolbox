@@ -1,6 +1,8 @@
 {
   "$schema": "https://turbo.build/schema.json",
-  "pipeline": {
+  "globalDependencies": ["**/.env"],
+  "ui": "tui",
+  "tasks": {
     "build": {
       "dependsOn": ["^build"],
       "outputs": ["dist/**"]
@@ -9,13 +11,23 @@
       "cache": false,
       "persistent": true
     },
-    "lint": {},
-    "lint:fix": {},
-    "test": {
-      "outputs": ["coverage/**"]
+    "format": {
+      "outputs": ["node_modules/.cache/.prettiercache"],
+      "outputLogs": "new-only"
     },
-    "format": {},
-    "test:types": {},
-    "precommit": {}
+    "lint": {
+      "dependsOn": ["^build"],
+      "outputs": ["node_modules/.cache/.eslintcache"]
+    },
+    "test": {
+      "dependsOn": ["^build"]
+    },
+    "verify": {
+      "dependsOn": ["^build"],
+      "outputs": ["node_modules/.cache/tsbuildinfo.json"]
+    },
+    "clean": {
+      "cache": false
+    }
   }
 }

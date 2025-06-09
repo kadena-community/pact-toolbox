@@ -1,0 +1,24 @@
+{
+  "name": "@pact-toolbox/tsdown",
+  "version": "0.0.0",
+  "private": true,
+  "files": [
+    "register-node-globals.mjs",
+    "tsdown.config.library.ts",
+    "tsdown.config.package.ts",
+    "tsdown.config.node.ts",
+    "tsdown.config.browser.ts"
+  ],
+  "devDependencies": {
+    "@pact-toolbox/prettier-config": "workspace:*",
+    "@pact-toolbox/tsconfig": "workspace:*",
+    "@types/jscodeshift": "^17.3.0",
+    "@types/node": "^22.15.30",
+    "browserslist-to-esbuild": "^2.1.1",
+    "jscodeshift": "^17.3.0",
+    "prettier": "^3.5.3",
+    "publint": "^0.3.12",
+    "tsdown": "^0.12.7"
+  },
+  "prettier": "@pact-toolbox/prettier-config"
+}

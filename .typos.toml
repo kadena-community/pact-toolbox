@@ -1,0 +1,35 @@
+# https://github.com/crate-ci/typos
+# cargo install typos-cli
+# typos
+
+[files]
+extend-exclude = [
+  "**/*.snap",
+  "**/*/CHANGELOG.md",
+  "**/target/**",
+  "**/.pact-toolbox/**",
+  "**/build/**",
+  "**/dist/**",
+  "**/pnpm-lock.yaml",
+  "**/pnpm-workspace.yaml",
+  "**/package.json",
+]
+
+[default]
+extend-ignore-re = [
+  "(?Rm)^.*(#|//)\\s*spellchecker:disable-line$",
+  "(?s)(#|//)\\s*spellchecker:off.*?\\n\\s*(#|//)\\s*spellchecker:on",
+]
+
+[default.extend-words]
+trivias = "trivias"
+trivia = "trivia"
+xdescribe = "xdescribe"
+seeked = "seeked"
+labeledby = "labeledby"
+hashi = "hashi"
+inferrable = "inferrable"
+
+[default.extend-identifiers]
+IIFEs = "IIFEs"
+allowIIFEs = "allowIIFEs"

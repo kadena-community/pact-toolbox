@@ -1,0 +1,28 @@
+{
+  "name": "@pact-toolbox/vitest-config",
+  "private": true,
+  "version": "0.3.0",
+  "type": "module",
+  "exports": {
+    "./node": "./node.js",
+    "./react": "./react.js"
+  },
+  "scripts": {
+    "clean": "rm -rf .turbo node_modules",
+    "format": "prettier --check . --ignore-path ../../.gitignore",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@vitejs/plugin-react-swc": "^3.10.1",
+    "@vitest/coverage-v8": "^3.2.2",
+    "happy-dom": "^17.6.3",
+    "vitest": "^3.2.2"
+  },
+  "devDependencies": {
+    "@pact-toolbox/prettier-config": "workspace:*",
+    "@pact-toolbox/tsconfig": "workspace:*",
+    "prettier": "^3.5.3",
+    "typescript": "^5.8.3"
+  },
+  "prettier": "@pact-toolbox/prettier-config"
+}

@@ -1,6 +1,6 @@
-import { createConsola } from 'consola';
+import { createConsola, type ConsolaInstance } from "consola";
 
-export const logger = createConsola({
+export const logger: ConsolaInstance = createConsola({
   level: 4,
   formatOptions: {
     columns: 80,

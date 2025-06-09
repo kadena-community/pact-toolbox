@@ -1,161 +1,211 @@
-import type { DevNetContainerConfig, DevNetMiningConfig, DevNetworkConfig } from '@pact-toolbox/config';
-import type { DockerContainer } from '@pact-toolbox/utils';
+import type { DevNetMiningConfig, DevNetworkConfig } from "@pact-toolbox/config";
 import {
-  DockerService,
-  cleanUpProcess,
+  ContainerOrchestrator,
+  didMakeBlocks,
+  ensureDir,
   getUuid,
   isChainWebAtHeight,
   isChainWebNodeOk,
-  isDockerInstalled,
+  logger,
   pollFn,
-} from '@pact-toolbox/utils';
-import type { ToolboxNetworkApi, ToolboxNetworkStartOptions } from '../types';
+  writeFile,
+  type DockerServiceConfig,
+} from "@pact-toolbox/utils";
+import { rm } from "node:fs/promises";
 
+import { join } from "pathe";
+import { DEVNET_CONFIGS_DIR, DEVNET_PROXY_PORT, MINIMAL_CLUSTER_ID, MINIMAL_NETWORK_NAME } from "../config/constants";
+import {
+  CHAINWEB_NODE_COMMON_YAML_CONTENT_TPL,
+  CHAINWEB_NODE_LOGGING_YAML_CONTENT_TPL,
+  createNginxApiConfigContent,
+} from "../config/fileTemplates";
+import { createMinimalDevNet } from "../presets/minimal";
+import type { DevNetServiceDefinition, ToolboxNetworkApi, ToolboxNetworkStartOptions } from "../types";
+import { ensureCertificates } from "../utils";
+
+/**
+ * Converts the DevNet mining configuration to environment variables for the Docker container.
+ * @param miningConfig - The mining configuration object.
+ * @returns A record of environment variables.
+ */
 export function devNetMiningConfigToEnvVars(miningConfig?: DevNetMiningConfig): Record<string, string> {
   const envVars: Record<string, string> = {};
 
-  if (miningConfig?.batchPeriod) {
-    envVars['MINING_BATCH_PERIOD'] = miningConfig.batchPeriod.toString();
-  }
-  if (miningConfig?.confirmationCount) {
-    envVars['MINING_CONFIRMATION_COUNT'] = miningConfig.confirmationCount.toString();
-  }
-  if (miningConfig?.confirmationPeriod) {
-    envVars['MINING_CONFIRMATION_PERIOD'] = miningConfig.confirmationPeriod.toString();
-  }
-  if (miningConfig?.disableConfirmation) {
-    envVars['MINING_DISABLE_CONFIRMATION'] = miningConfig.disableConfirmation.toString();
-  }
-  if (miningConfig?.disableIdle) {
-    envVars['MINING_DISABLE_IDLE'] = miningConfig.disableIdle.toString();
-  }
-  if (miningConfig?.idlePeriod) {
-    envVars['MINING_IDLE_PERIOD'] = miningConfig.idlePeriod.toString();
+  if (!miningConfig) return envVars;
+
+  for (const [key, value] of Object.entries(miningConfig)) {
+    if (value !== undefined) {
+      const envKey = `MINING_${key.replace(/[A-Z]/g, (letter) => `_${letter}`).toUpperCase()}`;
+      envVars[envKey] = String(value);
+    }
   }
 
   return envVars;
 }
 
-export const dockerService = new DockerService();
 export class LocalDevNetNetwork implements ToolboxNetworkApi {
-  public id = getUuid();
-  private container?: DockerContainer;
-  private containerConfig: DevNetContainerConfig;
-  private containerEnv: Record<string, string> = {};
-
-  constructor(private network: DevNetworkConfig) {
-    this.containerConfig = {
-      port: 8080,
-      image: 'kadena/devnet',
-      name: 'devnet',
-      tag: 'latest',
-      volume: 'kadena_devnet',
-      ...this.network.containerConfig,
-    };
-    this.containerEnv = devNetMiningConfigToEnvVars(this.network.miningConfig);
+  public id: string = getUuid();
+  #orchestrator: ContainerOrchestrator;
+  #activeProfiles: string[];
+  #isDetached: boolean = true;
+  #definition: DevNetServiceDefinition;
+  #networkConfig: DevNetworkConfig;
+  constructor(networkConfig: DevNetworkConfig, activeProfiles: string[] = []) {
+    this.#networkConfig = networkConfig;
+    this.#definition = createMinimalDevNet({
+      clusterId: MINIMAL_CLUSTER_ID,
+      networkName: MINIMAL_NETWORK_NAME,
+      port: Number(this.getServicePort()),
+      onDemandMining: networkConfig.containerConfig?.onDemandMining,
+      constantDelayBlockTime: networkConfig.containerConfig?.constantDelayBlockTime,
+    });
+    this.#orchestrator = new ContainerOrchestrator({
+      networkName: this.#definition.networkName,
+    });
+    this.#activeProfiles = activeProfiles || [];
   }
 
-  get image() {
-    return `${this.containerConfig.image}:${this.containerConfig.tag}`;
+  async #setupArtifacts(): Promise<void> {
+    await ensureDir(DEVNET_CONFIGS_DIR);
+
+    await ensureCertificates(
+      join(DEVNET_CONFIGS_DIR, "devnet-bootstrap-node.cert.pem"),
+      join(DEVNET_CONFIGS_DIR, "devnet-bootstrap-node.key.pem"),
+    );
+
+    await writeFile(join(DEVNET_CONFIGS_DIR, "chainweb-node.common.yaml"), CHAINWEB_NODE_COMMON_YAML_CONTENT_TPL);
+
+    await writeFile(join(DEVNET_CONFIGS_DIR, "chainweb-node.logging.yaml"), CHAINWEB_NODE_LOGGING_YAML_CONTENT_TPL);
+
+    const nginxConfigContent = createNginxApiConfigContent({
+      enableMiningTrigger: this.hasOnDemandMining(),
+    });
+
+    await writeFile(join(DEVNET_CONFIGS_DIR, "nginx.api.minimal.conf"), nginxConfigContent);
   }
 
-  get volume() {
-    return this.containerConfig.volume;
-  }
-
-  getServicePort() {
-    return this.containerConfig.port ?? 8080;
-  }
-
-  hasOnDemandMining() {
-    return true;
-  }
-
-  getOnDemandMiningUrl() {
-    return `http://localhost:${this.containerConfig.port}`;
-  }
-
-  getServiceUrl() {
-    return `http://localhost:${this.getServicePort()}`;
-  }
-
-  async isOk() {
-    return isChainWebNodeOk(this.getServiceUrl());
-  }
-
-  private async prepareContainer() {
-    if (!isDockerInstalled()) {
-      throw new Error(
-        'Seems like Docker is not installed or running, please make sure Docker is installed and running',
-      );
+  #filterServicesByProfile(serviceConfigs: DockerServiceConfig[]): DockerServiceConfig[] {
+    if (this.#activeProfiles.length === 0) {
+      // If no profiles active, run services that have NO profile attribute.
+      return serviceConfigs.filter(
+        (config) => !config.profiles || config.profiles.length === 0,
+      ) as unknown as DockerServiceConfig[];
     }
 
-    await dockerService.pullImageIfNotExists(this.image);
-    if (this.volume) {
-      await dockerService.createVolumeIfNotExists(this.volume);
-    }
-    await dockerService.removeContainerIfExists(this.containerConfig.name ?? 'devnet');
-    return dockerService.createContainer(this.containerConfig, this.containerEnv);
+    // If profiles ARE specified, only run services matching those profiles.
+    return serviceConfigs.filter(
+      (config) => config.profiles && config.profiles.some((p: string) => this.#activeProfiles.includes(p)),
+    );
   }
 
-  async start({ silent = false, isStateless = false }: ToolboxNetworkStartOptions = {}) {
-    this.containerConfig.name = isStateless ? `devnet-${this.id}` : this.containerConfig.name;
-    this.container = await this.prepareContainer();
+  async #ensureDevNetReadyState(): Promise<void> {
     try {
-      await dockerService.startContainer(this.container, !silent);
-    } catch (e) {
-      throw new Error(`Failed to start container ${this.containerConfig.name}, ${e}`);
-    }
-
-    cleanUpProcess(() => this.stop());
-
-    // poll devnet
-    try {
-      await pollFn(() => isChainWebNodeOk(this.getServiceUrl()), 10000);
-    } catch (e) {
+      await pollFn(() => isChainWebNodeOk(this.getNodeServiceUrl()), {
+        timeout: 100000,
+        interval: 1000,
+      });
+      logger.info("Devnet is up and running.");
+    } catch (error) {
       await this.stop();
-      throw new Error('DevNet did not start in time');
+      logger.error("Failed to start devnet within the expected time.", error);
+      throw new Error("Failed to start devnet within the expected time.");
     }
 
-    // if (this.hasOnDemandMining()) {
-    //   try {
-    //     await pollFn(
-    //       () =>
-    //         didMakeBlocks({
-    //           count: 5,
-    //           onDemandUrl: this.getOnDemandUrl(),
-    //         }),
-    //       10000,
-    //     );
-    //   } catch (e) {
-    //     throw new Error('Could not make initial blocks for on-demand mining');
-    //   }
-    // }
-
-    try {
-      await pollFn(() => isChainWebAtHeight(20, this.getServiceUrl()), 10000);
-    } catch (e) {
-      throw new Error('Chainweb node did not reach height 20');
-    }
-  }
-
-  async stop() {
-    if (this.container) {
-      const isRunning = (await this.container.inspect()).State.Running;
-      if (isRunning) {
-        await this.container.kill();
+    // Make initial blocks if on-demand mining is enabled
+    if (this.hasOnDemandMining()) {
+      try {
+        await pollFn(
+          () =>
+            didMakeBlocks({
+              count: 5,
+              onDemandUrl: this.getMiningClientUrl(),
+            }),
+          {
+            timeout: 100000,
+            interval: 1000,
+          },
+        );
+        logger.info("Initial blocks created for on-demand mining.");
+      } catch (error) {
+        logger.error("Could not make initial blocks for on-demand mining.", error);
+        throw new Error("Could not make initial blocks for on-demand mining.");
       }
     }
+
+    // Ensure Chainweb node reaches the target height
+    try {
+      await pollFn(() => isChainWebAtHeight(20, this.getNodeServiceUrl()), {
+        timeout: 100000,
+        interval: 1000,
+      });
+      logger.info("Chainweb node reached height 20.");
+    } catch (error) {
+      logger.error("Chainweb node did not reach height 20 within the expected time.", error);
+      throw new Error("Chainweb node did not reach height 20 within the expected time.");
+    }
   }
 
-  async restart(options?: ToolboxNetworkStartOptions) {
+  async start(options?: ToolboxNetworkStartOptions): Promise<void> {
+    const { isDetached = true, isStateless = false } = options || {};
+    this.#isDetached = isDetached;
+
+    // Modify container name if stateless
+    if (isStateless) {
+      this.#definition = createMinimalDevNet({
+        networkName: `devnet-${this.id}-network`,
+        port: Number(this.getServicePort()),
+        persistDb: false,
+      });
+    }
+
+    await this.#setupArtifacts();
+    const servicesToRun = this.#filterServicesByProfile(Object.values(this.#definition.services));
+
+    if (servicesToRun.length === 0) {
+      return;
+    }
+    await this.#orchestrator.startServices(servicesToRun);
+    await this.#ensureDevNetReadyState();
+    if (!this.#isDetached) {
+      await this.#orchestrator.streamAllLogs();
+    }
+  }
+
+  async stop(): Promise<void> {
+    await this.#orchestrator.stopAllServices();
+    if (!this.#isDetached) {
+      this.#orchestrator.stopAllLogStreams();
+    }
+    try {
+      await rm(DEVNET_CONFIGS_DIR, { recursive: true, force: true });
+    } catch (e) {
+      logger.warn(`Failed to remove generated files in ${DEVNET_CONFIGS_DIR}:`, e);
+    }
+  }
+
+  async restart(options?: ToolboxNetworkStartOptions): Promise<void> {
     await this.stop();
     await this.start(options);
   }
-}
 
-export async function startDevNetNetwork(networkConfig: DevNetworkConfig, startOptions?: ToolboxNetworkStartOptions) {
-  const network = new LocalDevNetNetwork(networkConfig);
-  await network.start(startOptions);
-  return network;
+  getServicePort(): number {
+    return this.#networkConfig.containerConfig?.port ?? DEVNET_PROXY_PORT;
+  }
+
+  hasOnDemandMining(): boolean {
+    return this.#networkConfig.containerConfig?.onDemandMining ?? true;
+  }
+
+  getMiningClientUrl(): string {
+    return `http://localhost:${this.getServicePort()}`;
+  }
+
+  getNodeServiceUrl(): string {
+    return `http://localhost:${this.getServicePort()}`;
+  }
+
+  async isOk(): Promise<boolean> {
+    return isChainWebNodeOk(this.getNodeServiceUrl());
+  }
 }

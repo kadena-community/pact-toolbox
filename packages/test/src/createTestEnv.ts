@@ -1,9 +1,11 @@
-import type { PactToolboxConfigObj } from '@pact-toolbox/config';
-import { getNetworkConfig, resolveConfig } from '@pact-toolbox/config';
-import { PactToolboxNetwork } from '@pact-toolbox/network';
-import { PactToolboxClient } from '@pact-toolbox/runtime';
-import { logger } from '@pact-toolbox/utils';
-import { disablePersistance, injectNetworkConfig, updatePorts } from './utils';
+import type { PactToolboxConfigObj } from "@pact-toolbox/config";
+
+import { resolveConfig } from "@pact-toolbox/config";
+import { PactToolboxNetwork } from "@pact-toolbox/network";
+import { PactToolboxClient } from "@pact-toolbox/runtime";
+import { logger } from "@pact-toolbox/utils";
+
+import { injectNetworkConfig, updatePorts } from "./utils";
 
 export interface PactTestEnv {
   client: PactToolboxClient;
@@ -18,12 +20,11 @@ export interface CreatePactTestEnvOptions {
   client?: PactToolboxClient;
   configOverrides?: Partial<PactToolboxConfigObj>;
   config?: Required<PactToolboxConfigObj>;
-  noPersistence?: boolean;
+  isStateless?: boolean;
   enableProxy?: boolean;
 }
 export async function createPactTestEnv({
   network,
-  noPersistence = true,
   client,
   config,
   configOverrides,
@@ -36,7 +37,7 @@ export async function createPactTestEnv({
   if (network) {
     config.defaultNetwork = network;
   }
-  const networkConfig = getNetworkConfig(config);
+
   await updatePorts(config);
   injectNetworkConfig(config);
 
@@ -44,15 +45,9 @@ export async function createPactTestEnv({
     client = new PactToolboxClient(config);
   }
 
-  if (noPersistence) {
-    if (network) {
-      disablePersistance(networkConfig);
-    }
-  }
-
   const localNetwork = new PactToolboxNetwork(config, {
     client,
-    silent: true,
+    isDetached: true,
     logAccounts: false,
     isStateless: true,
   });

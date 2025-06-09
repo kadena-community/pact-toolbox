@@ -1,36 +1,37 @@
 {
   "name": "todo-mvc-common",
   "private": true,
-  "version": "0.0.4",
+  "version": "0.0.5",
   "type": "module",
   "main": "src/index.ts",
   "scripts": {
-    "lint": "oxlint --import-plugin  -D all && prettier -c src",
-    "lint:fix": "oxlint --import-plugin  -D all --fix && prettier -c src -w",
-    "test": "npx pact-toolbox pact install && npx pact-toolbox prelude && NODE_OPTIONS='--import tsx' vitest run",
+    "lint": "oxlint --import-plugin --deny-warnings",
+    "format": "prettier --check . --ignore-path ../../.gitignore",
+    "test": "NODE_OPTIONS='--import tsx' npx pact-toolbox test",
     "verify": "tsc --noEmit"
   },
   "dependencies": {
-    "@kadena/client": "^1.11.0",
-    "@pact-toolbox/client-utils": "workspace:*",
-    "@pact-toolbox/wallet": "workspace:*",
-    "@tanstack/react-query": "^5.32.0",
-    "react": "^18.2.0"
+    "@kadena/client": "^1.17.1",
+    "@pact-toolbox/client": "workspace:*",
+    "@tanstack/react-query": "^5.80.6",
+    "react": "^19.1.0"
   },
   "devDependencies": {
+    "@pact-toolbox/prettier-config": "workspace:*",
     "@pact-toolbox/test": "workspace:*",
     "@pact-toolbox/unplugin": "workspace:*",
-    "@pact-toolbox/wallet": "workspace:*",
-    "@testing-library/react": "~15.0.4",
-    "@testing-library/user-event": "~14.5.2",
-    "@types/react": "^18.2.79",
-    "@types/react-dom": "^18.2.25",
-    "@vitejs/plugin-react-swc": "^3.6.0",
-    "happy-dom": "^14.7.1",
-    "oxlint": "^0.3.1",
+    "@testing-library/react": "~16.3.0",
+    "@testing-library/user-event": "~14.6.1",
+    "@types/react": "^19.1.6",
+    "@types/react-dom": "^19.1.6",
+    "@vitejs/plugin-react-swc": "^3.10.1",
+    "happy-dom": "^17.6.3",
+    "oxlint": "^0.18.0",
     "pact-toolbox": "workspace:*",
-    "typescript": "^5.4.5",
-    "vitest": "^1.5.2",
+    "prettier": "^3.5.3",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.2",
     "vitest-dom": "^0.1.1"
-  }
+  },
+  "prettier": "@pact-toolbox/prettier-config"
 }

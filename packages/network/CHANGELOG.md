@@ -1,5 +1,25 @@
 # @pact-toolbox/network
 
+## 0.0.9
+
+### Patch Changes
+
+- Improve installer version detection
+- Updated dependencies
+  - @pact-toolbox/utils@0.0.6
+  - @pact-toolbox/prelude@0.0.9
+  - @pact-toolbox/proxy@0.0.6
+
+## 0.0.8
+
+### Patch Changes
+
+- Updated dependencies
+  - @pact-toolbox/utils@0.0.5
+  - @pact-toolbox/prelude@0.0.8
+  - @pact-toolbox/proxy@0.0.5
+  - @pact-toolbox/runtime@0.0.5
+
 ## 0.0.7
 
 ### Patch Changes

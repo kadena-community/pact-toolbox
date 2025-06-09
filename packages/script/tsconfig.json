@@ -1,4 +1,4 @@
 {
-  "extends": "@pact-toolbox/tsconfig/base",
+  "extends": "@pact-toolbox/tsconfig/lib",
   "include": ["src", "tests"]
 }

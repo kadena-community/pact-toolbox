@@ -1,0 +1,3 @@
+target/
+publish.sh
+test_image.sh

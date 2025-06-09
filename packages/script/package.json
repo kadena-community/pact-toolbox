@@ -1,39 +1,43 @@
 {
   "name": "@pact-toolbox/script",
-  "version": "0.0.7",
+  "version": "0.0.9",
   "repository": "kadena-community/pact-toolbox",
   "author": "Salama Ashoush <salamaashoush@gmail.com>",
   "license": "MIT",
   "type": "module",
   "private": false,
-  "main": "./src/index.ts",
+  "exports": {
+    "types": {
+      "require": "./dist/index.d.cts",
+      "import": "./dist/index.d.mts"
+    },
+    "node": {
+      "import": "./dist/index.node.mjs",
+      "require": "./dist/index.node.cjs"
+    }
+  },
+  "main": "./dist/index.node.cjs",
+  "module": "./dist/index.node.mjs",
+  "types": "./dist/index.d.mts",
   "files": [
-    "dist"
+    "./dist/"
+  ],
+  "keywords": [
+    "blockchain",
+    "kadena",
+    "pact",
+    "crypto",
+    "chainweb",
+    "web3"
   ],
   "publishConfig": {
-    "access": "public",
-    "exports": {
-      ".": {
-        "types": "./dist/index.d.ts",
-        "import": {
-          "types": "./dist/index.d.ts",
-          "default": "./dist/index.js"
-        },
-        "require": {
-          "types": "./dist/index.d.cts",
-          "default": "./dist/index.cjs"
-        }
-      }
-    },
-    "main": "./dist/index.cjs",
-    "module": "./dist/index.js",
-    "types": "./dist/index.d.ts"
+    "access": "public"
   },
   "scripts": {
-    "build": "tsup",
-    "dev": "tsup --watch",
-    "lint": "oxlint --import-plugin  -D all && prettier -c src",
-    "lint:fix": "oxlint --import-plugin  -D all --fix && prettier -c src -w",
+    "build": "tsdown --config ./node_modules/@pact-toolbox/tsdown/tsdown.config.node.ts",
+    "dev": "tsdown --watch --config ./node_modules/@pact-toolbox/tsdown/tsdown.config.node.ts",
+    "lint": "oxlint --import-plugin --deny-warnings",
+    "format": "prettier --check . --ignore-path ../../.gitignore",
     "prepack": "pnpm run build",
     "release": "pnpm test && pnpm publish",
     "test:watch": "vitest",
@@ -46,17 +50,21 @@
     "@pact-toolbox/runtime": "workspace:*",
     "@pact-toolbox/utils": "workspace:*",
     "defu": "^6.1.4",
-    "jiti": "^1.21.0",
-    "pathe": "^1.1.2"
+    "jiti": "^2.4.2",
+    "mlly": "^1.7.4",
+    "pathe": "^2.0.3"
   },
   "devDependencies": {
-    "@kadena/types": "^0.6.1",
+    "@kadena/types": "^0.7.0",
+    "@pact-toolbox/prettier-config": "workspace:*",
     "@pact-toolbox/tsconfig": "workspace:*",
-    "@vitest/coverage-v8": "^1.5.2",
-    "lint-staged": "^15.2.2",
-    "oxlint": "^0.3.1",
-    "tsup": "^8.0.2",
-    "typescript": "^5.4.5",
-    "vitest": "^1.5.2"
-  }
+    "@pact-toolbox/tsdown": "workspace:*",
+    "@vitest/coverage-v8": "^3.2.2",
+    "oxlint": "^0.18.0",
+    "prettier": "^3.5.3",
+    "tsdown": "^0.12.7",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.2"
+  },
+  "prettier": "@pact-toolbox/prettier-config"
 }

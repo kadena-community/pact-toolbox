@@ -1,5 +1,11 @@
 # todo-mvc-rsbuild
 
+## 0.0.5
+
+### Patch Changes
+
+- todo-mvc-common@0.0.5
+
 ## 0.0.4
 
 ### Patch Changes
