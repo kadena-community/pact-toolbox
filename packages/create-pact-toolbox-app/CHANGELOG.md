@@ -1,5 +1,11 @@
 # create-pact-toolbox-app
 
+## 0.3.0
+
+### Minor Changes
+
+- install missing @pact-toolbox/client
+
 ## 0.2.0
 
 ### Minor Changes
