@@ -1,6 +1,6 @@
 {
   "name": "pact-toolbox",
-  "version": "0.0.12",
+  "version": "0.1.0",
   "description": "A tool to help you build, test and deploy your Pact smart contracts",
   "keywords": [
     "pact",
