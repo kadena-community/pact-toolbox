@@ -1,5 +1,26 @@
 # pact-toolbox
 
+## 0.1.0
+
+### Minor Changes
+
+- ebf24fb: publish new packages for an alpha test
+
+### Patch Changes
+
+- Updated dependencies [ebf24fb]
+- Updated dependencies [bf5ab0e]
+  - @pact-toolbox/client@0.1.0
+  - @pact-toolbox/config@0.1.0
+  - @pact-toolbox/fabricator@0.1.0
+  - @pact-toolbox/init@0.1.0
+  - @pact-toolbox/network@0.1.0
+  - @pact-toolbox/prelude@1.0.0
+  - @pact-toolbox/runtime@0.1.0
+  - @pact-toolbox/script@0.1.0
+  - @pact-toolbox/test@0.1.0
+  - @pact-toolbox/utils@0.1.0
+
 ## 0.0.12
 
 ### Patch Changes
