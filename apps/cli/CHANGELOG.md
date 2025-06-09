@@ -1,5 +1,15 @@
 # pact-toolbox
 
+## 0.1.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @pact-toolbox/network@0.2.0
+  - @pact-toolbox/prelude@1.1.0
+  - @pact-toolbox/script@0.1.1
+  - @pact-toolbox/test@0.1.1
+
 ## 0.1.0
 
 ### Minor Changes

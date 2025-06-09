@@ -1,5 +1,16 @@
 # @pact-toolbox/network
 
+## 0.2.0
+
+### Minor Changes
+
+- force publish
+
+### Patch Changes
+
+- Updated dependencies
+  - @pact-toolbox/prelude@1.1.0
+
 ## 0.1.0
 
 ### Minor Changes
