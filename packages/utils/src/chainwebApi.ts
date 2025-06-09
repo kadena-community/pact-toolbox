@@ -43,7 +43,7 @@ export async function isChainWebNodeOk(serviceUrl: string, timeout = 5000): Prom
     } else {
       return false;
     }
-  } catch (e) {
+  } catch {
     return false;
   }
 }
@@ -128,7 +128,7 @@ export async function didMakeBlocks(params: MakeBlocksParams): Promise<boolean> 
   try {
     await makeBlocks(params);
     return true;
-  } catch (e) {
+  } catch {
     return false;
   }
 }

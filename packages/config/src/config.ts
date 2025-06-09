@@ -155,8 +155,6 @@ export interface PactToolboxConfigObj<T extends Record<string, NetworkConfig> = 
   preludes?: StandardPrelude[];
   downloadPreludes?: boolean;
   deployPreludes?: boolean;
-  devProxyPort?: number;
-  enableDevProxy?: boolean;
 }
 
 export type PactToolboxConfig<T extends Record<string, NetworkConfig> = {}> =

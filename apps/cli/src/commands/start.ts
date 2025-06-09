@@ -1,7 +1,7 @@
 import { defineCommand } from "citty";
 
 import { resolveConfig } from "@pact-toolbox/config";
-import { startLocalNetwork } from "@pact-toolbox/network";
+import { createPactToolboxNetwork } from "@pact-toolbox/network";
 
 export const startCommand = defineCommand({
   meta: {
@@ -42,18 +42,14 @@ export const startCommand = defineCommand({
   },
   run: async ({ args }) => {
     const config = await resolveConfig();
-    const { network, quiet, tunnel, clipboard } = args;
-    await startLocalNetwork(config, {
+    const { network, quiet, tunnel } = args;
+    await createPactToolboxNetwork(config, {
       isDetached: !quiet && !tunnel,
       logAccounts: true,
+      cleanup: true,
+      autoStart: true,
       network,
       conflictStrategy: "replace",
-      devProxyOptions: {
-        showURL: true,
-        isProd: false,
-        tunnel,
-        clipboard,
-      },
     });
     if (quiet || tunnel) {
       process.exit(0);

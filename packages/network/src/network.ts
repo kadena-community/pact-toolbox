@@ -1,9 +1,7 @@
 import type { NetworkConfig, PactToolboxConfigObj } from "@pact-toolbox/config";
-import type { CreateDevProxyServerOptions, PactToolboxDevProxyServer } from "@pact-toolbox/proxy";
 
 import { getNetworkConfig, isDevNetworkConfig, isLocalNetwork, isPactServerNetworkConfig } from "@pact-toolbox/config";
 import { deployPreludes, downloadAllPreludes, shouldDownloadPreludes } from "@pact-toolbox/prelude";
-import { createDevProxyServer } from "@pact-toolbox/proxy";
 import { PactToolboxClient } from "@pact-toolbox/runtime";
 import { getUuid, logger } from "@pact-toolbox/utils";
 
@@ -16,7 +14,6 @@ export interface StartLocalNetworkOptions extends ToolboxNetworkStartOptions {
   client?: PactToolboxClient;
   logAccounts?: boolean;
   network?: string;
-  devProxyOptions?: CreateDevProxyServerOptions;
   cleanup?: boolean;
   autoStart?: boolean;
 }
@@ -25,9 +22,7 @@ export class PactToolboxNetwork implements ToolboxNetworkApi {
   public id: string = getUuid();
   #networkApi: ToolboxNetworkApi;
   #networkConfig: NetworkConfig;
-  #devProxy?: PactToolboxDevProxyServer;
   #client: PactToolboxClient;
-  #devProxyPort: number = 8080;
   #startOptions: StartLocalNetworkOptions;
   #toolboxConfig: PactToolboxConfigObj;
 
@@ -46,7 +41,6 @@ export class PactToolboxNetwork implements ToolboxNetworkApi {
     if (!isLocalNetwork(networkConfig)) {
       throw new Error(`Netwsork ${networkConfig.name} is not a local or devnet network`);
     }
-    this.#devProxyPort = toolboxConfig.devProxyPort ?? this.#startOptions.devProxyOptions?.port ?? 8080;
     this.#client = this.#startOptions.client ?? new PactToolboxClient(toolboxConfig);
     if (isPactServerNetworkConfig(networkConfig)) {
       this.#networkApi = new PactServerNetwork(networkConfig);
@@ -55,12 +49,6 @@ export class PactToolboxNetwork implements ToolboxNetworkApi {
     } else {
       throw new Error(`Unsupported network type`);
     }
-    // if (this.#toolboxConfig.enableDevProxy) {
-    //   this.#devProxy = createDevProxyServer(this.#networkApi, {
-    //     port: this.#devProxyPort,
-    //     ...this.#startOptions.devProxyOptions,
-    //   });
-    // }
     this.#networkConfig = networkConfig;
   }
 
@@ -78,14 +66,6 @@ export class PactToolboxNetwork implements ToolboxNetworkApi {
 
   getNodeServiceUrl(): string {
     return this.#networkApi.getNodeServiceUrl();
-  }
-
-  getDevProxyUrl(): string {
-    return `http://localhost:${this.#devProxyPort}`;
-  }
-
-  getDevProxyPort(): number {
-    return this.#devProxyPort;
   }
 
   getNetworkName(): string {
@@ -112,9 +92,7 @@ export class PactToolboxNetwork implements ToolboxNetworkApi {
       ...options,
     });
     logger.success(`Network ${this.#networkConfig.name} started at ${this.getNodeServiceUrl()}`);
-    // if (this.#toolboxConfig.enableDevProxy) {
-    //   await this.#devProxy?.start();
-    // }
+
     if (this.#toolboxConfig.deployPreludes) {
       await deployPreludes(preludeConfig);
     }
@@ -138,7 +116,6 @@ export class PactToolboxNetwork implements ToolboxNetworkApi {
 
   async stop(): Promise<void> {
     await this.#networkApi.stop();
-    await this.#devProxy?.stop();
     logger.success(`Network ${this.#networkConfig.name} stopped!`);
   }
 

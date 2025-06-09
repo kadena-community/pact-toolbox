@@ -17,7 +17,6 @@ function renderComponent() {
 describe("TodoList", async () => {
   const env = await createPactTestEnv({
     network: "local",
-    enableProxy: false,
   });
 
   beforeAll(async () => {

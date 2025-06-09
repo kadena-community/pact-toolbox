@@ -48,7 +48,6 @@
   "dependencies": {
     "@pact-toolbox/config": "workspace:*",
     "@pact-toolbox/prelude": "workspace:*",
-    "@pact-toolbox/proxy": "workspace:*",
     "@pact-toolbox/runtime": "workspace:*",
     "@pact-toolbox/utils": "workspace:*",
     "pathe": "^2.0.3"

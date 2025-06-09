@@ -1,7 +1,7 @@
 import type { NetworkConfig } from "@pact-toolbox/config";
 
 import { getNetworkPort, isDevNetworkConfig, isPactServerNetworkConfig } from "@pact-toolbox/config";
-import { getRandomNetworkPorts, getRandomPort, isPortTaken, logger, writeFile } from "@pact-toolbox/utils";
+import { getRandomPort, isPortTaken, logger, writeFile } from "@pact-toolbox/utils";
 
 import { access } from "node:fs/promises";
 import { execSync } from "node:child_process";
@@ -14,12 +14,12 @@ export async function ensureAvailablePorts(networkConfig: NetworkConfig): Promis
     logger.warn(`Port ${port} is in use, finding a new one`);
     if (isPactServerNetworkConfig(networkConfig)) {
       if (networkConfig.serverConfig) {
-        networkConfig.serverConfig.port = (await getRandomPort()).toString();
+        networkConfig.serverConfig.port = await getRandomPort();
       }
     }
     if (isDevNetworkConfig(networkConfig)) {
       if (networkConfig.containerConfig) {
-        networkConfig.containerConfig.port = (await getRandomPort()).toString();
+        networkConfig.containerConfig.port = await getRandomPort();
       }
     }
   }

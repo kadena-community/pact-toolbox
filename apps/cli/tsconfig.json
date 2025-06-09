@@ -1,4 +1,7 @@
 {
   "extends": "@pact-toolbox/tsconfig/base",
-  "include": ["src", "tests"]
+  "include": ["src", "tests"],
+  "compilerOptions": {
+    "isolatedDeclarations": false
+  }
 }

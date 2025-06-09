@@ -44,7 +44,7 @@ export function createDevNetNetworkConfig(overrides?: Partial<DevNetworkConfig>)
     senderAccount: "sender00",
     autoStart: true,
     containerConfig: {
-      port: "8080",
+      port: 8080,
       persistDb: true,
     },
     meta: defaultMeta,

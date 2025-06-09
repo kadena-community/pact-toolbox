@@ -29,8 +29,6 @@ export interface CommonNetworkConfig {
 
 export interface SerializableNetworkConfig extends CommonNetworkConfig {
   type: "chainweb-local" | "chainweb" | "pact-server" | "chainweb-devnet";
-  devProxyUrl: string;
-  isDevProxyEnabled: boolean;
 }
 
 export type StandardPrelude = "kadena/chainweb" | "kadena/marmalade";

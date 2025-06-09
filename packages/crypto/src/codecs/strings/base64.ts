@@ -12,7 +12,7 @@ export function getBase64Encoder(): VariableSizeEncoder<string> {
       getSizeFromValue: (value: string) => {
         try {
           return (atob as Window["atob"])(value).length;
-        } catch (e) {
+        } catch {
           throw new Error(`Invalid string for base64: ${value}`);
         }
       },
@@ -23,7 +23,7 @@ export function getBase64Encoder(): VariableSizeEncoder<string> {
             .map((c) => c.charCodeAt(0));
           bytes.set(bytesToAdd, offset);
           return bytesToAdd.length + offset;
-        } catch (e) {
+        } catch {
           throw new Error(`Invalid string for base64: ${value}`);
         }
       },

@@ -8,7 +8,6 @@ describe("todos api", async () => {
   let title = "Learn pact";
   const env = await createPactTestEnv({
     network: "local",
-    enableProxy: false,
   });
 
   beforeAll(async () => {

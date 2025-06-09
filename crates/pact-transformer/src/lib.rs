@@ -5,22 +5,14 @@ use napi_derive::napi;
 use serde::{Deserialize, Serialize};
 use tree_sitter::{Node, Parser};
 
-mod benchmark;
 mod code_generator;
 mod error;
 mod parser;
 mod types;
 mod utils;
-mod optimized;
 
 pub use error::*;
 pub use types::*;
-
-/// High-performance Pact code transformer using tree-sitter
-#[napi]
-pub struct PactTransformer {
-    parser: Parser,
-}
 
 /// Result of transforming Pact code
 #[napi(object)]
@@ -39,21 +31,17 @@ pub struct PactModuleInfo {
     pub path: String,
 }
 
-/// Benchmark comparison results
-#[napi(object)]
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct BenchmarkComparison {
-    pub regular_time_ms: f64,
-    pub optimized_time_ms: f64,
-    pub speedup_factor: f64,
-    pub iterations: u32,
-}
-
 /// Transformation options
 #[napi(object)]
 #[derive(Debug, Clone, Default)]
 pub struct TransformOptions {
     pub debug: Option<bool>,
+}
+
+/// High-performance Pact code transformer using tree-sitter
+#[napi]
+pub struct PactTransformer {
+    parser: Parser,
 }
 
 #[napi]
@@ -161,7 +149,7 @@ impl PactTransformer {
         Ok(modules)
     }
 
-        fn collect_errors(&self, root: &Node, source: &str) -> Vec<ParseError> {
+    fn collect_errors(&self, root: &Node, source: &str) -> Vec<ParseError> {
         let mut errors = Vec::new();
 
         fn collect_errors_recursive(node: &Node, source: &str, errors: &mut Vec<ParseError>) {
@@ -199,99 +187,3 @@ pub fn parse_pact_code(pact_code: String) -> Result<Vec<PactModule>> {
     let mut transformer = PactTransformer::new()?;
     transformer.parse(pact_code)
 }
-
-/// Show performance optimization analysis and potential improvements
-#[napi]
-pub fn show_optimization_analysis() {
-    benchmark::print_optimization_analysis();
-}
-
-/// Benchmark the current transformer performance
-#[napi]
-pub fn benchmark_transformer(pact_code: String, iterations: Option<u32>) -> Result<f64> {
-    let iterations = iterations.unwrap_or(100);
-    let mut total_time = 0.0;
-
-    for _ in 0..iterations {
-        let time = benchmark::profile_transformation("Pact Transformation", || {
-            let mut transformer = PactTransformer::new().unwrap();
-            let _ = transformer.transform(pact_code.clone(), None).unwrap();
-        });
-        total_time += time;
-    }
-
-    let average_time = total_time / iterations as f64;
-
-    println!("📊 Benchmark Results ({} iterations):", iterations);
-    println!("   ⏱️  Average time: {:.2}ms", average_time);
-    println!("   🚀 Throughput: {:.0} transformations/second", 1000.0 / average_time);
-
-    let lines = pact_code.lines().count();
-    if lines > 0 {
-        let throughput = benchmark::calculate_throughput(lines, average_time);
-        println!("   📝 Processing speed: {:.0} lines/second", throughput);
-    }
-
-    Ok(average_time)
-}
-
-/// Optimized transformation with memory optimizations
-#[napi]
-pub fn transform_pact_code_optimized_v2(pact_code: String, options: Option<TransformOptions>) -> Result<TransformationResult> {
-    // Optimizations applied:
-    // 1. Pre-allocate string capacity based on input size
-    // 2. Use more efficient string operations
-    // 3. Reduce unnecessary allocations
-
-    let mut transformer = PactTransformer::new()?;
-
-    // Optimization: Pre-size the parser buffer based on input
-    let estimated_output_size = pact_code.len() * 2; // Rough estimate
-
-    let result = transformer.transform(pact_code, options)?;
-
-    Ok(result)
-}
-
-/// Benchmark comparison between regular and optimized transformers
-#[napi]
-pub fn benchmark_comparison(pact_code: String, iterations: Option<u32>) -> Result<BenchmarkComparison> {
-    let iterations = iterations.unwrap_or(100);
-
-    // Benchmark regular transformer
-    let mut regular_total = 0.0;
-    for _ in 0..iterations {
-        let time = benchmark::profile_transformation("Regular Transform", || {
-            let mut transformer = PactTransformer::new().unwrap();
-            let _ = transformer.transform(pact_code.clone(), None).unwrap();
-        });
-        regular_total += time;
-    }
-    let regular_avg = regular_total / iterations as f64;
-
-    // Benchmark optimized transformer (with arena allocation)
-    let mut optimized_total = 0.0;
-    for _ in 0..iterations {
-        let time = benchmark::profile_transformation("Optimized Transform", || {
-            let _ = transform_pact_code_optimized_v2(pact_code.clone(), None).unwrap();
-        });
-        optimized_total += time;
-    }
-    let optimized_avg = optimized_total / iterations as f64;
-
-    let speedup = regular_avg / optimized_avg;
-
-    println!("🏁 Benchmark Comparison Results ({} iterations):", iterations);
-    println!("   📊 Regular transformer: {:.3}ms average", regular_avg);
-    println!("   ⚡ Optimized transformer: {:.3}ms average", optimized_avg);
-    println!("   🚀 Speedup: {:.2}x faster", speedup);
-
-    Ok(BenchmarkComparison {
-        regular_time_ms: regular_avg,
-        optimized_time_ms: optimized_avg,
-        speedup_factor: speedup,
-        iterations,
-    })
-}
-
-

@@ -6,7 +6,7 @@ import { getRandomNetworkPorts } from "./port";
 describe("getRandomNetworkPorts", () => {
   it("should return valid random network ports", async () => {
     const ports = await getRandomNetworkPorts();
-    assert.ok(ports.proxy > 0 && ports.proxy <= 65535, "Proxy port should be valid");
+    assert.ok(ports.public > 0 && ports.public <= 65535, "Public port should be valid");
     assert.ok(ports.service > 0 && ports.service <= 65535, "Service port should be valid");
     assert.ok(ports.onDemand > 0 && ports.onDemand <= 65535, "On-demand port should be valid");
     assert.ok(ports.stratum > 0 && ports.stratum <= 65535, "Stratum port should be valid");
@@ -19,12 +19,12 @@ describe("getRandomNetworkPorts", () => {
     const ports = await getRandomNetworkPorts("127.0.0.1", startGap, endGap);
 
     assert.ok(
-      ports.service - ports.proxy >= startGap,
-      "Service port should have a gap greater than or equal to startGap from proxy",
+      ports.service - ports.public >= startGap,
+      "Service port should have a gap greater than or equal to startGap from public",
     );
     assert.ok(
-      ports.service - ports.proxy <= endGap,
-      "Service port should have a gap less than or equal to endGap from proxy",
+      ports.service - ports.public <= endGap,
+      "Service port should have a gap less than or equal to endGap from public",
     );
     assert.ok(
       ports.onDemand - ports.service >= startGap,

@@ -16,7 +16,7 @@ export function getRequiredCapabilities(node: SyntaxNode): string[] {
 )`;
   //@ts-expect-error - fix me
   const query = new Query(Pact, queryStr);
-  const matches = query.matches(node);
+  query.matches(node);
 
   return [];
   // return matches.map((m) => m.captures[0].node.text

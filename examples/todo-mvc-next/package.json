@@ -7,7 +7,7 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "next lint --no-interactive",
     "pact:start": "pact-toolbox start",
     "pact:test": "pact-toolbox test",
     "pact:prelude": "pact-toolbox prelude",

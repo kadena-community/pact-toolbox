@@ -69,37 +69,36 @@ async function handleKdaSign(request: KdaRequestSignRequest, context: ToolboxNet
 
 async function handleWalletRequest(request: WalletRequest, context: ToolboxNetworkContext) {
   switch (request.method) {
-    case "kda_connect": 
+    case "kda_connect":
       return handleKdaConnect(request, context);
-    
-    case "kda_requestAccount": 
+
+    case "kda_requestAccount":
       return handleKdaRequestAccount(request, context);
-    
-    case "kda_checkStatus": 
+
+    case "kda_checkStatus":
       return handleKdaCheckStatus(request, context);
-    
-    case "kda_disconnect": 
+
+    case "kda_disconnect":
       return handleKdaDisconnect(request, context);
-    
-    case "kda_getNetwork": 
+
+    case "kda_getNetwork":
       return context.getWallet().getNetwork();
-    
-    case "kda_requestSign": 
+
+    case "kda_requestSign":
       return handleKdaSign(request, context);
-    
-    default: 
+
+    default:
       throw new Error("Invalid method");
-    
   }
 }
 export function createEckoWalletMock(context?: ToolboxNetworkContext): WalletApi {
   if (!context) {
     context = createToolboxNetworkContext();
   }
-  const request = (request: WalletRequest) => handleWalletRequest(request, context);
+  const _request = (request: WalletRequest) => handleWalletRequest(request, context);
   return {
     isKadena: true,
-    on: (event: string, callback: any) => {},
+    on: (_event: string, _callback: any) => {},
     // @ts-expect-error
     request: handleWalletRequest,
   };

@@ -16,9 +16,6 @@ mock.module("node:fs/promises", {
   },
 });
 
-const fetchMock = mock.method(globalThis, "fetch", () =>
-  Promise.resolve(new Response(JSON.stringify({ requestKey: "test-request-key" }))),
-);
 describe("PactToolboxClient", async () => {
   const { PactToolboxClient } = await import("./client");
   let client = new PactToolboxClient();

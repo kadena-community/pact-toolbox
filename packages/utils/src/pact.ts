@@ -14,12 +14,15 @@ export async function getCurrentPactVersion(): Promise<string | undefined> {
     if (match) {
       return match[0];
     }
-  } catch (error) {
+  } catch {
     return undefined;
   }
 }
 
-export async function installPact(version?: string, nightly?: boolean): Promise<{ stdout: string | Buffer; stderr: string | Buffer; }> {
+export async function installPact(
+  version?: string,
+  nightly?: boolean,
+): Promise<{ stdout: string | Buffer; stderr: string | Buffer }> {
   if (nightly) {
     return execAsync("npx pactup install --nightly");
   }
