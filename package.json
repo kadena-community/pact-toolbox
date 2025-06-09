@@ -9,38 +9,61 @@
     "examples/*"
   ],
   "scripts": {
-    "dev": "turbo dev",
-    "build": "turbo build",
-    "test": "turbo test",
+    "dev": "turbo watch build --filter=./packages/*",
+    "build": "turbo build --filter=./packages/*",
+    "test": "turbo test --filter=./packages/*",
+    "format": "turbo format --continue",
+    "format:fix": "turbo format --continue -- --write",
     "lint": "turbo lint",
-    "lint:fix": "turbo lint",
+    "lint:fix": "turbo lint --continue -- --fix",
     "verify": "turbo verify",
-    "precommit": "turbo precommit",
-    "postinstall": "husky install",
+    "prepack": "husky init",
     "changeset": "changeset",
     "ci:version": "changeset version",
-    "ci:publish": "changeset publish"
+    "ci:publish": "changeset publish",
+    "prepare": "husky",
+    "lint:ws": "pnpm dlx sherif@latest -p ./packages/unplugin",
+    "postinstall": "pnpm lint:ws"
   },
   "license": "MIT",
-  "dependencies": {
-    "husky": "^9.0.11",
-    "prettier": "^3.2.5",
-    "turbo": "^1.13.2",
-    "typescript": "^5.4.5"
-  },
-  "packageManager": "pnpm@9.0.6",
-  "engines": {
-    "node": ">=21.0.0"
-  },
   "devDependencies": {
-    "@changesets/cli": "^2.27.1",
+    "@changesets/cli": "^2.29.4",
+    "@pact-toolbox/prettier-config": "workspace:*",
+    "husky": "^9.1.7",
     "pact-toolbox": "workspace:*",
-    "tsx": "^4.7.3"
+    "prettier": "^3.5.3",
+    "tsdown": "^0.12.7",
+    "tsx": "^4.19.4",
+    "turbo": "^2.5.4",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.2"
+  },
+  "packageManager": "pnpm@10.11.1",
+  "engineStrict": true,
+  "engines": {
+    "node": ">=22.0.0",
+    "npm": "please-use-pnpm",
+    "pnpm": "^10",
+    "yarn": "please-use-pnpm"
   },
   "pnpm": {
     "overrides": {
       "pact-toolbox": "workspace:*",
-      "whatwg-url": "^14.0.0"
-    }
-  }
+      "whatwg-url": "^14.2.0"
+    },
+    "onlyBuiltDependencies": [
+      "@parcel/watcher",
+      "@swc/core",
+      "@tailwindcss/oxide",
+      "core-js",
+      "cpu-features",
+      "esbuild",
+      "protobufjs",
+      "sharp",
+      "ssh2",
+      "tree-sitter",
+      "tree-sitter-pact"
+    ]
+  },
+  "prettier": "@pact-toolbox/prettier-config"
 }

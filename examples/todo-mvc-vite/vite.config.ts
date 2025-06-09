@@ -1,26 +1,15 @@
 /// <reference types="vitest" />
-import pactVitePlugin from '@pact-toolbox/unplugin/vite';
-import react from '@vitejs/plugin-react-swc';
-import { defineConfig } from 'vite';
+import react from "@vitejs/plugin-react-swc";
+import { defineConfig } from "vite";
+
+import pactVitePlugin from "@pact-toolbox/unplugin/vite";
 
 export default defineConfig({
-  plugins: [
-    react(),
-    pactVitePlugin({
-      onReady: async (client) => {
-        const isDeployed = await client.isContractDeployed('free.todos');
-        await client.deployContract('todos.pact', {
-          prepareTx: {
-            upgrade: isDeployed,
-          },
-        });
-      },
-    }),
-  ],
+  plugins: [react(), pactVitePlugin()],
   test: {
-    environment: 'happy-dom',
+    environment: "happy-dom",
     testTimeout: 1000000,
     hookTimeout: 1000000,
-    setupFiles: ['vitest.setup.ts'],
+    setupFiles: ["vitest.setup.ts"],
   },
 });

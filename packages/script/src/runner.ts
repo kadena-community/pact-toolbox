@@ -1,12 +1,14 @@
-import type { PactToolboxConfigObj } from '@pact-toolbox/config';
-import { resolveConfig } from '@pact-toolbox/config';
-import type { StartLocalNetworkOptions } from '@pact-toolbox/network';
-import { startLocalNetwork } from '@pact-toolbox/network';
-import { PactToolboxClient } from '@pact-toolbox/runtime';
-import { logger } from '@pact-toolbox/utils';
-import defu from 'defu';
-import createJiti from 'jiti';
-import { join } from 'pathe';
+import type { PactToolboxConfigObj } from "@pact-toolbox/config";
+import type { StartLocalNetworkOptions } from "@pact-toolbox/network";
+import defu from "defu";
+import { createJiti } from "jiti";
+import { fileURLToPath } from "mlly";
+import { resolve } from "pathe";
+
+import { resolveConfig } from "@pact-toolbox/config";
+import { startLocalNetwork } from "@pact-toolbox/network";
+import { PactToolboxClient } from "@pact-toolbox/runtime";
+import { logger } from "@pact-toolbox/utils";
 
 export interface ToolboxScriptContext<Args = Record<string, unknown>> {
   client: PactToolboxClient;
@@ -27,81 +29,97 @@ export interface ToolboxScript<Args = Record<string, unknown>> extends ToolboxSc
   run: (ctx: ToolboxScriptContext<Args>) => Promise<void>;
 }
 
-export function createScript<Args = Record<string, unknown>>(options: ToolboxScript<Args>) {
+export function createScript<Args = Record<string, unknown>>(options: ToolboxScript<Args>): ToolboxScript<Args> {
   return options;
 }
 
+const SUPPORTED_EXTENSIONS = [".js", ".mjs", ".cjs", ".ts", ".mts", ".cts", ".json"];
+// https://github.com/dword-design/package-name-regex
+const NPM_PACKAGE_RE = /^(@[\da-z~-][\d._a-z~-]*\/)?[\da-z~-][\d._a-z~-]*($|\/.*)/;
 export interface RunScriptOptions {
+  cwd?: string;
   network?: string;
   args?: Record<string, unknown>;
   config?: PactToolboxConfigObj;
   client?: PactToolboxClient;
   scriptOptions?: ToolboxScriptOptions;
 }
-export async function runScript(
-  script: string,
-  { network, args = {}, config, client, scriptOptions }: RunScriptOptions,
-): Promise<void> {
-  if (!config) {
-    config = await resolveConfig();
+export async function runScript(source: string, options: RunScriptOptions): Promise<void> {
+  // normalize options
+  options.cwd = resolve(process.cwd(), options.cwd || ".");
+  options.scriptOptions = options.scriptOptions || {};
+  if (!options.config) {
+    options.config = await resolveConfig();
   }
-  const scriptsDir = config.scriptsDir ?? 'scripts';
-  const jiti = createJiti(undefined as unknown as string, {
+  const scriptsDir = options.config.scriptsDir ?? "scripts";
+
+  const jiti = createJiti(resolve(options.cwd, scriptsDir), {
     interopDefault: true,
-    requireCache: false,
-    esmResolve: true,
-    extensions: ['.js', '.mjs', '.cjs', '.ts', '.mts', '.cts'],
+    moduleCache: false,
+    extensions: [...SUPPORTED_EXTENSIONS],
   });
   const tryResolve = (id: string) => {
-    try {
-      return jiti.resolve(join(process.cwd(), scriptsDir, id), {
-        paths: [process.cwd()],
-      });
-    } catch {}
+    const resolved = jiti.esmResolve(id, { try: true });
+    return resolved ? fileURLToPath(resolved) : undefined;
   };
-  const scriptPath = tryResolve(script);
+  // Try resolving as npm package
+  if (NPM_PACKAGE_RE.test(source)) {
+    source = tryResolve(source) || source;
+  }
+  // // Import from local fs
+  // const ext = extname(source);
+  // const isDir = !ext || ext === basename(source); /* #71 */
+  // const cwd = resolve(options.cwd!, isDir ? source : dirname(source));
+  // if (isDir) {
+  //   source = options.!;
+  // }
+
+  const scriptPath =
+    tryResolve(resolve(options.cwd, scriptsDir, source)) ||
+    tryResolve(resolve(options.cwd, source)) ||
+    tryResolve(resolve(options.cwd, ".scripts", source));
+  source;
   if (!scriptPath) {
-    throw new Error(`Script ${script} not found`);
+    throw new Error(`Script ${source} not found`);
   }
 
-  const scriptObject = jiti(scriptPath);
-  if (typeof scriptObject !== 'object') {
-    throw new Error(`Script ${script} should export an object with run method`);
+  const scriptObject = await jiti.import(scriptPath);
+  if (typeof scriptObject !== "object") {
+    throw new Error(`Script ${source} should export an object with run method`);
   }
-  const options = defu(scriptOptions, scriptObject) as ToolboxScript;
-  if (options.configOverrides) {
-    config = defu(options.configOverrides, config) as Required<PactToolboxConfigObj>;
+  const scriptInstance = defu(options.scriptOptions, scriptObject) as ToolboxScript;
+  if (scriptInstance.configOverrides) {
+    options.config = defu(scriptInstance.configOverrides, options.config) as Required<PactToolboxConfigObj>;
   }
-  network = network ?? options.network ?? config.defaultNetwork;
-  if (!client) {
-    client = new PactToolboxClient(config, network);
+  options.network = options.network ?? scriptInstance.network ?? options.config.defaultNetwork;
+  if (!options.client) {
+    options.client = new PactToolboxClient(options.config, options.network);
   }
-  client.setConfig(config);
+  options.client.setConfig(options.config);
   try {
     let n;
-    if (options.autoStartNetwork) {
-      n = await startLocalNetwork(config, {
-        ...options.startNetworkOptions,
-        network,
-        client,
+    if (scriptInstance.autoStartNetwork) {
+      n = await startLocalNetwork(options.config, {
+        ...scriptInstance.startNetworkOptions,
+        network: options.network,
+        client: options.client,
       });
     }
     const context = {
-      client,
-      args,
       logger,
-      network,
-      config,
+      client: options.client!,
+      args: options.args!,
+      network: options.network!,
+      config: options.config!,
     };
-    await options.run(context);
-    if (!options.persist) {
+    await scriptInstance.run(context);
+    if (!scriptInstance.persist) {
       if (n) {
         await n.stop();
       }
-      process.exit(0);
     }
   } catch (error) {
     logger.error(error);
-    process.exit(1);
+    throw error;
   }
 }

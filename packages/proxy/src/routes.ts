@@ -1,8 +1,9 @@
-import type { App, Router } from 'h3';
-import { eventHandler } from 'h3';
-import type { PactToolboxNetworkApiLike } from './types';
+import type { App, Router } from "h3";
+import { eventHandler } from "h3";
 
-export function setupRoutes(router: Router, networkApi: PactToolboxNetworkApiLike) {
+import type { PactToolboxNetworkApiLike } from "./types";
+
+export function setupRoutes(router: Router, networkApi: PactToolboxNetworkApiLike): void {
   // if (networkApi.hasOnDemandMining()) {
   //   router.post(
   //     '/make-blocks',
@@ -12,15 +13,15 @@ export function setupRoutes(router: Router, networkApi: PactToolboxNetworkApiLik
   //   );
   // }
   router.post(
-    '/pact-toolbox/restart',
+    "/pact-toolbox/restart",
     eventHandler(async () => {
       await networkApi.restart();
-      return { status: 'ok' };
+      return { status: "ok" };
     }),
   );
 }
 
-export function setupWildCardProxy(_app: App, _networkApi: PactToolboxNetworkApiLike) {
+export function setupWildCardProxy(_app: App, _networkApi: PactToolboxNetworkApiLike): void {
   // app.use(
   //   '*',
   //   eventHandler(async (event) => {

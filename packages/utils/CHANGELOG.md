@@ -1,5 +1,17 @@
 # @pact-toolbox/utils
 
+## 0.0.6
+
+### Patch Changes
+
+- Improve installer version detection
+
+## 0.0.5
+
+### Patch Changes
+
+- `pact-toolbox generate` and installer refactoring
+
 ## 0.0.4
 
 ### Patch Changes

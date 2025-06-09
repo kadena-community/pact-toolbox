@@ -1,6 +1,6 @@
 export interface PactToolboxNetworkApiLike {
-  getServiceUrl(): string;
-  getOnDemandMiningUrl(): string;
+  getNodeServiceUrl(): string;
+  getMiningClientUrl(): string;
   hasOnDemandMining(): boolean;
   restart(): Promise<void>;
 }

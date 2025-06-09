@@ -1,0 +1,14 @@
+{
+  "name": "@pact-toolbox/oxlint-config",
+  "private": true,
+  "version": "0.1.0",
+  "files": [
+    "*.json"
+  ],
+  "devDependencies": {
+    "oxlint": "^0.18.0"
+  },
+  "peerDependencies": {
+    "oxlint": "^0.16.4"
+  }
+}

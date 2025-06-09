@@ -1,0 +1,15 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "import", "oxc", "unicorn", "jsdoc", "vitest", "node"],
+  "rules": {
+    "no-unused-vars": ["warn", { "varsIgnorePattern": "^_", "argsIgnorePattern": "^_" }],
+    "unicorn/prefer-node-protocol": "error",
+    "import/namespace": [
+      "error",
+      {
+        "allowComputed": true
+      }
+    ],
+    "import/named": "error"
+  }
+}

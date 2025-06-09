@@ -1,0 +1,160 @@
+[workspace]
+resolver = "3"
+members = ["crates/*"]
+
+[workspace.package]
+authors = ["Salama Ashoush <salamaashoush@gmail.com>"]
+categories = ["development-tools", "web3", "pact", "blockchain","kadena","devnet"]
+homepage = "https://github.com/kadena-community/pact-toolbox"
+keywords = ["pact", "blockchain", "kadena", "devnet"]
+license = "MIT"
+repository = "https://github.com/kadena-community/pact-toolbox"
+description = "A collection of tools for the Pact smart contract language and the Kadena blockchain."
+
+edition = "2024"
+# MSRV Policy N-2 (12 weeks) starting from v1.87.0
+# Balance between the core contributors enjoying the latest version of rustc, while waiting for dependents to catch up.
+rust-version = "1.85.0"
+
+# <https://doc.rust-lang.org/rustc/lints/listing/allowed-by-default.html>
+[workspace.lints.rust]
+absolute_paths_not_starting_with_crate = "warn"
+non_ascii_idents = "warn"
+unit-bindings = "warn"
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(coverage)', 'cfg(coverage_nightly)'] }
+tail_expr_drop_order = "warn"
+unsafe_op_in_unsafe_fn = "warn"
+unused_unsafe = "warn"
+
+[workspace.lints.clippy]
+all = { level = "warn", priority = -1 }
+# restriction
+dbg_macro = "warn"
+todo = "warn"
+unimplemented = "warn"
+print_stdout = "warn" # Must be opt-in
+print_stderr = "warn" # Must be opt-in
+allow_attributes = "warn"
+# I like the explicitness of this rule as it removes confusion around `clone`.
+# This increases readability, avoids `clone` mindlessly and heap allocating by accident.
+clone_on_ref_ptr = "warn"
+# These two are mutually exclusive, I like `mod.rs` files for better fuzzy searches on module entries.
+self_named_module_files = "warn" # "-Wclippy::mod_module_files"
+empty_drop = "warn"
+empty_structs_with_brackets = "warn"
+exit = "warn"
+filetype_is_file = "warn"
+get_unwrap = "warn"
+rc_buffer = "warn"
+rc_mutex = "warn"
+rest_pat_in_fully_bound_structs = "warn"
+unnecessary_safety_comment = "warn"
+undocumented_unsafe_blocks = "warn"
+infinite_loop = "warn"
+map_with_unused_argument_over_ranges = "warn"
+unused_result_ok = "warn"
+pathbuf_init_then_push = "warn"
+# I want to write the best Rust code so pedantic is enabled.
+# We should only disable rules globally if they are either false positives, chaotic, or does not make sense.
+pedantic = { level = "warn", priority = -1 }
+# Allowed rules
+# pedantic
+# All triggers are mostly ignored in our codebase, so this is ignored globally.
+struct_excessive_bools = "allow"
+too_many_lines = "allow"
+# `#[must_use]` is creating too much noise for this codebase, it does not add much value
+# except nagging the programmer to add a `#[must_use]` after clippy has been run.
+# Having `#[must_use]` everywhere also hinders readability.
+must_use_candidate = "allow"
+# Too annoying, we import by name anyway.
+wildcard_imports = "allow"
+doc_markdown = "allow"
+similar_names = "allow"
+fn_params_excessive_bools = "allow"
+complexity = { level = "warn", priority = -1 }
+too_many_arguments = "allow"
+non_std_lazy_statics = "allow"
+# nursery
+nursery = { level = "warn", priority = -1 }
+# `const` functions do not make sense for our project because this is not a `const` library.
+# This rule also confuses newcomers and forces them to add `const` blindlessly without any reason.
+missing_const_for_fn = "allow"
+option_if_let_else = "allow"
+or_fun_call = "allow"
+cognitive_complexity = "allow"
+non_send_fields_in_send_ty = "allow"
+use_self = "allow"
+significant_drop_tightening = "allow"
+branches_sharing_code = "allow"
+fallible_impl_from = "allow"
+useless_let_if_seq = "allow"
+impl_trait_in_params = "allow"
+significant_drop_in_scrutinee = "warn"
+iter_on_single_items = "warn"
+unused_peekable = "warn"
+too_long_first_doc_paragraph = "warn"
+suspicious_operation_groupings = "warn"
+redundant_clone = "warn"
+# cargo
+cargo = { level = "warn", priority = -1 }
+multiple_crate_versions = "allow"
+cargo_common_metadata = "allow" # FIXME
+doc_lazy_continuation = "allow" # FIXME
+
+
+
+[workspace.metadata.cargo-shear]
+ignored = ["napi", "oxc_transform_napi", "oxc_parser_napi", "prettyplease", "lazy_static"]
+
+[profile.dev]
+# Disabling debug info speeds up local and CI builds,
+# and we don't rely on it for debugging that much.
+debug = false
+
+[profile.test]
+# Disabling debug info speeds up local and CI builds,
+# and we don't rely on it for debugging that much.
+debug = false
+
+[profile.dev.package]
+# Compile macros with some optimizations to make consuming crates build faster
+oxc_macros.opt-level = 1
+oxc_ast_macros.opt-level = 1
+# Compile insta and its dependencies in release mode for faster snapshot tests
+# See: https://insta.rs/docs/quickstart/#optional-faster-runs
+insta.opt-level = 3
+similar.opt-level = 3
+
+
+[profile.release]
+# Configurations explicitly listed here for clarity.
+# Using the best options for performance.
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+strip = "symbols" # Set to `false` for debug information
+debug = false # Set to `true` for debug information
+panic = "abort" # Let it crash and force ourselves to write safe Rust
+
+# Profile used for release mode, but with debugging information for profiling
+# and debugging. Use `cargo build --profile=release-with-debug` to build with this profile.
+[profile.release-with-debug]
+inherits = "release"
+strip = false # Keep debug information in binary
+debug = true # Include maximum amount of debug information
+
+# Profile for `cargo coverage`
+[profile.coverage]
+inherits = "release"
+opt-level = 2 # Compile faster
+codegen-units = 256 # Compile faster
+lto = "thin" # Faster compile time with thin LTO
+debug-assertions = true # Make sure `debug_assert!`s pass
+overflow-checks = true # Catch arithmetic overflow errors
+
+# Profile for linting with release mode-like settings.
+# Catches lint errors which only appear in release mode.
+# `cargo lint --profile dev-no-debug-assertions` is about 35% faster than `cargo lint --release`.
+[profile.dev-no-debug-assertions]
+inherits = "dev"
+debug-assertions = false

@@ -1,5 +1,23 @@
 # @pact-toolbox/test
 
+## 0.0.9
+
+### Patch Changes
+
+- Updated dependencies
+  - @pact-toolbox/network@0.0.9
+  - @pact-toolbox/utils@0.0.6
+
+## 0.0.8
+
+### Patch Changes
+
+- Updated dependencies
+  - @pact-toolbox/utils@0.0.5
+  - @pact-toolbox/wallet@0.0.5
+  - @pact-toolbox/network@0.0.8
+  - @pact-toolbox/runtime@0.0.5
+
 ## 0.0.7
 
 ### Patch Changes

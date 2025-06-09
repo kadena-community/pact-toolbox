@@ -1,6 +1,6 @@
-import { createVitePlugin } from 'unplugin';
-import type { Plugin } from 'vite';
-import { unpluginFactory } from '.';
-import type { Options } from './core/options';
+import type { Plugin, PluginOption } from "vite";
+import { createVitePlugin } from "unplugin";
 
-export default createVitePlugin(unpluginFactory) as (options?: Options) => Plugin | Plugin[];
+import { unpluginFactory } from "./plugin/factory";
+
+export default createVitePlugin(unpluginFactory) as (options?: PluginOption) => Plugin | Plugin[];

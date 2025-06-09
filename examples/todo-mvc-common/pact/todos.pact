@@ -4,53 +4,50 @@
 
   ;; todo schema and table
   (defschema todo
-    "Row type for todos."
-     title:string
-     completed:bool
-     deleted:bool
+    "Row type for todos table"
+    id:string
+    title:string
+    completed:bool
+    deleted:bool
   )
-
   (deftable todo-table:{todo})
 
-  ;;
-  ;; API functions
-  ;;
-
-  (defun new-todo (id title)
-    @doc "Create new todo with ENTRY and DATE."
+  (defun new-todo:string (id:string title:string)
+    "Create new todo with ENTRY and DATE."
     (insert todo-table id {
+      "id": id,
       "title": title,
       "completed": false,
       "deleted": false
     })
   )
 
-  (defun toggle-todo-status (id)
+  (defun toggle-todo-status (id:string)
     "Toggle completed status flag for todo at ID."
     (with-read todo-table id { "completed":= state }
       (update todo-table id { "completed": (not state) })
     )
   )
 
-  (defun edit-todo (id title)
+  (defun edit-todo (id:string title:string)
     "Update todo ENTRY at ID."
-    (update todo-table id { "title": title }))
+    (update todo-table id { "title": title })
+  )
 
-  (defun delete-todo (id)
+  (defun delete-todo (id:string)
     "Delete todo title at ID (by setting deleted flag)."
     (update todo-table id { "deleted": true })
   )
 
-  (defun read-todo (id)
+  (defun read-todo:object{todo} (id:string)
     "Read a single todo"
-    (+ {'id: id} (read todo-table id))
+    (read todo-table id)
   )
 
-  (defun read-todos()
+  (defun read-todos:[object{todo}] ()
     "Read all todos."
-    (map (read-todo) (keys todo-table))
+    (filter (lambda (todo) (= (at "deleted" todo) false)) (map (read-todo) (keys todo-table)))
   )
 )
-
 
 (if (read-msg "upgrade") ["Module upgraded"] [(create-table todo-table)])

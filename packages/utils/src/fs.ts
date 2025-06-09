@@ -1,14 +1,17 @@
-import { mkdir, stat, writeFile as writeFileN } from 'node:fs/promises';
-import { dirname } from 'pathe';
+import { mkdir, writeFile as _writeFile,access } from "node:fs/promises";
+import { dirname } from "pathe";
 
-export const writeFileAtPath: typeof writeFileN = async (path, data, options) => {
-  if (typeof path !== 'string') throw new Error('path must be a string');
-  const exist = await stat(path)
-    .then(() => true)
-    .catch(() => false);
-  if (!exist) {
-    const dir = dirname(path);
-    await mkdir(dir, { recursive: true });
+
+export async function ensureDir(dirPath: string): Promise<void> {
+  if (!(await access(dirPath).catch(() => false))) {
+    await mkdir(dirPath, { recursive: true });
   }
-  return writeFileN(path, data, options);
-};
+}
+
+export async function writeFile(
+  filePath: string,
+  content: string
+): Promise<void> {
+  await ensureDir(dirname(filePath));
+  await _writeFile(filePath, content.trim());
+}

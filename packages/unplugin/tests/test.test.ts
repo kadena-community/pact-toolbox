@@ -1,8 +1,9 @@
-import { describe, expect, it } from 'vitest';
-import {} from '../src';
+import { describe, expect, it } from "vitest";
 
-describe('test', () => {
-  it.todo('pass', () => {
+import "../src/plugin/factory";
+
+describe("test", () => {
+  it.todo("pass", () => {
     expect(true).toBe(true);
   });
 });

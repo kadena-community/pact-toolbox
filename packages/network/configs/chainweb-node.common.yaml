@@ -9,7 +9,7 @@ chainweb:
     putPeer: 10000
   serviceApi:
     payloadBatchLimit: 1000
-    interface: '*'
+    interface: "*"
   p2p:
     peer:
       hostaddress:
