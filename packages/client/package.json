@@ -46,8 +46,8 @@
     "format": "prettier --check . --ignore-path ../../.gitignore",
     "prepack": "pnpm run build",
     "release": "pnpm test && pnpm publish",
-    "test:watch": "tsx --test --watch --experimental-test-module-mocks src/**/*.spec.ts",
-    "test": "tsx --test --experimental-test-module-mocks src/**/*.spec.ts",
+    "test:watch": "vitest",
+    "test": "vitest run",
     "verify": "tsc --noEmit --skipLibCheck"
   },
   "dependencies": {
@@ -61,11 +61,13 @@
     "@pact-toolbox/tsconfig": "workspace:*",
     "@pact-toolbox/tsdown": "workspace:*",
     "@pact-toolbox/types": "workspace:*",
+    "@pact-toolbox/vitest-config": "workspace:*",
     "oxlint": "^0.18.1",
     "prettier": "^3.5.3",
     "tsdown": "^0.12.7",
     "tsx": "^4.19.4",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.3"
   },
   "prettier": "@pact-toolbox/prettier-config"
 }
