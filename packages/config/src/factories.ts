@@ -19,7 +19,7 @@ export function createPactServerConfig(overrides?: Partial<PactServerConfig>): R
   } as Required<PactServerConfig>;
 }
 
-export function createLocalNetworkConfig(overrides?: Partial<PactServerNetworkConfig>): PactServerNetworkConfig {
+export function createPactServerNetworkConfig(overrides?: Partial<PactServerNetworkConfig>): PactServerNetworkConfig {
   const defaults = {
     type: "pact-server",
     rpcUrl: "http://localhost:{port}",

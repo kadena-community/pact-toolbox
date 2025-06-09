@@ -2,7 +2,7 @@ import type { KeyPair, NetworkMeta, PactKeyset } from "@pact-toolbox/types";
 import { join } from "pathe";
 
 import type { PactToolboxConfigObj } from "./config";
-import { createLocalNetworkConfig } from "./factories";
+import { createPactServerNetworkConfig } from "./factories";
 
 export const defaultKeyPairs: KeyPair[] = [
   {
@@ -78,9 +78,9 @@ export const defaultMeta: NetworkMeta = {
 export const chainwebConfigDir: string = join(process.cwd(), ".pact-toolbox/chainweb");
 
 export const defaultConfig: PactToolboxConfigObj = {
-  defaultNetwork: "local",
+  defaultNetwork: "pactServer",
   networks: {
-    local: createLocalNetworkConfig(),
+    pactServer: createPactServerNetworkConfig(),
   },
   contractsDir: "pact",
   scriptsDir: "scripts",

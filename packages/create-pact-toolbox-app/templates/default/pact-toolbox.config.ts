@@ -1,7 +1,7 @@
 import {
   createDevNetNetworkConfig,
-  createPactServerNetworkConfig,
   createMainNetNetworkConfig,
+  createPactServerNetworkConfig,
   createTestNetNetworkConfig,
   defineConfig,
 } from "pact-toolbox";

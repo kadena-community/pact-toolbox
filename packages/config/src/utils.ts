@@ -66,7 +66,7 @@ export function createChainwebRpcUrl({
 }
 
 export function getNetworkConfig(config: PactToolboxConfigObj, network?: string): NetworkConfig {
-  const networkName = network ?? process.env.PACT_TOOLBOX_NETWORK ?? config.defaultNetwork ?? "local";
+  const networkName = network ?? process.env.PACT_TOOLBOX_NETWORK ?? config.defaultNetwork ?? "pactServer";
   const found = config.networks[networkName];
   config.defaultNetwork = networkName;
   if (!found) {

@@ -30,5 +30,6 @@
     "**/build": true,
     "**/coverage": true,
     "**/.next": true
-  }
+  },
+  "vitest.disableWorkspaceWarning": true
 }
