@@ -1,3 +1,4 @@
+import type { PactToolboxClient } from "@pact-toolbox/runtime";
 import type { DockerServiceConfig } from "@pact-toolbox/utils";
 
 export type ConflictStrategy = "error" | "replace" | "ignore";
@@ -6,6 +7,7 @@ export interface ToolboxNetworkStartOptions {
   isDetached?: boolean;
   isStateless?: boolean;
   conflictStrategy?: ConflictStrategy;
+  client?: PactToolboxClient;
 }
 export interface ToolboxNetworkApi {
   stop: () => Promise<void>;
