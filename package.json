@@ -17,11 +17,10 @@
     "lint": "turbo lint --filter=./packages/*",
     "lint:fix": "turbo lint --continue -- --fix",
     "verify": "turbo verify --filter=./packages/*",
-    "prepack": "husky init",
+    "prepare": "node .husky/install.mjs",
     "changeset": "changeset",
     "ci:version": "changeset version",
     "ci:publish": "changeset publish",
-    "prepare": "husky",
     "lint:ws": "pnpm dlx sherif@latest -p ./packages/unplugin",
     "postinstall": "pnpm lint:ws"
   },
