@@ -20,7 +20,7 @@ jobs:
           cache: "pnpm"
       - run: pnpm install
       - run: pnpm lint
-      - run: pnpm fromat
+      - run: pnpm format
       - run: pnpm test
-      - run: export PATH="$PATH:/home/runner/.kadena/bin" && pnpm test
+      - run: pnpm test
       - uses: codecov/codecov-action@v3
