@@ -1,5 +1,11 @@
 # @pact-toolbox/test
 
+## 0.2.0
+
+### Minor Changes
+
+- fix repl test runner
+
 ## 0.1.1
 
 ### Patch Changes
