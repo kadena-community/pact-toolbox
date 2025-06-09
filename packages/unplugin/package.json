@@ -225,6 +225,7 @@
   "devDependencies": {
     "@farmfe/core": "^1.7.5",
     "@kadena/pactjs-generator": "^1.17.1",
+    "@pact-toolbox/pact-transformer": "workspace:*",
     "@nuxt/kit": "^3.17.5",
     "@nuxt/schema": "^3.17.5",
     "@pact-toolbox/prettier-config": "workspace:*",

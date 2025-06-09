@@ -14,7 +14,7 @@ import {
 import { rm } from "node:fs/promises";
 
 import { join } from "pathe";
-import { DEVNET_CONFIGS_DIR, DEVNET_PROXY_PORT, MINIMAL_CLUSTER_ID, MINIMAL_NETWORK_NAME } from "../config/constants";
+import { DEVNET_CONFIGS_DIR, DEVNET_PUBLIC_PORT, MINIMAL_CLUSTER_ID, MINIMAL_NETWORK_NAME } from "../config/constants";
 import {
   CHAINWEB_NODE_COMMON_YAML_CONTENT_TPL,
   CHAINWEB_NODE_LOGGING_YAML_CONTENT_TPL,
@@ -190,7 +190,7 @@ export class LocalDevNetNetwork implements ToolboxNetworkApi {
   }
 
   getServicePort(): number {
-    return this.#networkConfig.containerConfig?.port ?? DEVNET_PROXY_PORT;
+    return this.#networkConfig.containerConfig?.port ?? DEVNET_PUBLIC_PORT;
   }
 
   hasOnDemandMining(): boolean {

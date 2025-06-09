@@ -26,16 +26,15 @@ export function injectNetworkConfig(config: PactToolboxConfigObj): void {
 
 export async function updatePorts(config: PactToolboxConfigObj): Promise<NetworkConfig> {
   const ports = await getRandomNetworkPorts();
-  config.devProxyPort = config.enableDevProxy ? ports.proxy.toString() : ports.service.toString();
   const network = getNetworkConfig(config);
   if (isPactServerNetworkConfig(network)) {
     if (network.serverConfig) {
-      network.serverConfig.port = ports.service.toString();
+      network.serverConfig.port = ports.service;
     }
   }
   if (isDevNetworkConfig(network)) {
     if (network.containerConfig) {
-      network.containerConfig.port = ports.service.toString();
+      network.containerConfig.port = ports.service;
     }
   }
 

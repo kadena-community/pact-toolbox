@@ -2,7 +2,7 @@ import { detectPort } from "detect-port";
 import { getPort } from "get-port-please";
 
 interface RandomPorts {
-  proxy: number;
+  public: number;
   service: number;
   onDemand: number;
   stratum: number;
@@ -14,7 +14,7 @@ interface RandomPorts {
  * @param host - The host for which to get the ports. Defaults to '127.0.0.1'.
  * @param startGap - The minimum gap between successive ports. Defaults to 10.
  * @param endGap - The maximum gap between successive ports. Defaults to 100.
- * @returns An object containing the random ports assigned for proxy, service, on-demand, stratum, and p2p services.
+ * @returns An object containing the random ports assigned for public, service, on-demand, stratum, and p2p services.
  * @throws {Error} If it fails to find a suitable port for any of the services.
  */
 export async function getRandomNetworkPorts(
@@ -27,16 +27,16 @@ export async function getRandomNetworkPorts(
   }
 
   try {
-    const proxy = await getPort({
+    const publicPort = await getPort({
       host,
       random: true,
-      name: "proxy",
+      name: "public",
     });
 
     const service = await getPort({
-      port: proxy + startGap,
+      port: publicPort + startGap,
       host,
-      portRange: [proxy + startGap, proxy + endGap],
+      portRange: [publicPort + startGap, publicPort + endGap],
       name: "service",
     });
 
@@ -62,7 +62,7 @@ export async function getRandomNetworkPorts(
     });
 
     return {
-      proxy,
+      public: publicPort,
       service,
       onDemand,
       stratum,

@@ -1,12 +1,7 @@
 import { genKeyPair } from "@kadena/cryptography-utils";
 
-import {
-  createKeyPairFromPrivateKeyBytes,
-  createSignableMessage,
-  createSignerFromKeyPair,
-  generateKeyPair,
-  getBase16Codec,
-} from "./src";
+import { createSignableMessage, createSignerFromKeyPair } from "./src";
+import { createKeyPairFromPrivateKeyBytes, generateKeyPair, getBase16Codec } from "@pact-toolbox/crypto";
 
 console.time("native -> generateKeyPair");
 const keyPair = await generateKeyPair();
@@ -30,5 +25,5 @@ console.log(signer2.keyPair.publicKey.toString());
 const message = "Hello, world!";
 const messageBytes = createSignableMessage(message);
 console.time("signer -> signMessages");
-const signature = await signer.signMessages([messageBytes]);
+const _signature = await signer.signMessages([messageBytes]);
 console.timeEnd("signer -> signMessages");

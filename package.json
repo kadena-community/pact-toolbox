@@ -14,7 +14,7 @@
     "test": "turbo test --filter=./packages/*",
     "format": "turbo format --continue",
     "format:fix": "turbo format --continue -- --write",
-    "lint": "turbo lint",
+    "lint": "turbo lint --filter=./packages/*",
     "lint:fix": "turbo lint --continue -- --fix",
     "verify": "turbo verify",
     "prepack": "husky init",

@@ -30,7 +30,7 @@ function benchmark(name: string, fn: () => void, iterations = 100) {
     try {
       fn();
     } catch (error) {
-      console.error(`❌ Error in ${name}:`, error.message);
+      console.error(`❌ Error in ${name}:`, (error as Error).message);
       return null;
     }
 
@@ -67,7 +67,7 @@ function benchmark(name: string, fn: () => void, iterations = 100) {
 async function testNativeTransformer() {
   try {
     // Import the native transformer
-    const { transformPactCode } = await import("@pact-toolbox/pact-transformer-napi");
+    const { transformPactCode } = await import("@pact-toolbox/pact-transformer");
 
     return benchmark("Native Rust Transformer", () => {
       const result = transformPactCode(samplePactCode, { debug: false });
@@ -78,7 +78,7 @@ async function testNativeTransformer() {
       }
     });
   } catch (error) {
-    console.error("❌ Failed to load native transformer:", error.message);
+    console.error("❌ Failed to load native transformer:", (error as Error).message);
     console.log("💡 Make sure to build the native module first:");
     console.log("   cd crates/pact-transformer-napi && npm run build");
     return null;
@@ -104,7 +104,7 @@ async function testTypeScriptTransformer() {
       }
     });
   } catch (error) {
-    console.error("❌ Failed to load TypeScript transformer:", error.message);
+    console.error("❌ Failed to load TypeScript transformer:", (error as Error).message);
     console.log("💡 This is expected if the original transformer is not available");
     return null;
   }
@@ -134,10 +134,10 @@ async function runComparison() {
   if (results.length === 2) {
     console.log("\\n📊 Performance Comparison:");
     console.log("=".repeat(30));
-
-    const [native, ts] = results;
-    const speedup = ts?.avgTime / native?.avgTime;
-    const memoryImprovement = ts?.avgMemory / native?.avgMemory;
+    const ts = results[0]!;
+    const native = results[1]!;
+    const speedup = ts.avgTime / native.avgTime;
+    const memoryImprovement = ts.avgMemory / native.avgMemory;
 
     console.log(`🚀 Speed improvement: ${speedup.toFixed(1)}x faster`);
     console.log(`💾 Memory improvement: ${memoryImprovement.toFixed(1)}x more efficient`);
@@ -149,7 +149,7 @@ async function runComparison() {
     } else {
       console.log("\\n👍 Good! The native transformer is faster!");
     }
-  } else if (results.length === 1 && results[0].name.includes("Native")) {
+  } else if (results.length === 1 && results[0]?.name.includes("Native")) {
     console.log("\\n✅ Native transformer is working correctly!");
     console.log("💡 Install the TypeScript transformer to see performance comparison");
   }

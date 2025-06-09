@@ -87,5 +87,4 @@ export const defaultConfig: PactToolboxConfigObj = {
   preludes: ["kadena/chainweb"],
   deployPreludes: true,
   downloadPreludes: true,
-  enableDevProxy: false,
 };

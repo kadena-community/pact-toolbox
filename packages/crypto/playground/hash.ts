@@ -4,7 +4,9 @@ import { Bench } from "tinybench";
 
 import { blake2bBase64Url } from "../src/hash";
 
-const bench = new Bench();
+const bench = new Bench({
+  warmup: true,
+});
 const input = "hello world";
 
 bench
@@ -15,6 +17,5 @@ bench
 console.log(hash(input));
 console.log(blake2bBase64Url(input));
 
-bench.warmup = true;
 await bench.run();
 console.table(bench.table());

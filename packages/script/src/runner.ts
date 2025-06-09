@@ -6,7 +6,7 @@ import { fileURLToPath } from "mlly";
 import { resolve } from "pathe";
 
 import { resolveConfig } from "@pact-toolbox/config";
-import { startLocalNetwork } from "@pact-toolbox/network";
+import { createPactToolboxNetwork } from "@pact-toolbox/network";
 import { PactToolboxClient } from "@pact-toolbox/runtime";
 import { logger } from "@pact-toolbox/utils";
 
@@ -99,7 +99,7 @@ export async function runScript(source: string, options: RunScriptOptions): Prom
   try {
     let n;
     if (scriptInstance.autoStartNetwork) {
-      n = await startLocalNetwork(options.config, {
+      n = await createPactToolboxNetwork(options.config, {
         ...scriptInstance.startNetworkOptions,
         network: options.network,
         client: options.client,

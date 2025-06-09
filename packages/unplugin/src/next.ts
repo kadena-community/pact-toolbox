@@ -10,7 +10,6 @@ import { PactToolboxClient } from "@pact-toolbox/runtime";
 import { logger } from "@pact-toolbox/utils";
 
 import type { PluginOptions } from "./plugin/types";
-import { createPactToolboxNetwork } from "./plugin/utils";
 import type { PactToolboxNetwork } from "@pact-toolbox/network";
 
 // Global singleton state to track initialization across multiple calls
@@ -69,7 +68,7 @@ async function initializePactToolbox(options: PluginOptions = {}): Promise<void>
 
   const initPromise = (async () => {
     try {
-      const { client: passedClient, startNetwork = true } = options;
+      const { client: passedClient, startNetwork: _startNetwork = true } = options;
       const isTest = process.env.NODE_ENV === "test";
       // Resolve configuration
       if (!state.resolvedConfig) {

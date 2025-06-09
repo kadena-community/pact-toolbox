@@ -21,7 +21,6 @@ export interface CreatePactTestEnvOptions {
   configOverrides?: Partial<PactToolboxConfigObj>;
   config?: Required<PactToolboxConfigObj>;
   isStateless?: boolean;
-  enableProxy?: boolean;
 }
 export async function createPactTestEnv({
   network,

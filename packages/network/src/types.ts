@@ -26,6 +26,7 @@ export interface DevNetServiceDefinition {
     bootstrapNode: DockerServiceConfig;
     miningClient: DockerServiceConfig;
     apiProxy: DockerServiceConfig;
+    miningTrigger: DockerServiceConfig;
     [key: string]: DockerServiceConfig;
   };
 }

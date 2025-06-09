@@ -132,7 +132,7 @@ export async function initToolbox(args: InitToolboxArgs): Promise<void> {
     }
     await writePackageJSON(packageJsonPath, packageJson);
     logger.success(`Added pact:* scripts to package.json`);
-  } catch (e) {
+  } catch {
     logger.warn(`Failed to add pact:* scripts to package.json at ${packageJsonPath}, please add manually`);
   }
 
@@ -147,7 +147,7 @@ export async function initToolbox(args: InitToolboxArgs): Promise<void> {
       await writeTSConfig(tsConfigPath, tsConfig);
       logger.success(`Added ".pact-toolbox/pactjs-generated" to the types array in tsconfig.json`);
     }
-  } catch (e) {
+  } catch {
     logger.warn(
       `Failed to add ".pact-toolbox/pactjs-generated" to the types array in tsconfig.json at ${tsConfigPath}, please add manually`,
     );

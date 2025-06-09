@@ -5,7 +5,9 @@ export const MINER_PUBLIC_KEY: string =
   process.env.MINER_PUBLIC_KEY || "f89ef46927f506c70b6a58fd322450a936311dc6ac91f4ec3d8ef949608dbf1f";
 export const MINING_CLIENT_IMAGE: string =
   process.env.MINING_CLIENT_IMAGE || "ghcr.io/kadena-io/chainweb-mining-client:latest";
-export const DEVNET_PROXY_PORT: number = process.env.DEVNET_PROXY_PORT ? Number(process.env.DEVNET_PROXY_PORT) : 8080;
+export const DEVNET_PUBLIC_PORT: number = process.env.DEVNET_PUBLIC_PORT
+  ? Number(process.env.DEVNET_PUBLIC_PORT)
+  : 8080;
 export const CHAINWEB_NODE_IMAGE: string =
   process.env.CHAINWEB_NODE_IMAGE || "ghcr.io/kadena-io/chainweb-node/ubuntu:latest";
 export const MINING_TRIGGER_IMAGE: string = process.env.MINING_TRIGGER_IMAGE || "salamaashoush/mining-trigger:latest";

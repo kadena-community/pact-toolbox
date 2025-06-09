@@ -15,7 +15,7 @@ export function getBase64UrlEncoder(): VariableSizeEncoder<string> {
             .replace(/_/g, "/")
             .padEnd(Math.ceil(value.length / 4) * 4, "=");
           return atob(paddedValue).length;
-        } catch (e) {
+        } catch {
           throw new Error(`Invalid string for base64url: ${value}`);
         }
       },
@@ -30,7 +30,7 @@ export function getBase64UrlEncoder(): VariableSizeEncoder<string> {
             .map((c) => c.charCodeAt(0));
           bytes.set(bytesToAdd, offset);
           return bytesToAdd.length + offset;
-        } catch (e) {
+        } catch {
           throw new Error(`Invalid string for base64url: ${value}`);
         }
       },

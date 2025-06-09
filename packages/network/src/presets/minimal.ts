@@ -7,7 +7,7 @@ import {
   MINER_PUBLIC_KEY,
   MINING_CLIENT_IMAGE,
   MINING_CLIENT_PORT,
-  DEVNET_PROXY_PORT,
+  DEVNET_PUBLIC_PORT,
   MINIMAL_CLUSTER_ID,
   MINIMAL_NETWORK_NAME,
   MINING_TRIGGER_IMAGE,
@@ -206,7 +206,7 @@ interface ApiProxyServiceOptions {
 
 export function createApiProxyService({
   image = "nginx:alpine",
-  port = DEVNET_PROXY_PORT,
+  port = DEVNET_PUBLIC_PORT,
 }: Partial<ApiProxyServiceOptions> = {}): DockerServiceConfig {
   return {
     containerName: API_PROXY_SERVICE_NAME,
@@ -242,7 +242,7 @@ interface MinimalDevNetOptions {
 
 export function createMinimalDevNet({
   clusterId = MINIMAL_CLUSTER_ID,
-  port = DEVNET_PROXY_PORT,
+  port = DEVNET_PUBLIC_PORT,
   networkName = MINIMAL_NETWORK_NAME,
   persistDb = true,
   onDemandMining = true,
