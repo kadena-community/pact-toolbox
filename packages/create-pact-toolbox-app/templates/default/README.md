@@ -2,6 +2,11 @@
 
 This project was generated with `create-pact-toolbox-app`.
 
+## Prerequisites
+
+- **Docker** Required to run devnet follow [docker-desktop](https://docs.docker.com/desktop/) to install and test docker.
+- **Pact** Required to run pact code and start a local test server for development and running tests, follow [pactup](https://github.com/kadena-community/pactup) to install pact 5 or nightly version.
+
 ## Overview
 
 This project is a starting point for developing Pact smart contracts with the Pact Toolbox. It includes a sample contract, a basic project structure, and a set of npm scripts to help you with your development workflow.
