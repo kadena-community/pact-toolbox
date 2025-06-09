@@ -1,0 +1,52 @@
+[package]
+name = "pact-transformer"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85.0"
+description = "High-performance Pact code transformer using tree-sitter with NAPI-RS bindings"
+license = "MIT"
+authors = ["Salama Ashoush <salamaashoush@gmail.com>"]
+keywords = ["pact", "tree-sitter", "transformer", "napi", "nodejs"]
+categories = ["development-tools", "parser-implementations"]
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+napi = { version = "2", default-features = false, features = ["napi8"] }
+napi-derive = "2"
+tree-sitter = "0.25.6"
+tree-sitter-pact = "0.0.10"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+heck = "0.5"
+thiserror = "2"
+
+# Performance optimization dependencies
+bumpalo = "3.18"           # Arena allocator for zero-copy AST
+smallvec = "1.15"          # Stack-allocated vectors
+string-interner = "0.19"   # String interning for identifiers
+once_cell = "1.21"         # Lazy static initialization
+rayon = "1.10"              # Parallel processing
+memchr = "2.7"             # Fast string searching
+compact_str = "0.9"        # Memory-efficient strings
+
+[build-dependencies]
+napi-build = "2"
+
+[profile.release]
+lto = "fat"                # Full LTO for maximum optimization
+codegen-units = 1          # Single codegen unit for better optimization
+opt-level = 3              # Maximum optimization level
+panic = "abort"            # Smaller binary size, faster execution
+overflow-checks = false    # Disable overflow checks in release
+debug-assertions = false   # Disable debug assertions
+
+# Additional optimization flags
+[profile.release.package."*"]
+opt-level = 3
+
+# PGO (Profile-Guided Optimization) ready
+[profile.pgo]
+inherits = "release"
+lto = "fat"

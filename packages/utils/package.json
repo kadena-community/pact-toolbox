@@ -59,7 +59,7 @@
     "@pact-toolbox/tsdown": "workspace:*",
     "@types/dockerode": "^3.3.40",
     "@types/tar-fs": "^2.0.4",
-    "oxlint": "^0.18.0",
+    "oxlint": "^0.18.1",
     "prettier": "^3.5.3",
     "tsdown": "^0.12.7",
     "tsx": "^4.19.4",
