@@ -151,7 +151,6 @@ export async function submit(
   if (preflight) {
     await preflightFunction(client, transactions);
   }
-
   const descriptors = await getKdaClient(client)
     .submit(transactions)
     .catch((e) => {

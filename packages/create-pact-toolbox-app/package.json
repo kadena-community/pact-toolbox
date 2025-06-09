@@ -1,0 +1,53 @@
+{
+  "name": "create-pact-toolbox-app",
+  "version": "0.0.1",
+  "description": "Create Pact Toolbox apps with one command",
+  "repository": "kadena-community/pact-toolbox",
+  "author": "Salama Ashoush <salamaashoush@gmail.com>",
+  "license": "MIT",
+  "type": "module",
+  "private": false,
+  "bin": "./bin/main.mjs",
+  "files": [
+    "./dist/",
+    "./templates/"
+  ],
+  "keywords": [
+    "blockchain",
+    "kadena",
+    "pact",
+    "crypto",
+    "chainweb",
+    "web3"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "dev": "tsdown --watch",
+    "start": "./bin/main.mjs",
+    "lint": "oxlint --import-plugin --deny-warnings",
+    "format": "prettier --check . --ignore-path ../../.gitignore",
+    "prepack": "pnpm run build",
+    "release": "pnpm publish"
+  },
+  "dependencies": {
+    "@clack/prompts": "^0.7.0",
+    "@pact-toolbox/utils": "workspace:*",
+    "citty": "^0.1.6",
+    "glob": "^11.0.0"
+  },
+  "devDependencies": {
+    "@pact-toolbox/prettier-config": "workspace:*",
+    "@pact-toolbox/tsconfig": "workspace:*",
+    "@types/glob": "^8.1.0",
+    "@types/node": "^22.15.30",
+    "oxlint": "^0.18.1",
+    "prettier": "^3.5.3",
+    "tsdown": "^0.12.7",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.3"
+  },
+  "prettier": "@pact-toolbox/prettier-config"
+}

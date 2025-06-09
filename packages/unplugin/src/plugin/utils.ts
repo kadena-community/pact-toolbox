@@ -25,6 +25,7 @@ interface RunningNetworkInfo {
   port: number | string;
   startTime: number;
   client: PactToolboxClient;
+  network: PactToolboxNetwork | null;
 }
 
 function getRunningNetworksRegistry(): Map<string, RunningNetworkInfo> {
@@ -34,9 +35,9 @@ function getRunningNetworksRegistry(): Map<string, RunningNetworkInfo> {
   return (globalThis as any)[RUNNING_NETWORKS_KEY];
 }
 
-async function isNetworkRunning(network: NetworkConfig): Promise<boolean> {
+async function isNetworkRunning(networkConfig: NetworkConfig): Promise<boolean> {
   const registry = getRunningNetworksRegistry();
-  const registryKey = `${network.name || "unknown"}-${network.type}`;
+  const registryKey = `${networkConfig.name || "unknown"}-${networkConfig.type}`;
 
   // Check if network is in our registry
   const registeredNetwork = registry.get(registryKey);
@@ -54,25 +55,30 @@ async function isNetworkRunning(network: NetworkConfig): Promise<boolean> {
 
   // Use the proper utility to get network port
   try {
-    const port = getNetworkPort(network);
+    const port = getNetworkPort(networkConfig);
     return await isPortTaken(port);
   } catch {
     return false;
   }
 }
 
-function registerRunningNetwork(network: NetworkConfig, client: PactToolboxClient): void {
+function registerRunningNetwork(
+  networkConfig: NetworkConfig,
+  client: PactToolboxClient,
+  network: PactToolboxNetwork | null,
+): void {
   const registry = getRunningNetworksRegistry();
-  const registryKey = `${network.name || "unknown"}-${network.type}`;
+  const registryKey = `${networkConfig.name || "unknown"}-${networkConfig.type}`;
 
   // Use the proper utility to get network port
-  const port = getNetworkPort(network);
+  const port = getNetworkPort(networkConfig);
 
   registry.set(registryKey, {
-    networkName: network.name || "unknown",
+    networkName: networkConfig.name || "unknown",
     port,
     startTime: Date.now(),
     client,
+    network,
   });
 }
 
@@ -115,15 +121,16 @@ export async function createPactToolboxNetwork(
       logAccounts: true,
       conflictStrategy: "ignore",
       isDetached: true,
+      autoStart: startNetwork,
       cleanup: false,
     });
 
     // Register the network as running
-    registerRunningNetwork(networkConfig, client);
+    registerRunningNetwork(networkConfig, client, network);
   } catch (error) {
     // Check if the error is about network already running
     if (error instanceof Error && error.message.includes("already running")) {
-      registerRunningNetwork(networkConfig, client);
+      registerRunningNetwork(networkConfig, client, null);
     } else {
       logger.error(`[startToolboxNetwork] Failed to start network ${networkConfig.name}:`, error);
       throw error;

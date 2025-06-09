@@ -23,5 +23,6 @@
       "~/pact/*": ["./pact/*"]
     }
   },
-  "include": ["src", "pact/**/*"]
+  "include": ["src", "pact/**/*"],
+  "references": [{ "path": "./tsconfig.node.json" }]
 }

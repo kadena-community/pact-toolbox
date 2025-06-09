@@ -26,6 +26,7 @@ import type { PactToolboxNetwork } from "@pact-toolbox/network";
  * @returns An instance of the Unplugin.
  */
 export const unpluginFactory: UnpluginFactory<PluginOptions | undefined> = (options = {}) => {
+  const { startNetwork = true } = options;
   const cache = new Map<string, CachedTransform>();
 
   const toolboxConfigPromise = resolveConfig();
@@ -53,7 +54,7 @@ export const unpluginFactory: UnpluginFactory<PluginOptions | undefined> = (opti
 
       // // Generate TypeScript declaration files for contracts
       // await createDtsFiles(resolvedConfig.contractsDir);
-      if (options.startNetwork) {
+      if (startNetwork) {
         // Start the Pact Toolbox network
         const { network: networkInstance, client: networkClient } = await createPactToolboxNetwork(
           { isServe, isTest, client, networkConfig: networkConfig },
