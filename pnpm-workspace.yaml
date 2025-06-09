@@ -3,4 +3,4 @@ packages:
   - "apps/*"
   - "tooling/*"
   - "examples/*"
-  - "crates/pact-transformer-napi"
+  - "crates/pact-transformer"

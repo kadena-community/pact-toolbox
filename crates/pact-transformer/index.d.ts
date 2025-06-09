@@ -62,6 +62,13 @@ export interface PactModuleInfo {
   name: string
   path: string
 }
+/** Benchmark comparison results */
+export interface BenchmarkComparison {
+  regularTimeMs: number
+  optimizedTimeMs: number
+  speedupFactor: number
+  iterations: number
+}
 /** Transformation options */
 export interface TransformOptions {
   debug?: boolean
@@ -70,6 +77,14 @@ export interface TransformOptions {
 export declare function transformPactCode(pactCode: string, options?: TransformOptions | undefined | null): TransformationResult
 /** Create a transformer and parse Pact code in one call */
 export declare function parsePactCode(pactCode: string): Array<PactModule>
+/** Show performance optimization analysis and potential improvements */
+export declare function showOptimizationAnalysis(): void
+/** Benchmark the current transformer performance */
+export declare function benchmarkTransformer(pactCode: string, iterations?: number | undefined | null): number
+/** Optimized transformation with memory optimizations */
+export declare function transformPactCodeOptimizedV2(pactCode: string, options?: TransformOptions | undefined | null): TransformationResult
+/** Benchmark comparison between regular and optimized transformers */
+export declare function benchmarkComparison(pactCode: string, iterations?: number | undefined | null): BenchmarkComparison
 /** High-performance Pact code transformer using tree-sitter */
 export declare class PactTransformer {
   /** Create a new PactTransformer instance */

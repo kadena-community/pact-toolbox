@@ -61,7 +61,7 @@
     "@pact-toolbox/tsconfig": "workspace:*",
     "@pact-toolbox/tsdown": "workspace:*",
     "@pact-toolbox/types": "workspace:*",
-    "oxlint": "^0.18.0",
+    "oxlint": "^0.18.1",
     "prettier": "^3.5.3",
     "tsdown": "^0.12.7",
     "tsx": "^4.19.4",

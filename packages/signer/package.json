@@ -61,7 +61,7 @@
     "@pact-toolbox/tsdown": "workspace:*",
     "@pact-toolbox/types": "workspace:*",
     "@types/node": "^22.15.30",
-    "oxlint": "^0.18.0",
+    "oxlint": "^0.18.1",
     "prettier": "^3.5.3",
     "tinybench": "^4.0.1",
     "tsdown": "^0.12.7",

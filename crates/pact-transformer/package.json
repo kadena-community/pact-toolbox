@@ -1,11 +1,11 @@
 {
-  "name": "@pact-toolbox/pact-transformer-napi",
+  "name": "@pact-toolbox/pact-transformer",
   "version": "0.1.0",
   "description": "High-performance Pact code transformer using tree-sitter with NAPI-RS bindings",
   "main": "index.js",
   "types": "index.d.ts",
   "napi": {
-    "name": "pact-transformer-napi",
+    "name": "pact-transformer",
     "triples": {
       "defaults": true,
       "additional": [
