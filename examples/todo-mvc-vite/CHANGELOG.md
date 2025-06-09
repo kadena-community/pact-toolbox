@@ -1,5 +1,11 @@
 # todo-mvc-vite
 
+## 0.0.6
+
+### Patch Changes
+
+- todo-mvc-common@0.0.6
+
 ## 0.0.5
 
 ### Patch Changes
