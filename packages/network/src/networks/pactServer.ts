@@ -10,11 +10,13 @@ import {
   isAnyPactInstalled,
   isPortTaken,
   logger,
+  pollFn,
   runBin,
   writeFile,
 } from "@pact-toolbox/utils";
 
 import type { ToolboxNetworkApi, ToolboxNetworkStartOptions } from "../types";
+import type { PactToolboxClient } from "@pact-toolbox/runtime";
 
 export function configToYamlString(config: PactServerConfig): string {
   let configString = `# This is a generated file, do not edit manually\n`;
@@ -59,8 +61,10 @@ export class PactServerNetwork implements ToolboxNetworkApi {
   #configPath?: string;
   #serverConfig: PactServerConfig;
   #pactBin = "pact";
+  #client: PactToolboxClient;
 
-  constructor(networkConfig: PactServerNetworkConfig) {
+  constructor(networkConfig: PactServerNetworkConfig, client: PactToolboxClient) {
+    this.#client = client;
     this.#serverConfig = createPactServerConfig(networkConfig?.serverConfig);
     this.#pactBin = networkConfig.pactBin || this.#pactBin;
   }
@@ -85,7 +89,9 @@ export class PactServerNetwork implements ToolboxNetworkApi {
     isDetached = true,
     isStateless = false,
     conflictStrategy = "error",
+    client,
   }: ToolboxNetworkStartOptions = {}): Promise<void> {
+    this.#client = client ?? this.#client;
     if (await this.isRunning()) {
       if (conflictStrategy === "error") {
         throw new Error(`Pact server is already running on port ${this.#serverConfig.port}`);
@@ -105,6 +111,11 @@ export class PactServerNetwork implements ToolboxNetworkApi {
     await runBin(this.#pactBin, ["-s", this.#configPath], {
       silent: isDetached,
     });
+    // wait for the server to be ready
+    await pollFn(() => this.isOk(), {
+      interval: 200,
+      timeout: 5000,
+    });
   }
 
   async stop(): Promise<void> {
@@ -123,8 +134,10 @@ export class PactServerNetwork implements ToolboxNetworkApi {
   }
 
   async isOk(): Promise<boolean> {
-    const res = await fetch(this.getNodeServiceUrl());
-    if (res.ok) {
+    const tx = this.#client.execution<string>("(tx-hash)").build();
+    const hash = (await tx.getSignedTransaction()).hash;
+    const txHash = await tx.dirtyRead();
+    if (txHash && txHash === hash) {
       return true;
     }
     return false;

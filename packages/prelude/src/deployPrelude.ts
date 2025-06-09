@@ -22,7 +22,6 @@ export async function deployPactDependency(
   client: PactToolboxClient,
   params: DeployContractOptions = {},
 ): Promise<void> {
-  console.log("deployPactDependency", dep);
   const { group, requires, name } = dep;
   const contractPath = join(preludeDir, group || "root", name);
   if (Array.isArray(requires)) {

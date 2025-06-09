@@ -23,6 +23,7 @@ import {
 import { createMinimalDevNet } from "../presets/minimal";
 import type { DevNetServiceDefinition, ToolboxNetworkApi, ToolboxNetworkStartOptions } from "../types";
 import { ensureCertificates } from "../utils";
+import type { PactToolboxClient } from "@pact-toolbox/runtime";
 
 /**
  * Converts the DevNet mining configuration to environment variables for the Docker container.
@@ -51,7 +52,9 @@ export class LocalDevNetNetwork implements ToolboxNetworkApi {
   #isDetached: boolean = true;
   #definition: DevNetServiceDefinition;
   #networkConfig: DevNetworkConfig;
-  constructor(networkConfig: DevNetworkConfig, activeProfiles: string[] = []) {
+  #client: PactToolboxClient;
+
+  constructor(networkConfig: DevNetworkConfig, client: PactToolboxClient, activeProfiles: string[] = []) {
     this.#networkConfig = networkConfig;
     this.#definition = createMinimalDevNet({
       clusterId: MINIMAL_CLUSTER_ID,
@@ -64,6 +67,7 @@ export class LocalDevNetNetwork implements ToolboxNetworkApi {
       networkName: this.#definition.networkName,
     });
     this.#activeProfiles = activeProfiles || [];
+    this.#client = client;
   }
 
   async #setupArtifacts(): Promise<void> {
@@ -147,6 +151,7 @@ export class LocalDevNetNetwork implements ToolboxNetworkApi {
   }
 
   async start(options?: ToolboxNetworkStartOptions): Promise<void> {
+    this.#client = options?.client ?? this.#client;
     const { isDetached = true, isStateless = false } = options || {};
     this.#isDetached = isDetached;
 

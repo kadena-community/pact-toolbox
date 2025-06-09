@@ -43,9 +43,9 @@ export class PactToolboxNetwork implements ToolboxNetworkApi {
     }
     this.#client = this.#startOptions.client ?? new PactToolboxClient(toolboxConfig);
     if (isPactServerNetworkConfig(networkConfig)) {
-      this.#networkApi = new PactServerNetwork(networkConfig);
+      this.#networkApi = new PactServerNetwork(networkConfig, this.#client);
     } else if (isDevNetworkConfig(networkConfig)) {
-      this.#networkApi = new LocalDevNetNetwork(networkConfig);
+      this.#networkApi = new LocalDevNetNetwork(networkConfig, this.#client);
     } else {
       throw new Error(`Unsupported network type`);
     }
@@ -73,6 +73,7 @@ export class PactToolboxNetwork implements ToolboxNetworkApi {
   }
 
   async start(options?: ToolboxNetworkStartOptions): Promise<void> {
+    this.#client = options?.client ?? this.#client;
     const preludes = this.#toolboxConfig.preludes ?? [];
     const contractsDir = this.#toolboxConfig.contractsDir ?? "contracts";
     const preludeConfig = {
@@ -90,6 +91,7 @@ export class PactToolboxNetwork implements ToolboxNetworkApi {
     await this.#networkApi.start({
       ...this.#startOptions,
       ...options,
+      client: this.#client,
     });
     logger.success(`Network ${this.#networkConfig.name} started at ${this.getNodeServiceUrl()}`);
 
