@@ -1,5 +1,11 @@
 # create-pact-toolbox-app
 
+## 0.4.0
+
+### Minor Changes
+
+- fix api file in the default template
+
 ## 0.3.0
 
 ### Minor Changes
