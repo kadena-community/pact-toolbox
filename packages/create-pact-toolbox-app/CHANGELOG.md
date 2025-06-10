@@ -1,5 +1,11 @@
 # create-pact-toolbox-app
 
+## 0.6.0
+
+### Minor Changes
+
+- fix git init inside templates
+
 ## 0.5.0
 
 ### Minor Changes
