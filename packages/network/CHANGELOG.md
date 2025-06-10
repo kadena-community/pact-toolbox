@@ -1,5 +1,16 @@
 # @pact-toolbox/network
 
+## 0.3.0
+
+### Minor Changes
+
+- fix repl init when downloading preludes
+
+### Patch Changes
+
+- Updated dependencies
+  - @pact-toolbox/prelude@1.2.0
+
 ## 0.2.0
 
 ### Minor Changes

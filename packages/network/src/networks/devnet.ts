@@ -1,4 +1,4 @@
-import type { DevNetMiningConfig, DevNetworkConfig } from "@pact-toolbox/config";
+import type { DevNetworkConfig } from "@pact-toolbox/config";
 import {
   ContainerOrchestrator,
   didMakeBlocks,
@@ -13,6 +13,7 @@ import {
 } from "@pact-toolbox/utils";
 import { rm } from "node:fs/promises";
 
+import type { PactToolboxClient } from "@pact-toolbox/runtime";
 import { join } from "pathe";
 import { DEVNET_CONFIGS_DIR, DEVNET_PUBLIC_PORT, MINIMAL_CLUSTER_ID, MINIMAL_NETWORK_NAME } from "../config/constants";
 import {
@@ -23,27 +24,6 @@ import {
 import { createMinimalDevNet } from "../presets/minimal";
 import type { DevNetServiceDefinition, ToolboxNetworkApi, ToolboxNetworkStartOptions } from "../types";
 import { ensureCertificates } from "../utils";
-import type { PactToolboxClient } from "@pact-toolbox/runtime";
-
-/**
- * Converts the DevNet mining configuration to environment variables for the Docker container.
- * @param miningConfig - The mining configuration object.
- * @returns A record of environment variables.
- */
-export function devNetMiningConfigToEnvVars(miningConfig?: DevNetMiningConfig): Record<string, string> {
-  const envVars: Record<string, string> = {};
-
-  if (!miningConfig) return envVars;
-
-  for (const [key, value] of Object.entries(miningConfig)) {
-    if (value !== undefined) {
-      const envKey = `MINING_${key.replace(/[A-Z]/g, (letter) => `_${letter}`).toUpperCase()}`;
-      envVars[envKey] = String(value);
-    }
-  }
-
-  return envVars;
-}
 
 export class LocalDevNetNetwork implements ToolboxNetworkApi {
   public id: string = getUuid();
@@ -60,8 +40,7 @@ export class LocalDevNetNetwork implements ToolboxNetworkApi {
       clusterId: MINIMAL_CLUSTER_ID,
       networkName: MINIMAL_NETWORK_NAME,
       port: Number(this.getServicePort()),
-      onDemandMining: networkConfig.containerConfig?.onDemandMining,
-      constantDelayBlockTime: networkConfig.containerConfig?.constantDelayBlockTime,
+      miningConfig: this.#networkConfig.miningConfig,
     });
     this.#orchestrator = new ContainerOrchestrator({
       networkName: this.#definition.networkName,
@@ -161,6 +140,7 @@ export class LocalDevNetNetwork implements ToolboxNetworkApi {
         networkName: `devnet-${this.id}-network`,
         port: Number(this.getServicePort()),
         persistDb: false,
+        miningConfig: this.#networkConfig.miningConfig,
       });
     }
 

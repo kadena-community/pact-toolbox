@@ -19,6 +19,7 @@ import {
   MINING_TRIGGER_PORT,
 } from "../config/constants";
 import type { DevNetServiceDefinition } from "../types";
+import type { DevNetMiningConfig } from "@pact-toolbox/config";
 
 interface ChainwebNodeServiceOptions {
   image: string;
@@ -113,7 +114,7 @@ export function createMiningClientService({
   constantDelayBlockTime = 5,
   miningClientPort = MINING_CLIENT_PORT,
   nodeServicePort = NODE_SERVICE_PORT,
-}: Partial<MiningClientServiceOptions>): DockerServiceConfig {
+}: Partial<MiningClientServiceOptions> = {}): DockerServiceConfig {
   return {
     containerName: MINING_CLIENT_SERVICE_NAME,
     image,
@@ -152,27 +153,24 @@ interface MiningTriggerServiceOptions {
   miningClientUrl: string;
   chainwebServiceEndpoint: string;
   miningTriggerPort: number;
-  idlePeriod: number;
-  confirmationPeriod: number;
-  transactionBatchPeriod: number;
-  confirmationCount: number;
-  miningCooldown: number;
-  disableIdleWorker: boolean;
-  disableConfirmationWorker: boolean;
+  miningConfig?: DevNetMiningConfig;
 }
 
 export function createMiningTriggerService({
   miningClientUrl = `http://${MINING_CLIENT_SERVICE_NAME}:${MINING_CLIENT_PORT}`,
   chainwebServiceEndpoint = `http://${BOOTSTRAP_NODE_SERVICE_NAME}:${NODE_SERVICE_PORT}`,
   miningTriggerPort = MINING_TRIGGER_PORT,
-  idlePeriod = 10,
-  confirmationPeriod = 1,
-  transactionBatchPeriod = 0.05,
-  confirmationCount = 5,
-  miningCooldown = 0.05,
-  disableIdleWorker = false,
-  disableConfirmationWorker = false,
+  miningConfig = {},
 }: Partial<MiningTriggerServiceOptions> = {}): DockerServiceConfig {
+  const {
+    transactionBatchPeriod = 0.05,
+    confirmationCount = 5,
+    confirmationPeriod = 1,
+    miningCooldown = 0.05,
+    idlePeriod = 5,
+    disableIdleWorker = false,
+    disableConfirmationWorker = false,
+  } = miningConfig;
   return {
     containerName: MINING_TRIGGER_SERVICE_NAME,
     image: MINING_TRIGGER_IMAGE,
@@ -236,8 +234,7 @@ interface MinimalDevNetOptions {
   port: number;
   networkName: string;
   persistDb?: boolean;
-  onDemandMining?: boolean;
-  constantDelayBlockTime?: number;
+  miningConfig?: DevNetMiningConfig;
 }
 
 export function createMinimalDevNet({
@@ -245,8 +242,6 @@ export function createMinimalDevNet({
   port = DEVNET_PUBLIC_PORT,
   networkName = MINIMAL_NETWORK_NAME,
   persistDb = true,
-  onDemandMining = true,
-  constantDelayBlockTime = 5,
 }: Partial<MinimalDevNetOptions> = {}): DevNetServiceDefinition {
   return {
     clusterId,
@@ -256,10 +251,7 @@ export function createMinimalDevNet({
         clusterId,
         persistDb,
       }),
-      miningClient: createMiningClientService({
-        onDemandMining,
-        constantDelayBlockTime,
-      }),
+      miningClient: createMiningClientService(),
       miningTrigger: createMiningTriggerService(),
       apiProxy: createApiProxyService({
         port,
