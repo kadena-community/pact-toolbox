@@ -4,7 +4,7 @@
   'hello-ks: { "keys": [], "pred": "keys-all" }
 })
 (load "hello-world.pact")
-(expect "should say hello world!" (free.hello-world.say-hello "world") "Hello, world!")
+(expect "should say hello world!" (free.hello-world.say-hello "world") "Hello world!")
 
 (commit-tx)
 

@@ -97,12 +97,14 @@ const main = defineCommand({
       }
 
       if (args.git) {
+        process.chdir(projectPath);
         const s = p.spinner();
         s.start("Initializing git repository");
         await runBin("git", ["init"], { cwd: projectPath });
         await runBin("git", ["add", "."], { cwd: projectPath });
         await runBin("git", ["commit", "-m", "Initial commit"], { cwd: projectPath });
         s.stop("Git repository initialized");
+        process.chdir(process.cwd());
       }
 
       logger.success(`Successfully created ${projectName} at ${projectPath}`);
