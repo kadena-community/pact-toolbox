@@ -1,5 +1,11 @@
 # @pact-toolbox/prelude
 
+## 1.2.0
+
+### Minor Changes
+
+- fix repl init when downloading preludes
+
 ## 1.1.0
 
 ### Minor Changes

@@ -178,6 +178,9 @@ export async function downloadAllPreludes(config: CommonPreludeOptions): Promise
   for (const prelude of preludes) {
     await downloadPrelude(prelude, preludesDir, config.client, preludes, downloaded);
   }
+
+  // Create a test tools file for the pact repl tests
+  await createReplTestTools(config);
 }
 
 /**
