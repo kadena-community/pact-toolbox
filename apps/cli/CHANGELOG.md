@@ -1,5 +1,25 @@
 # pact-toolbox
 
+## 0.3.0
+
+### Minor Changes
+
+- new docker images, new devnet tui, and fixing bugs
+
+### Patch Changes
+
+- Updated dependencies
+  - @pact-toolbox/fabricator@0.2.0
+  - @pact-toolbox/network@0.4.0
+  - @pact-toolbox/prelude@2.0.0
+  - @pact-toolbox/runtime@0.2.0
+  - @pact-toolbox/client@0.2.0
+  - @pact-toolbox/config@0.2.0
+  - @pact-toolbox/script@0.2.0
+  - @pact-toolbox/utils@0.2.0
+  - @pact-toolbox/init@0.2.0
+  - @pact-toolbox/test@0.3.0
+
 ## 0.2.1
 
 ### Patch Changes

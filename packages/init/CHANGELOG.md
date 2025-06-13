@@ -1,5 +1,16 @@
 # @pact-toolbox/init
 
+## 0.2.0
+
+### Minor Changes
+
+- new docker images, new devnet tui, and fixing bugs
+
+### Patch Changes
+
+- Updated dependencies
+  - @pact-toolbox/utils@0.2.0
+
 ## 0.1.0
 
 ### Minor Changes

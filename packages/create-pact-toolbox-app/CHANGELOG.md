@@ -1,5 +1,16 @@
 # create-pact-toolbox-app
 
+## 0.7.0
+
+### Minor Changes
+
+- new docker images, new devnet tui, and fixing bugs
+
+### Patch Changes
+
+- Updated dependencies
+  - @pact-toolbox/utils@0.2.0
+
 ## 0.6.0
 
 ### Minor Changes

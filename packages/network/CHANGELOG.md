@@ -1,5 +1,19 @@
 # @pact-toolbox/network
 
+## 0.4.0
+
+### Minor Changes
+
+- new docker images, new devnet tui, and fixing bugs
+
+### Patch Changes
+
+- Updated dependencies
+  - @pact-toolbox/prelude@2.0.0
+  - @pact-toolbox/runtime@0.2.0
+  - @pact-toolbox/config@0.2.0
+  - @pact-toolbox/utils@0.2.0
+
 ## 0.3.0
 
 ### Minor Changes
