@@ -1,6 +1,6 @@
 {
   "name": "create-pact-toolbox-app",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "description": "Create Pact Toolbox apps with one command",
   "repository": "kadena-community/pact-toolbox",
   "author": "Salama Ashoush <salamaashoush@gmail.com>",

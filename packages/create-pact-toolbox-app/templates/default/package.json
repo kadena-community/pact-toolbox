@@ -30,6 +30,7 @@
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
     "@vitejs/plugin-react-swc": "^3.10.2",
+    "happy-dom": "^18.0.1",
     "pact-toolbox": "latest",
     "typescript": "^5.8.3",
     "vite": "^6.3.5",
@@ -38,7 +39,7 @@
     "vitest-dom": "^0.1.1"
   },
   "engines": {
-    "node": ">=22.0.0"
+    "node": ">=22.0.0 <24.0.0"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
