@@ -1,5 +1,11 @@
 # create-pact-toolbox-app
 
+## 0.8.0
+
+### Minor Changes
+
+- fix template tests
+
 ## 0.7.0
 
 ### Minor Changes
