@@ -14,8 +14,7 @@
     "pact:start": "pact-toolbox start",
     "pact:prelude": "pact-toolbox prelude",
     "pact:types": "pact-toolbox types",
-    "pact:run": "pact-toolbox run",
-    "prepare": "pact-toolbox prelude"
+    "pact:run": "pact-toolbox run"
   },
   "dependencies": {
     "@pact-toolbox/client": "workspace:*",
