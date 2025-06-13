@@ -1,5 +1,11 @@
 # @pact-toolbox/crypto
 
+## 0.2.0
+
+### Minor Changes
+
+- new docker images, new devnet tui, and fixing bugs
+
 ## 0.1.0
 
 ### Minor Changes
