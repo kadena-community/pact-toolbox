@@ -4,7 +4,7 @@ import { getNetworkConfig, isLocalNetwork, resolveConfig } from "@pact-toolbox/c
 import { PactToolboxClient } from "@pact-toolbox/runtime";
 import { logger, writeFile } from "@pact-toolbox/utils";
 
-import { createPactToJSTransformer } from "./transformer/pactToJS";
+import { createPactToJSTransformer } from "./transform";
 import { prettyPrintError } from "./api";
 
 const cache = {
@@ -24,7 +24,7 @@ async function transformAndDeploy(id: string, src: string) {
     cache.client = new PactToolboxClient(cache.resolvedConfig);
   }
 
-  const { code, types, modules } = transformPactToJS(src);
+  const { code, types, modules } = await transformPactToJS(src);
   try {
     const client = cache.client;
     const isDeployed =

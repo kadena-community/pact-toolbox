@@ -1,6 +1,5 @@
 import type { DevNetworkConfig } from "@pact-toolbox/config";
 import {
-  ContainerOrchestrator,
   didMakeBlocks,
   ensureDir,
   getUuid,
@@ -9,10 +8,10 @@ import {
   logger,
   pollFn,
   writeFile,
-  type DockerServiceConfig,
   type Logger,
   type Spinner,
 } from "@pact-toolbox/utils";
+import { ContainerOrchestrator, type ContainerConfig } from "@pact-toolbox/container-orchestrator";
 import { rm } from "node:fs/promises";
 import type { PactToolboxClient } from "@pact-toolbox/runtime";
 import { join } from "pathe";
@@ -83,12 +82,12 @@ export class LocalDevNetNetwork implements ToolboxNetworkApi {
     await writeFile(join(DEVNET_CONFIGS_DIR, "nginx.api.minimal.conf"), nginxConfigContent);
   }
 
-  #filterServicesByProfile(serviceConfigs: DockerServiceConfig[]): DockerServiceConfig[] {
+  #filterServicesByProfile(serviceConfigs: ContainerConfig[]): ContainerConfig[] {
     if (this.#activeProfiles.length === 0) {
       // If no profiles active, run services that have NO profile attribute.
       return serviceConfigs.filter(
         (config) => !config.profiles || config.profiles.length === 0,
-      ) as unknown as DockerServiceConfig[];
+      );
     }
 
     // If profiles ARE specified, only run services matching those profiles.

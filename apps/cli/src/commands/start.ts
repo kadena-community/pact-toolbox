@@ -2,6 +2,7 @@ import { defineCommand } from "citty";
 
 import { resolveConfig } from "@pact-toolbox/config";
 import { createPactToolboxNetwork } from "@pact-toolbox/network";
+import { tui } from "@pact-toolbox/tui";
 
 export const startCommand = defineCommand({
   meta: {
@@ -43,6 +44,17 @@ export const startCommand = defineCommand({
   run: async ({ args }) => {
     const config = await resolveConfig();
     const { network, quiet, tunnel } = args;
+    
+    // Start TUI if not in quiet mode
+    if (!quiet && !tunnel) {
+      tui.start({
+        refreshRate: 1000,
+        enableInteraction: true,
+      });
+      
+      tui.log("info", "cli", "Starting Pact Toolbox DevNet...");
+    }
+    
     await createPactToolboxNetwork(config, {
       isDetached: !quiet && !tunnel,
       logAccounts: true,
@@ -51,6 +63,19 @@ export const startCommand = defineCommand({
       network,
       conflictStrategy: "replace",
     });
+    
+    if (!quiet && !tunnel) {
+      tui.log("info", "cli", "DevNet started successfully");
+      tui.updateNetwork({
+        id: "devnet",
+        name: "Pact DevNet",
+        status: "running",
+        endpoints: [
+          { name: "API", url: `http://localhost:${config.network?.devnet?.publicPort || 8080}`, status: "up" },
+        ],
+      });
+    }
+    
     if (quiet || tunnel) {
       process.exit(0);
     } else {

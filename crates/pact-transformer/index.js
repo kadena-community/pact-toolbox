@@ -310,8 +310,12 @@ if (!nativeBinding) {
   throw new Error(`Failed to load native binding`)
 }
 
-const { PactTransformer, transformPactCode, parsePactCode } = nativeBinding
+const { transformPactToJs, PactTransformer, createPactTransformer, benchmarkParser, warmUpParserPool, resetOptimizationState, ErrorDetail } = nativeBinding
 
+module.exports.transformPactToJs = transformPactToJs
 module.exports.PactTransformer = PactTransformer
-module.exports.transformPactCode = transformPactCode
-module.exports.parsePactCode = parsePactCode
+module.exports.createPactTransformer = createPactTransformer
+module.exports.benchmarkParser = benchmarkParser
+module.exports.warmUpParserPool = warmUpParserPool
+module.exports.resetOptimizationState = resetOptimizationState
+module.exports.ErrorDetail = ErrorDetail

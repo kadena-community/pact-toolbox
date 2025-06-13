@@ -1,48 +1,64 @@
 {
   "name": "@pact-toolbox/pact-transformer",
   "version": "0.1.0",
-  "description": "High-performance Pact code transformer using tree-sitter with NAPI-RS bindings",
-  "main": "index.js",
-  "types": "index.d.ts",
+  "description": "High-performance Pact code transformer with Rust implementation",
+  "repository": "kadena-community/pact-toolbox",
+  "author": "Salama Ashoush <salamaashoush@gmail.com>",
+  "license": "MIT",
+  "private": false,
+  "keywords": [
+    "blockchain",
+    "kadena",
+    "pact",
+    "parser",
+    "transformer",
+    "rust",
+    "napi"
+  ],
+  "main": "./index.js",
+  "types": "./index.d.ts",
+  "publishConfig": {
+    "access": "public"
+  },
   "napi": {
     "name": "pact-transformer",
     "triples": {
       "defaults": true,
       "additional": [
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-unknown-linux-gnu",
         "x86_64-unknown-linux-musl",
         "aarch64-unknown-linux-gnu",
-        "i686-pc-windows-msvc",
-        "armv7-unknown-linux-gnueabihf",
-        "aarch64-apple-darwin",
-        "aarch64-pc-windows-msvc",
         "aarch64-unknown-linux-musl",
-        "x86_64-unknown-freebsd"
+        "aarch64-linux-android",
+        "armv7-unknown-linux-gnueabihf"
       ]
     }
   },
-  "license": "MIT",
-  "devDependencies": {
-    "@napi-rs/cli": "^2.18.4"
-  },
   "engines": {
-    "node": ">= 16"
+    "node": ">= 18"
   },
   "scripts": {
     "artifacts": "napi artifacts",
     "build": "napi build --platform --release",
     "build:debug": "napi build --platform",
+    "dev": "napi build --platform",
     "prepublishOnly": "napi prepublish -t npm",
-    "test": "node test.mjs",
-    "universal": "napi universal",
-    "version": "napi version"
+    "prepack": "pnpm run build",
+    "release": "pnpm test && pnpm publish",
+    "test:watch": "vitest",
+    "test": "vitest run",
+    "verify": "tsc --noEmit --skipLibCheck"
   },
-  "keywords": [
-    "pact",
-    "tree-sitter",
-    "transformer",
-    "native",
-    "performance",
-    "kadena",
-    "blockchain"
-  ]
+  "dependencies": {},
+  "devDependencies": {
+    "@napi-rs/cli": "^2.18.4",
+    "@pact-toolbox/vitest-config": "workspace:*",
+    "@types/node": "^24.0.1",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.3"
+  }
 }

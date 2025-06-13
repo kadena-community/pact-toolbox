@@ -1,57 +1,76 @@
-import { PactTransformer, transformPactCode } from "./index.js";
+import { transformPactToJs, createPactTransformer } from "./index.js";
 
-const samplePactCode = `
-(namespace 'coin)
-
+const pactCode = `
 (module coin GOVERNANCE
-  "A simple coin contract"
+  "Coin contract with transfer functionality"
 
   (defschema account
-    "User account schema"
-    balance:decimal)
+    "Account schema"
+    balance:decimal
+    guard:guard)
 
-  (defun transfer:bool (from:string to:string amount:decimal)
-    "Transfer coins between accounts"
-    (with-capability (TRANSFER from to amount)
-      (transfer-create from to amount)))
+  (defun transfer:string (from:string to:string amount:decimal)
+    "Transfer amount from one account to another"
+    (enforce (> amount 0.0) "Amount must be positive")
+    (with-read accounts from { "balance":= from-bal }
+      (with-read accounts to { "balance":= to-bal }
+        (enforce (>= from-bal amount) "Insufficient balance")
+        (update accounts from { "balance": (- from-bal amount) })
+        (update accounts to { "balance": (+ to-bal amount) })
+        (format "Transferred {} from {} to {}" [amount from to]))))
 
-  (defcap TRANSFER (from:string to:string amount:decimal)
-    "Transfer capability"
-    (compose-capability (DEBIT from amount))
-    (compose-capability (CREDIT to amount)))
+  (defcap TRANSFER:bool (from:string to:string amount:decimal)
+    @managed amount TRANSFER-mgr
+    @event
+    (enforce-guard (at 'guard (read accounts from))))
+
+  (defconst MIN_TRANSFER:decimal 0.0001
+    "Minimum transfer amount")
 )
 `;
 
-async function test() {
+async function testTransform() {
+  console.log("Testing transformPactToJs...");
+
   try {
-    console.log("🧪 Testing NAPI Pact Transformer...\n");
+    const result = await transformPactToJs(pactCode, {
+      generateTypes: true,
+    });
 
-    // Test with class instance
-    console.log("📝 Creating transformer instance...");
-    const transformer = new PactTransformer();
+    console.log("\n=== Modules ===");
+    console.log(JSON.stringify(result.modules, null, 2));
 
-    console.log("🔍 Parsing Pact code...");
-    const modules = transformer.parse(samplePactCode);
-    console.log("✅ Parsed modules:", JSON.stringify(modules, null, 2));
-
-    console.log("\n🔄 Transforming Pact code...");
-    const result = transformer.transform(samplePactCode, { debug: true });
-    console.log("✅ Transformation result:");
-    console.log("📄 Generated code:");
+    console.log("\n=== Generated Code ===");
     console.log(result.code);
-    console.log("\n📝 Generated types:");
+
+    console.log("\n=== Generated Types ===");
     console.log(result.types);
-
-    // Test with standalone function
-    console.log("\n🔄 Testing standalone transform function...");
-    const standaloneResult = transformPactCode(samplePactCode, { debug: false });
-    console.log("✅ Standalone result modules:", standaloneResult.modules.length);
-
-    console.log("\n✨ All tests passed!");
   } catch (error) {
-    console.error("❌ Test failed:", error);
-    process.exit(1);
+    console.error("Transform error:", error);
   }
 }
 
-test();
+function testSyncTransformer() {
+  console.log("\n\nTesting PactTransformer...");
+
+  const transformer = createPactTransformer();
+
+  try {
+    const modules = transformer.transform(pactCode);
+    console.log("\n=== Sync Transform Result ===");
+    console.log(JSON.stringify(modules, null, 2));
+
+    const errors = transformer.getErrors("(invalid pact code");
+    console.log("\n=== Error Detection ===");
+    console.log(errors);
+  } catch (error) {
+    console.error("Sync transform error:", error);
+  }
+}
+
+async function runTests() {
+  await testTransform();
+  testSyncTransformer();
+}
+
+runTests().catch(console.error);

@@ -20,11 +20,7 @@ pub struct TriggerState {
 
 impl TriggerState {
     pub fn new() -> Self {
-        Self {
-            chain_map: HashMap::new(),
-            scheduled_trigger: None,
-            pending_flush: false,
-        }
+        Self { chain_map: HashMap::new(), scheduled_trigger: None, pending_flush: false }
     }
 
     pub fn insert_transaction(
@@ -86,13 +82,7 @@ pub struct TTHandle {
 impl TTHandle {
     pub fn new(buffer: usize) -> (Self, mpsc::Receiver<()>) {
         let (tx, rx) = mpsc::channel(buffer);
-        (
-            Self {
-                state: Arc::new(Mutex::new(TriggerState::new())),
-                signal: tx,
-            },
-            rx,
-        )
+        (Self { state: Arc::new(Mutex::new(TriggerState::new())), signal: tx }, rx)
     }
 
     pub async fn push_transaction(

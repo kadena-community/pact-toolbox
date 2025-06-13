@@ -1,209 +1,433 @@
-use tree_sitter::Node;
-use crate::error::TransformerError;
-use crate::types::*;
-use crate::utils;
+// Arena functionality simplified
+use crate::ast::*;
+use crate::error::ParseError;
+use rayon::prelude::*;
+use std::sync::Arc;
+use tree_sitter::{Node, Parser as TSParser};
 
-/// Parse a module node into a PactModule struct
-pub fn parse_module(node: &Node, source: &str, namespace: Option<&str>) -> Result<PactModule, TransformerError> {
-    let name = node.child_by_field_name("name")
-        .and_then(|n| utils::get_node_text(&n, source))
-        .ok_or_else(|| TransformerError::MissingField("module name".to_string()))?;
+pub struct Parser {
+    ts_parser: TSParser,
+}
 
-    let mut module = PactModule::new(name, namespace.map(|s| s.to_string()));
+impl Parser {
+    pub fn new() -> Self {
+        let mut ts_parser = TSParser::new();
+        let language = tree_sitter_pact::LANGUAGE;
+        ts_parser.set_language(&language.into()).expect("Error loading Pact grammar");
 
-    // Extract governance
-    if let Some(governance_node) = node.child_by_field_name("governance") {
-        module.governance = utils::get_node_text(&governance_node, source);
+        Self { ts_parser }
     }
 
-    // Extract documentation
-    module.doc = utils::get_doc_string(node, source);
+    pub fn parse(&mut self, source: &str) -> (Vec<PactModule>, Vec<ParseError>) {
+        let tree = match self.ts_parser.parse(source, None) {
+            Some(tree) => tree,
+            None => {
+                return (vec![], vec![ParseError::new("Failed to parse".to_string(), 0, 0)]);
+            }
+        };
 
-    // Parse child nodes
-    let mut cursor = node.walk();
-    for child in node.children(&mut cursor) {
-        match child.kind() {
-            "defschema" => {
-                let schema = parse_schema(&child, source)?;
-                module.schemas.push(schema);
-            }
-            "defcap" => {
-                let capability = parse_capability(&child, source)?;
-                module.capabilities.push(capability);
-            }
-            "defun" => {
-                let function = parse_function(&child, source, &module.path)?;
-                module.functions.push(function);
-            }
-            _ => {} // Ignore other node types
+        let root_node = tree.root_node();
+        let mut errors = Vec::new();
+
+        // Collect parse errors
+        if root_node.has_error() {
+            let mut cursor = root_node.walk();
+            collect_errors(&mut cursor, &mut errors);
         }
+
+        // Extract modules in parallel
+        let module_nodes = self.find_modules(root_node);
+        let source_arc = Arc::new(source.to_string());
+
+        let modules: Vec<PactModule> = module_nodes
+            .into_par_iter()
+            .filter_map(|node| self.parse_module(node, &source_arc))
+            .collect();
+
+        (modules, errors)
     }
 
-    Ok(module)
-}
+    fn find_modules<'a>(&self, root: Node<'a>) -> Vec<Node<'a>> {
+        let mut modules = Vec::new();
+        let mut cursor = root.walk();
 
-/// Parse a function definition node
-pub fn parse_function(node: &Node, source: &str, module_path: &str) -> Result<PactFunction, TransformerError> {
-    let name = node.child_by_field_name("name")
-        .and_then(|n| utils::get_node_text(&n, source))
-        .ok_or_else(|| TransformerError::MissingField("function name".to_string()))?;
-
-    let mut function = PactFunction::new(name, module_path);
-
-    // Extract documentation
-    function.doc = utils::get_doc_string(node, source);
-
-    // Extract return type
-    function.return_type = utils::get_return_type_of(node, source);
-
-    // Parse parameters
-    if let Some(params_node) = node.child_by_field_name("parameters") {
-        let mut cursor = params_node.walk();
-        for child in params_node.children(&mut cursor) {
-            if child.kind() == "parameter" {
-                let parameter = parse_parameter(&child, source)?;
-                function.parameters.push(parameter);
+        for child in root.children(&mut cursor) {
+            if child.kind() == "module" {
+                modules.push(child);
             }
         }
+
+        modules
     }
 
-    // Parse body for required capabilities (simplified for now)
-    function.required_capabilities = extract_required_capabilities(node, source);
-
-    Ok(function)
-}
-
-/// Parse a parameter node
-pub fn parse_parameter(node: &Node, source: &str) -> Result<PactParameter, TransformerError> {
-    let name = node.child_by_field_name("name")
-        .and_then(|n| utils::get_node_text(&n, source))
-        .ok_or_else(|| TransformerError::MissingField("parameter name".to_string()))?;
-
-    let param_type = node.child_by_field_name("type")
-        .and_then(|type_node| {
-            let mut cursor = type_node.walk();
-            for child in type_node.children(&mut cursor) {
-                if child.kind() == "type_identifier" {
-                    return utils::get_node_text(&child, source);
-                }
-            }
-            None
-        })
-        .unwrap_or_else(|| "unknown".to_string());
-
-    Ok(PactParameter {
-        name,
-        param_type,
-    })
-}
-
-/// Parse a schema definition node
-pub fn parse_schema(node: &Node, source: &str) -> Result<PactSchema, TransformerError> {
-    let name = node.child_by_field_name("name")
-        .and_then(|n| utils::get_node_text(&n, source))
-        .ok_or_else(|| TransformerError::MissingField("schema name".to_string()))?;
-
-    let mut schema = PactSchema::new(name);
-
-    // Extract documentation
-    schema.doc = utils::get_doc_string(node, source);
-
-    // Parse fields
-    if let Some(fields_node) = node.child_by_field_name("fields") {
-        let mut cursor = fields_node.walk();
-        for child in fields_node.children(&mut cursor) {
-            if child.kind() == "schema_field" {
-                let field = parse_schema_field(&child, source)?;
-                schema.fields.push(field);
-            }
-        }
+    fn find_child_by_kind<'a>(parent: Node<'a>, kind: &str) -> Option<Node<'a>> {
+        let mut cursor = parent.walk();
+        let result = parent.children(&mut cursor).find(|n| n.kind() == kind);
+        result
     }
 
-    Ok(schema)
-}
+    fn parse_module(&self, node: Node, source: &Arc<String>) -> Option<PactModule> {
+        // Extract module name and governance using named fields
+        let name = Self::find_child_by_kind(node, "module_identifier")?
+            .utf8_text(source.as_bytes())
+            .ok()?
+            .to_string();
 
-/// Parse a schema field node
-pub fn parse_schema_field(node: &Node, source: &str) -> Result<PactSchemaField, TransformerError> {
-    let name = node.child_by_field_name("name")
-        .and_then(|n| utils::get_node_text(&n, source))
-        .ok_or_else(|| TransformerError::MissingField("field name".to_string()))?;
+        let governance = Self::find_child_by_kind(node, "module_governance")?
+            .utf8_text(source.as_bytes())
+            .ok()?
+            .to_string();
 
-    let field_type = find_type_identifier(node, source)
-        .unwrap_or_else(|| "unknown".to_string());
+        let mut module = PactModule::new(name, governance);
 
-    Ok(PactSchemaField {
-        name,
-        field_type,
-    })
-}
+        // Process all children
+        let mut cursor = node.walk();
+        let children: Vec<Node> = node.children(&mut cursor).collect();
 
-/// Parse a capability definition node
-pub fn parse_capability(node: &Node, source: &str) -> Result<PactCapability, TransformerError> {
-    let name = node.child_by_field_name("name")
-        .and_then(|n| utils::get_node_text(&n, source))
-        .ok_or_else(|| TransformerError::MissingField("capability name".to_string()))?;
+        let (functions, capabilities, schemas, constants, uses, implements, docs) =
+            rayon::scope(|_s| {
+                let mut functions = Vec::new();
+                let mut capabilities = Vec::new();
+                let mut schemas = Vec::new();
+                let mut constants = Vec::new();
+                let mut uses = Vec::new();
+                let mut implements = Vec::new();
+                let mut docs = Vec::new();
 
-    let mut capability = PactCapability::new(name);
-
-    // Extract documentation
-    capability.doc = utils::get_doc_string(node, source);
-
-    // Parse parameters
-    if let Some(params_node) = node.child_by_field_name("parameters") {
-        let mut cursor = params_node.walk();
-        for child in params_node.children(&mut cursor) {
-            if child.kind() == "parameter" {
-                let parameter = parse_parameter(&child, source)?;
-                capability.parameters.push(parameter);
-            }
-        }
-    }
-
-    Ok(capability)
-}
-
-/// Find type identifier in a node's descendants
-fn find_type_identifier(node: &Node, source: &str) -> Option<String> {
-    let mut cursor = node.walk();
-    for child in node.children(&mut cursor) {
-        if child.kind() == "type_identifier" {
-            return utils::get_node_text(&child, source);
-        }
-        // Recursively search in child nodes
-        if let Some(found) = find_type_identifier(&child, source) {
-            return Some(found);
-        }
-    }
-    None
-}
-
-/// Extract required capabilities from function body (simplified implementation)
-fn extract_required_capabilities(node: &Node, source: &str) -> Vec<String> {
-    let mut capabilities = Vec::new();
-
-    fn search_capabilities(node: &Node, source: &str, capabilities: &mut Vec<String>) {
-        // Look for function calls that might indicate capability requirements
-        if node.kind() == "s_expression" {
-            if let Some(head) = node.child(0) {
-                if let Ok(text) = head.utf8_text(source.as_bytes()) {
-                    if matches!(text, "with-capability" | "require-capability" | "compose-capability" | "install-capability") {
-                        // Extract capability name from the second argument
-                        if let Some(cap_arg) = node.child(1) {
-                            if let Ok(cap_text) = cap_arg.utf8_text(source.as_bytes()) {
-                                capabilities.push(cap_text.to_string());
+                for child in &children {
+                    match child.kind() {
+                        "defun" => {
+                            if let Some(func) = self.parse_function(*child, source) {
+                                functions.push(func);
                             }
                         }
+                        "defcap" => {
+                            if let Some(cap) = self.parse_capability(*child, source) {
+                                capabilities.push(cap);
+                            }
+                        }
+                        "defschema" => {
+                            if let Some(schema) = self.parse_schema(*child, source) {
+                                schemas.push(schema);
+                            }
+                        }
+                        "defconst" => {
+                            if let Some(constant) = self.parse_constant(*child, source) {
+                                constants.push(constant);
+                            }
+                        }
+                        "use" => {
+                            if let Some(use_stmt) = self.parse_use(*child, source) {
+                                uses.push(use_stmt);
+                            }
+                        }
+                        "implements" => {
+                            if let Some(impl_stmt) = self.parse_implements(*child, source) {
+                                implements.push(impl_stmt);
+                            }
+                        }
+                        "doc" => {
+                            if let Some(doc) = self.extract_doc(*child, source) {
+                                docs.push(doc);
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+
+                (functions, capabilities, schemas, constants, uses, implements, docs)
+            });
+
+        module.functions = functions;
+        module.capabilities = capabilities;
+        module.schemas = schemas;
+        module.constants = constants;
+        module.uses = uses;
+        module.implements = implements;
+        module.doc = docs.first().cloned();
+
+        Some(module)
+    }
+
+    fn parse_function(&self, node: Node, source: &Arc<String>) -> Option<PactFunction> {
+        // Find the def_identifier node and type annotation
+        let name_with_type_node = Self::find_child_by_kind(node, "def_identifier")?;
+        let name = name_with_type_node.utf8_text(source.as_bytes()).ok()?.to_string();
+
+        // Extract return type if present (it's a sibling of def_identifier)
+        let mut return_type = None;
+        let mut cursor = node.walk();
+        let children: Vec<Node> = node.children(&mut cursor).collect();
+
+        // Find type annotation that follows the def_identifier
+        for (i, child) in children.iter().enumerate() {
+            if child.kind() == "def_identifier" {
+                if let Some(next) = children.get(i + 1) {
+                    if next.kind() == "type_annotation" {
+                        return_type = Self::find_child_by_kind(*next, "type_identifier")
+                            .and_then(|n| n.utf8_text(source.as_bytes()).ok())
+                            .map(|s| s.to_string());
+                    }
+                }
+                break;
+            }
+        }
+
+        // Find parameter_list node
+        let params_node = Self::find_child_by_kind(node, "parameter_list")?;
+        let parameters = self.parse_parameters(params_node, source);
+
+        let mut function = PactFunction {
+            name,
+            doc: None,
+            parameters,
+            return_type,
+            body: self.extract_function_body(node, source),
+            is_defun: true,
+        };
+
+        // Check for doc strings
+        if let Some(doc_node) = Self::find_child_by_kind(node, "doc") {
+            function.doc = self.extract_doc(doc_node, source);
+        }
+
+        Some(function)
+    }
+
+    fn parse_capability(&self, node: Node, source: &Arc<String>) -> Option<PactCapability> {
+        // Similar to parse_function
+        let name_node = Self::find_child_by_kind(node, "def_identifier")?;
+        let name = name_node.utf8_text(source.as_bytes()).ok()?.to_string();
+
+        // Extract return type if present
+        let mut return_type = None;
+        let mut cursor = node.walk();
+        let children: Vec<Node> = node.children(&mut cursor).collect();
+
+        for (i, child) in children.iter().enumerate() {
+            if child.kind() == "def_identifier" {
+                if let Some(next) = children.get(i + 1) {
+                    if next.kind() == "type_annotation" {
+                        return_type = Self::find_child_by_kind(*next, "type_identifier")
+                            .and_then(|n| n.utf8_text(source.as_bytes()).ok())
+                            .map(|s| s.to_string());
+                    }
+                }
+                break;
+            }
+        }
+
+        let params_node = Self::find_child_by_kind(node, "parameter_list")?;
+        let parameters = self.parse_parameters(params_node, source);
+
+        let mut capability = PactCapability {
+            name,
+            doc: None,
+            parameters,
+            return_type,
+            managed: None,
+            is_event: false,
+        };
+
+        // Check for doc, @managed, @event
+        let mut cursor = node.walk();
+        let children: Vec<Node> = node.children(&mut cursor).collect();
+
+        for (i, child) in children.iter().enumerate() {
+            match child.kind() {
+                "doc" => capability.doc = self.extract_doc(*child, source),
+                "managed" => {
+                    // @managed is followed by parameter and optional manager function
+                    if let Some(param_node) = children.get(i + 1) {
+                        if param_node.kind() == "reference" {
+                            let parameter =
+                                param_node.utf8_text(source.as_bytes()).ok()?.to_string();
+                            let manager_function = children
+                                .get(i + 2)
+                                .filter(|n| n.kind() == "reference")
+                                .and_then(|n| n.utf8_text(source.as_bytes()).ok())
+                                .map(|s| s.to_string());
+                            capability.managed = Some(ManagedInfo { parameter, manager_function });
+                        }
+                    }
+                }
+                "reference" => {
+                    // Check if this is @event
+                    if let Ok(text) = child.utf8_text(source.as_bytes()) {
+                        if text == "@event" {
+                            capability.is_event = true;
+                        }
+                    }
+                }
+                _ => {}
+            }
+        }
+
+        Some(capability)
+    }
+
+    fn parse_schema(&self, node: Node, source: &Arc<String>) -> Option<PactSchema> {
+        let name_node = Self::find_child_by_kind(node, "def_identifier")?;
+        let name = name_node.utf8_text(source.as_bytes()).ok()?.to_string();
+
+        let mut schema = PactSchema { name, doc: None, fields: Vec::new() };
+
+        // Parse fields from schema_field_list
+        if let Some(field_list) = Self::find_child_by_kind(node, "schema_field_list") {
+            let mut cursor = field_list.walk();
+            for field_node in field_list.children(&mut cursor) {
+                if field_node.kind() == "schema_field" {
+                    if let Some(field) = self.parse_schema_field(field_node, source) {
+                        schema.fields.push(field);
                     }
                 }
             }
         }
 
-        let mut cursor = node.walk();
-        for child in node.children(&mut cursor) {
-            search_capabilities(&child, source, capabilities);
+        // Check for doc
+        if let Some(doc_node) = Self::find_child_by_kind(node, "doc") {
+            schema.doc = self.extract_doc(doc_node, source);
         }
+
+        Some(schema)
     }
 
-    search_capabilities(node, source, &mut capabilities);
-    capabilities
+    fn parse_constant(&self, node: Node, source: &Arc<String>) -> Option<PactConstant> {
+        let name_node = Self::find_child_by_kind(node, "def_identifier")?;
+        let name = name_node.utf8_text(source.as_bytes()).ok()?.to_string();
+
+        // Extract type if present
+        let mut constant_type = None;
+        let mut cursor = node.walk();
+        let children: Vec<Node> = node.children(&mut cursor).collect();
+
+        for (i, child) in children.iter().enumerate() {
+            if child.kind() == "def_identifier" {
+                if let Some(next) = children.get(i + 1) {
+                    if next.kind() == "type_annotation" {
+                        constant_type = Self::find_child_by_kind(*next, "type_identifier")
+                            .and_then(|n| n.utf8_text(source.as_bytes()).ok())
+                            .map(|s| s.to_string());
+                    }
+                }
+                break;
+            }
+        }
+
+        // Find the value (it's an expression after the name/type)
+        let mut value = String::new();
+        let mut found_name = false;
+        for child in children {
+            if found_name && child.kind() != "type_annotation" && child.kind() != "doc" {
+                value = child.utf8_text(source.as_bytes()).ok()?.to_string();
+                break;
+            }
+            if child.kind() == "def_identifier" {
+                found_name = true;
+            }
+        }
+
+        let mut constant = PactConstant { name, doc: None, constant_type, value };
+
+        // Check for doc
+        if let Some(doc_node) = Self::find_child_by_kind(node, "doc") {
+            constant.doc = self.extract_doc(doc_node, source);
+        }
+
+        Some(constant)
+    }
+
+    fn parse_parameters(&self, node: Node, source: &Arc<String>) -> Vec<PactParameter> {
+        let mut cursor = node.walk();
+        node.children(&mut cursor)
+            .filter(|child| child.kind() == "parameter")
+            .filter_map(|param_node| self.parse_parameter(param_node, source))
+            .collect()
+    }
+
+    fn parse_parameter(&self, node: Node, source: &Arc<String>) -> Option<PactParameter> {
+        let name_node = Self::find_child_by_kind(node, "parameter_identifier")?;
+        let name = name_node.utf8_text(source.as_bytes()).ok()?.to_string();
+
+        let parameter_type = Self::find_child_by_kind(node, "type_annotation")
+            .and_then(|n| Self::find_child_by_kind(n, "type_identifier"))
+            .and_then(|n| n.utf8_text(source.as_bytes()).ok())
+            .map(|s| s.to_string());
+
+        Some(PactParameter { name, parameter_type })
+    }
+
+    fn parse_schema_field(&self, node: Node, source: &Arc<String>) -> Option<SchemaField> {
+        let name_node = Self::find_child_by_kind(node, "schema_field_identifier")?;
+        let name = name_node.utf8_text(source.as_bytes()).ok()?.to_string();
+
+        let field_type = Self::find_child_by_kind(node, "type_annotation")
+            .and_then(|n| Self::find_child_by_kind(n, "type_identifier"))
+            .and_then(|n| n.utf8_text(source.as_bytes()).ok())
+            .map(|s| s.to_string())
+            .unwrap_or_else(|| "string".to_string());
+
+        Some(SchemaField { name, field_type })
+    }
+
+    fn parse_use(&self, node: Node, source: &Arc<String>) -> Option<String> {
+        // Use statements have a reference node as child
+        Self::find_child_by_kind(node, "reference")
+            .and_then(|n| n.utf8_text(source.as_bytes()).ok())
+            .map(|s| s.to_string())
+    }
+
+    fn parse_implements(&self, node: Node, source: &Arc<String>) -> Option<String> {
+        // Implements statements have a reference node as child
+        Self::find_child_by_kind(node, "reference")
+            .and_then(|n| n.utf8_text(source.as_bytes()).ok())
+            .map(|s| s.to_string())
+    }
+
+    fn extract_doc(&self, node: Node, source: &Arc<String>) -> Option<String> {
+        // Doc node contains a doc_string child
+        Self::find_child_by_kind(node, "doc_string")
+            .and_then(|n| n.utf8_text(source.as_bytes()).ok())
+            .map(|s| s.trim_matches('"').to_string())
+    }
+
+    fn extract_function_body(&self, node: Node, source: &Arc<String>) -> String {
+        let mut cursor = node.walk();
+        let children: Vec<Node> = node.children(&mut cursor).collect();
+
+        // Skip everything until after parameter_list, then take expressions
+        let mut found_params = false;
+        let mut body_parts = Vec::new();
+
+        for child in children {
+            if child.kind() == "parameter_list" {
+                found_params = true;
+                continue;
+            }
+
+            if found_params && child.kind() != "doc" && child.kind() != "(" && child.kind() != ")" {
+                if let Ok(text) = child.utf8_text(source.as_bytes()) {
+                    body_parts.push(text.to_string());
+                }
+            }
+        }
+
+        body_parts.join(" ")
+    }
+}
+
+fn collect_errors(cursor: &mut tree_sitter::TreeCursor, errors: &mut Vec<ParseError>) {
+    if cursor.node().is_error() {
+        let node = cursor.node();
+        let start = node.start_position();
+        errors.push(ParseError::new("Syntax error".to_string(), start.row + 1, start.column + 1));
+    }
+
+    if cursor.goto_first_child() {
+        collect_errors(cursor, errors);
+        while cursor.goto_next_sibling() {
+            collect_errors(cursor, errors);
+        }
+        cursor.goto_parent();
+    }
 }

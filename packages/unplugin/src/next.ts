@@ -1,13 +1,13 @@
 import type { NetworkConfig, PactToolboxConfigObj } from "@pact-toolbox/config";
 import type { NextConfig } from "next";
 import type { ChildProcess } from "node:child_process";
-import { fork } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 
 import { getNetworkConfig, getSerializableNetworkConfig, resolveConfig } from "@pact-toolbox/config";
 import { PactToolboxClient } from "@pact-toolbox/runtime";
-import { logger, spinner } from "@pact-toolbox/utils";
+import { tui } from "@pact-toolbox/tui";
+import { processPatterns, getOrchestrator } from "@pact-toolbox/process-manager";
 
 import type { PluginOptions } from "./plugin/types";
 import type { PactToolboxNetwork } from "@pact-toolbox/network";
@@ -88,20 +88,39 @@ async function initializePactToolbox(options: PluginOptions = {}): Promise<void>
       // Start network if requested and not in test mode
       if (isDev && !isTest) {
         try {
+          tui.log("info", "next-plugin", "Starting network worker process");
+          
           const __filename = fileURLToPath(import.meta.url);
           const __dirname = path.dirname(__filename);
-          const workerPath = path.resolve(__dirname, "network-worker.js");
+          const workerPath = path.resolve(__dirname, "enhanced-network-worker.js");
 
-          state.networkProcess = fork(workerPath, [], {
-            detached: true,
-            stdio: "inherit",
-          });
+          // Create network worker process using pattern
+          const orchestrator = getOrchestrator();
+          await orchestrator.start(processPatterns.worker({
+            id: "next-network-worker",
+            name: "Next.js Network Worker",
+            command: process.execPath,
+            args: [workerPath],
+            healthCommand: `curl -f http://localhost:${state.networkConfig.devnet?.publicPort || 8080}/health`,
+          }));
 
-          state.networkProcess.on("error", (err) => {
-            logger.error("Network worker process error:", err);
+          tui.log("info", "next-plugin", "Network worker process started successfully");
+          
+          // Update TUI with network information
+          tui.updateNetwork({
+            id: "next-devnet",
+            name: "Next.js DevNet",
+            status: "running",
+            endpoints: [
+              { 
+                name: "API", 
+                url: `http://localhost:${state.networkConfig.devnet?.publicPort || 8080}`, 
+                status: "up" 
+              },
+            ],
           });
         } catch (error) {
-          logger.error("[withPactToolbox] Error starting network:", error);
+          tui.log("error", "next-plugin", `Error starting network worker: ${error}`);
           // Don't throw here - allow the plugin to continue working even if network fails
           state.error = error instanceof Error ? error : new Error(String(error));
         }
@@ -110,7 +129,7 @@ async function initializePactToolbox(options: PluginOptions = {}): Promise<void>
       state.isInitialized = true;
     } catch (error) {
       state.error = error instanceof Error ? error : new Error(String(error));
-      logger.error("[withPactToolbox] Initialization failed:", state.error);
+      console.error("[withPactToolbox] Initialization failed:", state.error);
       throw state.error;
     } finally {
       state.isInitializing = false;
@@ -165,28 +184,42 @@ function withPactToolbox(options: PluginOptions = {}) {
       const handleShutdown = async (signal: string) => {
         const state = getGlobalState();
         if (state.isCleaningUp) {
+          tui.log("warn", "next-plugin", "Shutdown already in progress");
           return;
         }
         state.isCleaningUp = true;
-        const shutdownSpinner = spinner({ indicator: "timer" });
-        shutdownSpinner.start(`\n${signal} received. Shutting down network...`);
+        
+        tui.log("info", "next-plugin", `${signal} received, shutting down...`);
+        
         try {
-          if (state.networkProcess) {
-            state.networkProcess.kill();
+          // Use process orchestrator for coordinated shutdown
+          const orchestrator = getOrchestrator();
+          await orchestrator.shutdownAll();
+          
+          // Fallback: stop network directly if orchestrator didn't handle it
+          if (state.network) {
+            await state.network.stop();
           }
-          await state.network?.stop();
+          
+          tui.log("info", "next-plugin", "Shutdown completed successfully");
         } catch (error) {
+          tui.log("error", "next-plugin", `Error during shutdown: ${error}`);
           console.error(`Error during graceful shutdown:`, error);
         }
         process.exit(0);
       };
 
-      process.on("SIGINT", () => handleShutdown("SIGINT"));
-      process.on("SIGTERM", () => handleShutdown("SIGTERM"));
+      // Only set up handlers if not already set up
+      if (!process.listenerCount("SIGINT")) {
+        process.on("SIGINT", () => handleShutdown("SIGINT"));
+      }
+      if (!process.listenerCount("SIGTERM")) {
+        process.on("SIGTERM", () => handleShutdown("SIGTERM"));
+      }
 
       return enhancedConfig;
     } catch (error) {
-      logger.error("[withPactToolbox] Failed to enhance Next.js configuration:", error);
+      console.error("[withPactToolbox] Failed to enhance Next.js configuration:", error);
       // Return the original config if enhancement fails
       return nextConfig;
     }

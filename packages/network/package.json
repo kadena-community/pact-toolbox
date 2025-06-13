@@ -47,9 +47,11 @@
   },
   "dependencies": {
     "@pact-toolbox/config": "workspace:*",
+    "@pact-toolbox/container-orchestrator": "workspace:*",
     "@pact-toolbox/prelude": "workspace:*",
+    "@pact-toolbox/process-manager": "workspace:*",
     "@pact-toolbox/runtime": "workspace:*",
-    "@pact-toolbox/utils": "workspace:*",
+    "@pact-toolbox/tui": "workspace:*",
     "pathe": "^2.0.3"
   },
   "devDependencies": {
@@ -60,7 +62,7 @@
     "oxlint": "^1.1.0",
     "prettier": "^3.5.3",
     "tsdown": "^0.12.7",
-    "tsx": "^4.20.2",
+    "tsx": "^4.20.3",
     "typescript": "^5.8.3",
     "vitest": "^3.2.3"
   },

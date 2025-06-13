@@ -1,39 +1,41 @@
-use napi::bindgen_prelude::*;
-use napi_derive::napi;
-use serde::{Deserialize, Serialize};
+use napi::Error as NapiError;
+use thiserror::Error;
 
-/// Represents a parsing error with location information
-#[napi(object)]
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ParseError {
-    pub message: String,
-    pub line: u32,
-    pub column: u32,
-}
-
-/// Error types for the transformer
-#[derive(Debug, thiserror::Error)]
-pub enum TransformerError {
+#[derive(Error, Debug)]
+pub enum TransformError {
     #[error("Parse error: {0}")]
     ParseError(String),
 
-    #[error("Tree-sitter error: {0}")]
-    TreeSitterError(String),
+    #[error("Code generation error: {0}")]
+    CodeGenError(String),
 
-    #[error("Invalid node structure: {0}")]
-    InvalidNode(String),
+    #[error("Type error: {0}")]
+    TypeError(String),
 
-    #[error("Missing required field: {0}")]
-    MissingField(String),
+    #[error("IO error: {0}")]
+    IoError(#[from] std::io::Error),
+
+    #[error("Unknown error: {0}")]
+    Unknown(String),
 }
 
-impl From<TransformerError> for napi::Error {
-    fn from(err: TransformerError) -> Self {
-        match err {
-            TransformerError::ParseError(msg) => napi::Error::new(Status::InvalidArg, msg),
-            TransformerError::TreeSitterError(msg) => napi::Error::new(Status::GenericFailure, msg),
-            TransformerError::InvalidNode(msg) => napi::Error::new(Status::InvalidArg, msg),
-            TransformerError::MissingField(msg) => napi::Error::new(Status::InvalidArg, msg),
-        }
+pub type TransformResult<T> = Result<T, TransformError>;
+
+impl From<TransformError> for NapiError {
+    fn from(err: TransformError) -> Self {
+        NapiError::from_reason(err.to_string())
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct ParseError {
+    pub message: String,
+    pub line: usize,
+    pub column: usize,
+}
+
+impl ParseError {
+    pub fn new(message: String, line: usize, column: usize) -> Self {
+        Self { message, line, column }
     }
 }

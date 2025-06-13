@@ -1,128 +1,97 @@
-use napi_derive::napi;
-use serde::{Deserialize, Serialize};
+use ahash::AHashMap;
+use once_cell::sync::Lazy;
 
-/// Represents a Pact module
-#[napi(object)]
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct PactModule {
-    pub name: String,
-    pub path: String,
-    pub namespace: Option<String>,
-    pub governance: Option<String>,
-    pub doc: Option<String>,
-    pub functions: Vec<PactFunction>,
-    pub schemas: Vec<PactSchema>,
-    pub capabilities: Vec<PactCapability>,
+pub static PACT_TO_TS_TYPE_MAP: Lazy<AHashMap<&'static str, &'static str>> = Lazy::new(|| {
+    let mut map = AHashMap::new();
+    map.insert("integer", "number");
+    map.insert("decimal", "number");
+    map.insert("string", "string");
+    map.insert("bool", "boolean");
+    map.insert("time", "Date");
+    map.insert("keyset", "Keyset");
+    map.insert("guard", "Guard");
+    map.insert("value", "any");
+    map.insert("module", "Module");
+    map
+});
+
+pub fn pact_type_to_typescript(pact_type: &str) -> String {
+    // Handle parameterized types
+    if pact_type.contains('[') && pact_type.contains(']') {
+        let start = pact_type.find('[').unwrap();
+        let end = pact_type.find(']').unwrap();
+        let inner_type = &pact_type[start + 1..end];
+        let mapped_inner = pact_type_to_typescript(inner_type);
+        return format!("{}[]", mapped_inner);
+    }
+
+    // Handle object types with parameters
+    if pact_type.starts_with("object{") {
+        let type_param = pact_type.strip_prefix("object{").unwrap().strip_suffix('}').unwrap();
+        return format!("Record<string, {}>", pact_type_to_typescript(type_param));
+    }
+
+    // Handle table types
+    if pact_type.starts_with("table{") {
+        let schema = pact_type.strip_prefix("table{").unwrap().strip_suffix('}').unwrap();
+        return format!("Table<{}>", schema);
+    }
+
+    // Handle module types
+    if pact_type.starts_with("module{") {
+        let interfaces = pact_type.strip_prefix("module{").unwrap().strip_suffix('}').unwrap();
+        return format!("Module<{}>", interfaces);
+    }
+
+    // Map basic types
+    PACT_TO_TS_TYPE_MAP.get(pact_type).unwrap_or(&"any").to_string()
 }
 
-/// Represents a Pact function
-#[napi(object)]
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct PactFunction {
-    pub name: String,
-    pub path: String,
-    pub doc: Option<String>,
-    pub parameters: Vec<PactParameter>,
-    pub return_type: String,
-    pub required_capabilities: Vec<String>,
-}
+pub fn convert_to_jsdoc(doc: Option<&str>) -> String {
+    match doc {
+        Some(text) => {
+            let lines: Vec<String> = text.lines().map(|line| format!(" * {}", line)).collect();
 
-/// Represents a function parameter
-#[napi(object)]
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct PactParameter {
-    pub name: String,
-    pub param_type: String,
-}
-
-/// Represents a Pact schema
-#[napi(object)]
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct PactSchema {
-    pub name: String,
-    pub doc: Option<String>,
-    pub fields: Vec<PactSchemaField>,
-}
-
-/// Represents a schema field
-#[napi(object)]
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct PactSchemaField {
-    pub name: String,
-    pub field_type: String,
-}
-
-/// Represents a Pact capability
-#[napi(object)]
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct PactCapability {
-    pub name: String,
-    pub doc: Option<String>,
-    pub parameters: Vec<PactParameter>,
-}
-
-impl PactModule {
-    pub fn new(name: String, namespace: Option<String>) -> Self {
-        let path = if let Some(ns) = &namespace {
-            format!("{}.{}", ns, name)
-        } else {
-            name.clone()
-        };
-
-        Self {
-            name,
-            path,
-            namespace,
-            governance: None,
-            doc: None,
-            functions: Vec::new(),
-            schemas: Vec::new(),
-            capabilities: Vec::new(),
+            if lines.is_empty() {
+                String::new()
+            } else {
+                format!("/**\n{}\n */\n", lines.join("\n"))
+            }
         }
-    }
-
-    pub fn get_schema(&self, name: &str) -> Option<&PactSchema> {
-        self.schemas.iter().find(|s| s.name.to_lowercase() == name.to_lowercase())
-    }
-
-    pub fn get_function(&self, name: &str) -> Option<&PactFunction> {
-        self.functions.iter().find(|f| f.name == name)
-    }
-
-    pub fn get_capability(&self, name: &str) -> Option<&PactCapability> {
-        self.capabilities.iter().find(|c| c.name == name)
+        None => String::new(),
     }
 }
 
-impl PactFunction {
-    pub fn new(name: String, module_path: &str) -> Self {
-        Self {
-            name: name.clone(),
-            path: format!("{}.{}", module_path, name),
-            doc: None,
-            parameters: Vec::new(),
-            return_type: "void".to_string(),
-            required_capabilities: Vec::new(),
-        }
-    }
-}
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-impl PactSchema {
-    pub fn new(name: String) -> Self {
-        Self {
-            name,
-            doc: None,
-            fields: Vec::new(),
-        }
+    #[test]
+    fn test_basic_type_mapping() {
+        assert_eq!(pact_type_to_typescript("integer"), "number");
+        assert_eq!(pact_type_to_typescript("decimal"), "number");
+        assert_eq!(pact_type_to_typescript("string"), "string");
+        assert_eq!(pact_type_to_typescript("bool"), "boolean");
+        assert_eq!(pact_type_to_typescript("time"), "Date");
+        assert_eq!(pact_type_to_typescript("unknown"), "any");
     }
-}
 
-impl PactCapability {
-    pub fn new(name: String) -> Self {
-        Self {
-            name,
-            doc: None,
-            parameters: Vec::new(),
-        }
+    #[test]
+    fn test_list_type_mapping() {
+        assert_eq!(pact_type_to_typescript("[integer]"), "number[]");
+        assert_eq!(pact_type_to_typescript("[string]"), "string[]");
+    }
+
+    #[test]
+    fn test_object_type_mapping() {
+        assert_eq!(pact_type_to_typescript("object{integer}"), "Record<string, number>");
+        assert_eq!(pact_type_to_typescript("table{account}"), "Table<account>");
+    }
+
+    #[test]
+    fn test_jsdoc_conversion() {
+        assert_eq!(convert_to_jsdoc(None), "");
+        assert_eq!(convert_to_jsdoc(Some("Test function")), "/**\n * Test function\n */\n");
+        assert_eq!(convert_to_jsdoc(Some("Line 1\nLine 2")), "/**\n * Line 1\n * Line 2\n */\n");
     }
 }

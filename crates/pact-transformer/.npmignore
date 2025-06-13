@@ -1,8 +1,5 @@
 target
 Cargo.lock
 .cargo
-.github
-.vscode
+npm-debug.log*
 *.node
-src
-test.mjs

@@ -5,10 +5,12 @@ use std::io;
 use std::time::Duration;
 
 use actix_cors::Cors;
-use actix_web::{App, HttpRequest, HttpResponse, HttpServer, Responder, http::StatusCode, web, middleware};
+use actix_web::{
+    App, HttpRequest, HttpResponse, HttpServer, Responder, http::StatusCode, middleware, web,
+};
 use clap::Parser;
 use rand;
-use reqwest::{header, Client};
+use reqwest::{Client, header};
 use tokio::sync::mpsc;
 use tokio::time::sleep;
 use tracing::{error, info};
@@ -103,17 +105,11 @@ async fn main() -> io::Result<()> {
     let dev_request_logger = args.dev_request_logger;
     info!("Starting server on port {}", args.port);
     let server = HttpServer::new(move || {
-        let cors = Cors::default()
-            .allow_any_origin()
-            .allow_any_method()
-            .allow_any_header();
+        let cors = Cors::default().allow_any_origin().allow_any_method().allow_any_header();
 
         App::new()
             .wrap(cors)
-            .wrap(middleware::Condition::new(
-                dev_request_logger,
-                middleware::Logger::default(),
-            ))
+            .wrap(middleware::Condition::new(dev_request_logger, middleware::Logger::default()))
             .app_data(app_state.clone())
             .route(
                 "/chainweb/0.0/{network_id}/chain/{chain_id}/pact/api/v1/send",
@@ -164,12 +160,7 @@ async fn proxy_send(
         }
     }
 
-    let res = client
-        .post(&url)
-        .headers(headers)
-        .body(body)
-        .send()
-        .await;
+    let res = client.post(&url).headers(headers).body(body).send().await;
 
     match res {
         Ok(downstream_res) => {
@@ -199,9 +190,7 @@ async fn proxy_send(
                 let batch_period = Duration::from_secs_f64(data.transaction_batch_period);
                 let confirmations = Confirmations(data.default_confirmation);
 
-                tt_handle
-                    .push_transaction(batch_period, ChainId(chain_id), confirmations)
-                    .await;
+                tt_handle.push_transaction(batch_period, ChainId(chain_id), confirmations).await;
             }
 
             if let Ok(body) = downstream_res.bytes().await {
@@ -253,11 +242,8 @@ async fn confirmation_trigger(
         for _ in 0..confirmations.0 {
             let map: HashMap<String, usize> = chains.iter().map(|c| (c.0.to_string(), 1)).collect();
 
-            let res = client
-                .post(format!("{}/make-blocks", mining_client_url))
-                .json(&map)
-                .send()
-                .await;
+            let res =
+                client.post(format!("{}/make-blocks", mining_client_url)).json(&map).send().await;
 
             match res {
                 Ok(res) => {
@@ -290,22 +276,14 @@ async fn idle_trigger(mining_client_url: &str, idle_trigger_period: u64) {
         let chain_id = rand::random::<u8>() % 20;
         map.insert(chain_id.to_string(), 1);
 
-        let res = client
-            .post(format!("{}/make-blocks", mining_client_url))
-            .json(&map)
-            .send()
-            .await;
+        let res = client.post(format!("{}/make-blocks", mining_client_url)).json(&map).send().await;
 
         match res {
             Ok(res) => {
                 if res.status().is_success() {
                     info!("Successfully requested a block on chain {}", chain_id);
                 } else {
-                    error!(
-                        "Failed to request a block on chain {}: {}",
-                        chain_id,
-                        res.status()
-                    );
+                    error!("Failed to request a block on chain {}: {}", chain_id, res.status());
                 }
             }
             Err(e) => {

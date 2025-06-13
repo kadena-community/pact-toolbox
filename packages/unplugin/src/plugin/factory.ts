@@ -13,10 +13,8 @@ import {
 import { PactToolboxClient } from "@pact-toolbox/runtime";
 import { spinner, writeFile } from "@pact-toolbox/utils";
 import path from "node:path";
-import type { ErrorDetail } from "../transformer/errors";
 import type { CachedTransform, PluginOptions } from "./types";
-import { ParsingError } from "../transformer/errors";
-import { createPactToJSTransformer } from "../transformer/pactToJS";
+import { createPactToJSTransformer } from "../transform";
 import { PLUGIN_NAME, prettyPrintError, createPactToolboxNetwork } from "./utils";
 import type { PactToolboxNetwork } from "@pact-toolbox/network";
 
@@ -115,7 +113,7 @@ export const unpluginFactory: UnpluginFactory<PluginOptions | undefined> = (opti
     }
 
     try {
-      const { code, types, modules } = transformPactToJS(src);
+      const { code, types, modules } = await transformPactToJS(src);
 
       // Check if contracts are deployed
       const isDeployed =
@@ -138,13 +136,21 @@ export const unpluginFactory: UnpluginFactory<PluginOptions | undefined> = (opti
         map: null,
       };
     } catch (error) {
-      if (error instanceof ParsingError) {
-        console.error(`Parsing error in ${id}:`);
-        error.errors.forEach((err: ErrorDetail) => {
-          console.error(`  Line ${err.line}, Column ${err.column}: ${err.message}`);
-        });
+      // Handle errors from the Rust transformer
+      if (error instanceof Error && error.message.includes("Pact transformation failed")) {
+        console.error(`Transformation error in ${id}:`, error.message);
         return null; // Prevent further processing for invalid files
       }
+
+      // Handle parsing errors (maintain backward compatibility)
+      // if (error instanceof ParsingError) {
+      //   console.error(`Parsing error in ${id}:`);
+      //   // error.errors.forEach((err: ErrorDetail) => {
+      //   //   console.error(`  Line ${err.line}, Column ${err.column}: ${err.message}`);
+      //   // });
+      //   return null; // Prevent further processing for invalid files
+      // }
+
       console.error(`Unexpected error during transformation of ${id}:`, error);
       throw error; // Rethrow to let Vite handle it
     }

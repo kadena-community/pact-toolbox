@@ -1,0 +1,50 @@
+{
+  "name": "@pact-toolbox/container-orchestrator",
+  "version": "0.1.0",
+  "description": "Modern Docker container orchestration for Pact Toolbox",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsdown",
+    "dev": "tsdown --watch",
+    "test": "vitest",
+    "test:watch": "vitest --watch",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@pact-toolbox/process-manager": "workspace:*",
+    "@pact-toolbox/tui": "workspace:*",
+    "dockerode": "^4.0.7",
+    "tar-fs": "^3.0.9"
+  },
+  "devDependencies": {
+    "@types/dockerode": "^3.3.40",
+    "@types/node": "^24.0.1",
+    "@types/tar-fs": "^2.0.4",
+    "tsdown": "^0.12.7",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "docker",
+    "container",
+    "orchestration",
+    "devops",
+    "pact",
+    "kadena"
+  ]
+}

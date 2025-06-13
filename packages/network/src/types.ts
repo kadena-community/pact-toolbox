@@ -1,5 +1,5 @@
 import type { PactToolboxClient } from "@pact-toolbox/runtime";
-import type { DockerServiceConfig } from "@pact-toolbox/utils";
+import type { ContainerConfig } from "@pact-toolbox/container-orchestrator";
 
 export type ConflictStrategy = "error" | "replace" | "ignore";
 
@@ -26,10 +26,10 @@ export interface DevNetServiceDefinition {
   clusterId: string;
   volumes: string[];
   services: {
-    bootstrapNode: DockerServiceConfig;
-    miningClient: DockerServiceConfig;
-    apiProxy: DockerServiceConfig;
-    miningTrigger: DockerServiceConfig;
-    [key: string]: DockerServiceConfig;
+    bootstrapNode: ContainerConfig;
+    miningClient: ContainerConfig;
+    apiProxy: ContainerConfig;
+    miningTrigger: ContainerConfig;
+    [key: string]: ContainerConfig;
   };
 }
