@@ -57,10 +57,10 @@
     "@pact-toolbox/tsdown": "workspace:*",
     "@pact-toolbox/types": "workspace:*",
     "@pact-toolbox/vitest-config": "workspace:*",
-    "oxlint": "^0.18.1",
+    "oxlint": "^1.1.0",
     "prettier": "^3.5.3",
     "tsdown": "^0.12.7",
-    "tsx": "^4.19.4",
+    "tsx": "^4.20.2",
     "typescript": "^5.8.3",
     "vitest": "^3.2.3"
   },

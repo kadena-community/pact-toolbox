@@ -18,8 +18,11 @@
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true
+    "noFallthroughCasesInSwitch": true,
+    "paths": {
+      "~/pact/*": ["./pact/*"]
+    }
   },
-  "include": ["src"],
+  "include": ["src", "pact/**/*"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

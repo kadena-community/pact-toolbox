@@ -6,6 +6,7 @@ import { PactToolboxClient } from "@pact-toolbox/runtime";
 import type { PluginOptions } from "./plugin/types";
 import { PLUGIN_NAME, createPactToolboxNetwork } from "./plugin/utils";
 import type { PactToolboxNetwork } from "@pact-toolbox/network";
+import { spinner } from "@pact-toolbox/utils";
 
 export const pluginPactToolbox = (options?: PluginOptions): RsbuildPlugin => ({
   name: PLUGIN_NAME,
@@ -16,8 +17,13 @@ export const pluginPactToolbox = (options?: PluginOptions): RsbuildPlugin => ({
     let network: PactToolboxNetwork | null = null;
     api.onCloseDevServer(async () => {
       if (network) {
-        console.log("Shutting down network...");
-        await Promise.race([network?.stop(), new Promise((resolve) => setTimeout(resolve, 10000))]);
+        const shutdownSpinner = spinner({ indicator: "timer" });
+        try {
+          shutdownSpinner.start("Shutting down network...");
+          await Promise.race([network?.stop(), new Promise((resolve) => setTimeout(resolve, 10000))]);
+        } finally {
+          shutdownSpinner.stop("Network stopped!");
+        }
       }
     });
     api.modifyRsbuildConfig((config) => {

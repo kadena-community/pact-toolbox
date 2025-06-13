@@ -7,7 +7,7 @@ import path from "node:path";
 
 import { getNetworkConfig, getSerializableNetworkConfig, resolveConfig } from "@pact-toolbox/config";
 import { PactToolboxClient } from "@pact-toolbox/runtime";
-import { logger } from "@pact-toolbox/utils";
+import { logger, spinner } from "@pact-toolbox/utils";
 
 import type { PluginOptions } from "./plugin/types";
 import type { PactToolboxNetwork } from "@pact-toolbox/network";
@@ -168,13 +168,13 @@ function withPactToolbox(options: PluginOptions = {}) {
           return;
         }
         state.isCleaningUp = true;
-        logger.info(`\n${signal} received. Shutting down network...`);
+        const shutdownSpinner = spinner({ indicator: "timer" });
+        shutdownSpinner.start(`\n${signal} received. Shutting down network...`);
         try {
           if (state.networkProcess) {
             state.networkProcess.kill();
           }
           await state.network?.stop();
-          logger.info("Network stopped");
         } catch (error) {
           console.error(`Error during graceful shutdown:`, error);
         }

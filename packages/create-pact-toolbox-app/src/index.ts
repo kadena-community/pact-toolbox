@@ -1,10 +1,19 @@
-import * as p from "@clack/prompts";
-import { logger, writeFile, fillTemplatePlaceholders, runBin } from "@pact-toolbox/utils";
+import {
+  logger,
+  writeFile,
+  fillTemplatePlaceholders,
+  execAsync,
+  spinner,
+  isCancel,
+  select,
+  text,
+} from "@pact-toolbox/utils";
 import { defineCommand, runMain } from "citty";
 import { readdir, readFile } from "node:fs/promises";
 import { resolve, dirname, join } from "pathe";
 import { fileURLToPath } from "node:url";
 import { glob } from "glob";
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
@@ -41,12 +50,12 @@ const main = defineCommand({
     let template = args.template;
 
     if (!projectName) {
-      const selectedName = await p.text({
+      const selectedName = await text({
         message: "What would you like to name your project?",
         placeholder: "my-pact-app",
         defaultValue: "my-pact-app",
       });
-      if (p.isCancel(selectedName)) {
+      if (isCancel(selectedName)) {
         logger.info("Operation cancelled.");
         process.exit(0);
       }
@@ -60,12 +69,12 @@ const main = defineCommand({
     if (!template) {
       const templatesPath = resolve(__dirname, "..", "templates");
       const availableTemplates = await readdir(templatesPath);
-      const selectedTemplate = await p.select({
+      const selectedTemplate = await select({
         message: "Which template would you like to use?",
         options: availableTemplates.map((t) => ({ value: t, label: t })),
       });
 
-      if (p.isCancel(selectedTemplate)) {
+      if (isCancel(selectedTemplate)) {
         logger.info("Operation cancelled.");
         process.exit(0);
       }
@@ -98,11 +107,11 @@ const main = defineCommand({
 
       if (args.git) {
         process.chdir(projectPath);
-        const s = p.spinner();
+        const s = spinner();
         s.start("Initializing git repository");
-        await runBin("git", ["init"], { cwd: projectPath });
-        await runBin("git", ["add", "."], { cwd: projectPath });
-        await runBin("git", ["commit", "-m", "Initial commit"], { cwd: projectPath });
+        await execAsync("git init", { cwd: projectPath });
+        await execAsync("git add .", { cwd: projectPath });
+        await execAsync("git commit -m 'Initial commit'", { cwd: projectPath });
         s.stop("Git repository initialized");
         process.chdir(process.cwd());
       }

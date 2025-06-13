@@ -24,6 +24,7 @@ export interface ToolboxNetworkApi {
 export interface DevNetServiceDefinition {
   networkName: string;
   clusterId: string;
+  volumes: string[];
   services: {
     bootstrapNode: DockerServiceConfig;
     miningClient: DockerServiceConfig;

@@ -1,9 +1,7 @@
 import type { DockerServiceConfig } from "@pact-toolbox/utils";
 import {
-  CHAINWEB_DB_DIR,
   CHAINWEB_NODE_IMAGE,
   P2P_PORT,
-  DEVNET_CONFIGS_DIR,
   MINER_PUBLIC_KEY,
   MINING_CLIENT_IMAGE,
   MINING_CLIENT_PORT,
@@ -17,6 +15,7 @@ import {
   BOOTSTRAP_NODE_SERVICE_NAME,
   API_PROXY_SERVICE_NAME,
   MINING_TRIGGER_PORT,
+  DEVNET_CONFIGS_DIR,
 } from "../config/constants";
 import type { DevNetServiceDefinition } from "../types";
 import type { DevNetMiningConfig } from "@pact-toolbox/config";
@@ -28,6 +27,7 @@ interface ChainwebNodeServiceOptions {
   persistDb?: boolean;
   nodeServicePort?: number;
   p2pPort?: number;
+  volume?: string;
 }
 
 export function createChainwebNodeService({
@@ -36,6 +36,7 @@ export function createChainwebNodeService({
   persistDb = true,
   nodeServicePort = NODE_SERVICE_PORT,
   p2pPort = P2P_PORT,
+  volume = `devnet_db_${clusterId.replace("-", "_")}`,
 }: Partial<ChainwebNodeServiceOptions>): DockerServiceConfig {
   return {
     image,
@@ -50,9 +51,9 @@ export function createChainwebNodeService({
     stopGracePeriod: 20,
     ulimits: [{ Name: "nofile", Soft: 65535, Hard: 65535 }],
     volumes: [
+      persistDb ? `${volume}:/chainweb/db` : undefined,
       `${DEVNET_CONFIGS_DIR}/devnet-bootstrap-node.cert.pem:/chainweb/devnet-bootstrap-node.cert.pem:ro`,
       `${DEVNET_CONFIGS_DIR}/devnet-bootstrap-node.key.pem:/chainweb/devnet-bootstrap-node.key.pem:ro`,
-      persistDb ? `${CHAINWEB_DB_DIR}:/chainweb/db` : undefined,
       `${DEVNET_CONFIGS_DIR}/chainweb-node.common.yaml:/chainweb/config/chainweb-node.common.yaml:ro`,
       `${DEVNET_CONFIGS_DIR}/chainweb-node.logging.yaml:/chainweb/config/chainweb-node.logging.yaml:ro`,
     ].filter(Boolean) as string[],
@@ -122,7 +123,7 @@ export function createMiningClientService({
     dependsOn: {
       [BOOTSTRAP_NODE_SERVICE_NAME]: { condition: "service_healthy" },
     },
-    entrypoint: ["/chainweb-mining-client/chainweb-mining-client"],
+    // entrypoint: ["/app/chainweb-mining-client"],
     command: [
       `--public-key=${MINER_PUBLIC_KEY}`,
       `--node=${BOOTSTRAP_NODE_SERVICE_NAME}:${nodeServicePort}`,
@@ -134,17 +135,13 @@ export function createMiningClientService({
       `--constant-delay-block-time=${constantDelayBlockTime}`,
     ],
     // healthCheck: {
-    //   Test: [
-    //     "CMD",
-    //     "/bin/bash",
-    //     "-c",
-    //     `until curl http://localhost:${miningClientPort}/make-blocks -d '{}'; do sleep 0.1; done`,
-    //   ],
+    //   Test: ["CMD", "/bin/bash", "-c", `curl http://localhost:${miningClientPort}/make-blocks -d '{}'`],
     //   Interval: 30e9,
     //   Timeout: 30e9,
     //   Retries: 5,
     //   StartPeriod: 120e9,
     // },
+
     expose: [`${miningClientPort}`],
   };
 }
@@ -243,13 +240,16 @@ export function createMinimalDevNet({
   networkName = MINIMAL_NETWORK_NAME,
   persistDb = true,
 }: Partial<MinimalDevNetOptions> = {}): DevNetServiceDefinition {
+  const volume = `devnet_db_${clusterId.replace("-", "_")}`;
   return {
     clusterId,
     networkName,
+    volumes: persistDb ? [volume] : [],
     services: {
       bootstrapNode: createChainwebNodeService({
         clusterId,
         persistDb,
+        volume,
       }),
       miningClient: createMiningClientService(),
       miningTrigger: createMiningTriggerService(),

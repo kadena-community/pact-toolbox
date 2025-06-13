@@ -3,16 +3,15 @@ import path from "path";
 export const CWD: string = process.cwd();
 export const MINER_PUBLIC_KEY: string =
   process.env.MINER_PUBLIC_KEY || "f89ef46927f506c70b6a58fd322450a936311dc6ac91f4ec3d8ef949608dbf1f";
-export const MINING_CLIENT_IMAGE: string =
-  process.env.MINING_CLIENT_IMAGE || "ghcr.io/kadena-io/chainweb-mining-client:latest";
+
 export const DEVNET_PUBLIC_PORT: number = process.env.DEVNET_PUBLIC_PORT
   ? Number(process.env.DEVNET_PUBLIC_PORT)
   : 8080;
-export const CHAINWEB_NODE_IMAGE: string =
-  process.env.CHAINWEB_NODE_IMAGE || "ghcr.io/kadena-io/chainweb-node/ubuntu:latest";
+export const MINING_CLIENT_IMAGE: string =
+  process.env.MINING_CLIENT_IMAGE || "salamaashoush/chainweb-mining-client:latest";
+export const CHAINWEB_NODE_IMAGE: string = process.env.CHAINWEB_NODE_IMAGE || "salamaashoush/chainweb-node:latest";
 export const MINING_TRIGGER_IMAGE: string = process.env.MINING_TRIGGER_IMAGE || "salamaashoush/mining-trigger:latest";
 export const DEVNET_CONFIGS_DIR: string = path.resolve(CWD, ".pact-toolbox", "configs");
-export const CHAINWEB_DB_DIR: string = path.resolve(CWD, ".pact-toolbox", "chainweb", "db");
 export const MINIMAL_NETWORK_NAME: string = "devnet-minimal-network";
 export const MINIMAL_CLUSTER_ID: string = "devnet-minimal";
 export const DEFAULT_NETWORK_NAME: string = "devnet_default_network";

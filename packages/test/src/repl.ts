@@ -93,7 +93,7 @@ export async function runReplTests(config?: Required<PactToolboxConfigObj>): Pro
     const testStartTime = Date.now();
     const cleanedFile = file.replace(cwd, "").substring(1);
     try {
-      await execAsync(`pact ${file}`);
+      await execAsync(`pact -t ${file}`);
       const duration = Date.now() - testStartTime;
       completed++;
       spinner.text = `[${completed}/${testFiles.length}] Running REPL tests... (${cleanedFile})`;
