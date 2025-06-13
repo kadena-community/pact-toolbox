@@ -36,10 +36,9 @@ In the project directory, you can run the following commands:
 - `pnpm preview`: Previews the production build.
 - `pnpm format`: Checks the formatting of your code.
 - `pnpm type-check`: Checks for TypeScript errors.
+- `pnpm test`: Runs your Pact REPL tests and vitest.
 - `pnpm pact:start`: Starts the Pact development server.
-- `pnpm pact:test`: Runs your Pact tests.
 - `pnpm pact:prelude`: Manages prelude files for your Pact contracts.
-- `pact:types`: Generates TypeScript types from your Pact contracts.
 - `pact:run`: Runs a Pact script.
 
 ## Switch networks

@@ -10,9 +10,10 @@ import {
   pollFn,
   writeFile,
   type DockerServiceConfig,
+  type Logger,
+  type Spinner,
 } from "@pact-toolbox/utils";
 import { rm } from "node:fs/promises";
-
 import type { PactToolboxClient } from "@pact-toolbox/runtime";
 import { join } from "pathe";
 import { DEVNET_CONFIGS_DIR, DEVNET_PUBLIC_PORT, MINIMAL_CLUSTER_ID, MINIMAL_NETWORK_NAME } from "../config/constants";
@@ -25,6 +26,13 @@ import { createMinimalDevNet } from "../presets/minimal";
 import type { DevNetServiceDefinition, ToolboxNetworkApi, ToolboxNetworkStartOptions } from "../types";
 import { ensureCertificates } from "../utils";
 
+interface LocalDevNetNetworkOptions {
+  logger: Logger;
+  activeProfiles?: string[];
+  client: PactToolboxClient;
+  spinner: Spinner;
+}
+
 export class LocalDevNetNetwork implements ToolboxNetworkApi {
   public id: string = getUuid();
   #orchestrator: ContainerOrchestrator;
@@ -33,9 +41,14 @@ export class LocalDevNetNetwork implements ToolboxNetworkApi {
   #definition: DevNetServiceDefinition;
   #networkConfig: DevNetworkConfig;
   #client: PactToolboxClient;
+  #spinner: Spinner;
+  #logger: Logger;
 
-  constructor(networkConfig: DevNetworkConfig, client: PactToolboxClient, activeProfiles: string[] = []) {
+  constructor(networkConfig: DevNetworkConfig, options: LocalDevNetNetworkOptions) {
     this.#networkConfig = networkConfig;
+    this.#client = options.client;
+    this.#logger = options.logger;
+    this.#spinner = options.spinner;
     this.#definition = createMinimalDevNet({
       clusterId: MINIMAL_CLUSTER_ID,
       networkName: MINIMAL_NETWORK_NAME,
@@ -44,9 +57,11 @@ export class LocalDevNetNetwork implements ToolboxNetworkApi {
     });
     this.#orchestrator = new ContainerOrchestrator({
       networkName: this.#definition.networkName,
+      volumes: this.#definition.volumes,
+      logger: this.#logger,
+      spinner: this.#spinner,
     });
-    this.#activeProfiles = activeProfiles || [];
-    this.#client = client;
+    this.#activeProfiles = options.activeProfiles || [];
   }
 
   async #setupArtifacts(): Promise<void> {
@@ -88,7 +103,7 @@ export class LocalDevNetNetwork implements ToolboxNetworkApi {
         timeout: 100000,
         interval: 1000,
       });
-      logger.info("Devnet is up and running.");
+      this.#spinner.message("Devnet service node is accessible.");
     } catch (error) {
       await this.stop();
       logger.error("Failed to start devnet within the expected time.", error);
@@ -109,7 +124,7 @@ export class LocalDevNetNetwork implements ToolboxNetworkApi {
             interval: 1000,
           },
         );
-        logger.info("Initial blocks created for on-demand mining.");
+        this.#spinner.message("Initial blocks created for on-demand mining.");
       } catch (error) {
         logger.error("Could not make initial blocks for on-demand mining.", error);
         throw new Error("Could not make initial blocks for on-demand mining.");
@@ -122,7 +137,7 @@ export class LocalDevNetNetwork implements ToolboxNetworkApi {
         timeout: 100000,
         interval: 1000,
       });
-      logger.info("Chainweb node reached height 20.");
+      this.#spinner.message("Chainweb node reached height 20.");
     } catch (error) {
       logger.error("Chainweb node did not reach height 20 within the expected time.", error);
       throw new Error("Chainweb node did not reach height 20 within the expected time.");
@@ -130,6 +145,7 @@ export class LocalDevNetNetwork implements ToolboxNetworkApi {
   }
 
   async start(options?: ToolboxNetworkStartOptions): Promise<void> {
+    this.#spinner.message("Starting devnet...");
     this.#client = options?.client ?? this.#client;
     const { isDetached = true, isStateless = false } = options || {};
     this.#isDetached = isDetached;
@@ -144,17 +160,21 @@ export class LocalDevNetNetwork implements ToolboxNetworkApi {
       });
     }
 
+    this.#spinner.message("Setting up devnet artifacts...");
     await this.#setupArtifacts();
     const servicesToRun = this.#filterServicesByProfile(Object.values(this.#definition.services));
 
     if (servicesToRun.length === 0) {
       return;
     }
+    this.#spinner.message("Starting devnet services...");
     await this.#orchestrator.startServices(servicesToRun);
+    this.#spinner.message("Ensuring devnet is ready...");
     await this.#ensureDevNetReadyState();
     if (!this.#isDetached) {
       await this.#orchestrator.streamAllLogs();
     }
+    this.#spinner.message("Devnet started.");
   }
 
   async stop(): Promise<void> {

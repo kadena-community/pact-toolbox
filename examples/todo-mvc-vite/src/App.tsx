@@ -1,4 +1,4 @@
-import { TodoList } from "todo-mvc-common";
+import { TodoList } from "./components/TodoList";
 
 function App() {
   return <TodoList />;

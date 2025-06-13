@@ -9,3 +9,6 @@ export const logger: ConsolaInstance = createConsola({
     date: false,
   },
 });
+
+export type Logger = ConsolaInstance;
+export { LogLevels } from "consola";

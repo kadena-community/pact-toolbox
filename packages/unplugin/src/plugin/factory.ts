@@ -11,8 +11,8 @@ import {
   type PactToolboxConfigObj,
 } from "@pact-toolbox/config";
 import { PactToolboxClient } from "@pact-toolbox/runtime";
-import { writeFile } from "@pact-toolbox/utils";
-
+import { spinner, writeFile } from "@pact-toolbox/utils";
+import path from "node:path";
 import type { ErrorDetail } from "../transformer/errors";
 import type { CachedTransform, PluginOptions } from "./types";
 import { ParsingError } from "../transformer/errors";
@@ -39,7 +39,7 @@ export const unpluginFactory: UnpluginFactory<PluginOptions | undefined> = (opti
   // Determine environment flags
   let isTest = process.env.NODE_ENV === "test";
   let isServe = false;
-
+  const deploySpinner = spinner({ indicator: "dots" });
   // Initialize the transformer with visitor
   const transformPactToJS = createPactToJSTransformer();
 
@@ -105,6 +105,7 @@ export const unpluginFactory: UnpluginFactory<PluginOptions | undefined> = (opti
     // Check cache to avoid redundant transformations
     const cached = cache.get(id);
     const shouldTransform = !cached || cached.src !== src;
+    const cleanName = path.basename(id);
 
     if (!shouldTransform) {
       return {
@@ -127,13 +128,9 @@ export const unpluginFactory: UnpluginFactory<PluginOptions | undefined> = (opti
 
       // Handle deployment if required
       if (isLocalNetwork(networkConfig) && network) {
-        deployContract(id, src, isDeployed)
-          .then(() => {
-            console.log(`Contract ${id} deployed successfully.`);
-          })
-          .catch((error) => {
-            prettyPrintError(`Failed to deploy contract ${id}`, error);
-          });
+        deployContract(id, src, isDeployed).catch((error) => {
+          prettyPrintError(`Failed to deploy contract ${cleanName}`, error);
+        });
       }
 
       return {
@@ -165,6 +162,8 @@ export const unpluginFactory: UnpluginFactory<PluginOptions | undefined> = (opti
       return;
     }
 
+    deploySpinner.start(`Deploying contract ${path.basename(id)}...`);
+
     return Promise.all([
       // Write TypeScript declaration file
       writeFile(`${id}.d.ts`, cache.get(id)!.types),
@@ -183,6 +182,7 @@ export const unpluginFactory: UnpluginFactory<PluginOptions | undefined> = (opti
             cached.isDeployed = true;
             cache.set(id, cached);
           }
+          deploySpinner.stop(`Contract ${path.basename(id)} deployed successfully.`);
         }),
     ]);
   };
@@ -223,9 +223,14 @@ export const unpluginFactory: UnpluginFactory<PluginOptions | undefined> = (opti
       }
 
       compiler.hooks.shutdown.tap(PLUGIN_NAME, async () => {
+        const shutdownSpinner = spinner({ indicator: "timer" });
         if (network) {
-          console.log("Shutting down network...");
-          await Promise.race([network.stop(), new Promise((resolve) => setTimeout(resolve, 10000))]);
+          try {
+            shutdownSpinner.start("Shutting down network...");
+            await Promise.race([network.stop(), new Promise((resolve) => setTimeout(resolve, 10000))]);
+          } finally {
+            shutdownSpinner.stop("Network stopped!");
+          }
         }
       });
     } catch (error) {
@@ -286,12 +291,17 @@ export const unpluginFactory: UnpluginFactory<PluginOptions | undefined> = (opti
     vite: {
       config: onConfig,
       closeBundle: async (error) => {
+        const shutdownSpinner = spinner({ indicator: "timer" });
         if (error) {
           console.error("Error during Vite bundle:", error);
         }
         if (network) {
-          console.log("Shutting down network...");
-          await Promise.race([network.stop(), new Promise((resolve) => setTimeout(resolve, 10000))]);
+          try {
+            shutdownSpinner.start("Shutting down network...");
+            await Promise.race([network.stop(), new Promise((resolve) => setTimeout(resolve, 10000))]);
+          } finally {
+            shutdownSpinner.stop("Network stopped!");
+          }
         }
       },
     },

@@ -51,7 +51,7 @@
     "verify": "tsc --noEmit --skipLibCheck"
   },
   "dependencies": {
-    "@noble/ed25519": "^2.2.3",
+    "@noble/ed25519": "^2.3.0",
     "blakejs": "^1.2.1",
     "fast-text-encoding": "^1.0.6",
     "std-env": "^3.9.0",
@@ -65,12 +65,12 @@
     "@pact-toolbox/types": "workspace:*",
     "@pact-toolbox/vitest-config": "workspace:*",
     "@types/fast-text-encoding": "^1.0.3",
-    "@types/node": "^22.15.30",
-    "oxlint": "^0.18.1",
+    "@types/node": "^24.0.1",
+    "oxlint": "^1.1.0",
     "prettier": "^3.5.3",
     "tinybench": "^4.0.1",
     "tsdown": "^0.12.7",
-    "tsx": "^4.19.4",
+    "tsx": "^4.20.2",
     "typescript": "^5.8.3",
     "vitest": "^3.2.3"
   },

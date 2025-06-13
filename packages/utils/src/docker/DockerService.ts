@@ -3,9 +3,18 @@ import * as fs from "fs";
 import { Duplex } from "node:stream";
 import * as path from "path";
 import * as tar from "tar-fs";
-import { logger } from "../logger";
+import { type Logger } from "../logger";
 import { type DockerServiceConfig } from "./types";
 import { getServiceColor } from "./utils";
+import type { Spinner } from "../prompts";
+
+interface DockerServiceOptions {
+  serviceName?: string;
+  networkName: string;
+  docker: Docker;
+  logger: Logger;
+  spinner: Spinner;
+}
 
 export class DockerService {
   public readonly serviceName: string;
@@ -17,17 +26,19 @@ export class DockerService {
   #containerId?: string;
   #logStream: Duplex | null = null;
   #coloredPrefix: string;
-  #logger: typeof logger;
+  #logger: Logger;
+  // #spinner: Spinner;
 
-  constructor(serviceName: string, config: DockerServiceConfig, dockerInstance: Docker, networkName: string) {
-    this.serviceName = serviceName;
+  constructor(config: DockerServiceConfig, options: DockerServiceOptions) {
+    this.serviceName = options.serviceName || config.containerName;
     this.config = config;
     this.containerName = config.containerName;
-    this.#docker = dockerInstance;
-    this.#networkName = networkName;
+    this.#docker = options.docker;
+    this.#networkName = options.networkName;
     const colorizer = process.stdout.isTTY ? getServiceColor(this.serviceName) : null;
     this.#coloredPrefix = colorizer ? colorizer(this.serviceName) : this.serviceName;
-    this.#logger = logger.withTag(this.#coloredPrefix);
+    this.#logger = options.logger.withTag(this.#coloredPrefix);
+    // this.#spinner = options.spinner;
   }
 
   async #pullImage(): Promise<void> {
@@ -61,14 +72,14 @@ export class DockerService {
       throw new Error(`Dockerfile not found at ${dockerfilePath}`);
     }
     try {
-      const stream = await this.#docker.buildImage(tarStream, {
+      const buildStream = await this.#docker.buildImage(tarStream as any, {
         t: this.config.image,
         dockerfile: this.config.build.dockerfile,
         q: false,
       });
       await new Promise<void>((resolve, reject) => {
         this.#docker.modem.followProgress(
-          stream,
+          buildStream,
           (err: Error | null, res: any[] | null) => {
             if (err) return reject(err);
             if (res && res.length > 0) {

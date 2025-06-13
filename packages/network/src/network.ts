@@ -3,7 +3,14 @@ import type { NetworkConfig, PactToolboxConfigObj } from "@pact-toolbox/config";
 import { getNetworkConfig, isDevNetworkConfig, isLocalNetwork, isPactServerNetworkConfig } from "@pact-toolbox/config";
 import { deployPreludes, downloadAllPreludes, shouldDownloadPreludes } from "@pact-toolbox/prelude";
 import { PactToolboxClient } from "@pact-toolbox/runtime";
-import { getUuid, logger } from "@pact-toolbox/utils";
+import {
+  getUuid,
+  logger as defaultLogger,
+  spinner as defaultSpinner,
+  type Logger,
+  type Spinner,
+  LogLevels,
+} from "@pact-toolbox/utils";
 
 import { LocalDevNetNetwork } from "./networks/devnet";
 import { PactServerNetwork } from "./networks/pactServer";
@@ -16,6 +23,8 @@ export interface StartLocalNetworkOptions extends ToolboxNetworkStartOptions {
   network?: string;
   cleanup?: boolean;
   autoStart?: boolean;
+  logger?: Logger;
+  spinner?: Spinner;
 }
 
 export class PactToolboxNetwork implements ToolboxNetworkApi {
@@ -25,6 +34,8 @@ export class PactToolboxNetwork implements ToolboxNetworkApi {
   #client: PactToolboxClient;
   #startOptions: StartLocalNetworkOptions;
   #toolboxConfig: PactToolboxConfigObj;
+  #logger: Logger;
+  #spinner: Spinner;
 
   constructor(toolboxConfig: PactToolboxConfigObj, startOptions: StartLocalNetworkOptions = {}) {
     this.#toolboxConfig = toolboxConfig;
@@ -34,6 +45,8 @@ export class PactToolboxNetwork implements ToolboxNetworkApi {
       isStateless: false,
       ...startOptions,
     };
+    this.#logger = this.#startOptions.logger ?? defaultLogger;
+    this.#spinner = this.#startOptions.spinner ?? defaultSpinner({ indicator: "timer" });
     const networkConfig = getNetworkConfig(this.#toolboxConfig, this.#startOptions.network);
     if (!networkConfig) {
       throw new Error(`Network ${networkConfig} not found in config`);
@@ -45,7 +58,11 @@ export class PactToolboxNetwork implements ToolboxNetworkApi {
     if (isPactServerNetworkConfig(networkConfig)) {
       this.#networkApi = new PactServerNetwork(networkConfig, this.#client);
     } else if (isDevNetworkConfig(networkConfig)) {
-      this.#networkApi = new LocalDevNetNetwork(networkConfig, this.#client);
+      this.#networkApi = new LocalDevNetNetwork(networkConfig, {
+        client: this.#client,
+        logger: this.#logger,
+        spinner: this.#spinner,
+      });
     } else {
       throw new Error(`Unsupported network type`);
     }
@@ -74,6 +91,7 @@ export class PactToolboxNetwork implements ToolboxNetworkApi {
 
   async start(options?: ToolboxNetworkStartOptions): Promise<void> {
     this.#client = options?.client ?? this.#client;
+    this.#spinner.start(`Starting network ${this.#networkConfig.name}...`);
     const preludes = this.#toolboxConfig.preludes ?? [];
     const contractsDir = this.#toolboxConfig.contractsDir ?? "contracts";
     const preludeConfig = {
@@ -93,7 +111,6 @@ export class PactToolboxNetwork implements ToolboxNetworkApi {
       ...options,
       client: this.#client,
     });
-    logger.success(`Network ${this.#networkConfig.name} started at ${this.getNodeServiceUrl()}`);
 
     if (this.#toolboxConfig.deployPreludes) {
       await deployPreludes(preludeConfig);
@@ -103,22 +120,21 @@ export class PactToolboxNetwork implements ToolboxNetworkApi {
       // log all signers and keys
       const signers = this.#networkConfig.keyPairs ?? [];
       for (const signer of signers) {
-        logger.log(`Account: ${signer.account}`);
-        logger.log(`Public: ${signer.publicKey}`);
-        logger.log(`Secret: ${signer.secretKey}`);
-        logger.log("--------------------------------");
+        this.#logger.log(`Account: ${signer.account}`);
+        this.#logger.log(`Public: ${signer.publicKey}`);
+        this.#logger.log(`Secret: ${signer.secretKey}`);
+        this.#logger.log("--------------------------------");
       }
     }
+    this.#spinner.stop(`Network ${this.#networkConfig.name} started at ${this.getNodeServiceUrl()}`);
   }
 
   async restart(): Promise<void> {
     await this.#networkApi.restart();
-    logger.success(`Network ${this.#networkConfig.name} restarted at ${this.getNodeServiceUrl()}`);
   }
 
   async stop(): Promise<void> {
     await this.#networkApi.stop();
-    logger.success(`Network ${this.#networkConfig.name} stopped!`);
   }
 
   async isOk(): Promise<boolean> {
@@ -130,29 +146,43 @@ export async function createPactToolboxNetwork(
   config: PactToolboxConfigObj,
   options: StartLocalNetworkOptions = {},
 ): Promise<PactToolboxNetwork> {
-  const network = new PactToolboxNetwork(config, options);
+  const logLevel =
+    process.env.LOG_LEVEL && LogLevels[process.env.LOG_LEVEL as keyof typeof LogLevels]
+      ? LogLevels[process.env.LOG_LEVEL as keyof typeof LogLevels]
+      : LogLevels.error;
+  const logger = options.logger ?? defaultLogger.create({ level: logLevel });
+  const spinner = options.spinner ?? defaultSpinner({ indicator: "timer" });
+  const network = new PactToolboxNetwork(config, {
+    ...options,
+    logger,
+    spinner,
+  });
+
   if (!options.autoStart) {
     return network;
   }
 
   let isCleaningUp = false;
   if (options.cleanup) {
-    async function handleShutdown(signal: string) {
+    async function handleShutdown() {
       if (isCleaningUp) {
         return;
       }
+      logger.info(`Shutting down network ${network.getNetworkName()}...`);
       isCleaningUp = true;
-      logger.info(`\n${signal} received. Shutting down network...`);
       try {
         await Promise.race([network.stop(), new Promise((resolve) => setTimeout(resolve, 10000))]);
       } catch (error) {
-        console.error(`Error during graceful shutdown:`, error);
+        logger.error(`Error during graceful shutdown:`, error);
+      } finally {
+        logger.success(`Network ${network.getNetworkName()} stopped!`);
+        // process.exit(0);
       }
     }
 
-    process.on("SIGINT", () => handleShutdown("SIGINT"));
-    process.on("SIGTERM", () => handleShutdown("SIGTERM"));
-    process.on("exit", () => {});
+    process.on("SIGINT", handleShutdown);
+    process.on("SIGTERM", handleShutdown);
+    // process.on("exit", handleShutdown);
   }
   try {
     await network.start(options);

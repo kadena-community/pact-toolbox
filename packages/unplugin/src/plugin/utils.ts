@@ -122,7 +122,7 @@ export async function createPactToolboxNetwork(
       conflictStrategy: "ignore",
       isDetached: true,
       autoStart: startNetwork,
-      cleanup: false,
+      cleanup: true,
     });
 
     // Register the network as running

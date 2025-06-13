@@ -1,8 +1,18 @@
-import { defineConfig } from "pact-toolbox";
-import { join } from "path";
+import {
+  createDevNetNetworkConfig,
+  createMainNetNetworkConfig,
+  createPactServerNetworkConfig,
+  createTestNetNetworkConfig,
+  defineConfig,
+} from "pact-toolbox";
 
 export default defineConfig({
-  defaultNetwork: "pactServer",
-  extends: "../../pact-toolbox.config.mjs",
-  contractsDir: join(process.cwd(), "../todo-mvc-common/pact"),
+  defaultNetwork: "devnet",
+  deployPreludes: true,
+  networks: {
+    pactServer: createPactServerNetworkConfig(),
+    devnet: createDevNetNetworkConfig(),
+    testnet: createTestNetNetworkConfig(),
+    mainnet: createMainNetNetworkConfig(),
+  },
 });

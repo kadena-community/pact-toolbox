@@ -1,10 +1,14 @@
 import Docker from "dockerode";
+import type { Logger } from "../logger";
 import { DockerService } from "./DockerService";
-import { logger } from "../logger";
 import type { DockerServiceConfig } from "./types";
+import type { Spinner } from "../prompts";
 
 interface ContainerOrchestratorOptions {
   networkName: string;
+  volumes: string[];
+  logger: Logger;
+  spinner: Spinner;
 }
 
 export class ContainerOrchestrator {
@@ -12,11 +16,16 @@ export class ContainerOrchestrator {
   #networkName: string;
   #networkId?: string;
   #runningServices: Map<string, DockerService[]>;
-  #logger = logger.withTag("ContainerOrchestrator");
+  #logger: Logger;
+  #spinner: Spinner;
+  #volumes: string[];
 
   constructor(options: ContainerOrchestratorOptions) {
     this.#networkName = options.networkName;
     this.#runningServices = new Map();
+    this.#logger = options.logger.withTag("ContainerOrchestrator");
+    this.#spinner = options.spinner;
+    this.#volumes = options.volumes || [];
   }
 
   async #getOrCreateNetwork(): Promise<void> {
@@ -40,6 +49,18 @@ export class ContainerOrchestrator {
     }
     if (!this.#networkId) {
       throw new Error(`Failed to obtain network ID for '${this.#networkName}'`);
+    }
+  }
+
+  async #createVolumes(): Promise<void> {
+    for (const volume of this.#volumes) {
+      try {
+        this.#docker.getVolume(volume);
+      } catch (error: any) {
+        if (error.statusCode === 404) {
+          await this.#docker.createVolume({ Name: volume });
+        }
+      }
     }
   }
 
@@ -99,6 +120,7 @@ export class ContainerOrchestrator {
   async startServices(serviceConfigs: DockerServiceConfig[]): Promise<void> {
     this.#logger.start(`Starting services...`);
     await this.#getOrCreateNetwork();
+    await this.#createVolumes();
     const orderedServiceGroupNames = this.#resolveServiceOrder(serviceConfigs);
     this.#logger.info(`Service group startup order: ${orderedServiceGroupNames.join(", ")}`);
 
@@ -118,7 +140,13 @@ export class ContainerOrchestrator {
         const instanceName = replicaCount > 1 ? `${serviceGroupName}-${i + 1}` : serviceGroupName;
         const instanceConfig = { ...config, containerName: instanceName };
 
-        const service = new DockerService(instanceName, instanceConfig, this.#docker, this.#networkName);
+        const service = new DockerService(instanceConfig, {
+          serviceName: instanceName,
+          docker: this.#docker,
+          networkName: this.#networkName,
+          logger: this.#logger,
+          spinner: this.#spinner,
+        });
 
         if (config.dependsOn) {
           for (const depGroupName of Object.keys(config.dependsOn)) {

@@ -8,6 +8,7 @@ import { PactToolboxClient } from "@pact-toolbox/runtime";
 import type { PluginOptions } from "./plugin/types";
 import { PLUGIN_NAME, createPactToolboxNetwork } from "./plugin/utils";
 import type { PactToolboxNetwork } from "@pact-toolbox/network";
+import { spinner } from "@pact-toolbox/utils";
 
 const unpluginFactory: UnpluginFactory<PluginOptions | undefined> = (options) => {
   return {
@@ -38,9 +39,14 @@ const unpluginFactory: UnpluginFactory<PluginOptions | undefined> = (options) =>
         }
       });
       compiler.hooks.shutdown.tap(PLUGIN_NAME, async () => {
+        const shutdownSpinner = spinner({ indicator: "timer" });
         if (network) {
-          console.log("Shutting down network...");
-          await Promise.race([network.stop(), new Promise((resolve) => setTimeout(resolve, 10000))]);
+          try {
+            shutdownSpinner.start("Shutting down network...");
+            await Promise.race([network.stop(), new Promise((resolve) => setTimeout(resolve, 10000))]);
+          } finally {
+            shutdownSpinner.stop("Network stopped!");
+          }
         }
       });
     },

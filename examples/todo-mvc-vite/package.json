@@ -1,46 +1,54 @@
 {
   "name": "todo-mvc-vite",
+  "version": "0.0.1",
   "private": true,
-  "version": "0.0.6",
   "type": "module",
+  "license": "ISC",
   "scripts": {
-    "dev": "NODE_OPTIONS='--import tsx' vite",
-    "build": "NODE_OPTIONS='--import tsx' vite build",
-    "lint": "oxlint --import-plugin --deny-warnings",
-    "format": "prettier --check . --ignore-path ../../.gitignore",
-    "preview": "NODE_OPTIONS='--import tsx' vite preview",
-    "verify": "tsc --noEmit",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "format": "prettier --check .",
+    "test": "pact-toolbox test",
+    "type-check": "tsc --noEmit",
     "pact:start": "pact-toolbox start",
-    "pact:test": "pact-toolbox test",
     "pact:prelude": "pact-toolbox prelude",
     "pact:types": "pact-toolbox types",
-    "pact:run": "pact-toolbox run"
+    "pact:run": "pact-toolbox run",
+    "prepare": "pact-toolbox prelude"
   },
   "dependencies": {
-    "@tanstack/react-query": "^5.80.6",
+    "@pact-toolbox/client": "workspace:*",
+    "@tanstack/react-query": "^5.80.7",
     "react": "^19.1.0",
-    "react-dom": "^19.1.0",
-    "todo-mvc-common": "workspace:*"
+    "react-dom": "^19.1.0"
   },
   "devDependencies": {
-    "@pact-toolbox/prettier-config": "workspace:*",
     "@pact-toolbox/test": "workspace:*",
     "@pact-toolbox/unplugin": "workspace:*",
     "@testing-library/react": "~16.3.0",
     "@testing-library/user-event": "~14.6.1",
-    "@types/react": "^19.1.6",
+    "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
-    "@vitejs/plugin-react-swc": "^3.10.1",
-    "happy-dom": "^17.6.3",
-    "oxlint": "^0.18.1",
+    "@vitejs/plugin-react-swc": "^3.10.2",
+    "happy-dom": "^18.0.1",
     "pact-toolbox": "workspace:*",
-    "prettier": "^3.5.3",
-    "tsx": "^4.19.4",
+    "tsx": "^4.20.2",
     "typescript": "^5.8.3",
     "vite": "^6.3.5",
     "vite-tsconfig-paths": "^5.1.4",
     "vitest": "^3.2.3",
     "vitest-dom": "^0.1.1"
   },
-  "prettier": "@pact-toolbox/prettier-config"
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@swc/core",
+      "cpu-features",
+      "esbuild",
+      "protobufjs",
+      "ssh2",
+      "tree-sitter",
+      "tree-sitter-pact"
+    ]
+  }
 }
