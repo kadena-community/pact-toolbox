@@ -1,4 +1,4 @@
-import { logger } from "./logger";
+// Cross-platform chainweb utilities - no logging dependency
 
 /**
  * Custom error class for Chainweb-related errors.
@@ -6,7 +6,7 @@ import { logger } from "./logger";
 export class ChainWebError extends Error {
   constructor(
     message: string,
-    public cause?: Error | undefined,
+    public override cause?: Error | undefined,
   ) {
     super(message);
     this.name = "ChainWebError";
@@ -67,14 +67,14 @@ export async function isChainWebAtHeight(targetHeight: number, serviceUrl: strin
     clearTimeout(id);
 
     if (!res.ok) {
-      logger.error(`Failed to get chainweb cut: ${res.status} ${res.statusText}`);
+      // Failed to get chainweb cut - return false to indicate failure
       return false;
     }
 
     const data = (await res.json()) as { height: number };
 
     if (typeof data.height !== "number") {
-      logger.error(`Invalid response: height is not a number`);
+      // Invalid response - return false to indicate failure
       return false;
     }
 
@@ -82,9 +82,9 @@ export async function isChainWebAtHeight(targetHeight: number, serviceUrl: strin
     return height >= targetHeight;
   } catch (e: any) {
     if (e.name === "AbortError") {
-      logger.error("Chainweb cut request timed out");
+      // Request timed out - return false
     } else {
-      logger.error(`Failed to get chainweb cut: ${e.message}`);
+      // Request failed - return false
     }
     return false;
   }

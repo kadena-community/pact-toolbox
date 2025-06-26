@@ -1,4 +1,8 @@
 {
-  "extends": "@pact-toolbox/tsconfig/lib",
-  "include": ["src", "tests"]
+  "extends": "@pact-toolbox/tsconfig/base.json",
+  "compilerOptions": {
+    "outDir": "dist"
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.spec.ts"]
 }

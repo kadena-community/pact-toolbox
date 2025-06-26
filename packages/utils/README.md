@@ -1,10 +1,10 @@
 # @pact-toolbox/utils
 
-> Essential utility functions for Pact smart contract development and blockchain operations
+> Cross-platform utility functions for Pact smart contract development
 
 ## Overview
 
-The `@pact-toolbox/utils` package provides a comprehensive collection of utility functions that support the Pact Toolbox ecosystem. It includes helpers for blockchain operations, process management, file system operations, networking, logging, and more. These utilities are designed to simplify common tasks in Pact smart contract development and deployment.
+The `@pact-toolbox/utils` package provides essential utility functions that support the Pact Toolbox ecosystem. This package focuses on cross-platform utilities that work in both browser and Node.js environments, including chainweb API interactions, async helpers, template processing, and event handling.
 
 ## Installation
 
@@ -12,217 +12,95 @@ The `@pact-toolbox/utils` package provides a comprehensive collection of utility
 npm install @pact-toolbox/utils
 # or
 pnpm add @pact-toolbox/utils
+# or
+yarn add @pact-toolbox/utils
 ```
 
 ## Features
 
-- = **Blockchain Utils** - Chainweb node health checks, block creation, and API interactions
-- = **Process Management** - Cross-platform process spawning, cleanup, and signal handling
-- < **Network Utilities** - Port management, availability checking, and allocation
-- =Á **File System Helpers** - Directory creation, file writing with safety checks
-- ñ **Async Operations** - Polling, delays, timeouts with cancellation support
-- =à **Pact Toolchain** - Version detection, installation, and management
-- =Ý **Logging Infrastructure** - Structured logging with multiple backends
-- <¨ **Template Processing** - String templating with validation
-- <” **UUID Generation** - Cryptographically secure unique identifiers
-- =¬ **CLI Prompts** - Interactive command-line interfaces
-
-## Quick Start
-
-```typescript
-import {
-  logger,
-  delay,
-  pollFn,
-  isPortTaken,
-  getRandomPort,
-  executeCommand,
-  isChainWebNodeOk,
-  cleanupOnExit
-} from '@pact-toolbox/utils';
-
-// Logging
-logger.info('Starting application');
-
-// Network operations
-const port = await getRandomPort();
-const isAvailable = await isPortTaken(port);
-
-// Async utilities
-await delay(1000); // Wait 1 second
-
-// Process cleanup
-cleanupOnExit(async () => {
-  logger.info('Cleaning up resources...');
-});
-
-// Blockchain health check
-const isHealthy = await isChainWebNodeOk('https://api.chainweb.com');
-```
+- **Chainweb API Utilities** - Health checks, block height monitoring, and block creation
+- **Async Operation Helpers** - Delays, polling with timeout support, and cancellation
+- **Template Processing** - Mustache-style string templating with validation
+- **Event Emitter** - Type-safe, cross-platform event handling
+- **UUID Generation** - Cryptographically secure unique identifiers
+- **Date Formatting** - Locale-aware date formatting utilities
 
 ## API Reference
 
-### Blockchain and Chainweb Utilities
+### Chainweb API Utilities
 
 #### `isChainWebNodeOk(serviceUrl, timeout?)`
 
 Check if a Chainweb node is responding and healthy.
 
 ```typescript
+import { isChainWebNodeOk } from '@pact-toolbox/utils';
+
 const isHealthy = await isChainWebNodeOk('https://api.chainweb.com', 5000);
 console.log(isHealthy ? 'Node is healthy' : 'Node is down');
 ```
+
+**Parameters:**
+- `serviceUrl: string` - The base URL of the Chainweb service
+- `timeout?: number` - Optional timeout in milliseconds (default: 5000)
+
+**Returns:** `Promise<boolean>` - True if the node is healthy, false otherwise
 
 #### `isChainWebAtHeight(targetHeight, serviceUrl, timeout?)`
 
 Check if a Chainweb node has reached a specific block height.
 
 ```typescript
-const hasHeight = await isChainWebAtHeight(1000000, 'https://api.chainweb.com');
-console.log(`Node at height: ${hasHeight}`);
+import { isChainWebAtHeight } from '@pact-toolbox/utils';
+
+const hasReached = await isChainWebAtHeight(1000000, 'https://api.chainweb.com');
+console.log(`Node has reached height: ${hasReached}`);
 ```
 
-#### `makeBlocks(options)`
+**Parameters:**
+- `targetHeight: number` - The target block height
+- `serviceUrl: string` - The base URL of the Chainweb service  
+- `timeout?: number` - Optional timeout in milliseconds (default: 5000)
 
-Create blocks on specified chains (for development networks).
+**Returns:** `Promise<boolean>` - True if at or above target height, false otherwise
+
+#### `makeBlocks(params)`
+
+Request block creation on specified chains (for development networks with on-demand mining).
 
 ```typescript
-const blocksCreated = await makeBlocks({
+import { makeBlocks } from '@pact-toolbox/utils';
+
+const result = await makeBlocks({
   count: 5,
   chainIds: ['0', '1', '2'],
   onDemandUrl: 'http://localhost:8080'
 });
-console.log(`Created ${blocksCreated} blocks`);
 ```
+
+**Parameters:**
+- `params: MakeBlocksParams`
+  - `count?: number` - Number of blocks to create (default: 1)
+  - `chainIds?: string[]` - Chain IDs to create blocks on (default: ['0'])
+  - `onDemandUrl: string` - URL of the on-demand mining endpoint
+
+**Returns:** `Promise<any>` - Response data from the server
 
 #### `didMakeBlocks(params)`
 
 Validate that blocks were successfully created.
 
 ```typescript
+import { didMakeBlocks } from '@pact-toolbox/utils';
+
 const success = await didMakeBlocks({
-  initialCount: 100,
-  targetCount: 105,
-  serviceUrl: 'http://localhost:8080'
+  count: 5,
+  chainIds: ['0'],
+  onDemandUrl: 'http://localhost:8080'
 });
 ```
 
-### Process Management
-
-#### `runBin(bin, args, options?)`
-
-Spawn a child process with advanced options and error handling.
-
-```typescript
-import { runBin } from '@pact-toolbox/utils';
-
-const result = await runBin('pact', ['--version'], {
-  timeout: 10000,
-  cwd: '/path/to/project',
-  env: { NODE_ENV: 'development' }
-});
-
-console.log('Pact version:', result.stdout);
-```
-
-#### `killProcess(name)`
-
-Terminate processes by name (cross-platform).
-
-```typescript
-await killProcess('pact-server');
-console.log('Pact server terminated');
-```
-
-#### `executeCommand(command, options?)`
-
-Execute shell commands with promise-based API.
-
-```typescript
-const { stdout, stderr, exitCode } = await executeCommand('npm --version', {
-  timeout: 5000,
-  cwd: process.cwd()
-});
-
-if (exitCode === 0) {
-  console.log('npm version:', stdout.trim());
-}
-```
-
-#### `cleanupOnExit(cleanupFn)`
-
-Register cleanup functions for graceful shutdown.
-
-```typescript
-// Register multiple cleanup functions
-cleanupOnExit(async () => {
-  await database.close();
-});
-
-cleanupOnExit(async () => {
-  await server.stop();
-});
-
-// Cleanup happens automatically on SIGINT, SIGTERM, etc.
-```
-
-### Network and Port Utilities
-
-#### `getRandomPort(options?)`
-
-Get a random available port.
-
-```typescript
-const port = await getRandomPort();
-console.log(`Using port: ${port}`);
-
-// With options
-const specificPort = await getRandomPort({
-  port: 3000, // Prefer this port
-  ports: [3000, 3001, 3002], // Try these ports
-  host: 'localhost'
-});
-```
-
-#### `isPortTaken(port, host?)`
-
-Check if a port is already in use.
-
-```typescript
-const isBusy = await isPortTaken(8080);
-if (isBusy) {
-  console.log('Port 8080 is already in use');
-}
-```
-
-#### `getRandomNetworkPorts(host, startGap, endGap)`
-
-Allocate a range of consecutive ports for services.
-
-```typescript
-const ports = await getRandomNetworkPorts('localhost', 8080, 8090);
-console.log('Allocated ports:', ports); // [8080, 8081, 8082, ...]
-```
-
-### File System Utilities
-
-#### `ensureDir(dirPath)`
-
-Create directories recursively if they don't exist.
-
-```typescript
-await ensureDir('/path/to/nested/directories');
-console.log('Directory structure created');
-```
-
-#### `writeFile(filePath, content)`
-
-Write files with automatic directory creation.
-
-```typescript
-await writeFile('/path/to/new/file.txt', 'Hello, Pact!');
-console.log('File written successfully');
-```
+**Returns:** `Promise<boolean>` - True if blocks were created successfully
 
 ### Async Operation Helpers
 
@@ -231,8 +109,10 @@ console.log('File written successfully');
 Create a cancellable delay.
 
 ```typescript
+import { delay } from '@pact-toolbox/utils';
+
 // Simple delay
-await delay(1000);
+await delay(1000); // Wait 1 second
 
 // Cancellable delay
 const controller = new AbortController();
@@ -247,112 +127,53 @@ try {
 }
 ```
 
-#### `pollFn(fn, options?)`
+**Parameters:**
+- `ms: number` - Milliseconds to delay
+- `signal?: AbortSignal` - Optional signal for cancellation
 
-Poll a function until it succeeds or times out.
+**Returns:** `Promise<void>`
+
+#### `pollFn(fn, options)`
+
+Poll a function until it returns true or times out.
 
 ```typescript
-const result = await pollFn(
+import { pollFn } from '@pact-toolbox/utils';
+
+await pollFn(
   async () => {
     const response = await fetch('/api/status');
-    if (!response.ok) throw new Error('Not ready');
-    return response.json();
+    return response.ok;
   },
   {
     timeout: 30000,    // 30 seconds total
     interval: 1000,    // Check every second
-    retries: 30        // Maximum attempts
+    stopOnError: false // Continue polling even if fn throws
   }
 );
-
-console.log('Service is ready:', result);
 ```
 
-### Pact Toolchain Management
+**Parameters:**
+- `fn: () => Promise<boolean>` - Function to poll (should return true when done)
+- `options: PollOptions`
+  - `timeout: number` - Total timeout in milliseconds
+  - `interval?: number` - Polling interval in milliseconds (default: 100)
+  - `signal?: AbortSignal` - Optional signal for cancellation
+  - `stopOnError?: boolean` - Stop polling if fn throws (default: false)
 
-#### `isAnyPactInstalled(match?)`
+**Returns:** `Promise<void>`
 
-Check if Pact is installed on the system.
+**Throws:** `TimeoutError` if timeout is reached, `AbortError` if cancelled
 
-```typescript
-const isInstalled = await isAnyPactInstalled();
-console.log(`Pact is ${isInstalled ? 'installed' : 'not installed'}`);
-
-// Check for specific version pattern
-const hasVersion = await isAnyPactInstalled('4.12');
-```
-
-#### `getCurrentPactVersion()`
-
-Get the currently installed Pact version.
-
-```typescript
-const version = await getCurrentPactVersion();
-console.log(`Pact version: ${version}`);
-```
-
-#### `installPact(version?, nightly?)`
-
-Install Pact using pactup.
-
-```typescript
-// Install latest stable
-await installPact();
-
-// Install specific version
-await installPact('4.12.0');
-
-// Install nightly build
-await installPact(undefined, true);
-
-console.log('Pact installation complete');
-```
-
-### Logging
-
-#### Basic Logger
-
-```typescript
-import { logger } from '@pact-toolbox/utils';
-
-logger.info('Application started');
-logger.warn('This is a warning');
-logger.error('An error occurred', { error: new Error('Details') });
-logger.success('Operation completed successfully');
-
-// With context
-logger.info('User logged in', { userId: '123', timestamp: new Date() });
-```
-
-#### Advanced Debug Logger
-
-```typescript
-import { DebugLogger } from '@pact-toolbox/utils';
-
-const debugLogger = new DebugLogger({
-  name: 'MyApp',
-  logDir: './logs',
-  maxFiles: 10,
-  maxSize: 10 * 1024 * 1024, // 10MB
-  categories: ['process', 'network', 'performance']
-});
-
-// Category-specific logging
-debugLogger.process('Started new process', { pid: 1234 });
-debugLogger.network('HTTP request', { url: '/api/data', method: 'GET' });
-debugLogger.performance('Query executed', { duration: 45, query: 'SELECT *' });
-
-// File rotation and cleanup
-await debugLogger.cleanup();
-```
-
-### String and Template Processing
+### Template Processing
 
 #### `fillTemplatePlaceholders(template, context)`
 
 Process Mustache-style templates with validation.
 
 ```typescript
+import { fillTemplatePlaceholders } from '@pact-toolbox/utils';
+
 const template = 'Hello {{name}}, your balance is {{balance}} KDA.';
 const context = { name: 'Alice', balance: '100.5' };
 
@@ -364,8 +185,72 @@ try {
   fillTemplatePlaceholders('Hello {{name}}', {}); // Missing 'name'
 } catch (error) {
   console.error('Template error:', error.message);
+  // "Missing required context values for keys: name"
 }
 ```
+
+**Parameters:**
+- `template: string` - Template string with {{key}} placeholders
+- `context: Record<string, any>` - Object with values for placeholders
+
+**Returns:** `string` - Processed template
+
+**Throws:** `Error` if any placeholders are missing from context
+
+### Event Emitter
+
+#### `EventEmitter<T>`
+
+Type-safe, cross-platform event emitter.
+
+```typescript
+import { EventEmitter } from '@pact-toolbox/utils';
+
+// Define your event types
+interface MyEvents {
+  data: (value: string) => void;
+  error: (error: Error) => void;
+  complete: () => void;
+}
+
+// Create typed emitter
+const emitter = new EventEmitter<MyEvents>();
+
+// Add listeners
+emitter.on('data', (value) => console.log('Data:', value));
+emitter.on('error', (err) => console.error('Error:', err));
+
+// Emit events
+emitter.emit('data', 'Hello'); // Type-safe!
+emitter.emit('complete');
+
+// One-time listeners
+emitter.once('data', (value) => {
+  console.log('First data only:', value);
+});
+
+// Remove listeners
+const handler = (value: string) => console.log(value);
+emitter.on('data', handler);
+emitter.off('data', handler);
+
+// Check listeners
+console.log(emitter.listenerCount('data')); // 2
+console.log(emitter.hasListeners('error')); // true
+```
+
+**Methods:**
+- `on(event, listener)` - Add a listener
+- `once(event, listener)` - Add a one-time listener
+- `off(event, listener)` - Remove a listener
+- `emit(event, ...args)` - Emit an event
+- `removeAllListeners(event?)` - Remove all listeners
+- `listenerCount(event)` - Get listener count
+- `hasListeners(event)` - Check if event has listeners
+- `eventNames()` - Get all event names with listeners
+- `listeners(event)` - Get all listeners for an event
+- `prependListener(event, listener)` - Add listener to beginning
+- `prependOnceListener(event, listener)` - Add one-time listener to beginning
 
 ### UUID Generation
 
@@ -374,13 +259,29 @@ try {
 Generate cryptographically secure UUIDs.
 
 ```typescript
+import { getUuid } from '@pact-toolbox/utils';
+
 const id = getUuid();
 console.log('Generated UUID:', id); // "f47ac10b-58cc-4372-a567-0e02b2c3d479"
-
-// Use in Pact transactions
-const transactionId = getUuid();
-const nonce = getUuid();
 ```
+
+**Returns:** `string` - UUID v4 string
+
+#### `nanoid(length?)`
+
+Generate URL-safe unique IDs.
+
+```typescript
+import { nanoid } from '@pact-toolbox/utils';
+
+const id = nanoid(); // Default 21 characters
+const shortId = nanoid(10); // Custom length
+```
+
+**Parameters:**
+- `length?: number` - ID length (default: 21)
+
+**Returns:** `string` - URL-safe unique ID
 
 ### Date Utilities
 
@@ -389,87 +290,41 @@ const nonce = getUuid();
 Format dates using locale-aware formatting.
 
 ```typescript
+import { formatDate } from '@pact-toolbox/utils';
+
 const formatted = formatDate(new Date());
-console.log('Current date:', formatted); // "12/25/2023, 10:30:00 AM"
+console.log('Current date:', formatted); // "Dec 25, 2023, 10:30:00"
 
-// With specific date
-const specificDate = formatDate(new Date('2023-12-25T10:30:00Z'));
+// Also accepts date strings
+const fromString = formatDate('2023-12-25T10:30:00Z');
 ```
 
-### CLI Prompts
+**Parameters:**
+- `date: Date | string` - Date to format
 
-#### Interactive Prompts
+**Returns:** `string` - Formatted date string
 
-```typescript
-import { spinner, select, text, isCancel } from '@pact-toolbox/utils';
+## Error Classes
 
-// Spinner for long operations
-const s = spinner();
-s.start('Installing Pact...');
-await installPact();
-s.stop('Pact installed successfully');
+### `TimeoutError`
 
-// Text input
-const name = await text({
-  message: 'What is your project name?',
-  placeholder: 'my-pact-project'
-});
-
-if (isCancel(name)) {
-  console.log('Operation cancelled');
-  process.exit(0);
-}
-
-// Selection prompt
-const network = await select({
-  message: 'Choose a network:',
-  options: [
-    { value: 'mainnet', label: 'Mainnet' },
-    { value: 'testnet', label: 'Testnet' },
-    { value: 'local', label: 'Local Development' }
-  ]
-});
-
-console.log(`Selected network: ${network}`);
-```
-
-## Error Handling
-
-The package includes custom error classes for different scenarios:
-
-### ChainWebError
-
-```typescript
-import { ChainWebError } from '@pact-toolbox/utils';
-
-try {
-  await isChainWebNodeOk('invalid-url');
-} catch (error) {
-  if (error instanceof ChainWebError) {
-    console.error('Chainweb error:', error.message);
-    console.error('Cause:', error.cause);
-  }
-}
-```
-
-### TimeoutError
+Thrown when an operation times out.
 
 ```typescript
 import { TimeoutError, pollFn } from '@pact-toolbox/utils';
 
 try {
-  await pollFn(
-    () => checkServiceHealth(),
-    { timeout: 5000 }
-  );
+  await pollFn(() => checkService(), { timeout: 5000 });
 } catch (error) {
   if (error instanceof TimeoutError) {
-    console.error('Operation timed out after 5 seconds');
+    console.error('Operation timed out');
   }
 }
 ```
 
-### AbortError
+### `AbortError`
+
+Thrown when an operation is cancelled via AbortSignal.
 
 ```typescript
 import { AbortError, delay } from '@pact-toolbox/utils';
@@ -481,278 +336,134 @@ try {
   await delay(5000, controller.signal);
 } catch (error) {
   if (error instanceof AbortError) {
-    console.log('Delay was aborted');
+    console.log('Operation was cancelled');
   }
 }
 ```
 
-## Advanced Usage
+### `ChainWebError`
 
-### Process Management with Cleanup
+Thrown for Chainweb-specific errors.
 
 ```typescript
-import { runBin, cleanupOnExit, logger } from '@pact-toolbox/utils';
+import { ChainWebError } from '@pact-toolbox/utils';
 
-class ServiceManager {
-  private processes: Array<{ name: string; child: ChildProcess }> = [];
-  
-  constructor() {
-    cleanupOnExit(() => this.cleanup());
+try {
+  await makeBlocks({ onDemandUrl: 'invalid-url' });
+} catch (error) {
+  if (error instanceof ChainWebError) {
+    console.error('Chainweb error:', error.message);
+    console.error('Cause:', error.cause);
   }
-  
-  async startService(name: string, command: string, args: string[]) {
-    logger.info(`Starting ${name}...`);
-    
-    const child = await runBin(command, args, {
-      detached: false,
-      stdio: 'pipe'
-    });
-    
-    this.processes.push({ name, child });
-    logger.success(`${name} started with PID ${child.pid}`);
-  }
-  
-  async cleanup() {
-    logger.info('Stopping all services...');
-    
-    for (const { name, child } of this.processes) {
-      try {
-        child.kill('SIGTERM');
-        logger.info(`Stopped ${name}`);
-      } catch (error) {
-        logger.error(`Failed to stop ${name}:`, error);
+}
+```
+
+## Examples
+
+### Waiting for Blockchain Sync
+
+```typescript
+import { pollFn, isChainWebAtHeight, TimeoutError } from '@pact-toolbox/utils';
+
+async function waitForBlockHeight(targetHeight: number, nodeUrl: string) {
+  try {
+    await pollFn(
+      () => isChainWebAtHeight(targetHeight, nodeUrl),
+      {
+        timeout: 60000,  // 1 minute timeout
+        interval: 2000   // Check every 2 seconds
       }
+    );
+    console.log(`Node reached height ${targetHeight}`);
+  } catch (error) {
+    if (error instanceof TimeoutError) {
+      console.error('Node did not reach target height in time');
     }
-    
-    this.processes = [];
+    throw error;
   }
 }
-
-const manager = new ServiceManager();
-await manager.startService('pact-server', 'pact', ['--serve']);
 ```
 
-### Network Health Monitoring
+### Event-Driven Architecture
 
 ```typescript
-import { isChainWebNodeOk, pollFn, logger } from '@pact-toolbox/utils';
+import { EventEmitter } from '@pact-toolbox/utils';
 
-class NetworkMonitor {
-  constructor(private nodes: string[]) {}
-  
-  async monitorHealth() {
-    for (const node of this.nodes) {
+interface BlockchainEvents {
+  'block:new': (height: number, hash: string) => void;
+  'transaction:confirmed': (txId: string) => void;
+  'error': (error: Error) => void;
+}
+
+class BlockchainMonitor extends EventEmitter<BlockchainEvents> {
+  async startMonitoring() {
+    // Monitor blockchain
+    setInterval(async () => {
       try {
-        await pollFn(
-          async () => {
-            const isHealthy = await isChainWebNodeOk(node, 3000);
-            if (!isHealthy) {
-              throw new Error(`Node ${node} is not responding`);
-            }
-            return true;
-          },
-          {
-            timeout: 30000,
-            interval: 5000,
-            retries: 6
-          }
-        );
-        
-        logger.success(`Node ${node} is healthy`);
+        const block = await fetchLatestBlock();
+        this.emit('block:new', block.height, block.hash);
       } catch (error) {
-        logger.error(`Node ${node} failed health check:`, error);
+        this.emit('error', error as Error);
       }
-    }
+    }, 5000);
   }
 }
 
-const monitor = new NetworkMonitor([
-  'https://api.chainweb.com',
-  'https://api.testnet.chainweb.com'
-]);
+const monitor = new BlockchainMonitor();
 
-await monitor.monitorHealth();
+monitor.on('block:new', (height, hash) => {
+  console.log(`New block: ${height} (${hash})`);
+});
+
+monitor.on('error', (error) => {
+  console.error('Monitoring error:', error);
+});
+
+await monitor.startMonitoring();
 ```
 
-### Development Environment Setup
+### Template-Based Configuration
 
 ```typescript
-import {
-  getRandomNetworkPorts,
-  ensureDir,
-  writeFile,
-  logger,
-  fillTemplatePlaceholders
-} from '@pact-toolbox/utils';
+import { fillTemplatePlaceholders } from '@pact-toolbox/utils';
 
-class DevEnvironment {
-  async setup(projectName: string) {
-    logger.info(`Setting up development environment for ${projectName}`);
-    
-    // Allocate ports for services
-    const [apiPort, dbPort, cachePort] = await getRandomNetworkPorts('localhost', 8000, 8003);
-    
-    // Create project structure
-    await ensureDir(`./projects/${projectName}/contracts`);
-    await ensureDir(`./projects/${projectName}/tests`);
-    await ensureDir(`./projects/${projectName}/config`);
-    
-    // Generate configuration from template
-    const configTemplate = `
-{
-  "projectName": "{{projectName}}",
-  "network": {
-    "apiPort": {{apiPort}},
-    "dbPort": {{dbPort}},
-    "cachePort": {{cachePort}}
-  }
+const configTemplate = `{
+  "node": "{{nodeUrl}}",
+  "chainId": "{{chainId}}",
+  "account": "{{accountName}}",
+  "gasLimit": {{gasLimit}}
 }`;
-    
-    const config = fillTemplatePlaceholders(configTemplate, {
-      projectName,
-      apiPort: apiPort.toString(),
-      dbPort: dbPort.toString(),
-      cachePort: cachePort.toString()
-    });
-    
-    await writeFile(`./projects/${projectName}/config/dev.json`, config);
-    
-    logger.success(`Development environment ready at ./projects/${projectName}`);
-    logger.info(`API Port: ${apiPort}, DB Port: ${dbPort}, Cache Port: ${cachePort}`);
-  }
-}
 
-const devEnv = new DevEnvironment();
-await devEnv.setup('my-pact-dapp');
-```
-
-## Best Practices
-
-### 1. Error Handling
-
-```typescript
-// Always handle specific error types
-try {
-  await pollFn(checkService, { timeout: 10000 });
-} catch (error) {
-  if (error instanceof TimeoutError) {
-    // Handle timeout specifically
-    logger.error('Service did not respond in time');
-  } else if (error instanceof AbortError) {
-    // Handle cancellation
-    logger.info('Operation was cancelled');
-  } else {
-    // Handle other errors
-    logger.error('Unexpected error:', error);
-  }
-}
-```
-
-### 2. Resource Cleanup
-
-```typescript
-// Always register cleanup functions
-cleanupOnExit(async () => {
-  await stopAllServices();
-  await closeDatabase();
-  await cleanupTempFiles();
-});
-```
-
-### 3. Async Operations
-
-```typescript
-// Use cancellation tokens for long operations
-const controller = new AbortController();
-
-// Cancel after 30 seconds
-setTimeout(() => controller.abort(), 30000);
-
-try {
-  await pollFn(
-    checkBlockchainSync,
-    { timeout: 60000 },
-    controller.signal
-  );
-} catch (error) {
-  if (error instanceof AbortError) {
-    logger.warn('Blockchain sync check was cancelled');
-  }
-}
-```
-
-### 4. Logging
-
-```typescript
-// Use structured logging with context
-logger.info('Transaction submitted', {
-  txId: transaction.id,
-  chainId: transaction.chainId,
-  timestamp: new Date().toISOString()
+const config = fillTemplatePlaceholders(configTemplate, {
+  nodeUrl: 'https://api.chainweb.com',
+  chainId: '0',
+  accountName: 'alice',
+  gasLimit: '150000'
 });
 
-// Use appropriate log levels
-logger.debug('Detailed debugging info');
-logger.info('General information');
-logger.warn('Warning condition');
-logger.error('Error occurred', { error });
-logger.success('Operation completed');
+const parsedConfig = JSON.parse(config);
 ```
 
-## Testing
+## Migration Guide
 
-### Unit Tests
+If you're looking for Node.js-specific utilities that were previously in this package, they have been moved to `@pact-toolbox/node-utils`:
 
-```typescript
-import { describe, it, expect, beforeEach } from 'vitest';
-import { delay, pollFn, TimeoutError } from '@pact-toolbox/utils';
+- Process management (`runBin`, `killProcess`, `executeCommand`)
+- File system utilities (`ensureDir`, `writeFile`) 
+- Port management (`getRandomPort`, `isPortTaken`)
+- Logging infrastructure
+- CLI prompts
+- Pact installation utilities
 
-describe('Async utilities', () => {
-  it('should delay for specified time', async () => {
-    const start = Date.now();
-    await delay(100);
-    const duration = Date.now() - start;
-    expect(duration).toBeGreaterThanOrEqual(95);
-  });
-  
-  it('should timeout when polling fails', async () => {
-    await expect(
-      pollFn(
-        () => Promise.reject(new Error('Always fails')),
-        { timeout: 100, interval: 10 }
-      )
-    ).rejects.toThrow(TimeoutError);
-  });
-});
+```bash
+# Install Node.js-specific utilities
+pnpm add @pact-toolbox/node-utils
 ```
-
-### Integration Tests
-
-```typescript
-import { isChainWebNodeOk, getRandomPort } from '@pact-toolbox/utils';
-
-describe('Network utilities', () => {
-  it('should check real chainweb node health', async () => {
-    const isHealthy = await isChainWebNodeOk('https://api.chainweb.com', 10000);
-    expect(typeof isHealthy).toBe('boolean');
-  });
-  
-  it('should find available port', async () => {
-    const port = await getRandomPort();
-    expect(port).toBeGreaterThan(0);
-    expect(port).toBeLessThan(65536);
-  });
-});
-```
-
-## Performance Considerations
-
-- **Process Management**: Use cleanup functions to prevent resource leaks
-- **Network Operations**: Set appropriate timeouts to avoid hanging
-- **File Operations**: Use async functions to prevent blocking
-- **Logging**: Consider log levels and file rotation in production
-- **Polling**: Use reasonable intervals to balance responsiveness and resource usage
 
 ## Contributing
 
 See [CONTRIBUTING.md](../../CONTRIBUTING.md) for development setup and guidelines.
+
+## License
+
+MIT
