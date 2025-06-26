@@ -1,5 +1,5 @@
 {
-  "name": "@pact-toolbox/crypto",
+  "name": "@pact-toolbox/signers",
   "version": "0.2.0",
   "repository": "kadena-community/pact-toolbox",
   "author": "Salama Ashoush <salamaashoush@gmail.com>",
@@ -51,11 +51,7 @@
     "typecheck": "tsc --noEmit --skipLibCheck"
   },
   "dependencies": {
-    "@noble/ed25519": "^2.3.0",
-    "blakejs": "^1.2.1",
-    "fast-text-encoding": "^1.0.6",
-    "std-env": "^3.9.0",
-    "uncrypto": "^0.1.3"
+    "@pact-toolbox/crypto": "workspace:*"
   },
   "devDependencies": {
     "@kadena/cryptography-utils": "^0.4.4",
@@ -64,7 +60,6 @@
     "@pact-toolbox/tsdown": "workspace:*",
     "@pact-toolbox/types": "workspace:*",
     "@pact-toolbox/vitest-config": "workspace:*",
-    "@types/fast-text-encoding": "^1.0.3",
     "@types/node": "^24.0.4",
     "oxlint": "^1.3.0",
     "prettier": "^3.6.1",
