@@ -1,0 +1,78 @@
+{
+  "name": "@pact-toolbox/node-utils",
+  "version": "0.2.0",
+  "repository": "kadena-community/pact-toolbox",
+  "author": "Salama Ashoush <salamaashoush@gmail.com>",
+  "license": "MIT",
+  "type": "module",
+  "private": false,
+  "exports": {
+    "types": {
+      "require": "./dist/index.d.cts",
+      "import": "./dist/index.d.mts"
+    },
+    "node": {
+      "import": "./dist/index.node.mjs",
+      "require": "./dist/index.node.cjs"
+    }
+  },
+  "main": "./dist/index.node.cjs",
+  "module": "./dist/index.node.mjs",
+  "types": "./dist/index.d.mts",
+  "files": [
+    "dist"
+  ],
+  "keywords": [
+    "nodejs",
+    "node-utilities",
+    "kadena",
+    "pact",
+    "blockchain",
+    "chainweb",
+    "development-tools",
+    "process-management",
+    "file-system"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsdown --config ./node_modules/@pact-toolbox/tsdown/tsdown.config.node.ts",
+    "dev": "tsdown --watch --config ./node_modules/@pact-toolbox/tsdown/tsdown.config.node.ts",
+    "lint": "oxlint --import-plugin --deny-warnings",
+    "format": "prettier --check . --ignore-path ../../.gitignore",
+    "prepack": "pnpm run build",
+    "release": "pnpm test && pnpm publish",
+    "test:watch": "vitest",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit --skipLibCheck"
+  },
+  "dependencies": {
+    "@clack/prompts": "^0.11.0",
+    "@pact-toolbox/utils": "workspace:*",
+    "chokidar": "^4.0.3",
+    "consola": "^3.4.2",
+    "defu": "^6.1.4",
+    "detect-port": "^2.1.0",
+    "get-port-please": "^3.1.2",
+    "minimatch": "^10.0.3",
+    "pathe": "^2.0.3",
+    "tiny-readdir-glob": "^1.23.2"
+  },
+  "devDependencies": {
+    "@kadena/types": "^0.7.0",
+    "@pact-toolbox/prettier-config": "workspace:*",
+    "@pact-toolbox/tsconfig": "workspace:*",
+    "@pact-toolbox/tsdown": "workspace:*",
+    "@pact-toolbox/vitest-config": "workspace:*",
+    "@types/dockerode": "^3.3.41",
+    "@types/tar-fs": "^2.0.4",
+    "oxlint": "^1.3.0",
+    "prettier": "^3.6.1",
+    "tsdown": "^0.12.9",
+    "tsx": "^4.20.3",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.4"
+  },
+  "prettier": "@pact-toolbox/prettier-config"
+}
