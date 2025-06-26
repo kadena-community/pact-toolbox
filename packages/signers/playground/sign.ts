@@ -3,15 +3,15 @@ import { genKeyPair, verifySig } from "@kadena/cryptography-utils";
 import type { PactCommand } from "@pact-toolbox/types";
 import { Bench } from "tinybench";
 
-import { fromHex, toBase64Url, SignatureBytes, verifySignature } from "@pact-toolbox/crypto";
+import { fromHex, type SignatureBytes, verifySignature } from "@pact-toolbox/crypto";
 
-import { finalizeTransaction } from "../src/command-signer";
-import { createKeyPairSignerFromPrivateKeyBytes, generateKeyPairSigner } from "../src/keypair-signer";
+import { finalizeTransaction } from "../src/utils";
+import { KeyPairSigner } from "../src/signer";
 
 // Generate key pairs
 const keyPair = genKeyPair();
 const secretKeyBytes = fromHex(keyPair.secretKey);
-const signer = await createKeyPairSignerFromPrivateKeyBytes(secretKeyBytes);
+const signer = await KeyPairSigner.fromPrivateKeyBytes(secretKeyBytes);
 // Get public keys in hex format
 
 // Create a PactCommand
@@ -36,7 +36,7 @@ const command: PactCommand = {
 };
 
 // Use pact-toolbox signer instead of @kadena/client
-const signerFromKeyPair = await createKeyPairSignerFromPrivateKeyBytes(secretKeyBytes);
+const signerFromKeyPair = await KeyPairSigner.fromPrivateKeyBytes(secretKeyBytes);
 const [signedCommand] = await signerFromKeyPair.signPactCommands([command]);
 console.log(finalizeTransaction(signedCommand));
 const [signedCommand2] = await signer.signPactCommands([command]);
@@ -62,10 +62,10 @@ const bench = new Bench({
   // time: 100000,
 });
 bench
-  .add("@pact-toolbox/signers -> createKeyPairSignerFromPrivateKeyBytes", async () => {
+  .add("@pact-toolbox/signers -> KeyPairSigner.fromPrivateKeyBytes", async () => {
     const keyPair = genKeyPair();
     const secretKeyBytes = fromHex(keyPair.secretKey);
-    const signer = await createKeyPairSignerFromPrivateKeyBytes(secretKeyBytes);
+    const signer = await KeyPairSigner.fromPrivateKeyBytes(secretKeyBytes);
     // Create a PactCommand
     const command: PactCommand = {
       payload: {
@@ -94,7 +94,7 @@ bench
     );
   })
   .add("@pact-toolbox/signers -> keyPairSigner", async () => {
-    const signer = await generateKeyPairSigner();
+    const signer = await KeyPairSigner.generate();
     // Create a PactCommand
     const command: PactCommand = {
       payload: {

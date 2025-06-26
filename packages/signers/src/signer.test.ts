@@ -11,20 +11,13 @@ import {
 import type { PactCommand, PartiallySignedTransaction } from "@pact-toolbox/types";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import {
-  createKeyPairSignerFromBase16PrivateKey,
-  createKeyPairSignerFromBytes,
-  createKeyPairSignerFromPrivateKeyBytes,
-  createNoopSigner,
+  KeyPairSigner,
+  NoopSigner,
   createSignableMessage,
-  finalizeTransaction,
-  generateKeyPairSigner,
   isKeyPairSigner,
-  isMessageSigner,
-  isPactCommandSigner,
-  type KeyPairSigner,
-  type MessageSigner,
-  type PactCommandSigner,
-} from "./index";
+  isSigner,
+} from "./signer";
+import { finalizeTransaction } from "./utils";
 
 // Mock crypto for deterministic tests
 vi.mock("@pact-toolbox/crypto", async () => {
@@ -83,30 +76,21 @@ describe("@pact-toolbox/signers", () => {
   });
 
   describe("KeyPairSigner", () => {
-    describe("generateKeyPairSigner", () => {
+    describe("generate", () => {
       test("generates new keypair signer", async () => {
         vi.mocked(generateKeyPair).mockResolvedValue(mockKeyPair);
         vi.mocked(exportBase16Key).mockResolvedValue(mockPublicKey);
 
-        const signer = await generateKeyPairSigner();
+        const signer = await KeyPairSigner.generate();
 
-        expect(signer).toBeDefined();
+        expect(signer).toBeInstanceOf(KeyPairSigner);
         expect(signer.address).toBe(mockPublicKey);
+        expect(signer.keyPair).toBe(mockKeyPair);
         expect(generateKeyPair).toHaveBeenCalled();
-      });
-
-      test("provides access to keypair", async () => {
-        vi.mocked(generateKeyPair).mockResolvedValue(mockKeyPair);
-        vi.mocked(exportBase16Key).mockResolvedValue(mockPublicKey);
-
-        const signer = await generateKeyPairSigner();
-        const keyPair = signer.keyPair;
-
-        expect(keyPair).toBe(mockKeyPair);
       });
     });
 
-    describe("createKeyPairSignerFromBytes", () => {
+    describe("fromBytes", () => {
       test("creates signer from 64-byte keypair", async () => {
         const keypairBytes = new Uint8Array(64);
         keypairBytes.fill(1, 0, 32); // Private key
@@ -115,7 +99,7 @@ describe("@pact-toolbox/signers", () => {
         vi.mocked(createKeyPairFromBytes).mockResolvedValue(mockKeyPair);
         vi.mocked(exportBase16Key).mockResolvedValue(mockPublicKey);
 
-        const signer = await createKeyPairSignerFromBytes(keypairBytes);
+        const signer = await KeyPairSigner.fromBytes(keypairBytes);
 
         expect(signer.address).toBe(mockPublicKey);
         expect(createKeyPairFromBytes).toHaveBeenCalledWith(keypairBytes, undefined);
@@ -126,11 +110,11 @@ describe("@pact-toolbox/signers", () => {
 
         vi.mocked(createKeyPairFromBytes).mockRejectedValue(new Error("invalid key pair length: 32"));
 
-        await expect(createKeyPairSignerFromBytes(invalidBytes)).rejects.toThrow("invalid key pair length");
+        await expect(KeyPairSigner.fromBytes(invalidBytes)).rejects.toThrow("invalid key pair length");
       });
     });
 
-    describe("createKeyPairSignerFromPrivateKeyBytes", () => {
+    describe("fromPrivateKeyBytes", () => {
       test("creates signer from 32-byte private key", async () => {
         const privateKeyBytes = new Uint8Array(32);
         privateKeyBytes.fill(1);
@@ -138,7 +122,7 @@ describe("@pact-toolbox/signers", () => {
         vi.mocked(createKeyPairFromPrivateKeyBytes).mockResolvedValue(mockKeyPair);
         vi.mocked(exportBase16Key).mockResolvedValue(mockPublicKey);
 
-        const signer = await createKeyPairSignerFromPrivateKeyBytes(privateKeyBytes);
+        const signer = await KeyPairSigner.fromPrivateKeyBytes(privateKeyBytes);
 
         expect(signer.address).toBe(mockPublicKey);
         expect(createKeyPairFromPrivateKeyBytes).toHaveBeenCalledWith(privateKeyBytes, undefined);
@@ -149,13 +133,11 @@ describe("@pact-toolbox/signers", () => {
 
         vi.mocked(createKeyPairFromPrivateKeyBytes).mockRejectedValue(new Error("Invalid private key length: 64"));
 
-        await expect(createKeyPairSignerFromPrivateKeyBytes(invalidBytes)).rejects.toThrow(
-          "Invalid private key length",
-        );
+        await expect(KeyPairSigner.fromPrivateKeyBytes(invalidBytes)).rejects.toThrow("Invalid private key length");
       });
     });
 
-    describe("createKeyPairSignerFromBase16PrivateKey", () => {
+    describe("fromPrivateKeyHex", () => {
       test("creates signer from hex private key", async () => {
         const privateKeyHex = "1".repeat(64);
         const privateKeyBytes = new Uint8Array(32);
@@ -164,7 +146,7 @@ describe("@pact-toolbox/signers", () => {
         vi.mocked(createKeyPairFromPrivateKeyBytes).mockResolvedValue(mockKeyPair);
         vi.mocked(exportBase16Key).mockResolvedValue(mockPublicKey);
 
-        const signer = await createKeyPairSignerFromBase16PrivateKey(privateKeyHex);
+        const signer = await KeyPairSigner.fromPrivateKeyHex(privateKeyHex);
 
         expect(signer.address).toBe(mockPublicKey);
         expect(fromHex).toHaveBeenCalledWith(privateKeyHex);
@@ -177,7 +159,7 @@ describe("@pact-toolbox/signers", () => {
           throw new Error("Invalid hex");
         });
 
-        await expect(createKeyPairSignerFromBase16PrivateKey(invalidHex)).rejects.toThrow("Invalid hex");
+        await expect(KeyPairSigner.fromPrivateKeyHex(invalidHex)).rejects.toThrow("Invalid hex");
       });
     });
   });
@@ -188,7 +170,7 @@ describe("@pact-toolbox/signers", () => {
     beforeEach(async () => {
       vi.mocked(generateKeyPair).mockResolvedValue(mockKeyPair);
       vi.mocked(exportBase16Key).mockResolvedValue(mockPublicKey);
-      signer = await generateKeyPairSigner();
+      signer = await KeyPairSigner.generate();
     });
 
     test("signs single message", async () => {
@@ -197,7 +179,7 @@ describe("@pact-toolbox/signers", () => {
 
       vi.mocked(signBytes).mockResolvedValue(mockSignatureBytes);
 
-      const [signatures] = await signer.signMessages([message]);
+      const [signatures] = await signer.signMessages!([message]);
 
       expect(signatures).toHaveProperty(mockPublicKey);
       expect((signatures as any)[mockPublicKey]).toBe(mockSignatureBytes);
@@ -214,7 +196,7 @@ describe("@pact-toolbox/signers", () => {
 
       vi.mocked(signBytes).mockResolvedValue(mockSignatureBytes);
 
-      const signatures = await signer.signMessages(messages);
+      const signatures = await signer.signMessages!(messages);
 
       expect(signatures).toHaveLength(3);
       expect(signBytes).toHaveBeenCalledTimes(3);
@@ -223,20 +205,14 @@ describe("@pact-toolbox/signers", () => {
       });
     });
 
-    test("handles different message encodings", async () => {
-      const messages = [
-        createSignableMessage("UTF-8 Text"),
-        createSignableMessage("ASCII Text"),
-        createSignableMessage(new Uint8Array([1, 2, 3])),
-      ];
-      const mockSignatureBytes = fromHex(mockSignature) as any;
+    test("handles abort signal", async () => {
+      const abortController = new AbortController();
+      abortController.abort();
+      
+      const message = createSignableMessage("Test");
 
-      vi.mocked(signBytes).mockResolvedValue(mockSignatureBytes);
-
-      const signatures = await signer.signMessages(messages);
-
-      expect(signatures).toHaveLength(3);
-      expect(signBytes).toHaveBeenCalledTimes(3);
+      await expect(signer.signMessages!([message], { abortSignal: abortController.signal }))
+        .rejects.toThrow("Operation aborted");
     });
   });
 
@@ -246,7 +222,7 @@ describe("@pact-toolbox/signers", () => {
     beforeEach(async () => {
       vi.mocked(generateKeyPair).mockResolvedValue(mockKeyPair);
       vi.mocked(exportBase16Key).mockResolvedValue(mockPublicKey);
-      signer = await generateKeyPairSigner();
+      signer = await KeyPairSigner.generate();
     });
 
     test("signs single Pact command", async () => {
@@ -302,25 +278,32 @@ describe("@pact-toolbox/signers", () => {
       expect(parsedCommand.networkId).toEqual(mockCommand.networkId);
       expect(parsedCommand.nonce).toEqual(mockCommand.nonce);
     });
+
+    test("handles abort signal", async () => {
+      const abortController = new AbortController();
+      abortController.abort();
+
+      await expect(signer.signPactCommands([mockCommand], { abortSignal: abortController.signal }))
+        .rejects.toThrow("Operation aborted");
+    });
   });
 
   describe("NoopSigner", () => {
     test("creates noop signer", () => {
       const address = "test-address";
-      const signer = createNoopSigner(address as any);
+      const signer = new NoopSigner(address as any);
 
-      expect(signer).toBeDefined();
+      expect(signer).toBeInstanceOf(NoopSigner);
       expect(signer.address).toBe(address);
-      expect(isMessageSigner(signer)).toBe(true);
-      expect(isPactCommandSigner(signer)).toBe(true);
+      expect(isSigner(signer)).toBe(true);
     });
 
     test("returns empty signatures for messages", async () => {
       const address = "test-address";
-      const signer = createNoopSigner(address as any);
+      const signer = new NoopSigner(address as any);
       const messages = [createSignableMessage("Test 1"), createSignableMessage("Test 2")];
 
-      const signatures = await signer.signMessages(messages);
+      const signatures = await signer.signMessages!(messages);
 
       expect(signatures).toHaveLength(2);
       signatures.forEach((sig) => {
@@ -330,13 +313,12 @@ describe("@pact-toolbox/signers", () => {
 
     test("returns empty signatures for Pact commands", async () => {
       const address = "test-address";
-      const signer = createNoopSigner(address as any);
+      const signer = new NoopSigner(address as any);
       const commands = [mockCommand];
 
       const signedCommands = await signer.signPactCommands(commands);
 
       expect(signedCommands).toHaveLength(1);
-      // NoopSigner returns empty objects, need to check implementation
       expect(signedCommands[0]).toBeDefined();
     });
   });
@@ -355,14 +337,6 @@ describe("@pact-toolbox/signers", () => {
         const msg = createSignableMessage(bytes);
 
         expect(msg.content).toBe(bytes);
-      });
-
-      test("handles different encodings", () => {
-        const msg1 = createSignableMessage("Test");
-        const msg2 = createSignableMessage("Test");
-
-        expect(msg1.content).toBeInstanceOf(Uint8Array);
-        expect(msg2.content).toBeInstanceOf(Uint8Array);
       });
     });
 
@@ -399,47 +373,22 @@ describe("@pact-toolbox/signers", () => {
   });
 
   describe("Type Guards", () => {
-    test("isMessageSigner identifies message signers", () => {
-      const messageSigner: MessageSigner = {
-        address: "test-address" as any,
-        signMessages: async () => [],
-      };
+    test("isSigner identifies signers", async () => {
+      const signer = await KeyPairSigner.generate();
+      const noopSigner = new NoopSigner("test-address" as any);
+      const notSigner = { address: "test-address" };
 
-      const notMessageSigner = {
-        address: "test-address" as any,
-        signPactCommands: async () => [],
-      };
-
-      expect(isMessageSigner(messageSigner)).toBe(true);
-      expect(isMessageSigner(notMessageSigner)).toBe(false);
-      expect(() => isMessageSigner(null as any)).toThrow();
-      expect(() => isMessageSigner(undefined as any)).toThrow();
-    });
-
-    test("isPactCommandSigner identifies Pact command signers", () => {
-      const pactSigner: PactCommandSigner = {
-        address: "test-address" as any,
-        signPactCommands: async () => [],
-      };
-
-      const notPactSigner = {
-        address: "test-address" as any,
-        signMessages: async () => [],
-      };
-
-      expect(isPactCommandSigner(pactSigner)).toBe(true);
-      expect(isPactCommandSigner(notPactSigner)).toBe(false);
-      expect(() => isPactCommandSigner(null as any)).toThrow();
-      expect(() => isPactCommandSigner(undefined as any)).toThrow();
+      expect(isSigner(signer)).toBe(true);
+      expect(isSigner(noopSigner)).toBe(true);
+      expect(isSigner(notSigner)).toBe(false);
+      expect(isSigner(null)).toBe(false);
+      expect(isSigner(undefined)).toBe(false);
     });
 
     test("isKeyPairSigner identifies keypair signers", async () => {
-      const keyPairSigner = await generateKeyPairSigner();
-      const noopSigner = createNoopSigner("test-address" as any);
-      const partialSigner = {
-        address: "test-address" as any,
-        signMessages: async () => [],
-      };
+      const keyPairSigner = await KeyPairSigner.generate();
+      const noopSigner = new NoopSigner("test-address" as any);
+      const partialSigner = { address: "test-address", signPactCommands: async () => [] };
 
       expect(isKeyPairSigner(keyPairSigner)).toBe(true);
       expect(isKeyPairSigner(noopSigner)).toBe(false);
@@ -458,7 +407,7 @@ describe("@pact-toolbox/signers", () => {
       vi.mocked(toHex).mockReturnValue(mockSignature);
 
       // Create signer
-      const signer = await generateKeyPairSigner();
+      const signer = await KeyPairSigner.generate();
 
       // Create and sign command
       const command: PactCommand = {
@@ -499,13 +448,12 @@ describe("@pact-toolbox/signers", () => {
 
     test("multi-signature scenario", async () => {
       // Create multiple signers
-      const signer1 = await generateKeyPairSigner();
-      const signer2 = await generateKeyPairSigner();
+      const signer1 = await KeyPairSigner.generate();
+      const signer2 = await KeyPairSigner.generate();
 
       vi.mocked(exportBase16Key).mockResolvedValueOnce("pubkey1").mockResolvedValueOnce("pubkey2");
 
       // Create command requiring multiple signatures
-      // @ts-expect-error - we're testing the signer
       const command: PactCommand = {
         payload: {
           exec: {
@@ -516,12 +464,17 @@ describe("@pact-toolbox/signers", () => {
         meta: {
           chainId: "0",
           sender: "multi-sig",
+          gasLimit: 1000,
+          gasPrice: 0.00001,
+          ttl: 600,
+          creationTime: 1234567890,
         },
         signers: [
           { pubKey: "pubkey1", scheme: "ED25519" },
           { pubKey: "pubkey2", scheme: "ED25519" },
         ],
         networkId: "development",
+        nonce: "test-nonce",
       };
 
       // Sign with both signers

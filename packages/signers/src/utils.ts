@@ -1,55 +1,25 @@
-import type { Address } from "@pact-toolbox/crypto";
-import type {
-  PactCommand,
-  PartiallySignedTransaction,
-  SignedTransaction,
-  TransactionFullSig,
-  TransactionSig,
-} from "@pact-toolbox/types";
-
+import type { PactCommand, PartiallySignedTransaction, SignedTransaction, TransactionFullSig, TransactionSig } from "@pact-toolbox/types";
 import { toHex, toBase64Url, blake2b, exportBase16Key, signBytes, toUtf8 } from "@pact-toolbox/crypto";
+import type { SignerConfig } from "./types";
 
-import type { BaseTransactionSignerConfig } from "./types";
-
-export type PactCommandSignerConfig = BaseTransactionSignerConfig;
-
-/** Defines a signer capable of signing transactions. */
-export type PactCommandSigner<TAddress extends string = string> = Readonly<{
-  address: Address<TAddress>;
-  signPactCommands(commands: PactCommand[]): Promise<PartiallySignedTransaction[]>;
-}>;
-
-/** Checks whether the provided value implements the {@link PactCommandSigner} interface. */
-export function isPactCommandSigner<TAddress extends string>(value: {
-  [key: string]: unknown;
-  address: Address<TAddress>;
-}): value is PactCommandSigner<TAddress> {
-  return "signPactCommands" in value && typeof value["signPactCommands"] === "function";
-}
-
-/** Asserts that the provided value implements the {@link PactCommandSigner} interface. */
-export function assertIsPactCommandSigner<TAddress extends string>(value: {
-  [key: string]: unknown;
-  address: Address<TAddress>;
-}): asserts value is PactCommandSigner<TAddress> {
-  if (!isPactCommandSigner(value)) {
-    throw new Error("Value is not a PactCommandSigner");
-  }
-}
-
-// Function to sign a PactCommand
+// Core Kadena transaction signing functionality - preserved exactly as needed by ecosystem
 export async function partiallySignPactCommand(
   keyPairs: CryptoKeyPair[],
   command: PactCommand,
+  config?: SignerConfig,
 ): Promise<PartiallySignedTransaction> {
+  if (config?.abortSignal?.aborted) {
+    throw new Error("Operation aborted");
+  }
+
   // Step 1: JSON.stringify the command
   const cmd = JSON.stringify(command);
 
-  // Step 2: Hash the stringified command with blake2b from blakejs
+  // Step 2: Hash the stringified command with blake2b
   const cmdBytes = toUtf8(cmd);
   const hash = blake2b(cmdBytes, undefined, 32); // 32-byte hash
 
-  // Step 4: Sign the hash with keypairs found in signers field from the PactCommand
+  // Step 3: Sign the hash with keypairs found in signers field from the PactCommand
   // Map public keys to keyPairs for quick lookup
   const keyPairMap = new Map<string, CryptoKeyPair>();
   for (const keyPair of keyPairs) {
@@ -61,6 +31,10 @@ export async function partiallySignPactCommand(
   const sigs: TransactionSig[] = [];
 
   for (const signer of command.signers) {
+    if (config?.abortSignal?.aborted) {
+      throw new Error("Operation aborted");
+    }
+
     const pubKey = signer.pubKey;
     const keyPair = keyPairMap.get(pubKey);
 
@@ -77,7 +51,7 @@ export async function partiallySignPactCommand(
     sigs.push({ pubKey, sig: signatureHex });
   }
 
-  // Step 5: Build the SignedTransaction object with the signatures
+  // Step 4: Build the PartiallySignedTransaction object with the signatures
   return {
     cmd,
     hash,
@@ -85,6 +59,7 @@ export async function partiallySignPactCommand(
   };
 }
 
+// Transaction validation and finalization utilities
 export function isTransactionFullSig(sig: TransactionSig): sig is TransactionFullSig {
   return "sig" in sig && sig.sig !== undefined;
 }

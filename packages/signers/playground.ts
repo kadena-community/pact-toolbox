@@ -1,11 +1,11 @@
 import { genKeyPair } from "@kadena/cryptography-utils";
 
-import { createSignableMessage, createSignerFromKeyPair } from "./src";
+import { createSignableMessage, KeyPairSigner } from "./src";
 import { createKeyPairFromPrivateKeyBytes, generateKeyPair, fromHex } from "@pact-toolbox/crypto";
 
 console.time("native -> generateKeyPair");
 const keyPair = await generateKeyPair();
-const signer = await createSignerFromKeyPair(keyPair);
+const signer = await KeyPairSigner.fromKeyPair(keyPair);
 console.log(signer.address);
 console.timeEnd("native -> generateKeyPair");
 
@@ -17,7 +17,7 @@ console.log(keyPair2.publicKey);
 console.time("validate keyPair2");
 const secretBytes = fromHex(keyPair2.secretKey);
 const keyPair3 = await createKeyPairFromPrivateKeyBytes(secretBytes);
-const signer2 = await createSignerFromKeyPair(keyPair3);
+const signer2 = await KeyPairSigner.fromKeyPair(keyPair3);
 console.timeEnd("validate keyPair2");
 console.log(signer2.keyPair.publicKey.toString());
 

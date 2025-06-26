@@ -1,533 +1,258 @@
-# @pact-toolbox/signer
+# @pact-toolbox/signers
 
-> Cryptographic signing utilities for Pact transactions on Kadena blockchain
+A simplified and efficient signing library for the Kadena ecosystem. This package provides clean interfaces for signing Pact commands and arbitrary messages while maintaining full compatibility with existing wallet integrations.
 
-## Overview
+## Features
 
-The `@pact-toolbox/signer` package provides a comprehensive signing solution for Pact transactions and messages on the Kadena blockchain. It offers multiple signer implementations, supports various key formats, and integrates seamlessly with the pact-toolbox ecosystem.
+- **Simplified API**: Single `Signer` interface instead of multiple overlapping interfaces
+- **Kadena-focused**: Optimized for Pact command signing with full ecosystem compatibility  
+- **Flexible**: Supports both keypair-based and external signers (wallets)
+- **Well-tested**: Comprehensive test coverage with realistic scenarios
+- **TypeScript**: Full type safety with proper generics and type guards
 
 ## Installation
 
 ```bash
-npm install @pact-toolbox/signer
-# or
-pnpm add @pact-toolbox/signer
+npm install @pact-toolbox/signers
 ```
 
-## Features
+## Usage
 
-- = **Multiple Signer Types** - Message signing, transaction signing, and combined signers
-- = **Key Format Support** - Create signers from various key formats (bytes, hex, base64)
-- < **Cross-Platform** - Works in Node.js, browsers, and React Native
-- � **Web Crypto API** - Uses native cryptography for optimal performance
-- =� **Type Safety** - Full TypeScript support with branded types
-- > � **Testing Support** - Mock signers for testing without real cryptography
-- = **Batch Operations** - Sign multiple messages or transactions efficiently
-
-## Quick Start
+### Creating Signers
 
 ```typescript
-import { generateKeyPairSigner, createSignableMessage, finalizeTransaction } from "@pact-toolbox/signer";
+import { KeyPairSigner } from '@pact-toolbox/signers';
 
 // Generate a new keypair signer
-const signer = await generateKeyPairSigner();
+const signer = await KeyPairSigner.generate();
 
-// Sign a message
-const message = createSignableMessage("Hello, Kadena!");
-const [signatures] = await signer.signMessages([message]);
+// Create from existing private key (hex)
+const signerFromHex = await KeyPairSigner.fromPrivateKeyHex('your-private-key-hex');
 
-// Sign a Pact transaction
-const command = {
-  payload: { exec: { code: '(coin.details "alice")' } },
-  meta: { chainId: "0", sender: "alice" },
-  signers: [],
-  networkId: "development",
+// Create from private key bytes
+const privateKeyBytes = new Uint8Array(32); // Your 32-byte private key
+const signerFromBytes = await KeyPairSigner.fromPrivateKeyBytes(privateKeyBytes);
+
+// Create from full keypair bytes (64 bytes: private + public)
+const keypairBytes = new Uint8Array(64); // Your 64-byte keypair
+const signerFromKeypair = await KeyPairSigner.fromBytes(keypairBytes);
+```
+
+### Signing Pact Commands
+
+```typescript
+import type { PactCommand } from '@pact-toolbox/types';
+import { finalizeTransaction } from '@pact-toolbox/signers';
+
+const command: PactCommand = {
+  payload: {
+    exec: {
+      code: '(coin.transfer "alice" "bob" 10.0)',
+      data: {}
+    }
+  },
+  meta: {
+    chainId: "0",
+    sender: "alice",
+    gasLimit: 1000,
+    gasPrice: 0.00001,
+    ttl: 600,
+    creationTime: Date.now()
+  },
+  signers: [{
+    pubKey: signer.address,
+    scheme: "ED25519"
+  }],
+  networkId: "testnet04",
+  nonce: Date.now().toString()
 };
 
-const [signedTx] = await signer.signPactCommands([command]);
-const finalTx = finalizeTransaction(signedTx);
+// Sign the command
+const [partiallySignedTx] = await signer.signPactCommands([command]);
+
+// Finalize for submission to Kadena network
+const signedTx = finalizeTransaction(partiallySignedTx);
 ```
 
-## Signer Types
-
-### KeyPairSigner
-
-The primary signer implementation using Web Crypto API CryptoKeyPair.
+### Signing Arbitrary Messages
 
 ```typescript
-import {
-  generateKeyPairSigner,
-  createKeyPairSignerFromBytes,
-  createKeyPairSignerFromPrivateKeyBytes,
-  createKeyPairSignerFromBase16PrivateKey,
-} from "@pact-toolbox/signer";
+import { createSignableMessage } from '@pact-toolbox/signers';
 
-// Generate new keypair
-const signer1 = await generateKeyPairSigner();
+// Create a signable message
+const message = createSignableMessage("Hello, Kadena!");
 
-// From 64-byte keypair (32 private + 32 public)
-const keypairBytes = new Uint8Array(64);
-const signer2 = await createKeyPairSignerFromBytes(keypairBytes);
+// Sign the message
+const [signatures] = await signer.signMessages!([message]);
 
-// From 32-byte private key
-const privateKeyBytes = new Uint8Array(32);
-const signer3 = await createKeyPairSignerFromPrivateKeyBytes(privateKeyBytes);
-
-// From hex-encoded private key
-const privateKeyHex = "deadbeef...";
-const signer4 = await createKeyPairSignerFromBase16PrivateKey(privateKeyHex);
-
-// Access the underlying keypair
-const cryptoKeyPair = signer1.getKeyPair();
+console.log(signatures[signer.address]); // Signature bytes
 ```
 
-### MessageSigner
-
-Interface for signing arbitrary messages.
+### Multi-signature Scenarios
 
 ```typescript
-interface MessageSigner {
-  signMessages(messages: SignableMessage[]): Promise<SignatureWithAddress[]>;
+// Create multiple signers
+const signer1 = await KeyPairSigner.generate();
+const signer2 = await KeyPairSigner.generate();
+
+// Create command requiring multiple signatures
+const multiSigCommand: PactCommand = {
+  // ... command structure
+  signers: [
+    { pubKey: signer1.address, scheme: "ED25519" },
+    { pubKey: signer2.address, scheme: "ED25519" }
+  ]
+};
+
+// Sign with each signer
+const [partial1] = await signer1.signPactCommands([multiSigCommand]);
+const [partial2] = await signer2.signPactCommands([multiSigCommand]);
+
+// Combine signatures
+const combined = {
+  cmd: partial1.cmd,
+  hash: partial1.hash,
+  sigs: [...partial1.sigs, ...partial2.sigs]
+};
+
+const finalTx = finalizeTransaction(combined);
+```
+
+### Working with External Signers
+
+```typescript
+import { isSigner, type Signer } from '@pact-toolbox/signers';
+
+// Custom wallet signer implementation
+class WalletSigner implements Signer {
+  readonly address: Address;
+  
+  constructor(address: Address) {
+    this.address = address;
+  }
+  
+  async signPactCommands(commands: PactCommand[]): Promise<PartiallySignedTransaction[]> {
+    // Delegate to wallet API
+    return wallet.signPactCommands(commands);
+  }
 }
 
-// Usage
-const messages = [
-  createSignableMessage("Message 1"),
-  createSignableMessage("Message 2", "utf8"),
-  createSignableMessage(new Uint8Array([1, 2, 3])),
-];
+const walletSigner = new WalletSigner("wallet-address");
 
-const signatures = await signer.signMessages(messages);
-```
-
-### PactCommandSigner
-
-Interface for signing Pact commands/transactions.
-
-```typescript
-interface PactCommandSigner {
-  signPactCommands(commands: PactCommand[]): Promise<PartiallySignedPactCommand[]>;
+// Type-safe check
+if (isSigner(walletSigner)) {
+  const signed = await walletSigner.signPactCommands([command]);
 }
-
-// Usage
-const commands = [
-  { payload: {...}, meta: {...}, signers: [...], networkId: "..." },
-  { payload: {...}, meta: {...}, signers: [...], networkId: "..." }
-];
-
-const signedCommands = await signer.signPactCommands(commands);
 ```
 
-### NoopSigner
-
-Mock signer for testing purposes.
+### Testing and Development
 
 ```typescript
-import { createNoopSigner } from "@pact-toolbox/signer";
+import { NoopSigner } from '@pact-toolbox/signers';
 
-// Create a mock signer
-const noopSigner = createNoopSigner();
+// Create a no-operation signer for testing
+const testSigner = new NoopSigner("test-address");
 
-// Returns empty signatures (useful for testing)
-const [emptySignatures] = await noopSigner.signMessages([message]);
+// Returns empty signatures (useful for testing flows without actual signing)
+const mockSigned = await testSigner.signPactCommands([command]);
 ```
 
 ## API Reference
 
-### Core Functions
+### Main Types
 
-#### `generateKeyPairSigner()`
-
-Generates a new keypair signer with a random Ed25519 keypair.
-
-```typescript
-const signer = await generateKeyPairSigner();
-console.log(signer.address); // Public key as hex string
-```
-
-#### `createKeyPairSignerFromBytes(keypairBytes)`
-
-Creates a signer from a 64-byte keypair (32 private + 32 public).
+#### `Signer<TAddress>`
+The main interface for all signers:
 
 ```typescript
-const keypairBytes = new Uint8Array(64); // Your keypair bytes
-const signer = await createKeyPairSignerFromBytes(keypairBytes);
-```
-
-#### `createKeyPairSignerFromPrivateKeyBytes(privateKeyBytes)`
-
-Creates a signer from a 32-byte private key.
-
-```typescript
-const privateKey = new Uint8Array(32); // Your private key
-const signer = await createKeyPairSignerFromPrivateKeyBytes(privateKey);
-```
-
-#### `createKeyPairSignerFromBase16PrivateKey(privateKeyHex)`
-
-Creates a signer from a hex-encoded private key string.
-
-```typescript
-const privateKeyHex = "0123456789abcdef..."; // 64 hex characters
-const signer = await createKeyPairSignerFromBase16PrivateKey(privateKeyHex);
-```
-
-#### `createSignableMessage(message, encoding?)`
-
-Creates a signable message from string or bytes.
-
-```typescript
-// From string (UTF-8 encoded)
-const msg1 = createSignableMessage("Hello, world!");
-
-// From string with custom encoding
-const msg2 = createSignableMessage("Hello", "ascii");
-
-// From bytes
-const msg3 = createSignableMessage(new Uint8Array([1, 2, 3]));
-```
-
-#### `finalizeTransaction(partiallySignedCommand)`
-
-Finalizes a partially signed command into a complete transaction.
-
-```typescript
-const [partiallySignedCmd] = await signer.signPactCommands([command]);
-const transaction = finalizeTransaction(partiallySignedCmd);
-// Ready to submit to the blockchain
-```
-
-### Type Guards
-
-#### `isMessageSigner(signer)`
-
-Checks if an object implements the MessageSigner interface.
-
-```typescript
-if (isMessageSigner(signer)) {
-  const signatures = await signer.signMessages([message]);
+interface Signer<TAddress extends string = string> {
+  readonly address: Address<TAddress>;
+  readonly keyPair?: CryptoKeyPair; // Optional for external signers
+  
+  // Core Kadena functionality
+  signPactCommands(commands: PactCommand[], config?: SignerConfig): Promise<PartiallySignedTransaction[]>;
+  
+  // Optional message signing
+  signMessages?(messages: readonly SignableMessage[], config?: SignerConfig): Promise<readonly SignatureDictionary[]>;
 }
 ```
 
-#### `isPactCommandSigner(signer)`
-
-Checks if an object implements the PactCommandSigner interface.
+#### `KeyPairSigner`
+Concrete implementation using CryptoKeyPair:
 
 ```typescript
-if (isPactCommandSigner(signer)) {
-  const signedCommands = await signer.signPactCommands([command]);
+class KeyPairSigner implements Signer {
+  static async generate(): Promise<KeyPairSigner>
+  static async fromKeyPair(keyPair: CryptoKeyPair): Promise<KeyPairSigner>
+  static async fromBytes(bytes: ReadonlyUint8Array, extractable?: boolean): Promise<KeyPairSigner>
+  static async fromPrivateKeyBytes(bytes: ReadonlyUint8Array, extractable?: boolean): Promise<KeyPairSigner>
+  static async fromPrivateKeyHex(privateKey: string, extractable?: boolean): Promise<KeyPairSigner>
 }
 ```
 
-#### `isKeyPairSigner(signer)`
-
-Checks if an object is a KeyPairSigner (implements both interfaces).
+#### `NoopSigner`
+Testing implementation that returns empty signatures:
 
 ```typescript
-if (isKeyPairSigner(signer)) {
-  // Can use both signMessages and signPactCommands
-  const keyPair = signer.getKeyPair();
+class NoopSigner implements Signer {
+  constructor(address: Address)
 }
 ```
 
-## Advanced Usage
+### Utility Functions
 
-### Multi-Signature Transactions
+#### Transaction Processing
+- `finalizeTransaction(tx: PartiallySignedTransaction): SignedTransaction` - Convert partial transaction to final format
+- `isFullySignedTransaction(tx: unknown): tx is SignedTransaction` - Type guard for complete transactions
+- `isTransactionFullSig(sig: TransactionSig): sig is TransactionFullSig` - Type guard for complete signatures
 
-```typescript
-// Create multiple signers
-const signer1 = await generateKeyPairSigner();
-const signer2 = await generateKeyPairSigner();
+#### Message Creation  
+- `createSignableMessage(content: Uint8Array | string, signatures?: SignatureDictionary): SignableMessage` - Create signable message
 
-// Create command with multiple signers
-const command: PactCommand = {
-  payload: { exec: { code: "(multi-sig-operation)" } },
-  meta: { chainId: "0", sender: "gas-payer" },
-  signers: [
-    { pubKey: signer1.address, scheme: "ED25519" },
-    { pubKey: signer2.address, scheme: "ED25519" },
-  ],
-  networkId: "development",
-};
+#### Type Guards
+- `isSigner(value: unknown): value is Signer` - Check if value implements Signer interface
+- `isKeyPairSigner(value: unknown): value is KeyPairSigner` - Check if signer has keypair access
 
-// Sign with each signer
-const [partial1] = await signer1.signPactCommands([command]);
-const [partial2] = await signer2.signPactCommands([command]);
 
-// Combine signatures
-const combined = combineSignatures(partial1, partial2);
-const finalTx = finalizeTransaction(combined);
-```
+## Configuration
 
-### Custom Signer Implementation
+### AbortSignal Support
+
+All signing operations support AbortSignal for cancellation:
 
 ```typescript
-import { MessageSigner, PactCommandSigner, SignableMessage } from "@pact-toolbox/signer";
+const controller = new AbortController();
 
-class CustomSigner implements MessageSigner, PactCommandSigner {
-  constructor(private customKey: any) {}
+// Cancel after 5 seconds
+setTimeout(() => controller.abort(), 5000);
 
-  async signMessages(messages: SignableMessage[]): Promise<SignatureWithAddress[]> {
-    // Custom signing logic
-    return messages.map((msg) => ({
-      [this.getAddress()]: await this.customSign(msg.message),
-    }));
-  }
-
-  async signPactCommands(commands: PactCommand[]): Promise<PartiallySignedPactCommand[]> {
-    // Custom Pact signing logic
-    return commands.map((cmd) => {
-      const hash = hashPactCommand(cmd);
-      const signature = await this.customSign(hash);
-      return {
-        ...cmd,
-        sigs: [{ sig: signature }],
-      };
-    });
-  }
-
-  private async customSign(data: Uint8Array): Promise<string> {
-    // Your custom signing implementation
-    return "custom-signature";
-  }
-
-  private getAddress(): string {
-    return "custom-address";
-  }
-}
-```
-
-### Working with Hardware Wallets
-
-```typescript
-import { PactCommandSigner } from "@pact-toolbox/signer";
-
-class LedgerSigner implements PactCommandSigner {
-  constructor(private transport: any) {}
-
-  async signPactCommands(commands: PactCommand[]): Promise<PartiallySignedPactCommand[]> {
-    // Connect to Ledger
-    const app = new KadenaApp(this.transport);
-
-    return Promise.all(
-      commands.map(async (cmd) => {
-        // Sign with Ledger
-        const response = await app.signTransaction(
-          "44'/626'/0'/0/0", // Derivation path
-          JSON.stringify(cmd),
-        );
-
-        return {
-          ...cmd,
-          sigs: [{ sig: response.signature }],
-        };
-      }),
-    );
-  }
-}
-```
-
-## Integration with pact-toolbox
-
-### With @pact-toolbox/transaction
-
-```typescript
-import { PactTransactionBuilder } from "@pact-toolbox/transaction";
-import { generateKeyPairSigner } from "@pact-toolbox/signer";
-
-const signer = await generateKeyPairSigner();
-
-const result = await PactTransactionBuilder.create()
-  .code('(coin.transfer "alice" "bob" 10.0)')
-  .addSigner({
-    pubKey: signer.address,
-    caps: [["coin.TRANSFER", "alice", "bob", 10.0]],
-  })
-  .customSigner(signer) // Use custom signer
-  .execute();
-```
-
-### With @pact-toolbox/runtime
-
-```typescript
-import { PactToolboxClient } from "@pact-toolbox/runtime";
-import { generateKeyPairSigner } from "@pact-toolbox/signer";
-
-const client = new PactToolboxClient(config);
-const signer = await generateKeyPairSigner();
-
-// Client can use signer for transaction signing
-const result = await client.execute('(coin.transfer "alice" "bob" 10.0)', { signer });
-```
-
-## Security Considerations
-
-1. **Private Key Storage**: Never store private keys in plain text. Use secure key management solutions.
-
-2. **Key Generation**: Always use cryptographically secure random number generators (handled by Web Crypto API).
-
-3. **Message Validation**: Validate messages before signing to prevent signing malicious content.
-
-4. **Transport Security**: Use secure channels (HTTPS) when transmitting signed transactions.
-
-## Best Practices
-
-### 1. Key Management
-
-```typescript
-// Generate and securely store keypair
-const signer = await generateKeyPairSigner();
-
-// Export for secure storage
-const privateKey = await exportPrivateKey(signer.getKeyPair());
-const encryptedKey = await encryptKey(privateKey, password);
-await secureStorage.save("key", encryptedKey);
-
-// Later: restore from storage
-const encryptedKey = await secureStorage.load("key");
-const privateKey = await decryptKey(encryptedKey, password);
-const signer = await createKeyPairSignerFromPrivateKeyBytes(privateKey);
-```
-
-### 2. Error Handling
-
-```typescript
 try {
-  const signer = await createKeyPairSignerFromBase16PrivateKey(privateKeyHex);
-  const [signedTx] = await signer.signPactCommands([command]);
-  const finalTx = finalizeTransaction(signedTx);
+  const signed = await signer.signPactCommands([command], { 
+    abortSignal: controller.signal 
+  });
 } catch (error) {
-  if (error.message.includes("Invalid private key")) {
-    console.error("Private key format is incorrect");
-  } else if (error.message.includes("Signing failed")) {
-    console.error("Failed to sign transaction");
+  if (error.message === 'Operation aborted') {
+    console.log('Signing was cancelled');
   }
 }
 ```
 
-### 3. Testing
+## Migration from Previous Versions
 
-```typescript
-import { createNoopSigner } from "@pact-toolbox/signer";
+If upgrading from earlier versions, the main changes are:
 
-describe("Transaction Flow", () => {
-  test("builds and signs transaction", async () => {
-    // Use noop signer for testing
-    const signer = createNoopSigner();
+1. **Unified Interface**: `PactCommandSigner`, `MessageSigner`, and `KeyPairSigner` are now all the same `Signer` interface
+2. **Class-based Creation**: Use `KeyPairSigner.generate()` instead of `generateKeyPairSigner()`
+3. **Optional Message Signing**: Message signing is now optional (marked with `?` in interface)
+4. **Simplified Exports**: Fewer separate interfaces to import
 
-    const command = buildCommand();
-    const [signed] = await signer.signPactCommands([command]);
+## Integration with Kadena Ecosystem
 
-    expect(signed.sigs).toHaveLength(1);
-    expect(signed.sigs[0]).toEqual({ sig: "" });
-  });
-});
-```
+This package is designed to work seamlessly with:
 
-## Examples
+- **@pact-toolbox/chainweb-client** - For transaction submission
+- **@pact-toolbox/transaction** - For transaction building  
+- **@pact-toolbox/dev-wallet** - For development wallet functionality
+- **@pact-toolbox/wallet-adapters** - For wallet integrations
 
-### Complete Transaction Flow
-
-```typescript
-import { generateKeyPairSigner, finalizeTransaction } from "@pact-toolbox/signer";
-import { PactCommand } from "@pact-toolbox/types";
-
-async function transferTokens() {
-  // 1. Create signer
-  const signer = await generateKeyPairSigner();
-
-  // 2. Build command
-  const command: PactCommand = {
-    payload: {
-      exec: {
-        code: '(coin.transfer "alice" "bob" 10.0)',
-        data: {},
-      },
-    },
-    meta: {
-      chainId: "0",
-      sender: "alice",
-      gasLimit: 1000,
-      gasPrice: 0.00001,
-      ttl: 600,
-      creationTime: Math.floor(Date.now() / 1000),
-    },
-    signers: [
-      {
-        pubKey: signer.address,
-        scheme: "ED25519",
-        clist: [{ name: "coin.TRANSFER", args: ["alice", "bob", 10.0] }],
-      },
-    ],
-    networkId: "testnet04",
-    nonce: Date.now().toString(),
-  };
-
-  // 3. Sign command
-  const [partiallySignedCmd] = await signer.signPactCommands([command]);
-
-  // 4. Finalize transaction
-  const transaction = finalizeTransaction(partiallySignedCmd);
-
-  // 5. Submit to blockchain
-  const response = await fetch("https://api.testnet.chainweb.com/send", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ cmds: [transaction] }),
-  });
-
-  return response.json();
-}
-```
-
-### Batch Signing
-
-```typescript
-async function batchTransfer() {
-  const signer = await generateKeyPairSigner();
-
-  // Create multiple commands
-  const commands = recipients.map((recipient) => ({
-    payload: {
-      exec: {
-        code: `(coin.transfer "treasury" "${recipient.account}" ${recipient.amount})`,
-      },
-    },
-    meta: { chainId: "0", sender: "treasury" },
-    signers: [{ pubKey: signer.address }],
-    networkId: "mainnet01",
-  }));
-
-  // Sign all at once
-  const signedCommands = await signer.signPactCommands(commands);
-
-  // Finalize all transactions
-  const transactions = signedCommands.map(finalizeTransaction);
-
-  // Submit batch
-  return submitBatch(transactions);
-}
-```
-
-## Troubleshooting
-
-### Common Issues
-
-1. **"Invalid private key format"**
-
-   - Ensure private key is exactly 32 bytes or 64 hex characters
-   - Check encoding (hex vs base64)
-
-2. **"Signing failed"**
-
-   - Verify the command structure is valid
-   - Check that signers array matches the signing key
-
-3. **"Web Crypto API not available"**
-
-   - Ensure running in a secure context (HTTPS)
-   - Check browser compatibility
-
-4. **"Empty signatures"**
-   - Make sure you're not using NoopSigner in production
-   - Verify signer is properly initialized
+The simplified API reduces complexity while maintaining all functionality needed by these ecosystem packages.
