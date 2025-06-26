@@ -2,8 +2,11 @@ import type { KeyPair, NetworkMeta, PactKeyset } from "@pact-toolbox/types";
 import { join } from "pathe";
 
 import type { PactToolboxConfigObj } from "./config";
-import { createPactServerNetworkConfig } from "./factories";
 
+/**
+ * Default key pairs for development use
+ * WARNING: These keys are publicly known and should NEVER be used in production
+ */
 export const defaultKeyPairs: KeyPair[] = [
   {
     account: "sender00",
@@ -57,6 +60,22 @@ export const defaultKeyPairs: KeyPair[] = [
   },
 ];
 
+/**
+ * Default key pairs as an object indexed by account name
+ * @internal
+ */
+export const defaultKeyPairsObject: Record<string, KeyPair> = defaultKeyPairs.reduce(
+  (acc, keyPair) => ({
+    ...acc,
+    [keyPair.account]: keyPair,
+  }),
+  {} as Record<string, KeyPair>,
+);
+
+/**
+ * Default keysets derived from the default key pairs
+ * Each account gets a keyset with the same name containing only their public key
+ */
 export const defaultKeysets: Record<string, PactKeyset> = defaultKeyPairs.reduce(
   (acc, signer) => ({
     ...acc,
@@ -68,19 +87,64 @@ export const defaultKeysets: Record<string, PactKeyset> = defaultKeyPairs.reduce
   {},
 );
 
+/**
+ * Default gas limit for transactions
+ */
+export const DEFAULT_GAS_LIMIT: number = 150000;
+
+/**
+ * Default gas price for transactions
+ */
+export const DEFAULT_GAS_PRICE: number = 1e-8;
+
+/**
+ * Default time-to-live for transactions (15 minutes)
+ */
+export const DEFAULT_TTL: number = 15 * 60;
+
+/**
+ * Default transaction metadata
+ */
 export const defaultMeta: NetworkMeta = {
-  ttl: 15 * 60, // 15 minutes,
-  gasLimit: 150000,
-  gasPrice: 1e-8,
+  ttl: DEFAULT_TTL,
+  gasLimit: DEFAULT_GAS_LIMIT,
+  gasPrice: DEFAULT_GAS_PRICE,
   chainId: "0",
 };
 
+/**
+ * Default directory for Chainweb configuration files
+ */
 export const chainwebConfigDir: string = join(process.cwd(), ".pact-toolbox/chainweb");
 
+/**
+ * Default configuration for pact-toolbox
+ */
 export const defaultConfig: PactToolboxConfigObj = {
   defaultNetwork: "pactServer",
   networks: {
-    pactServer: createPactServerNetworkConfig(),
+    pactServer: {
+      type: "pact-server" as const,
+      rpcUrl: "http://localhost:{port}",
+      networkId: "development",
+      keyPairs: defaultKeyPairs,
+      keysets: defaultKeysets,
+      senderAccount: "sender00",
+      autoStart: true,
+      serverConfig: {
+        port: 9091,
+        logDir: ".pact-toolbox/pact/logs",
+        persistDir: ".pact-toolbox/pact/persist",
+        verbose: true,
+        pragmas: [],
+        execConfig: ["DisablePact44", "AllowReadInLocal"],
+        gasLimit: 150000,
+        gasRate: 0.01,
+        entity: "entity",
+      },
+      meta: defaultMeta,
+      name: "pactServer",
+    },
   },
   contractsDir: "pact",
   scriptsDir: "scripts",

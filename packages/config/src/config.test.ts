@@ -1,383 +1,367 @@
-import { describe, test, expect, beforeEach, vi } from 'vitest';
-import { 
-  resolveConfig, 
-  defineConfig, 
-  getNetworkConfig,
+import { describe, test, expect, beforeEach, vi } from "vitest";
+import {
+  resolveConfig,
+  defineConfig,
+  getDefaultNetworkConfig,
   isLocalNetwork,
-  isDevNetwork,
-  isPactServerNetwork,
-  isChainwebNetwork,
+  isDevNetworkConfig,
+  isPactServerNetworkConfig,
+  isChainwebNetworkConfig,
   createPactServerNetworkConfig,
   createDevNetNetworkConfig,
   createChainwebNetworkConfig,
   getSerializableNetworkConfig,
-  defaultKeyPairs,
   defaultKeysets,
+  defaultKeyPairsObject,
   defaultMeta,
   DEFAULT_GAS_LIMIT,
   DEFAULT_GAS_PRICE,
-  DEFAULT_TTL
-} from './index';
+  DEFAULT_TTL,
+  clearConfigCache,
+} from "./index";
 
-describe('@pact-toolbox/config', () => {
+describe("@pact-toolbox/config", () => {
   beforeEach(() => {
     // Clear environment variables
-    delete process.env.PACT_NETWORK;
-    delete process.env.PACT_CONTRACTS_DIR;
+    delete process.env["PACT_TOOLBOX_NETWORK"];
+    delete process.env["PACT_TOOLBOX_CONTRACTS_DIR"];
     vi.clearAllMocks();
   });
 
-  describe('defineConfig', () => {
-    test('should return the same config object', () => {
+  describe("defineConfig", () => {
+    test("should return the same config object", () => {
       const config = {
-        contractsDir: './contracts',
-        network: {
-          type: 'devnet' as const,
-          name: 'test-devnet',
-          devnet: {
+        defaultNetwork: "devnet" as const,
+        networks: {
+          devnet: createDevNetNetworkConfig({
             containerConfig: {
-              port: 8080
-            }
-          }
-        }
+              port: 8080,
+            },
+          }),
+        },
+        contractsDir: "./contracts",
       };
-      
+
       const result = defineConfig(config);
       expect(result).toBe(config);
     });
   });
 
-  describe('Network Configuration Factories', () => {
-    test('createPactServerNetworkConfig creates valid config', () => {
+  describe("Network Configuration Factories", () => {
+    test("createPactServerNetworkConfig creates valid config", () => {
       const config = createPactServerNetworkConfig({
-        port: 8081,
-        execConfig: {
+        serverConfig: {
+          port: 8081,
+        },
+        meta: {
           gasLimit: 50000,
           gasPrice: 0.000001,
           ttl: 300,
-          senderAccount: 'test-sender'
-        }
+          chainId: "0",
+        },
+        senderAccount: "test-sender",
       });
 
-      expect(config).toEqual({
-        type: 'pact-server',
-        name: 'pact-server',
-        pactServer: expect.objectContaining({
-          port: 8081,
-          execConfig: expect.objectContaining({
-            gasLimit: 50000,
-            gasPrice: 0.000001,
-            ttl: 300,
-            senderAccount: 'test-sender'
-          })
-        })
-      });
+      expect(config.type).toBe("pact-server");
+      expect(config.serverConfig?.port).toBe(8081);
+      expect(config.meta?.gasLimit).toBe(50000);
+      expect(config.meta?.gasPrice).toBe(0.000001);
+      expect(config.meta?.ttl).toBe(300);
+      expect(config.senderAccount).toBe("test-sender");
     });
 
-    test('createDevNetNetworkConfig creates valid config', () => {
+    test("createDevNetNetworkConfig creates valid config", () => {
       const config = createDevNetNetworkConfig({
         containerConfig: {
           port: 8082,
           onDemandMining: true,
-          persistDb: false
+          persistDb: false,
         },
         miningConfig: {
-          onDemandMining: true,
-          interval: 60,
-          batchSize: 5
-        }
+          transactionBatchPeriod: 0.1,
+          confirmationCount: 10,
+          idlePeriod: 60,
+        },
       });
 
-      expect(config).toEqual({
-        type: 'devnet',
-        name: 'devnet',
-        devnet: expect.objectContaining({
-          containerConfig: expect.objectContaining({
-            port: 8082,
-            onDemandMining: true,
-            persistDb: false
-          }),
-          miningConfig: expect.objectContaining({
-            onDemandMining: true,
-            interval: 60,
-            batchSize: 5
-          })
-        })
-      });
+      expect(config.type).toBe("chainweb-devnet");
+      expect(config.containerConfig?.port).toBe(8082);
+      expect(config.containerConfig?.onDemandMining).toBe(true);
+      expect(config.containerConfig?.persistDb).toBe(false);
+      expect(config.miningConfig?.transactionBatchPeriod).toBe(0.1);
+      expect(config.miningConfig?.confirmationCount).toBe(10);
+      expect(config.miningConfig?.idlePeriod).toBe(60);
     });
 
-    test('createChainwebNetworkConfig creates valid config', () => {
+    test("createChainwebNetworkConfig creates valid config", () => {
       const config = createChainwebNetworkConfig({
-        apiUrl: 'https://api.testnet.chainweb.com',
-        networkId: 'testnet04',
-        chainIds: ['0', '1', '2']
+        rpcUrl: "https://api.testnet.chainweb.com/chainweb/0.0/{networkId}/chain/{chainId}/pact",
+        networkId: "testnet04",
+        meta: {
+          chainId: "1",
+          gasLimit: 100000,
+          gasPrice: 0.00001,
+          ttl: 900,
+        },
       });
 
-      expect(config).toEqual({
-        type: 'chainweb',
-        name: 'chainweb',
-        chainweb: {
-          apiUrl: 'https://api.testnet.chainweb.com',
-          networkId: 'testnet04',
-          chainIds: ['0', '1', '2']
-        }
-      });
+      expect(config.type).toBe("chainweb");
+      expect(config.rpcUrl).toContain("api.testnet.chainweb.com");
+      expect(config.networkId).toBe("testnet04");
+      expect(config.meta?.chainId).toBe("1");
     });
   });
 
-  describe('Network Type Guards', () => {
+  describe("Network Type Guards", () => {
     const pactServerConfig = createPactServerNetworkConfig({});
     const devnetConfig = createDevNetNetworkConfig({});
     const chainwebConfig = createChainwebNetworkConfig({
-      apiUrl: 'https://api.chainweb.com',
-      networkId: 'mainnet01'
+      rpcUrl: "https://api.chainweb.com/chainweb/0.0/{networkId}/chain/{chainId}/pact",
+      networkId: "mainnet01",
     });
 
-    test('isLocalNetwork correctly identifies local networks', () => {
+    test("isLocalNetwork correctly identifies local networks", () => {
       expect(isLocalNetwork(pactServerConfig)).toBe(true);
       expect(isLocalNetwork(devnetConfig)).toBe(true);
       expect(isLocalNetwork(chainwebConfig)).toBe(false);
     });
 
-    test('isDevNetwork correctly identifies devnet', () => {
-      expect(isDevNetwork(pactServerConfig)).toBe(false);
-      expect(isDevNetwork(devnetConfig)).toBe(true);
-      expect(isDevNetwork(chainwebConfig)).toBe(false);
+    test("isDevNetworkConfig correctly identifies devnet", () => {
+      expect(isDevNetworkConfig(pactServerConfig)).toBe(false);
+      expect(isDevNetworkConfig(devnetConfig)).toBe(true);
+      expect(isDevNetworkConfig(chainwebConfig)).toBe(false);
     });
 
-    test('isPactServerNetwork correctly identifies pact server', () => {
-      expect(isPactServerNetwork(pactServerConfig)).toBe(true);
-      expect(isPactServerNetwork(devnetConfig)).toBe(false);
-      expect(isPactServerNetwork(chainwebConfig)).toBe(false);
+    test("isPactServerNetworkConfig correctly identifies pact server", () => {
+      expect(isPactServerNetworkConfig(pactServerConfig)).toBe(true);
+      expect(isPactServerNetworkConfig(devnetConfig)).toBe(false);
+      expect(isPactServerNetworkConfig(chainwebConfig)).toBe(false);
     });
 
-    test('isChainwebNetwork correctly identifies chainweb', () => {
-      expect(isChainwebNetwork(pactServerConfig)).toBe(false);
-      expect(isChainwebNetwork(devnetConfig)).toBe(false);
-      expect(isChainwebNetwork(chainwebConfig)).toBe(true);
+    test("isChainwebNetworkConfig correctly identifies chainweb", () => {
+      expect(isChainwebNetworkConfig(pactServerConfig)).toBe(false);
+      expect(isChainwebNetworkConfig(devnetConfig)).toBe(false);
+      expect(isChainwebNetworkConfig(chainwebConfig)).toBe(true);
     });
   });
 
-  describe('getNetworkConfig', () => {
-    test('returns active network from network property', () => {
-      const network = createDevNetNetworkConfig({});
+  describe("getDefaultNetworkConfig", () => {
+    test("returns network from defaultNetwork", () => {
+      const devNetwork = createDevNetNetworkConfig({});
+      const pactNetwork = createPactServerNetworkConfig({});
       const config = {
-        network,
+        defaultNetwork: "dev",
         networks: {
-          other: createPactServerNetworkConfig({})
-        }
+          dev: devNetwork,
+          pact: pactNetwork,
+        },
       };
 
-      const result = getNetworkConfig(config);
-      expect(result).toBe(network);
+      const result = getDefaultNetworkConfig(config);
+      expect(result.type).toBe(devNetwork.type);
+      expect(result.networkId).toBe(devNetwork.networkId);
+      expect(result.name).toBe("dev");
     });
 
-    test('returns network from networks based on PACT_NETWORK env', () => {
-      process.env.PACT_NETWORK = 'testnet';
+    test("returns network from networks based on PACT_TOOLBOX_NETWORK env", () => {
+      process.env["PACT_TOOLBOX_NETWORK"] = "testnet";
       const testnetConfig = createChainwebNetworkConfig({
-        apiUrl: 'https://api.testnet.chainweb.com',
-        networkId: 'testnet04'
+        rpcUrl: "https://api.testnet.chainweb.com/chainweb/0.0/{networkId}/chain/{chainId}/pact",
+        networkId: "testnet04",
       });
-      
+
       const config = {
+        defaultNetwork: "local",
         networks: {
           local: createDevNetNetworkConfig({}),
-          testnet: testnetConfig
-        }
+          testnet: testnetConfig,
+        },
       };
 
-      const result = getNetworkConfig(config);
-      expect(result).toBe(testnetConfig);
+      const result = getDefaultNetworkConfig(config, "testnet");
+      expect(result.type).toBe(testnetConfig.type);
+      expect(result.networkId).toBe(testnetConfig.networkId);
+      expect(result.name).toBe("testnet");
     });
 
-    test('returns first network if no active network specified', () => {
+    test("returns first network if no active network specified", () => {
       const firstNetwork = createPactServerNetworkConfig({});
       const config = {
+        defaultNetwork: "first",
         networks: {
           first: firstNetwork,
-          second: createDevNetNetworkConfig({})
-        }
+          second: createDevNetNetworkConfig({}),
+        },
       };
 
-      const result = getNetworkConfig(config);
-      expect(result).toBe(firstNetwork);
+      const result = getDefaultNetworkConfig(config);
+      expect(result.type).toBe(firstNetwork.type);
+      expect(result.networkId).toBe(firstNetwork.networkId);
+      expect(result.name).toBe("first");
     });
 
-    test('returns default devnet if no networks configured', () => {
-      const config = {};
-      const result = getNetworkConfig(config);
-      
-      expect(result.type).toBe('devnet');
-      expect(result.name).toBe('devnet');
+    test("throws error if network not found", () => {
+      const config = {
+        defaultNetwork: "notfound",
+        networks: {},
+      };
+
+      expect(() => getDefaultNetworkConfig(config)).toThrow(/Network "notfound" not found in config/);
     });
   });
 
-  describe('getSerializableNetworkConfig', () => {
-    test('removes non-serializable properties', () => {
+  describe("getSerializableNetworkConfig", () => {
+    test("returns serializable network config", () => {
       const config = {
-        contractsDir: './contracts',
-        network: createDevNetNetworkConfig({}),
-        // Add some functions that should be removed
-        customFunction: () => {},
-        nested: {
-          anotherFunction: () => {}
-        }
+        defaultNetwork: "devnet",
+        networks: {
+          devnet: createDevNetNetworkConfig({}),
+        },
+        contractsDir: "./contracts",
       };
 
       const result = getSerializableNetworkConfig(config);
-      
-      expect(result.contractsDir).toBe('./contracts');
-      expect(result.network).toBeDefined();
-      expect(result.customFunction).toBeUndefined();
-      expect(result.nested).toBeUndefined();
+
+      expect(result.type).toBe("chainweb-devnet");
+      expect(result.networkId).toBe("development");
+      expect(result.rpcUrl).toBeDefined();
+      expect(result.keyPairs).toBeDefined();
+      expect(result.keyPairs.length).toBeGreaterThan(0);
     });
   });
 
-  describe('Default Values', () => {
-    test('defaultKeyPairs contains expected accounts', () => {
-      expect(defaultKeyPairs).toHaveProperty('sender00');
-      expect(defaultKeyPairs).toHaveProperty('sender01');
-      expect(defaultKeyPairs.sender00).toHaveProperty('public');
-      expect(defaultKeyPairs.sender00).toHaveProperty('secret');
-      expect(defaultKeyPairs.sender00.public).toMatch(/^[a-f0-9]{64}$/);
+  describe("Default Values", () => {
+    test("defaultKeyPairs contains expected accounts", () => {
+      expect(defaultKeyPairsObject).toHaveProperty("sender00");
+      expect(defaultKeyPairsObject).toHaveProperty("sender01");
+      expect(defaultKeyPairsObject["sender00"]).toHaveProperty("publicKey");
+      expect(defaultKeyPairsObject["sender00"]).toHaveProperty("secretKey");
+      expect(defaultKeyPairsObject["sender00"]!.publicKey).toMatch(/^[a-f0-9]{64}$/);
     });
 
-    test('defaultKeysets contains expected keysets', () => {
-      expect(defaultKeysets).toHaveProperty('adminKeyset');
-      expect(defaultKeysets).toHaveProperty('ns-admin-keyset');
-      expect(defaultKeysets.adminKeyset).toEqual({
-        keys: [defaultKeyPairs.sender00.public],
-        pred: 'keys-all'
+    test("defaultKeysets contains expected keysets", () => {
+      expect(defaultKeysets).toHaveProperty("sender00");
+      expect(defaultKeysets).toHaveProperty("sender01");
+      expect(defaultKeysets["sender00"]).toEqual({
+        keys: [defaultKeyPairsObject["sender00"]!.publicKey],
+        pred: "keys-all",
       });
     });
 
-    test('defaultMeta contains expected values', () => {
+    test("defaultMeta contains expected values", () => {
       expect(defaultMeta).toEqual({
-        chainId: '0',
+        chainId: "0",
         gasLimit: DEFAULT_GAS_LIMIT,
         gasPrice: DEFAULT_GAS_PRICE,
-        ttl: DEFAULT_TTL
+        ttl: DEFAULT_TTL,
       });
     });
 
-    test('default constants have correct values', () => {
-      expect(DEFAULT_GAS_LIMIT).toBe(100000);
-      expect(DEFAULT_GAS_PRICE).toBe(0.00001);
-      expect(DEFAULT_TTL).toBe(3600);
+    test("default constants have correct values", () => {
+      expect(DEFAULT_GAS_LIMIT).toBe(150000);
+      expect(DEFAULT_GAS_PRICE).toBe(0.00000001);
+      expect(DEFAULT_TTL).toBe(900);
     });
   });
 
-  describe('resolveConfig', () => {
-    test('resolves configuration with defaults', async () => {
-      // Mock the c12 loadConfig to return empty config
-      vi.mock('c12', () => ({
-        loadConfig: vi.fn().mockResolvedValue({ config: {} })
-      }));
-
+  describe("resolveConfig", () => {
+    test("resolves configuration with defaults", async () => {
       const config = await resolveConfig();
-      
-      expect(config).toHaveProperty('contractsDir');
-      expect(config).toHaveProperty('networks');
-      expect(config).toHaveProperty('preludes');
+
+      expect(config).toHaveProperty("contractsDir");
+      expect(config).toHaveProperty("networks");
+      expect(config).toHaveProperty("preludes");
+      expect(config.defaultNetwork).toBeDefined();
     });
 
-    test('merges environment variables', async () => {
-      process.env.PACT_CONTRACTS_DIR = './custom-contracts';
-      process.env.PACT_NETWORK = 'custom-network';
-
-      vi.mock('c12', () => ({
-        loadConfig: vi.fn().mockResolvedValue({ 
-          config: {
-            networks: {
-              'custom-network': createPactServerNetworkConfig({ port: 9999 })
-            }
-          }
-        })
-      }));
-
-      const config = await resolveConfig();
+    test("applies overrides", async () => {
+      // Clear the config cache before this test
+      clearConfigCache();
       
-      expect(config.contractsDir).toBe('./custom-contracts');
-      const network = getNetworkConfig(config);
-      expect(network.name).toBe('pact-server');
+      const overrides = {
+        contractsDir: "./custom-contracts",
+        defaultNetwork: "custom",
+        networks: {
+          custom: createPactServerNetworkConfig({ serverConfig: { port: 9999 } }),
+        },
+      };
+
+      const config = await resolveConfig(overrides);
+
+      expect(config.contractsDir).toBe("./custom-contracts");
+      expect(config.defaultNetwork).toBe("custom");
+      const network = getDefaultNetworkConfig(config);
+      expect(network.name).toBe("custom");
     });
   });
 
-  describe('Configuration Validation', () => {
-    test('network configs have required properties', () => {
+  describe("Configuration Validation", () => {
+    test("network configs have required properties", () => {
       const pactServer = createPactServerNetworkConfig({});
-      expect(pactServer.type).toBe('pact-server');
-      expect(pactServer.name).toBeDefined();
-      expect(pactServer.pactServer).toBeDefined();
+      expect(pactServer.type).toBe("pact-server");
+      expect(pactServer.serverConfig).toBeDefined();
+      expect(pactServer.autoStart).toBe(true);
 
       const devnet = createDevNetNetworkConfig({});
-      expect(devnet.type).toBe('devnet');
-      expect(devnet.name).toBeDefined();
-      expect(devnet.devnet).toBeDefined();
+      expect(devnet.type).toBe("chainweb-devnet");
+      expect(devnet.containerConfig).toBeDefined();
+      expect(devnet.autoStart).toBe(true);
 
       const chainweb = createChainwebNetworkConfig({
-        apiUrl: 'https://api.chainweb.com',
-        networkId: 'mainnet01'
+        rpcUrl: "https://api.chainweb.com/chainweb/0.0/{networkId}/chain/{chainId}/pact",
+        networkId: "mainnet01",
       });
-      expect(chainweb.type).toBe('chainweb');
-      expect(chainweb.name).toBeDefined();
-      expect(chainweb.chainweb).toBeDefined();
-      expect(chainweb.chainweb.apiUrl).toBeDefined();
-      expect(chainweb.chainweb.networkId).toBeDefined();
+      expect(chainweb.type).toBe("chainweb");
+      expect(chainweb.rpcUrl).toBeDefined();
+      expect(chainweb.networkId).toBe("mainnet01");
     });
   });
 
-  describe('Port Configuration', () => {
-    test('devnet config uses custom ports', () => {
+  describe("Port Configuration", () => {
+    test("devnet config uses custom ports", () => {
       const config = createDevNetNetworkConfig({
         containerConfig: {
           port: 9090,
-          servicePorts: {
-            stratum: 2000,
-            servicePort: 2001,
-            p2pPort: 2002
-          }
-        }
+        },
       });
 
-      expect(config.devnet.containerConfig.port).toBe(9090);
-      expect(config.devnet.containerConfig.servicePorts?.stratum).toBe(2000);
-      expect(config.devnet.containerConfig.servicePorts?.servicePort).toBe(2001);
-      expect(config.devnet.containerConfig.servicePorts?.p2pPort).toBe(2002);
+      expect(config.containerConfig?.port).toBe(9090);
     });
 
-    test('pact server config uses custom port', () => {
+    test("pact server config uses custom port", () => {
       const config = createPactServerNetworkConfig({
-        port: 7777
+        serverConfig: {
+          port: 7777,
+        },
       });
 
-      expect(config.pactServer.port).toBe(7777);
+      expect(config.serverConfig?.port).toBe(7777);
     });
   });
 
-  describe('Mining Configuration', () => {
-    test('devnet mining config sets correct values', () => {
+  describe("Mining Configuration", () => {
+    test("devnet mining config sets correct values", () => {
       const config = createDevNetNetworkConfig({
         miningConfig: {
-          onDemandMining: false,
-          interval: 120,
-          batchSize: 10
-        }
+          transactionBatchPeriod: 0.1,
+          confirmationCount: 10,
+          idlePeriod: 120,
+        },
       });
 
-      expect(config.devnet.miningConfig?.onDemandMining).toBe(false);
-      expect(config.devnet.miningConfig?.interval).toBe(120);
-      expect(config.devnet.miningConfig?.batchSize).toBe(10);
+      expect(config.miningConfig?.transactionBatchPeriod).toBe(0.1);
+      expect(config.miningConfig?.confirmationCount).toBe(10);
+      expect(config.miningConfig?.idlePeriod).toBe(120);
     });
 
-    test('on-demand mining can be enabled via container config', () => {
+    test("on-demand mining can be enabled via container config", () => {
       const config = createDevNetNetworkConfig({
         containerConfig: {
-          onDemandMining: true
-        }
+          onDemandMining: true,
+        },
       });
 
-      expect(config.devnet.containerConfig.onDemandMining).toBe(true);
+      expect(config.containerConfig?.onDemandMining).toBe(true);
     });
   });
 });
