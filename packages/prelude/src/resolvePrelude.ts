@@ -1,10 +1,10 @@
 import { isAbsolute, join } from "pathe";
 
-import type { CommonPreludeOptions, PactPrelude } from "./types";
+import type { CommonPreludeOptions, PreludeDefinition } from "./types";
 
 interface ResolvePreludesOptions {
   preludesDir: string;
-  preludes: PactPrelude[];
+  preludes: PreludeDefinition[];
 }
 interface PreludesCache extends ResolvePreludesOptions {
   resolved: boolean;
@@ -32,9 +32,9 @@ export async function resolvePreludes({
       if (typeof prelude === "string") {
         switch (prelude) {
           case "kadena/chainweb":
-            return import("./preludes/kadena/chainweb").then((m) => m.default);
+            return import("./preludes/kadena/chainweb").then((m) => m.chainwebDefinition);
           case "kadena/marmalade":
-            return import("./preludes/kadena/marmalade").then((m) => m.default);
+            return import("./preludes/kadena/marmalade").then((m) => m.marmaladeDefinition);
           default:
             throw new Error(`Prelude ${prelude} not found`);
         }

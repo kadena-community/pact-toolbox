@@ -1,4 +1,3 @@
-// Using native fetch API available in modern browsers, Node.js 18+, and React Native
 import type { SignedTransaction } from "@pact-toolbox/types";
 import type {
   NetworkConfig,
@@ -19,7 +18,7 @@ import { ChainwebClientError } from "./types";
 
 /**
  * Fast, lightweight client for Chainweb and Pact APIs
- * 
+ *
  * Simple, powerful API for interacting with Kadena blockchain.
  * Works across web, Node.js, and React Native environments.
  */
@@ -47,15 +46,19 @@ export class ChainwebClient {
       })),
     };
 
-    const response = await this.makeRequest(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...this.config.headers,
-        ...config?.headers,
+    const response = await this.makeRequest(
+      url,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...this.config.headers,
+          ...config?.headers,
+        },
+        body: JSON.stringify(payload),
       },
-      body: JSON.stringify(payload),
-    }, config);
+      config,
+    );
 
     if (!response.requestKeys || !Array.isArray(response.requestKeys)) {
       throw ChainwebClientError.parse("Invalid response: missing or invalid request keys", response);
@@ -78,15 +81,19 @@ export class ChainwebClient {
     const url = this.buildApiUrl("/poll");
     const payload: PollRequest = { requestKeys };
 
-    return this.makeRequest(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...this.config.headers,
-        ...config?.headers,
+    return this.makeRequest(
+      url,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...this.config.headers,
+          ...config?.headers,
+        },
+        body: JSON.stringify(payload),
       },
-      body: JSON.stringify(payload),
-    }, config);
+      config,
+    );
   }
 
   /**
@@ -100,15 +107,19 @@ export class ChainwebClient {
     const url = this.buildApiUrl("/listen");
     const payload = { listen: requestKey };
 
-    const response = await this.makeRequest(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...this.config.headers,
-        ...config?.headers,
+    const response = await this.makeRequest(
+      url,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...this.config.headers,
+          ...config?.headers,
+        },
+        body: JSON.stringify(payload),
       },
-      body: JSON.stringify(payload),
-    }, config);
+      config,
+    );
 
     return {
       requestKey,
@@ -122,15 +133,19 @@ export class ChainwebClient {
   async local(command: any, config?: RequestConfig): Promise<LocalResult> {
     const url = this.buildApiUrl("/local");
 
-    return this.makeRequest(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...this.config.headers,
-        ...config?.headers,
+    return this.makeRequest(
+      url,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...this.config.headers,
+          ...config?.headers,
+        },
+        body: JSON.stringify(command),
       },
-      body: JSON.stringify(command),
-    }, config);
+      config,
+    );
   }
 
   /**
@@ -143,7 +158,7 @@ export class ChainwebClient {
   ): Promise<TransactionResult> {
     const sendResult = await this.send([transaction], config);
     const requestKey = sendResult.requestKeys[0];
-    
+
     if (!requestKey) {
       throw ChainwebClientError.transaction("No request key returned from send");
     }
@@ -163,7 +178,7 @@ export class ChainwebClient {
     } = {},
   ): Promise<BatchResult<TransactionResult>> {
     const { batchSize = 10, pollInterval = 5000, config } = options;
-    
+
     if (!transactions.length) {
       return {
         successes: [],
@@ -180,11 +195,11 @@ export class ChainwebClient {
     // Process transactions in batches
     for (let i = 0; i < transactions.length; i += batchSize) {
       const batch = transactions.slice(i, i + batchSize);
-      
+
       try {
         const sendResult = await this.send(batch, config);
         const results = await Promise.all(
-          sendResult.requestKeys.map(requestKey => this.waitForResult(requestKey, pollInterval, config))
+          sendResult.requestKeys.map((requestKey) => this.waitForResult(requestKey, pollInterval, config)),
         );
         successes.push(...results);
       } catch (error) {
@@ -229,9 +244,11 @@ export class ChainwebClient {
     const startTime = Date.now();
 
     try {
-      const url = `${this.config.rpcUrl(this.config.networkId, this.config.chainId)}/health-check`;
+      const rpcUrl = this.config.rpcUrl(this.config.networkId, this.config.chainId);
+      const isChainwebNode = rpcUrl.includes("chainweb");
+      const url = isChainwebNode ? `${rpcUrl}/health-check` : `${rpcUrl}/version`;
       await this.makeRequest(url, { method: "GET" }, config);
-      
+
       return {
         healthy: true,
         timestamp: startTime,
@@ -266,7 +283,7 @@ export class ChainwebClient {
   }
 
   /**
-   * Get cut (current chain information)  
+   * Get cut (current chain information)
    */
   async getCut(config?: RequestConfig): Promise<CutInfo> {
     const url = `${this.config.rpcUrl(this.config.networkId, this.config.chainId)}/chainweb/0.0/${this.config.networkId}/cut`;
@@ -323,9 +340,9 @@ export class ChainwebClient {
    * Wait for transaction result by polling
    */
   private async waitForResult(
-    requestKey: string, 
-    pollInterval: number, 
-    config?: RequestConfig
+    requestKey: string,
+    pollInterval: number,
+    config?: RequestConfig,
   ): Promise<TransactionResult> {
     const maxAttempts = 60; // 5 minutes with 5s interval
     let attempts = 0;
@@ -338,10 +355,10 @@ export class ChainwebClient {
         if (pollResponse[requestKey]) {
           return pollResponse[requestKey];
         }
-        
+
         // Wait before polling again
-        await new Promise(resolve => setTimeout(resolve, pollInterval));
-      } catch {
+        await new Promise((resolve) => setTimeout(resolve, pollInterval));
+      } catch (error) {
         // Try listen endpoint as fallback
         try {
           const listenResult = await this.listen(requestKey, config);
@@ -354,7 +371,7 @@ export class ChainwebClient {
             );
           }
           // Wait before retrying
-          await new Promise(resolve => setTimeout(resolve, pollInterval));
+          await new Promise((resolve) => setTimeout(resolve, pollInterval));
         }
       }
     }
@@ -367,7 +384,7 @@ export class ChainwebClient {
    */
   private buildApiUrl(endpoint: string): string {
     const baseUrl = this.config.rpcUrl(this.config.networkId, this.config.chainId);
-    return `${baseUrl}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
+    return `${baseUrl}/api/v1${endpoint.startsWith("/") ? endpoint : `/${endpoint}`}`;
   }
 
   /**
@@ -396,21 +413,19 @@ export class ChainwebClient {
       }
 
       const contentType = response.headers.get("content-type");
-      return contentType && contentType.includes("application/json") 
-        ? await response.json() 
-        : await response.text();
+      return contentType && contentType.includes("application/json") ? await response.json() : await response.text();
     } catch (error) {
       if (error instanceof ChainwebClientError) {
         throw error;
       }
-      
+
       if (error instanceof Error) {
         if (error.name === "AbortError") {
           throw ChainwebClientError.timeout(requestConfig.timeout);
         }
         throw ChainwebClientError.network(error.message, error);
       }
-      
+
       throw ChainwebClientError.network("Unknown network error", error);
     }
   }

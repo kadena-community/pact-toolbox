@@ -1,97 +1,95 @@
-import type { DeployContractOptions, PactToolboxClient } from "@pact-toolbox/runtime";
-import type { PactKeyset } from "@pact-toolbox/types";
-import { join } from "pathe";
+import type { PreludeDefinition } from "../../../types";
+import { 
+  repository, 
+  file, 
+  namespace, 
+  deploymentGroup, 
+  keysetTemplate,
+  deploymentConditions 
+} from "../../../utils";
 
-import { logger } from "@pact-toolbox/utils";
-
-import type { PactDependency, PactPrelude } from "../../../types";
-import { deployPactDependency } from "../../../deployPrelude";
-import { preludeSpec, renderTemplate } from "../../../utils";
-
-function chainWebPath(path: string) {
-  return `gh:kadena-io/chainweb-node/pact/${path}#master`;
-}
-
-const chainWebSpec = {
-  root: [
-    preludeSpec("gas-payer-v1.pact", chainWebPath("gas-payer/gas-payer-v1.pact")),
-    preludeSpec("fungible-v2.pact", chainWebPath("coin-contract/v2/fungible-v2.pact")),
-    preludeSpec("fungible-xchain-v1.pact", chainWebPath("coin-contract/v4/fungible-xchain-v1.pact")),
-    preludeSpec("coin.pact", chainWebPath("coin-contract/coin-install.pact")),
-    preludeSpec("ns.pact", chainWebPath("namespaces/ns-install.pact")),
+// Define the chainweb prelude using the new system
+export const chainwebDefinition: PreludeDefinition = {
+  id: "kadena/chainweb",
+  name: "Kadena Chainweb Core",
+  description: "Essential Kadena blockchain contracts including coin, fungible standards, and namespaces",
+  version: "1.0.0",
+  
+  repository: repository("kadena-io", "chainweb-node", {
+    branch: "master",
+    basePath: "pact"
+  }),
+  
+  namespaces: [
+    namespace("root", ["ns-admin-keyset", "ns-operate-keyset"]),
+    namespace("util", ["util-ns-admin", "util-ns-users"]),
   ],
-  util: [
-    preludeSpec("util-ns.pact", chainWebPath("util/util-ns.pact"), "util"),
-    preludeSpec("guards.pact", chainWebPath("util/guards.pact"), "util"),
+  
+  keysetTemplates: [
+    keysetTemplate("ns-admin-keyset", []),
+    keysetTemplate("ns-operate-keyset", []), 
+    keysetTemplate("ns-genesis-keyset", [], "="), // Empty for genesis with = predicate
+    keysetTemplate("util-ns-admin", "admin"),
+    keysetTemplate("util-ns-users", "user"),
   ],
-} satisfies Record<string, PactDependency[]>;
+  
+  deploymentGroups: [
+    deploymentGroup("core", [
+      file("gas-payer-v1.pact", { path: "gas-payer/gas-payer-v1.pact" }),
+      file("fungible-v2.pact", { path: "coin-contract/v2/fungible-v2.pact" }),
+      file("fungible-xchain-v1.pact", { path: "coin-contract/v4/fungible-xchain-v1.pact" }),
+      file("coin.pact", { path: "coin-contract/coin-install.pact" }),
+      file("ns.pact", { path: "namespaces/ns-install.pact" }),
+    ], {
+      namespace: "root",
+    }),
+    
+    deploymentGroup("utilities", [
+      file("util-ns.pact", { path: "util/util-ns.pact" }),
+      file("guards.pact", { path: "util/guards.pact" }),
+    ], {
+      namespace: "util",
+      dependsOn: ["core"],
+    }),
+  ],
+  
+  deploymentConditions: deploymentConditions.combine(
+    deploymentConditions.skipOnChainweb(),
+    deploymentConditions.ifContractsMissing(["coin"])
+  ),
+  
+  replTemplate: `
+(env-exec-config ["DisablePact44", "DisablePact45"])
+(begin-tx "Load root contracts")
+(env-data {
+  'ns-admin-keyset: [],
+  'ns-operate-keyset: [],
+  'ns-genesis-keyset: { "keys": [], "pred": "="}
+})
+(load "root/ns.pact")
+(load "root/gas-payer-v1.pact")
+(load "root/fungible-v2.pact")
+(load "root/fungible-xchain-v1.pact")
+(load "root/coin.pact")
+(commit-tx)
 
-export default {
-  name: "kadena/chainweb",
-  specs: chainWebSpec,
-  async shouldDeploy(client: PactToolboxClient) {
-    if (client.isChainwebNetwork()) {
-      return false;
-    }
-    if (await client.isContractDeployed("coin")) {
-      return false;
-    }
-    return true;
-  },
-  async repl(client: PactToolboxClient) {
-    const keys = client.getSignerKeys();
-    const context = {
-      publicKey: keys.publicKey,
-    };
-    const installTemplate = (await import("./install.handlebars")).template;
-    return renderTemplate(installTemplate, context);
-  },
-  async deploy(client: PactToolboxClient, params: DeployContractOptions = {}) {
-    const signer = client.getSignerKeys(params.signer);
-    const rootKeysets = {
-      "ns-admin-keyset": {
-        keys: [signer.publicKey],
-        pred: "keys-all",
-      },
-      "ns-operate-keyset": {
-        keys: [signer.publicKey],
-        pred: "keys-all",
-      },
-      "ns-genesis-keyset": { keys: [], pred: "=" },
-    } as Record<string, PactKeyset>;
 
-    const utilKeysets = {
-      "util-ns-users": {
-        keys: [signer.publicKey],
-        pred: "keys-all",
-      },
-      "util-ns-admin": {
-        keys: [signer.publicKey],
-        pred: "keys-all",
-      },
-    } as Record<string, PactKeyset>;
-    const preludeDir = join(client.getPreludeDir(), "kadena/chainweb");
-    // deploy root prelude
-    for (const dep of chainWebSpec.root) {
-      await deployPactDependency(dep, preludeDir, client, {
-        ...params,
-        build: {
-          keysets: rootKeysets,
-        },
-        signer,
-      });
-      logger.success(`Deployed ${dep.name}`);
-    }
-    // deploy util prelude
-    for (const dep of chainWebSpec.util) {
-      await deployPactDependency(dep, preludeDir, client, {
-        ...params,
-        build: {
-          keysets: utilKeysets,
-        },
-        signer,
-      });
-      logger.success(`Deployed ${dep.name}`);
-    }
-  },
-} as PactPrelude;
+(begin-tx "Load util contracts")
+(env-data {
+  'util-ns-users: ["{{publicKey}}"],
+  'util-ns-admin: ["{{publicKey}}"]
+})
+(env-sigs [
+  { "key": "{{publicKey}}", "caps": [] },
+  { "key": "{{publicKey}}", "caps": [] },
+  { "key": "{{publicKey}}", "caps": [] }
+])
+(load "util/util-ns.pact")
+(load "util/guards.pact")
+(commit-tx)
+
+(print "Loaded kadena/chainweb contracts.")
+  `.trim(),
+};
+
+export default chainwebDefinition;

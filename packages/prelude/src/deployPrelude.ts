@@ -1,12 +1,13 @@
 import type { DeployContractOptions, PactToolboxClient } from "@pact-toolbox/runtime";
 import { join } from "pathe";
 
-import { logger } from "@pact-toolbox/utils";
+import { logger } from "@pact-toolbox/node-utils";
 
 import type { CommonPreludeOptions, PactDependency } from "./types";
 import { createReplTestTools, downloadPrelude, isPreludeDownloaded } from "./downloadPrelude";
 import { resolvePreludes } from "./resolvePrelude";
 import { sortPreludes } from "./utils";
+import { deployPrelude as deployPreludeDefinition, shouldDeployPrelude } from "./processor";
 
 /**
  * Deploys a specific Pact dependency, including its requirements.
@@ -62,8 +63,8 @@ export async function deployPreludes(config: CommonPreludeOptions, downloadIfMis
   // deploy all preludes
   await Promise.all(
     sorted.map(async (p) => {
-      if (await p.shouldDeploy(config.client)) {
-        await p.deploy(config.client);
+      if (await shouldDeployPrelude(p, config.client)) {
+        await deployPreludeDefinition(p, config.client);
         logger.success(`Deployed prelude: ${p.name}`);
       }
     }),

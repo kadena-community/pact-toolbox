@@ -1,3 +1,4 @@
+export * from "./cache";
 export * from "./deployPrelude";
 export * from "./downloadPrelude";
 export * from "./preludes";

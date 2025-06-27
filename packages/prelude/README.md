@@ -1,10 +1,10 @@
 # @pact-toolbox/prelude
 
-> Standard library and contract management for Pact development
+> Declarative prelude system with smart caching, checksums, and optimized downloads for Pact development
 
 ## Overview
 
-The `@pact-toolbox/prelude` package provides a comprehensive system for managing standard Pact contracts (preludes) in your development environment. It handles downloading, templating, deployment, and lifecycle management of essential Kadena contracts and custom preludes.
+The `@pact-toolbox/prelude` package provides a modern, declarative system for managing standard Pact contracts (preludes) with intelligent caching, checksum verification, and optimized downloads. It uses a factory-based approach to define preludes with deployment groups, namespace management, and lifecycle hooks.
 
 ## Installation
 
@@ -16,468 +16,588 @@ pnpm add @pact-toolbox/prelude
 
 ## Features
 
-- 📦 **Prelude Management** - Download and deploy standard Kadena contracts
-- 🔧 **Template Support** - Handlebars templating for contract customization
-- 🔄 **Dependency Resolution** - Automatic handling of contract dependencies
-- 🚀 **Batch Deployment** - Deploy multiple contracts efficiently
-- 🔍 **Contract Discovery** - Find and use community preludes
-- 💾 **Local Caching** - Cache downloaded preludes for offline use
-- 🎯 **Type Safety** - Full TypeScript support
+- 🏗️ **Declarative Prelude Definitions** - Use factory functions to define preludes with clear structure
+- 📦 **Smart Deployment Groups** - Organize files into logical groups with dependencies
+- 🔒 **Checksum Verification** - Ensure integrity with SHA-256 hash validation
+- 💾 **Intelligent Caching** - Skip downloads when contracts are already cached and valid
+- 🚀 **Optimized Downloads** - Only download what's needed, when it's needed
+- 🔄 **Dependency Resolution** - Automatic handling of prelude and group dependencies
+- 🏗️ **Namespace Management** - Automatic namespace creation and keyset handling
+- 📜 **REPL Generation** - Generate transaction-based installation scripts
+- 🎯 **Type Safety** - Full TypeScript support with proper typing
+- 🪝 **Lifecycle Hooks** - beforeDeploy, afterDeploy, and onError hooks
 
 ## Quick Start
 
 ```typescript
 import { downloadAllPreludes, deployPreludes } from '@pact-toolbox/prelude';
-import { PactToolboxClient } from '@pact-toolbox/client';
+import { PactToolboxClient } from '@pact-toolbox/runtime';
 
 // Setup client and config
 const client = new PactToolboxClient();
 const config = {
   contractsDir: './contracts',
-  preludes: ['kadena/chainweb', 'kadena/marmalade']
+  preludes: ['kadena/chainweb', 'kadena/marmalade'],
+  client
 };
 
-// Download preludes
-await downloadAllPreludes({ ...config, client });
+// Download preludes with smart caching
+await downloadAllPreludes(config, {
+  forceDownload: false,      // Use cache when possible
+  validateChecksums: true,   // Verify file integrity
+  cleanCache: false          // Keep existing cache
+});
 
 // Deploy preludes to network
-await deployPreludes({ ...config, client });
+await deployPreludes(config);
 ```
 
-## Prelude Configuration
+## Declarative Prelude System
 
-### Basic Configuration
+### Factory Functions
 
-```typescript
-// String format - uses default registry
-const preludes = [
-  'kadena/chainweb',      // Core Kadena contracts
-  'kadena/marmalade',     // NFT standard
-  'kadena/gas-station'    // Gas management
-];
-```
-
-### Advanced Configuration
+The new system uses factory functions to create clean, declarative prelude definitions:
 
 ```typescript
-import { PactPrelude } from '@pact-toolbox/prelude';
+import { 
+  repository, 
+  file, 
+  namespace, 
+  deploymentGroup, 
+  keysetTemplate,
+  DeploymentConditions 
+} from '@pact-toolbox/prelude';
 
-const preludes: PactPrelude[] = [
-  // Standard registry prelude
-  'kadena/chainweb',
+// Create a custom prelude definition
+const myPrelude: PreludeDefinition = {
+  id: "my-org/my-prelude",
+  name: "My Custom Prelude",
+  description: "Custom contracts for my project",
+  version: "1.0.0",
   
-  // Custom prelude with full configuration
-  {
-    name: 'my-custom-prelude',
-    path: './preludes/custom.pact',
-    dependencies: ['kadena/chainweb'],
-    templateData: {
-      namespace: 'my-namespace',
-      adminKeyset: 'my-admin-keyset'
+  // Repository configuration
+  repository: repository("my-org", "my-contracts", {
+    branch: "main",
+    basePath: "pact"
+  }),
+  
+  // Namespace definitions
+  namespaces: [
+    namespace("my-namespace", ["admin-keyset", "user-keyset"]),
+    namespace("utilities", ["admin-keyset"])
+  ],
+  
+  // Keyset templates
+  keysetTemplates: [
+    keysetTemplate("admin-keyset", "admin"),
+    keysetTemplate("user-keyset", "user")
+  ],
+  
+  // Deployment groups with dependencies
+  deploymentGroups: [
+    deploymentGroup("core", [
+      file("interfaces.pact"),
+      file("utilities.pact")
+    ], {
+      namespace: "my-namespace"
+    }),
+    
+    deploymentGroup("main-contracts", [
+      file("my-contract.pact", { 
+        checksum: "abc123...",
+        version: "1.0.0" 
+      })
+    ], {
+      namespace: "my-namespace",
+      dependsOn: ["core"]
+    })
+  ],
+  
+  // Deployment conditions
+  deploymentConditions: DeploymentConditions.ifContractsMissing([
+    "my-namespace.my-contract"
+  ]),
+  
+  // Custom REPL template
+  replTemplate: `
+;; My Custom Prelude Installation
+(env-data {
+  "admin-keyset": ["{{publicKey}}"],
+  "user-keyset": ["{{publicKey}}"]
+})
+
+(begin-tx "Load core contracts")
+  (namespace 'my-namespace)
+  (load "my-namespace/interfaces.pact")
+  (load "my-namespace/utilities.pact")
+(commit-tx)
+
+(begin-tx "Load main contracts")
+  (namespace 'my-namespace)
+  (load "my-namespace/my-contract.pact")
+(commit-tx)
+
+(print "✓ My Custom Prelude loaded successfully!")
+  `.trim(),
+  
+  // Lifecycle hooks
+  hooks: {
+    beforeDeploy: async (client) => {
+      console.log("🚀 Starting deployment...");
+    },
+    afterDeploy: async (client) => {
+      console.log("✅ Deployment completed!");
+    },
+    onError: async (client, error) => {
+      console.error("❌ Deployment failed:", error.message);
     }
-  },
-  
-  // Remote prelude
-  {
-    name: 'community-prelude',
-    url: 'https://github.com/org/repo/prelude.pact',
-    version: 'v1.0.0'
-  }
-];
-```
-
-## API Reference
-
-### Core Functions
-
-#### `downloadAllPreludes(options)`
-
-Downloads all configured preludes to local filesystem.
-
-```typescript
-interface DownloadPreludesOptions {
-  contractsDir: string;           // Directory to save preludes
-  preludes: PreludeConfig[];      // Prelude configurations
-  client: PactToolboxClient;      // Client instance
-  force?: boolean;                // Force re-download
-  registry?: PreludeRegistry;     // Custom registry
-}
-
-await downloadAllPreludes({
-  contractsDir: './contracts',
-  preludes: ['kadena/chainweb'],
-  client,
-  force: true  // Re-download even if exists
-});
-```
-
-#### `deployPreludes(options)`
-
-Deploys preludes to the active network.
-
-```typescript
-interface DeployPreludesOptions {
-  contractsDir: string;           // Directory containing preludes
-  preludes: PreludeConfig[];      // Prelude configurations
-  client: PactToolboxClient;      // Client instance
-  skipDeployed?: boolean;         // Skip already deployed
-  parallelDeploy?: boolean;       // Deploy in parallel
-  onProgress?: (progress) => void; // Progress callback
-}
-
-await deployPreludes({
-  contractsDir: './contracts',
-  preludes: ['kadena/chainweb'],
-  client,
-  skipDeployed: true,
-  onProgress: (progress) => {
-    console.log(`Deployed ${progress.current}/${progress.total}`);
-  }
-});
-```
-
-#### `resolvePrelude(prelude, options)`
-
-Resolves a prelude configuration to full metadata.
-
-```typescript
-const resolved = await resolvePrelude('kadena/chainweb', {
-  registry: defaultRegistry,
-  contractsDir: './contracts'
-});
-
-console.log(resolved);
-// {
-//   name: 'kadena/chainweb',
-//   path: './contracts/kadena/chainweb.pact',
-//   dependencies: [],
-//   version: '1.0.0',
-//   ...
-// }
-```
-
-#### `getPreludeRegistry()`
-
-Returns the default prelude registry.
-
-```typescript
-const registry = getPreludeRegistry();
-const availablePreludes = registry.list();
-```
-
-### Template Support
-
-Preludes support Handlebars templating for customization:
-
-```pact
-;; my-prelude.pact
-(namespace '{{namespace}}')
-
-(module my-module {{adminKeyset}}
-  (defcap GOVERNANCE ()
-    (enforce-keyset {{adminKeyset}}))
-  
-  (defconst VERSION "{{version}}")
-  
-  {{#if enableFeatureX}}
-  (defun feature-x () 
-    "Feature X implementation")
-  {{/if}}
-)
-```
-
-```typescript
-const prelude: PactPrelude = {
-  name: 'my-prelude',
-  path: './my-prelude.pact',
-  templateData: {
-    namespace: 'free',
-    adminKeyset: '"my-admin"',
-    version: '1.0.0',
-    enableFeatureX: true
   }
 };
 ```
 
-### Dependency Management
+### Deployment Groups
+
+Organize files into logical deployment groups with dependencies:
 
 ```typescript
-// Define dependencies
-const preludes: PactPrelude[] = [
-  {
-    name: 'base-module',
-    path: './base.pact'
-  },
-  {
-    name: 'dependent-module', 
-    path: './dependent.pact',
-    dependencies: ['base-module']  // Deployed after base-module
+import { deploymentGroup, file } from '@pact-toolbox/prelude';
+
+// Group with dependencies
+const coreGroup = deploymentGroup("core-contracts", [
+  file("interfaces.pact"),
+  file("base-contract.pact", { 
+    checksum: "sha256-hash...",
+    version: "1.0.0" 
+  })
+], {
+  namespace: "my-namespace"
+});
+
+// Group that depends on core
+const extendedGroup = deploymentGroup("extended-contracts", [
+  file("advanced-contract.pact"),
+  file("helper-contract.pact")
+], {
+  namespace: "my-namespace",
+  dependsOn: ["core-contracts"],  // Deploy after core
+  optional: true,                 // Can skip if deployment fails
+  shouldDeploy: async (client) => {
+    // Custom deployment condition
+    const exists = await client.isContractDeployed("my-namespace.base-contract");
+    return exists;
   }
-];
-
-// Dependencies are automatically resolved during deployment
-await deployPreludes({ preludes, client, contractsDir });
+});
 ```
 
-### Custom Registry
+### Deployment Conditions
+
+Use built-in deployment conditions or create custom ones:
 
 ```typescript
-import { PreludeRegistry } from '@pact-toolbox/prelude';
+import { DeploymentConditions } from '@pact-toolbox/prelude';
 
-// Create custom registry
-const customRegistry = new PreludeRegistry({
-  baseUrl: 'https://my-registry.com',
-  cache: true
-});
+// Skip deployment on production networks
+const devOnly = DeploymentConditions.skipOnChainweb();
 
-// Register custom preludes
-customRegistry.register({
-  name: 'my-org/my-prelude',
-  url: 'https://github.com/my-org/preludes/my-prelude.pact',
-  version: '1.0.0',
-  description: 'Custom prelude for my organization'
-});
+// Only deploy if contracts are missing
+const ifMissing = DeploymentConditions.ifContractsMissing([
+  "coin", 
+  "my-namespace.my-contract"
+]);
 
-// Use custom registry
-await downloadAllPreludes({
-  preludes: ['my-org/my-prelude'],
-  registry: customRegistry,
-  client,
-  contractsDir
-});
+// Only deploy if namespaces are missing
+const ifNamespacesMissing = DeploymentConditions.ifNamespacesMissing([
+  "my-namespace"
+]);
+
+// Combine multiple conditions
+const combined = DeploymentConditions.combine(
+  devOnly,
+  ifMissing,
+  ifNamespacesMissing
+);
 ```
 
-## Standard Preludes
+## REPL Generation
+
+Each prelude can define a custom REPL template that generates transaction-based installation scripts:
+
+```typescript
+const preludeWithRepl: PreludeDefinition = {
+  // ... other config
+  
+  replTemplate: `
+;; {{name}} Installation Script
+;; Network: {{networkId}}
+;; Admin: {{accountName}} ({{publicKey}})
+
+;; Setup keysets
+(env-data {
+  "admin-keyset": ["{{publicKey}}"],
+  "user-keyset": ["{{publicKey}}"]
+})
+
+;; Deploy core contracts
+(begin-tx "Core contracts")
+  (namespace 'my-namespace)
+  (load "my-namespace/core.pact")
+(commit-tx)
+
+(print "✓ Installation completed!")
+  `.trim()
+};
+
+// Generate REPL script
+import { generatePreludeRepl } from '@pact-toolbox/prelude';
+const replScript = await generatePreludeRepl(preludeWithRepl, client);
+```
+
+Template variables available:
+- `{{publicKey}}` - User's public key
+- `{{accountName}}` - User's account name
+- `{{networkId}}` - Target network ID
+- `{{name}}` - Prelude name
+- `{{description}}` - Prelude description
+
+## Built-in Preludes
 
 ### Kadena Chainweb (`kadena/chainweb`)
 
 Core Kadena blockchain contracts:
-- `coin` - KDA token contract
-- `ns` - Namespace management
-- `gas-payer` - Gas payment interfaces
+
+```typescript
+import { chainwebDefinition } from '@pact-toolbox/prelude';
+
+// Uses factory functions internally:
+// - repository("kadena-io", "chainweb-node")
+// - deploymentGroup("core", [...]) with root namespace
+// - deploymentGroup("utilities", [...]) with util namespace
+// - Special env-exec-config for Pact compatibility
+```
+
+Includes:
+- `coin.pact` - KDA token contract
+- `fungible-v2.pact` - Fungible token standard
+- `ns.pact` - Namespace management
+- `gas-payer-v1.pact` - Gas payment interfaces
+- `util-ns.pact`, `guards.pact` - Utility contracts
 
 ### Kadena Marmalade (`kadena/marmalade`)
 
-NFT standard implementation:
-- `marmalade.ledger` - NFT ledger
-- `marmalade.policy` - Policy management
-- `marmalade.util` - Utility functions
-
-### Gas Station (`kadena/gas-station`)
-
-Gas management utilities:
-- `gas-station` - Free gas for specific operations
-- `gas-guard` - Gas payment guards
-
-## REPL Integration
-
-Preludes integrate seamlessly with the test framework:
+Complete NFT framework with deployment groups:
 
 ```typescript
-// test.repl
-;; Load preludes in REPL
-.load kadena/chainweb
-.load my-custom-prelude
+import { marmaladeDefinition } from '@pact-toolbox/prelude';
 
-;; Use prelude functions
-(coin.create-account "alice" (read-keyset "alice-ks"))
-(my-module.my-function)
+// 8 deployment groups with proper dependencies:
+// 1. namespaces - Create kip, util, marmalade-v2, marmalade-sale
+// 2. kip-standards - KIP interface contracts
+// 3. utilities - Helper contracts
+// 4. core-ledger - Main ledger contracts
+// 5. policy-manager - Policy management system
+// 6. marmalade-util - Utility contracts
+// 7. concrete-policies - Policy implementations (optional)
+// 8. sale-contracts - Auction contracts (optional)
+```
+
+## Cache Management
+
+### Enhanced Caching System
+
+```typescript
+import { 
+  getCacheStats, 
+  isPreludeCached,
+  clearPreludeCache,
+  calculateFileHash 
+} from '@pact-toolbox/prelude';
+
+// Check cache status
+const stats = await getCacheStats('./preludes');
+console.log(`Cache: ${stats.totalEntries} entries, ${stats.totalSize} bytes`);
+
+// Verify specific prelude
+const isCached = await isPreludeCached(
+  'kadena/marmalade',
+  'v2.0.0',
+  './preludes',
+  false  // Don't skip checksum validation
+);
+
+// Calculate file hash
+const hash = await calculateFileHash('./contracts/coin.pact');
+console.log('SHA-256:', hash);
+
+// Clear cache if needed
+await clearPreludeCache('./preludes');
+```
+
+### Smart Download Options
+
+```typescript
+interface DownloadOptions {
+  forceDownload?: boolean;     // Force re-download (default: false)
+  cleanCache?: boolean;        // Clear cache before download (default: false)
+  validateChecksums?: boolean; // Verify checksums (default: true)
+}
+
+// Cache-aware download
+await downloadAllPreludes(config, {
+  forceDownload: false,      // Use cache when possible
+  validateChecksums: true,   // Verify file integrity
+  cleanCache: false          // Keep existing cache
+});
+```
+
+## API Reference
+
+### Factory Functions
+
+#### `repository(org, repo, options?)`
+Create repository configuration.
+
+```typescript
+const repo = repository("kadena-io", "chainweb-node", {
+  branch: "master",
+  basePath: "pact"
+});
+```
+
+#### `file(name, options?)`
+Create file specification.
+
+```typescript
+const fileSpec = file("coin.pact", {
+  path: "coin-contract/coin.pact",
+  checksum: "sha256-hash...",
+  version: "1.0.0"
+});
+```
+
+#### `namespace(name, keysets, options?)`
+Create namespace configuration.
+
+```typescript
+const ns = namespace("my-namespace", ["admin-keyset"], {
+  create: true  // Create namespace during deployment
+});
+```
+
+#### `deploymentGroup(name, files, options?)`
+Create deployment group.
+
+```typescript
+const group = deploymentGroup("core", [file1, file2], {
+  namespace: "my-namespace",
+  dependsOn: ["other-group"],
+  optional: false,
+  shouldDeploy: async (client) => {
+    // Custom deployment logic
+    return true;
+  }
+});
+```
+
+#### `keysetTemplate(name, keys, pred?)`
+Create keyset template.
+
+```typescript
+const keyset = keysetTemplate("admin-keyset", "admin", "keys-all");
+// or with specific keys
+const keyset = keysetTemplate("custom-keyset", ["key1", "key2"], "keys-2");
+```
+
+### Deployment Functions
+
+#### `deployPreludes(config, downloadIfMissing?)`
+Deploy all configured preludes.
+
+#### `downloadAllPreludes(config, options?)`
+Download all preludes with caching.
+
+#### `shouldDownloadPreludes(config, validateChecksums?)`
+Check if any preludes need downloading.
+
+## Advanced Usage
+
+### Complex Prelude with Multiple Groups
+
+```typescript
+import { PreludeDefinition, repository, deploymentGroup, file, namespace, keysetTemplate, DeploymentConditions } from '@pact-toolbox/prelude';
+
+const complexPrelude: PreludeDefinition = {
+  id: "my-org/complex-prelude",
+  name: "Complex Multi-Group Prelude",
+  description: "Advanced contract system with multiple deployment phases",
+  version: "2.0.0",
+  
+  repository: repository("my-org", "contracts", {
+    branch: "production",
+    basePath: "smart-contracts"
+  }),
+  
+  dependencies: ["kadena/chainweb"],
+  
+  namespaces: [
+    namespace("core", ["core-admin", "core-operator"]),
+    namespace("extensions", ["ext-admin"])
+  ],
+  
+  keysetTemplates: [
+    keysetTemplate("core-admin", "admin", "keys-all"),
+    keysetTemplate("core-operator", "operator", "keys-2"),
+    keysetTemplate("ext-admin", "admin")
+  ],
+  
+  deploymentGroups: [
+    deploymentGroup("interfaces", [
+      file("core-interface.pact"),
+      file("extension-interface.pact")
+    ], {
+      namespace: "core"
+    }),
+    
+    deploymentGroup("core-contracts", [
+      file("main-contract.pact", { 
+        checksum: "sha256-abc123...",
+        version: "2.0.0" 
+      }),
+      file("helper-contract.pact")
+    ], {
+      namespace: "core",
+      dependsOn: ["interfaces"]
+    }),
+    
+    deploymentGroup("extensions", [
+      file("advanced-features.pact"),
+      file("utilities.pact")
+    ], {
+      namespace: "extensions",
+      dependsOn: ["core-contracts"],
+      optional: true,
+      shouldDeploy: async (client) => {
+        const hasCore = await client.isContractDeployed("core.main-contract");
+        return hasCore;
+      }
+    })
+  ],
+  
+  deploymentConditions: DeploymentConditions.combine(
+    DeploymentConditions.ifContractsMissing(["core.main-contract"]),
+    DeploymentConditions.ifNamespacesMissing(["core"])
+  ),
+  
+  replTemplate: `
+;; Complex Multi-Group Prelude Installation
+;; Network: {{networkId}} | Admin: {{accountName}}
+
+(env-data {
+  "core-admin": ["{{publicKey}}"],
+  "core-operator": ["{{publicKey}}"],
+  "ext-admin": ["{{publicKey}}"]
+})
+
+;; Deploy interfaces
+(begin-tx "Load core interfaces")
+  (namespace 'core)
+  (load "core/core-interface.pact")
+  (load "core/extension-interface.pact")
+(commit-tx)
+
+;; Deploy core contracts
+(begin-tx "Load core contracts")
+  (namespace 'core)
+  (load "core/main-contract.pact")
+  (load "core/helper-contract.pact")
+(commit-tx)
+
+;; Deploy extensions (optional)
+(begin-tx "Load extension contracts")
+  (namespace 'extensions)
+  (load "extensions/advanced-features.pact")
+  (load "extensions/utilities.pact")
+(commit-tx)
+
+(print "✓ Complex prelude deployment completed!")
+(print "Core contracts: core.main-contract, core.helper-contract")
+(print "Extensions: extensions.advanced-features, extensions.utilities")
+  `.trim(),
+  
+  hooks: {
+    beforeDeploy: async (client) => {
+      console.log("🚀 Starting complex deployment sequence...");
+      // Pre-deployment validation
+    },
+    afterDeploy: async (client) => {
+      console.log("✅ Complex deployment completed successfully!");
+      // Post-deployment verification
+    },
+    onError: async (client, error) => {
+      console.error("❌ Complex deployment failed:", error.message);
+      // Error handling and cleanup
+    }
+  }
+};
 ```
 
 ## Best Practices
 
-### 1. Version Management
+### 1. Use Deployment Groups
+Organize related contracts into logical groups with clear dependencies.
 
-```typescript
-// Pin specific versions for production
-const preludes = [
-  {
-    name: 'kadena/chainweb',
-    version: '1.0.0'  // Pin version
-  }
-];
-```
+### 2. Pin Versions and Checksums
+Always specify versions and checksums for production deployments.
 
-### 2. Environment-Specific Configuration
+### 3. Leverage Caching
+Use cache-aware downloads to minimize network usage.
 
-```typescript
-const preludes = process.env.NODE_ENV === 'production'
-  ? ['kadena/chainweb@1.0.0']
-  : ['kadena/chainweb', 'test-helpers'];
-```
+### 4. Custom REPL Templates
+Define custom REPL templates for specific deployment requirements.
 
-### 3. Error Handling
-
-```typescript
-try {
-  await deployPreludes({ preludes, client, contractsDir });
-} catch (error) {
-  if (error.code === 'PRELUDE_NOT_FOUND') {
-    console.error('Prelude not found:', error.prelude);
-  } else if (error.code === 'DEPLOYMENT_FAILED') {
-    console.error('Deployment failed:', error.details);
-  }
-}
-```
-
-### 4. Progress Monitoring
-
-```typescript
-await deployPreludes({
-  preludes,
-  client,
-  contractsDir,
-  onProgress: ({ current, total, prelude, status }) => {
-    console.log(`[${current}/${total}] ${prelude}: ${status}`);
-  }
-});
-```
-
-## Examples
-
-### Complete Setup Example
-
-```typescript
-import { 
-  downloadAllPreludes, 
-  deployPreludes,
-  resolvePrelude 
-} from '@pact-toolbox/prelude';
-import { PactToolboxClient } from '@pact-toolbox/client';
-import { resolveConfig } from '@pact-toolbox/config';
-
-async function setupPreludes() {
-  // Load configuration
-  const config = await resolveConfig();
-  const client = new PactToolboxClient(config);
-  
-  // Define preludes with templates
-  const preludes = [
-    'kadena/chainweb',
-    {
-      name: 'my-app',
-      path: './preludes/my-app.pact',
-      templateData: {
-        namespace: config.namespace || 'free',
-        adminKeyset: config.adminKeyset || '"admin-keyset"',
-        version: process.env.APP_VERSION || '1.0.0'
-      },
-      dependencies: ['kadena/chainweb']
-    }
-  ];
-  
-  // Download if needed
-  console.log('Downloading preludes...');
-  await downloadAllPreludes({
-    contractsDir: config.contractsDir,
-    preludes,
-    client,
-    force: process.env.FORCE_DOWNLOAD === 'true'
-  });
-  
-  // Deploy to network
-  console.log('Deploying preludes...');
-  await deployPreludes({
-    contractsDir: config.contractsDir,
-    preludes,
-    client,
-    skipDeployed: true,
-    onProgress: ({ current, total, prelude }) => {
-      console.log(`Deploying ${prelude} (${current}/${total})...`);
-    }
-  });
-  
-  console.log('Preludes ready!');
-}
-```
-
-### Custom Prelude Creation
-
-```typescript
-// Create a custom prelude package
-const createCustomPrelude = () => ({
-  name: '@myorg/defi-prelude',
-  path: './preludes/defi.pact',
-  description: 'DeFi primitives for Kadena',
-  version: '1.0.0',
-  dependencies: ['kadena/chainweb'],
-  templateData: {
-    namespace: 'defi',
-    feePercentage: '0.003',
-    minLiquidity: '1000.0'
-  },
-  contracts: [
-    'defi-swap',
-    'defi-pool',
-    'defi-governance'
-  ]
-});
-
-// Register and use
-const defiPrelude = createCustomPrelude();
-await deployPreludes({
-  preludes: [defiPrelude],
-  client,
-  contractsDir
-});
-```
-
-### Testing with Preludes
-
-```typescript
-import { beforeEach, test } from 'vitest';
-import { deployPreludes } from '@pact-toolbox/prelude';
-
-beforeEach(async ({ client, config }) => {
-  // Deploy test preludes
-  await deployPreludes({
-    preludes: ['kadena/chainweb', 'test-helpers'],
-    client,
-    contractsDir: config.contractsDir
-  });
-});
-
-test('uses prelude functions', async ({ client }) => {
-  const result = await client.execute(
-    '(coin.get-balance "alice")'
-  );
-  expect(result).toBe('1000.0');
-});
-```
+### 5. Lifecycle Hooks
+Use hooks for logging, validation, and custom deployment logic.
 
 ## Troubleshooting
 
-### Common Issues
+### Cache Issues
+```typescript
+// Clear corrupted cache
+await clearPreludeCache('./preludes');
+await downloadAllPreludes(config, { forceDownload: true });
+```
 
-1. **Prelude not found**
-   ```typescript
-   // Check available preludes
-   const registry = getPreludeRegistry();
-   console.log(registry.list());
-   ```
+### Checksum Validation
+```typescript
+// Skip checksum validation if needed
+await downloadAllPreludes(config, { validateChecksums: false });
+```
 
-2. **Template compilation errors**
-   ```typescript
-   // Validate template data
-   const resolved = await resolvePrelude(prelude, { 
-     validateTemplate: true 
-   });
-   ```
+### Deployment Failures
+```typescript
+// Handle deployment errors with hooks
+const preludeWithErrorHandling: PreludeDefinition = {
+  // ... other config
+  hooks: {
+    onError: async (client, error) => {
+      console.error('Deployment failed:', error.message);
+      // Custom error handling
+      // rollback
+    }
+  }
+};
+```
 
-3. **Deployment failures**
-   ```typescript
-   // Enable debug logging
-   await deployPreludes({
-     preludes,
-     client,
-     contractsDir,
-     debug: true
-   });
-   ```
-
-4. **Dependency cycles**
-   ```typescript
-   // Visualize dependencies
-   const deps = await getPreludeDependencyGraph(preludes);
-   console.log(deps.toDot()); // Graphviz format
-   ```
+### Dependency Resolution Issues
+```typescript
+// Ensure proper dependency order
+const prelude: PreludeDefinition = {
+  // ... other config
+  dependencies: ["kadena/chainweb"], // Deploy chainweb first
+  deploymentGroups: [
+    deploymentGroup("base", [...], { /* no dependencies */ }),
+    deploymentGroup("extended", [...], { 
+      dependsOn: ["base"] // Deploy after base group
+    })
+  ]
+};
+```
