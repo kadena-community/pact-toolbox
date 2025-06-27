@@ -1,287 +1,125 @@
 # @pact-toolbox/network
 
-> Network orchestration and management for Pact development
-
-## Overview
-
-The `@pact-toolbox/network` package provides a unified interface for managing different types of Pact networks during development. It supports both Pact Server (process-based) and Chainweb DevNet (container-based) networks, with automatic prelude deployment and health monitoring.
+Simplified network management for Pact development environments. Supports both Pact Server and Chainweb DevNet networks with an easy-to-use API.
 
 ## Installation
 
 ```bash
 npm install @pact-toolbox/network
-# or
-pnpm add @pact-toolbox/network
 ```
 
-## Usage
-
-### Basic Network Creation
+## Quick Start
 
 ```typescript
-import { createPactToolboxNetwork } from '@pact-toolbox/network';
+import { createNetwork } from '@pact-toolbox/network';
 import { resolveConfig } from '@pact-toolbox/config';
 
-// Create network from configuration
+// Load your configuration
 const config = await resolveConfig();
-const { network, client } = await createPactToolboxNetwork(config);
 
-// Start the network
-await network.start();
+// Create and start a network
+const network = await createNetwork(config);
 
-// Check if network is running
-const isHealthy = await network.isOk();
+// Get network information
+console.log('RPC URL:', network.getRpcUrl());
+console.log('Port:', network.getPort());
 
-// Stop the network
+// Check if network supports on-demand mining
+if (network.hasOnDemandMining()) {
+  console.log('Mining URL:', network.getMiningUrl());
+}
+
+// Stop the network when done
 await network.stop();
 ```
 
-### Network Types
+## Key Features
 
-#### 1. Pact Server Network
+- **Simplified API**: Single function to create and manage networks
+- **Auto-cleanup**: No complex lifecycle management required
+- **Flexible Options**: Support for various development scenarios
+- **Network Health**: Built-in health checking and monitoring
+- **Type Safety**: Full TypeScript support with proper types
 
-For lightweight local development:
+## API
 
-```typescript
-import { PactServerNetwork } from '@pact-toolbox/network';
+### `createNetwork(config, options?)`
 
-const pactServer = new PactServerNetwork(networkConfig, {
-  client,
-  logger,
-  spinner
-});
-
-await pactServer.start({
-  isDetached: true,
-  conflictStrategy: 'replace'
-});
-```
-
-#### 2. DevNet Network
-
-For Chainweb-compatible development:
-
-```typescript
-import { LocalDevNetNetwork } from '@pact-toolbox/network';
-
-const devnet = new LocalDevNetNetwork(networkConfig, {
-  client,
-  logger,
-  spinner,
-  activeProfiles: ['mining']
-});
-
-await devnet.start({
-  isStateless: false,
-  cleanup: true
-});
-```
-
-### Network Options
-
-```typescript
-interface ToolboxNetworkStartOptions {
-  // Run network in detached mode (background)
-  isDetached?: boolean;
-  
-  // Don't persist state between runs
-  isStateless?: boolean;
-  
-  // Clean up resources on stop
-  cleanup?: boolean;
-  
-  // Strategy for handling port conflicts
-  conflictStrategy?: 'replace' | 'fail' | 'ignore';
-  
-  // Custom client instance
-  client?: PactToolboxClient;
-  
-  // Log account information on start
-  logAccounts?: boolean;
-  
-  // Auto-start the network
-  autoStart?: boolean;
-}
-```
-
-### Health Monitoring
-
-```typescript
-// Check network health
-const isHealthy = await network.isOk();
-
-// Get network status details
-const nodeUrl = network.getNodeServiceUrl();
-const miningUrl = network.getMiningClientUrl();
-
-// Monitor network health
-setInterval(async () => {
-  const health = await network.isOk();
-  console.log(`Network health: ${health ? 'OK' : 'Failed'}`);
-}, 30000);
-```
-
-### Prelude Deployment
-
-Networks automatically deploy configured preludes on start:
-
-```typescript
-// Configure preludes in config
-const config = {
-  preludes: [
-    'kadena/chainweb',
-    'kadena/marmalade',
-    {
-      name: 'custom-prelude',
-      path: './preludes/custom.pact'
-    }
-  ]
-};
-
-// Preludes are deployed automatically when network starts
-const { network } = await createPactToolboxNetwork(config);
-await network.start(); // Deploys preludes
-```
-
-### Port Management
-
-The package handles port conflicts automatically:
-
-```typescript
-// Specify custom ports
-const config = {
-  network: {
-    type: 'devnet',
-    devnet: {
-      containerConfig: {
-        port: 8080,
-        servicePorts: {
-          stratum: 1917,
-          servicePort: 1848
-        }
-      }
-    }
-  }
-};
-
-// Or let it find available ports
-const { network } = await createPactToolboxNetwork(config, {
-  conflictStrategy: 'replace' // Kill conflicting processes
-});
-```
-
-## API Reference
-
-### Main Functions
-
-#### `createPactToolboxNetwork(config, options?)`
-Creates a network instance based on configuration.
+Creates and optionally starts a Pact network.
 
 **Parameters:**
-- `config` - Pact toolbox configuration
-- `options` - Network creation options
+- `config`: PactToolboxConfigObj - The toolbox configuration
+- `options`: NetworkOptions (optional)
+  - `network`: string - Network name from config (default: first network)
+  - `autoStart`: boolean - Auto-start network on creation (default: true)
+  - `detached`: boolean - Run network in background (default: true)
+  - `stateless`: boolean - Don't persist data between restarts (default: false)
+  - `logAccounts`: boolean - Log account details on start (default: false)
+  - `logger`: Logger - Custom logger instance
 
-**Returns:**
-```typescript
-{
-  network: PactToolboxNetwork;
-  client: PactToolboxClient;
-}
-```
+**Returns:** Promise<PactToolboxNetwork>
 
-### PactToolboxNetwork Class
+### `PactToolboxNetwork`
+
+Main network class that implements the `NetworkApi` interface.
 
 #### Methods
 
-##### `start(options?): Promise<void>`
-Starts the network with optional configuration.
+- `start(options?)`: Start the network
+- `stop()`: Stop the network
+- `restart(options?)`: Restart the network
+- `isHealthy()`: Check if network is healthy
+- `getPort()`: Get the main service port
+- `getRpcUrl()`: Get the RPC endpoint URL
+- `hasOnDemandMining()`: Check if network supports on-demand mining
+- `getMiningUrl()`: Get mining endpoint URL (if supported)
+- `getNetworkName()`: Get the network name
+- `getNetworkConfig()`: Get the full network configuration
 
-##### `stop(): Promise<void>`
-Stops the network and cleans up resources.
+## Network Types
 
-##### `restart(options?): Promise<void>`
-Restarts the network with new options.
+### Pact Server
 
-##### `isOk(): Promise<boolean>`
-Checks if the network is healthy.
-
-##### `getServicePort(): number`
-Returns the main service port.
-
-##### `getNodeServiceUrl(): string`
-Returns the node API URL.
-
-##### `getMiningClientUrl(): string`
-Returns the mining client URL (DevNet only).
-
-##### `hasOnDemandMining(): boolean`
-Checks if on-demand mining is enabled (DevNet only).
-
-### Network Implementations
-
-#### LocalDevNetNetwork
-
-Manages Chainweb DevNet containers.
-
-**Features:**
-- Docker container orchestration
-- On-demand mining support
-- Multi-node clustering
-- Volume persistence
-- Health monitoring
-
-#### PactServerNetwork
-
-Manages Pact Server processes.
-
-**Features:**
-- Process lifecycle management
-- In-memory database
-- Fast startup
-- Simple configuration
-
-## Configuration
-
-### DevNet Configuration
+Local Pact interpreter server for development.
 
 ```typescript
+// Configuration example
 {
-  type: 'devnet',
-  name: 'local-devnet',
-  devnet: {
-    containerConfig: {
-      port: 8080,
-      image: 'kadena/devnet:latest',
-      onDemandMining: true,
-      persistDb: true,
-      servicePorts: {
-        stratum: 1917,
-        servicePort: 1848,
-        p2pPort: 1789
+  networks: {
+    local: {
+      type: "pact-server",
+      networkId: "development",
+      rpcUrl: "http://localhost:8080",
+      serverConfig: {
+        port: 8080,
+        logDir: ".pact-toolbox/pact/log",
+        persistDir: ".pact-toolbox/pact/db",
+        // ... other Pact server options
       }
-    },
-    miningConfig: {
-      onDemandMining: true,
-      interval: 30,
-      batchSize: 2
     }
   }
 }
 ```
 
-### Pact Server Configuration
+### Chainweb DevNet
+
+Full Kadena blockchain development network with Docker.
 
 ```typescript
+// Configuration example
 {
-  type: 'pact-server',
-  name: 'local-pact',
-  pactServer: {
-    port: 8080,
-    logLevel: 'info',
-    persistDb: false,
-    execConfig: {
-      gasLimit: 100000,
-      gasPrice: 0.000001
+  networks: {
+    devnet: {
+      type: "chainweb-devnet",
+      networkId: "development",
+      rpcUrl: "http://localhost:8080",
+      containerConfig: {
+        port: 8080,
+        onDemandMining: true,
+        miningConfig: {
+          // Mining configuration options
+        }
+      }
     }
   }
 }
@@ -289,143 +127,108 @@ Manages Pact Server processes.
 
 ## Examples
 
-### Development Setup
+### Basic Usage
 
 ```typescript
-import { createPactToolboxNetwork } from '@pact-toolbox/network';
+import { createNetwork } from '@pact-toolbox/network';
 import { resolveConfig } from '@pact-toolbox/config';
 
-async function setupDevEnvironment() {
+async function main() {
   const config = await resolveConfig();
-  const { network, client } = await createPactToolboxNetwork(config, {
-    autoStart: true,
-    logAccounts: true,
-    conflictStrategy: 'replace'
-  });
   
-  // Network is ready for development
-  console.log('Network URL:', network.getNodeServiceUrl());
+  // Start the default network
+  const network = await createNetwork(config);
   
-  // Deploy your contracts
-  await client.deployContract('./contracts/my-contract.pact');
+  // Use the network...
+  console.log('Network started at:', network.getRpcUrl());
   
-  // Cleanup on exit
-  process.on('SIGINT', async () => {
-    await network.stop();
-    process.exit(0);
-  });
+  // Stop when done
+  await network.stop();
 }
 ```
 
-### Testing Setup
+### Manual Network Control
 
 ```typescript
-import { createPactToolboxNetwork } from '@pact-toolbox/network';
+import { createNetwork } from '@pact-toolbox/network';
 
-// Create isolated network for tests
-async function createTestNetwork() {
-  const { network, client } = await createPactToolboxNetwork({
-    network: {
-      type: 'pact-server',
-      name: 'test-network',
-      pactServer: {
-        port: 0, // Random available port
-        persistDb: false
-      }
-    }
-  }, {
-    isStateless: true,
-    autoStart: true
+async function main() {
+  const config = await resolveConfig();
+  
+  // Create network without auto-starting
+  const network = await createNetwork(config, {
+    autoStart: false,
+    network: 'devnet' // Specify which network to use
   });
   
-  return { network, client };
+  // Start manually
+  await network.start({
+    detached: false, // Show logs in console
+    logAccounts: true // Display test accounts
+  });
+  
+  // Restart the network
+  await network.restart();
+  
+  // Check health
+  const healthy = await network.isHealthy();
+  console.log('Network healthy:', healthy);
 }
+```
 
-// Use in tests
-describe('Contract Tests', () => {
-  let network, client;
-  
-  beforeEach(async () => {
-    ({ network, client } = await createTestNetwork());
-  });
-  
-  afterEach(async () => {
-    await network.stop();
-  });
-  
-  test('deploy and test contract', async () => {
-    await client.deployContract('./test.pact');
-    // Run tests...
-  });
+### Stateless Testing
+
+```typescript
+// Run network without persisting data
+const network = await createNetwork(config, {
+  stateless: true, // No data persistence
+  autoStart: true
 });
+
+// Each restart gives you a clean state
+await network.restart({ stateless: true });
 ```
 
-### Custom Network Implementation
+### Process Cleanup
+
+When using networks in CLI applications or scripts, you should handle cleanup properly:
 
 ```typescript
-import { ToolboxNetworkApi } from '@pact-toolbox/network';
+import { createNetwork } from '@pact-toolbox/network';
 
-class CustomNetwork implements ToolboxNetworkApi {
-  id = 'custom-network';
+async function runScript() {
+  const network = await createNetwork(config);
   
-  async start(options?) {
-    // Custom start logic
-  }
-  
-  async stop() {
-    // Custom stop logic
-  }
-  
-  async restart(options?) {
-    await this.stop();
-    await this.start(options);
-  }
-  
-  async isOk() {
-    // Health check logic
-    return true;
-  }
-  
-  getServicePort() {
-    return 8080;
-  }
-  
-  getNodeServiceUrl() {
-    return `http://localhost:${this.getServicePort()}`;
-  }
-  
-  getMiningClientUrl() {
-    return this.getNodeServiceUrl();
-  }
-  
-  hasOnDemandMining() {
-    return false;
+  // Setup cleanup handlers
+  const cleanup = async () => {
+    console.log('Shutting down network...');
+    try {
+      await network.stop();
+      console.log('Network stopped successfully');
+    } catch (error) {
+      console.error('Error stopping network:', error);
+    }
+    process.exit(0);
+  };
+
+  // Register cleanup for different exit scenarios
+  process.on('SIGINT', cleanup);  // Ctrl+C
+  process.on('SIGTERM', cleanup); // Termination signal
+  process.on('beforeExit', cleanup);
+
+  try {
+    // Your application logic here
+    console.log('Network running at:', network.getRpcUrl());
+    
+    // Keep the process alive
+    await new Promise(() => {});
+  } catch (error) {
+    console.error('Script error:', error);
+    await cleanup();
   }
 }
 ```
 
-## Troubleshooting
+## License
 
-### Port Conflicts
-
-If you encounter port conflicts:
-
-1. Use `conflictStrategy: 'replace'` to kill conflicting processes
-2. Set `port: 0` to use random available ports
-3. Manually specify different ports in configuration
-
-### Container Issues
-
-For DevNet container issues:
-
-1. Ensure Docker is running
-2. Check Docker permissions
-3. Use `docker ps` to see running containers
-4. Check logs with `docker logs <container-name>`
-
-### Network Not Starting
-
-1. Check logs for error messages
-2. Verify configuration is correct
-3. Ensure no firewall blocking ports
-4. Try with `persistDb: false` for fresh start
+MIT

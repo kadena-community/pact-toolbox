@@ -1,199 +1,186 @@
+/**
+ * Main network management class for Pact Toolbox
+ */
+
 import type { NetworkConfig, PactToolboxConfigObj } from "@pact-toolbox/config";
+import type { Logger } from "@pact-toolbox/node-utils";
+import type { NetworkApi, NetworkStartOptions } from "./types";
 
-import { getNetworkConfig, isDevNetworkConfig, isLocalNetwork, isPactServerNetworkConfig } from "@pact-toolbox/config";
-import { deployPreludes, downloadAllPreludes, shouldDownloadPreludes } from "@pact-toolbox/prelude";
-import { PactToolboxClient } from "@pact-toolbox/runtime";
 import {
-  getUuid,
-  logger as defaultLogger,
-  spinner as defaultSpinner,
-  type Logger,
-  type Spinner,
-  LogLevels,
-} from "@pact-toolbox/utils";
+  getDefaultNetworkConfig,
+  isDevNetworkConfig,
+  isLocalNetwork,
+  isPactServerNetworkConfig,
+} from "@pact-toolbox/config";
+import { deployPreludes, downloadAllPreludes } from "@pact-toolbox/prelude";
+import { PactToolboxClient } from "@pact-toolbox/runtime";
+import { logger as defaultLogger } from "@pact-toolbox/node-utils";
+import { getUuid } from "@pact-toolbox/utils";
 
-import { LocalDevNetNetwork } from "./networks/devnet";
+import { DevNetNetwork } from "./networks/devnet";
 import { PactServerNetwork } from "./networks/pactServer";
-import type { ToolboxNetworkApi, ToolboxNetworkStartOptions } from "./types";
-import { ensureAvailablePorts } from "./utils";
 
-export interface StartLocalNetworkOptions extends ToolboxNetworkStartOptions {
-  client?: PactToolboxClient;
-  logAccounts?: boolean;
+export interface NetworkOptions extends NetworkStartOptions {
+  /** Network name from config (default: first network) */
   network?: string;
-  cleanup?: boolean;
-  autoStart?: boolean;
+  /** Custom logger instance */
   logger?: Logger;
-  spinner?: Spinner;
+  /** Auto-start network on creation (default: true) */
+  autoStart?: boolean;
+  /** Log account details on start (default: false) */
+  logAccounts?: boolean;
 }
 
-export class PactToolboxNetwork implements ToolboxNetworkApi {
-  public id: string = getUuid();
-  #networkApi: ToolboxNetworkApi;
-  #networkConfig: NetworkConfig;
-  #client: PactToolboxClient;
-  #startOptions: StartLocalNetworkOptions;
-  #toolboxConfig: PactToolboxConfigObj;
-  #logger: Logger;
-  #spinner: Spinner;
+/**
+ * Main network class that manages Pact development networks
+ */
+export class PactToolboxNetwork implements NetworkApi {
+  readonly id: string = getUuid();
 
-  constructor(toolboxConfig: PactToolboxConfigObj, startOptions: StartLocalNetworkOptions = {}) {
-    this.#toolboxConfig = toolboxConfig;
-    this.#startOptions = {
-      isDetached: true,
-      logAccounts: false,
-      isStateless: false,
-      ...startOptions,
-    };
-    this.#logger = this.#startOptions.logger ?? defaultLogger;
-    this.#spinner = this.#startOptions.spinner ?? defaultSpinner({ indicator: "timer" });
-    const networkConfig = getNetworkConfig(this.#toolboxConfig, this.#startOptions.network);
+  private network: NetworkApi;
+  private config: NetworkConfig;
+  private client: PactToolboxClient;
+  private logger: Logger;
+  private toolboxConfig: PactToolboxConfigObj;
+
+  constructor(toolboxConfig: PactToolboxConfigObj, options: NetworkOptions = {}) {
+    // Validate configuration
+    if (!toolboxConfig?.networks || Object.keys(toolboxConfig.networks).length === 0) {
+      throw new Error("No networks defined in configuration");
+    }
+
+    this.toolboxConfig = toolboxConfig;
+    this.logger = options.logger ?? defaultLogger;
+
+    // Get network configuration
+    const networkConfig = getDefaultNetworkConfig(toolboxConfig, options.network);
     if (!networkConfig) {
-      throw new Error(`Network ${networkConfig} not found in config`);
+      const available = Object.keys(toolboxConfig.networks).join(", ");
+      throw new Error(`Network not found. Available: ${available}`);
     }
+
+    // Only support local networks
     if (!isLocalNetwork(networkConfig)) {
-      throw new Error(`Netwsork ${networkConfig.name} is not a local or devnet network`);
+      throw new Error(`Network '${networkConfig.name}' is not a local network`);
     }
-    this.#client = this.#startOptions.client ?? new PactToolboxClient(toolboxConfig);
+
+    this.config = networkConfig;
+    this.client = options.client ?? new PactToolboxClient(toolboxConfig);
+
+    // Create appropriate network implementation
     if (isPactServerNetworkConfig(networkConfig)) {
-      this.#networkApi = new PactServerNetwork(networkConfig, this.#client);
+      this.network = new PactServerNetwork(networkConfig, this.client, this.logger);
     } else if (isDevNetworkConfig(networkConfig)) {
-      this.#networkApi = new LocalDevNetNetwork(networkConfig, {
-        client: this.#client,
-        logger: this.#logger,
-        spinner: this.#spinner,
-      });
+      this.network = new DevNetNetwork(networkConfig, this.client, this.logger);
     } else {
-      throw new Error(`Unsupported network type`);
+      //@ts-expect-error Unsupported network type for '${networkConfig.name}'
+      throw new Error(`Unsupported network type for '${networkConfig.name}'`);
     }
-    this.#networkConfig = networkConfig;
   }
 
-  getServicePort(): number {
-    return this.#networkApi.getServicePort();
-  }
+  // Implement NetworkApi
+  async start(options?: NetworkStartOptions): Promise<void> {
+    try {
+      this.logger.info(`Starting network ${this.config.name}...`);
 
-  hasOnDemandMining(): boolean {
-    return this.#networkApi.hasOnDemandMining();
-  }
+      // Handle preludes if configured
+      if (this.toolboxConfig.downloadPreludes || this.toolboxConfig.deployPreludes) {
+        const preludeConfig = {
+          client: options?.client ?? this.client,
+          contractsDir: this.toolboxConfig.contractsDir ?? "contracts",
+          preludes: this.toolboxConfig.preludes ?? [],
+        };
 
-  getMiningClientUrl(): string {
-    return this.#networkApi.getMiningClientUrl();
-  }
+        if (this.toolboxConfig.downloadPreludes) {
+          await downloadAllPreludes(preludeConfig);
+        }
 
-  getNodeServiceUrl(): string {
-    return this.#networkApi.getNodeServiceUrl();
-  }
+        // Start network before deploying preludes
+        await this.network.start(options);
 
-  getNetworkName(): string {
-    return this.#networkConfig.name ?? "unknown";
-  }
-
-  async start(options?: ToolboxNetworkStartOptions): Promise<void> {
-    this.#client = options?.client ?? this.#client;
-    this.#spinner.start(`Starting network ${this.#networkConfig.name}...`);
-    const preludes = this.#toolboxConfig.preludes ?? [];
-    const contractsDir = this.#toolboxConfig.contractsDir ?? "contracts";
-    const preludeConfig = {
-      client: this.#client,
-      contractsDir,
-      preludes,
-    };
-    const needDownloadPreludes = this.#toolboxConfig.downloadPreludes && (await shouldDownloadPreludes(preludeConfig));
-
-    if (needDownloadPreludes) {
-      // download preludes
-      await downloadAllPreludes(preludeConfig);
-    }
-    await ensureAvailablePorts(this.#networkConfig);
-    await this.#networkApi.start({
-      ...this.#startOptions,
-      ...options,
-      client: this.#client,
-    });
-
-    if (this.#toolboxConfig.deployPreludes) {
-      await deployPreludes(preludeConfig);
-    }
-
-    if (this.#startOptions.logAccounts) {
-      // log all signers and keys
-      const signers = this.#networkConfig.keyPairs ?? [];
-      for (const signer of signers) {
-        this.#logger.log(`Account: ${signer.account}`);
-        this.#logger.log(`Public: ${signer.publicKey}`);
-        this.#logger.log(`Secret: ${signer.secretKey}`);
-        this.#logger.log("--------------------------------");
+        if (this.toolboxConfig.deployPreludes) {
+          await deployPreludes(preludeConfig);
+        }
+      } else {
+        await this.network.start(options);
       }
-    }
-    this.#spinner.stop(`Network ${this.#networkConfig.name} started at ${this.getNodeServiceUrl()}`);
-  }
 
-  async restart(): Promise<void> {
-    await this.#networkApi.restart();
+      // Log accounts if requested
+      if ((options as NetworkOptions)?.logAccounts) {
+        this.logAccounts();
+      }
+
+      this.logger.success(`Network ${this.config.name} started at ${this.getRpcUrl()}`);
+    } catch (error) {
+      this.logger.error(`Failed to start network: ${error}`);
+      throw error;
+    }
   }
 
   async stop(): Promise<void> {
-    await this.#networkApi.stop();
+    await this.network.stop();
   }
 
-  async isOk(): Promise<boolean> {
-    return this.#networkApi.isOk();
+  async restart(options?: NetworkStartOptions): Promise<void> {
+    await this.stop();
+    await this.start(options);
+  }
+
+  async isHealthy(): Promise<boolean> {
+    return this.network.isHealthy();
+  }
+
+  getPort(): number {
+    return this.network.getPort();
+  }
+
+  getRpcUrl(): string {
+    return this.network.getRpcUrl();
+  }
+
+  hasOnDemandMining(): boolean {
+    return this.network.hasOnDemandMining();
+  }
+
+  getMiningUrl(): string | null {
+    return this.network.getMiningUrl();
+  }
+
+  // Additional helper methods
+  getNetworkName(): string {
+    return this.config.name ?? "unknown";
+  }
+
+  getNetworkConfig(): NetworkConfig {
+    return this.config;
+  }
+
+  private logAccounts(): void {
+    const accounts = this.config.keyPairs ?? [];
+    if (accounts.length === 0) return;
+
+    this.logger.log("\n📋 Network Accounts:");
+    for (const account of accounts) {
+      this.logger.log(`  Account: ${account.account}`);
+      this.logger.log(`  Public:  ${account.publicKey}`);
+      this.logger.log(`  Secret:  ${account.secretKey}`);
+      this.logger.log("  --------------------------------");
+    }
   }
 }
 
-export async function createPactToolboxNetwork(
+/**
+ * Create and optionally start a Pact network
+ */
+export async function createNetwork(
   config: PactToolboxConfigObj,
-  options: StartLocalNetworkOptions = {},
+  options: NetworkOptions = {},
 ): Promise<PactToolboxNetwork> {
-  const logLevel =
-    process.env.LOG_LEVEL && LogLevels[process.env.LOG_LEVEL as keyof typeof LogLevels]
-      ? LogLevels[process.env.LOG_LEVEL as keyof typeof LogLevels]
-      : LogLevels.error;
-  const logger = options.logger ?? defaultLogger.create({ level: logLevel });
-  const spinner = options.spinner ?? defaultSpinner({ indicator: "timer" });
-  const network = new PactToolboxNetwork(config, {
-    ...options,
-    logger,
-    spinner,
-  });
+  const network = new PactToolboxNetwork(config, options);
 
-  if (!options.autoStart) {
-    return network;
-  }
-
-  let isCleaningUp = false;
-  if (options.cleanup) {
-    async function handleShutdown() {
-      if (isCleaningUp) {
-        return;
-      }
-      logger.info(`Shutting down network ${network.getNetworkName()}...`);
-      isCleaningUp = true;
-      try {
-        await Promise.race([network.stop(), new Promise((resolve) => setTimeout(resolve, 10000))]);
-      } catch (error) {
-        logger.error(`Error during graceful shutdown:`, error);
-      } finally {
-        logger.success(`Network ${network.getNetworkName()} stopped!`);
-        // process.exit(0);
-      }
-    }
-
-    process.on("SIGINT", handleShutdown);
-    process.on("SIGTERM", handleShutdown);
-    // process.on("exit", handleShutdown);
-  }
-  try {
+  if (options.autoStart !== false) {
     await network.start(options);
-  } catch (error) {
-    logger.error(`Failed to start network ${network.id}:`, error);
-    if (!isCleaningUp && options.cleanup) {
-      await network.stop().catch((cleanupError) => {
-        logger.error(`Error during cleanup after failed start:`, cleanupError);
-      });
-    }
-    throw error;
   }
+
   return network;
 }

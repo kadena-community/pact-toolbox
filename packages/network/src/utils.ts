@@ -1,68 +1,69 @@
-import type { NetworkConfig } from "@pact-toolbox/config";
-
-import { getNetworkPort, isDevNetworkConfig, isPactServerNetworkConfig } from "@pact-toolbox/config";
-import { getRandomPort, isPortTaken, logger, writeFile } from "@pact-toolbox/utils";
+/**
+ * Utility functions for network package
+ */
 
 import { access } from "node:fs/promises";
 import { execSync } from "node:child_process";
+import { logger, writeFile } from "@pact-toolbox/node-utils";
 import { DEFAULT_CERTIFICATE, DEFAULT_KEY } from "./config/certificate";
 
-export async function ensureAvailablePorts(networkConfig: NetworkConfig): Promise<void> {
-  const port = getNetworkPort(networkConfig);
-  const isPortInUse = await isPortTaken(port);
-  if (isPortInUse) {
-    logger.warn(`Port ${port} is in use, finding a new one`);
-    if (isPactServerNetworkConfig(networkConfig)) {
-      if (networkConfig.serverConfig) {
-        networkConfig.serverConfig.port = await getRandomPort();
-      }
-    }
-    if (isDevNetworkConfig(networkConfig)) {
-      if (networkConfig.containerConfig) {
-        networkConfig.containerConfig.port = await getRandomPort();
-      }
-    }
-  }
-}
-
+/**
+ * Check if OpenSSL is available on the system
+ */
 async function isOpenSSLAvailable(): Promise<boolean> {
   try {
-    execSync("openssl version", { stdio: "ignore" }); // stdio: "ignore" to prevent output
+    execSync("openssl version", { stdio: "ignore" });
     return true;
   } catch {
     return false;
   }
 }
 
-export async function generateSelfSignedCert(certPath: string, keyPath: string): Promise<void> {
-  const openSSLAvailable = await isOpenSSLAvailable();
-  if (!openSSLAvailable) {
-    console.warn("OpenSSL not found/usable. Attempting to use static fallback certificates.");
-    await Promise.all([writeFile(certPath, DEFAULT_CERTIFICATE), writeFile(keyPath, DEFAULT_KEY)]);
+/**
+ * Generate a self-signed certificate using OpenSSL or fallback
+ */
+async function generateSelfSignedCert(certPath: string, keyPath: string): Promise<void> {
+  const hasOpenSSL = await isOpenSSLAvailable();
+  
+  if (!hasOpenSSL) {
+    logger.warn("OpenSSL not found. Using fallback certificates.");
+    await Promise.all([
+      writeFile(certPath, DEFAULT_CERTIFICATE),
+      writeFile(keyPath, DEFAULT_KEY)
+    ]);
     return;
   }
 
-  const genKeyCommand = `openssl genpkey -algorithm RSA -out "${keyPath}" -pkeyopt rsa_keygen_bits:2048`;
-  const genCertCommand = `openssl req -new -x509 -key "${keyPath}" -out "${certPath}" -days 365 -subj "/CN=devnet-bootstrap-node" -nodes`;
-
   try {
-    execSync(genKeyCommand, { stdio: "pipe" });
-    execSync(genCertCommand, { stdio: "pipe" });
-  } catch (error: any) {
-    if (error.stderr) {
-      console.error(`OpenSSL stderr: ${error.stderr.toString()}`);
-    }
-    if (error.stdout) {
-      console.error(`OpenSSL stdout: ${error.stdout.toString()}`);
-    }
-    throw new Error(`Failed to generate certificate/key using OpenSSL.`);
+    // Generate RSA key
+    execSync(
+      `openssl genpkey -algorithm RSA -out "${keyPath}" -pkeyopt rsa_keygen_bits:2048`,
+      { stdio: "pipe" }
+    );
+    
+    // Generate certificate
+    execSync(
+      `openssl req -new -x509 -key "${keyPath}" -out "${certPath}" -days 365 -subj "/CN=devnet-bootstrap-node" -nodes`,
+      { stdio: "pipe" }
+    );
+  } catch (error) {
+    logger.error("Failed to generate certificate with OpenSSL:", error);
+    throw new Error("Certificate generation failed");
   }
 }
 
-export async function ensureCertificates(certFilePath: string, keyFilePath: string): Promise<void> {
+/**
+ * Ensure SSL certificates exist, generating them if needed
+ */
+export async function ensureCertificates(certPath: string, keyPath: string): Promise<void> {
   try {
-    await Promise.all([access(certFilePath), access(keyFilePath)]);
+    // Check if both files exist
+    await Promise.all([
+      access(certPath),
+      access(keyPath)
+    ]);
   } catch {
-    await generateSelfSignedCert(certFilePath, keyFilePath);
+    // Generate if missing
+    await generateSelfSignedCert(certPath, keyPath);
   }
 }
