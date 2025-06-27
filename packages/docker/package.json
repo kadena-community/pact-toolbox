@@ -1,0 +1,60 @@
+{
+  "name": "@pact-toolbox/docker",
+  "version": "0.1.0",
+  "repository": "kadena-community/pact-toolbox",
+  "author": "Salama Ashoush <salamaashoush@gmail.com>",
+  "license": "MIT",
+  "type": "module",
+  "description": "Modern Docker container orchestration for Pact Toolbox",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "./dist/"
+  ],
+  "scripts": {
+    "build": "tsdown --config ./node_modules/@pact-toolbox/tsdown/tsdown.config.node.ts",
+    "dev": "tsdown --watch --config ./node_modules/@pact-toolbox/tsdown/tsdown.config.node.ts",
+    "lint": "oxlint --import-plugin --deny-warnings",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "prepack": "pnpm run build",
+    "release": "pnpm test && pnpm publish",
+    "test:watch": "vitest",
+    "format": "prettier --check . --ignore-path ../../.gitignore"
+  },
+  "dependencies": {
+    "@pact-toolbox/node-utils": "workspace:*",
+    "@pact-toolbox/utils": "workspace:*",
+    "dockerode": "^4.0.7",
+    "tar-fs": "^3.0.10",
+    "yaml": "^2.8.0"
+  },
+  "devDependencies": {
+    "@types/dockerode": "^3.3.41",
+    "@types/node": "^24.0.4",
+    "@types/tar-fs": "^2.0.4",
+    "oxlint": "^1.3.0",
+    "tsdown": "^0.12.9",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.4"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "keywords": [
+    "docker",
+    "container",
+    "orchestration",
+    "devops",
+    "pact",
+    "kadena"
+  ]
+}
