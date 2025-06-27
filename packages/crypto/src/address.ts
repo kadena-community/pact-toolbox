@@ -218,7 +218,29 @@ export async function exportBase16Key(key: CryptoKey): Promise<string> {
   if (algorithmName !== "Ed25519") {
     throw new Error(`Key has an invalid algorithm: ${algorithmName}`);
   }
-  const keyBytes = await crypto.subtle.exportKey("raw", key);
+  
+  let keyBytes: ArrayBuffer;
+  
+  if (key.type === "public") {
+    // Public keys can be exported in raw format
+    keyBytes = await crypto.subtle.exportKey("raw", key);
+  } else if (key.type === "private") {
+    // Private keys need to be exported in pkcs8 format
+    const pkcs8Bytes = await crypto.subtle.exportKey("pkcs8", key);
+    const pkcs8Array = new Uint8Array(pkcs8Bytes);
+    
+    // Extract the 32-byte private key from the PKCS#8 structure
+    // PKCS#8 for Ed25519 has a 16-byte header followed by the 32-byte private key
+    if (pkcs8Array.length !== 48) {
+      throw new Error(`Invalid PKCS#8 key length: expected 48 bytes, got ${pkcs8Array.length}`);
+    }
+    
+    // Extract just the private key bytes (last 32 bytes)
+    keyBytes = pkcs8Array.slice(16).buffer;
+  } else {
+    throw new Error(`Unsupported key type: ${key.type}`);
+  }
+  
   const uint8Array = new Uint8Array(keyBytes);
   
   // Convert bytes to hex string using new encoding utilities

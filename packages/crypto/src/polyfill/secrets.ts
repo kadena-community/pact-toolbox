@@ -153,7 +153,7 @@ export async function exportKeyPolyfill(format: "jwk", key: CryptoKey): Promise<
 export async function exportKeyPolyfill(format: KeyFormat, key: CryptoKey): Promise<ArrayBuffer>;
 export async function exportKeyPolyfill(format: KeyFormat, key: CryptoKey): Promise<ArrayBuffer | JsonWebKey> {
   if (key.extractable === false) {
-    throw new DOMException("key is not extractable", "InvalidAccessException");
+    throw new DOMException("key is not extractable", "InvalidAccessError");
   }
   switch (format) {
     case "raw": {

@@ -105,7 +105,10 @@ describe('@pact-toolbox/crypto', () => {
 
     test('genKeyPair generates and exports keypair', async () => {
       const pubKeyBytes = new Uint8Array(32).fill(1);
-      const privKeyBytes = new Uint8Array(32).fill(2);
+      // PKCS#8 format for Ed25519: 16-byte header + 32-byte private key = 48 bytes total
+      const privKeyBytesPkcs8 = new Uint8Array(48);
+      privKeyBytesPkcs8.fill(0, 0, 16); // Header (simplified for test)
+      privKeyBytesPkcs8.fill(2, 16, 48); // Private key bytes
       
       mockCrypto.subtle.generateKey.mockResolvedValue({
         publicKey: { type: 'public', algorithm: { name: 'Ed25519' }, extractable: true },
@@ -113,7 +116,7 @@ describe('@pact-toolbox/crypto', () => {
       });
       mockCrypto.subtle.exportKey
         .mockResolvedValueOnce(pubKeyBytes)
-        .mockResolvedValueOnce(privKeyBytes);
+        .mockResolvedValueOnce(privKeyBytesPkcs8);
 
       const keyPair = await genKeyPair();
 
@@ -431,9 +434,13 @@ describe('@pact-toolbox/crypto', () => {
       };
       
       mockCrypto.subtle.generateKey.mockResolvedValue(mockKeyPair);
+      const privKeyBytesPkcs8Integration = new Uint8Array(48);
+      privKeyBytesPkcs8Integration.fill(0, 0, 16); // Header (simplified for test)
+      privKeyBytesPkcs8Integration.fill(2, 16, 48); // Private key bytes
+      
       mockCrypto.subtle.exportKey
         .mockResolvedValueOnce(new Uint8Array(32).fill(1)) // public key
-        .mockResolvedValueOnce(new Uint8Array(32).fill(2)); // private key
+        .mockResolvedValueOnce(privKeyBytesPkcs8Integration); // private key in PKCS#8 format
       
       const _keyPair = await genKeyPair();
 
