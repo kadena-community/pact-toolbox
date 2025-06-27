@@ -1,4 +1,4 @@
-import type { ContainerConfig } from "@pact-toolbox/container-orchestrator";
+import type { DockerServiceConfig } from "@pact-toolbox/docker";
 import {
   CHAINWEB_NODE_IMAGE,
   P2P_PORT,
@@ -37,25 +37,26 @@ export function createChainwebNodeService({
   nodeServicePort = NODE_SERVICE_PORT,
   p2pPort = P2P_PORT,
   volume = `devnet_db_${clusterId.replace("-", "_")}`,
-}: Partial<ChainwebNodeServiceOptions>): ContainerConfig {
+}: Partial<ChainwebNodeServiceOptions>): DockerServiceConfig {
   return {
-    id: BOOTSTRAP_NODE_SERVICE_NAME,
-    name: BOOTSTRAP_NODE_SERVICE_NAME,
-    image: image.split(':')[0] || image,
-    tag: image.split(':')[1] || 'latest',
+    image,
+    containerName: BOOTSTRAP_NODE_SERVICE_NAME,
     labels: {
       "com.chainweb.devnet.description": "Devnet Bootstrap Node",
       "com.chainweb.devnet.node": "",
       "com.chainweb.devnet.bootstrap-node": "",
     },
     restart: "unless-stopped",
+    stopSignal: "SIGINT",
+    stopGracePeriod: 20,
+    ulimits: [{ Name: "nofile", Soft: 65535, Hard: 65535 }],
     volumes: [
-      persistDb ? { host: volume, container: "/chainweb/db", mode: "rw" } : undefined,
-      { host: `${DEVNET_CONFIGS_DIR}/devnet-bootstrap-node.cert.pem`, container: "/chainweb/devnet-bootstrap-node.cert.pem", mode: "ro" },
-      { host: `${DEVNET_CONFIGS_DIR}/devnet-bootstrap-node.key.pem`, container: "/chainweb/devnet-bootstrap-node.key.pem", mode: "ro" },
-      { host: `${DEVNET_CONFIGS_DIR}/chainweb-node.common.yaml`, container: "/chainweb/config/chainweb-node.common.yaml", mode: "ro" },
-      { host: `${DEVNET_CONFIGS_DIR}/chainweb-node.logging.yaml`, container: "/chainweb/config/chainweb-node.logging.yaml", mode: "ro" },
-    ].filter(Boolean) as ContainerConfig['volumes'],
+      persistDb ? `${volume}:/chainweb/db` : undefined,
+      `${DEVNET_CONFIGS_DIR}/devnet-bootstrap-node.cert.pem:/chainweb/devnet-bootstrap-node.cert.pem:ro`,
+      `${DEVNET_CONFIGS_DIR}/devnet-bootstrap-node.key.pem:/chainweb/devnet-bootstrap-node.key.pem:ro`,
+      `${DEVNET_CONFIGS_DIR}/chainweb-node.common.yaml:/chainweb/config/chainweb-node.common.yaml:ro`,
+      `${DEVNET_CONFIGS_DIR}/chainweb-node.logging.yaml:/chainweb/config/chainweb-node.logging.yaml:ro`,
+    ].filter(Boolean) as string[],
     entrypoint: [
       "/chainweb/chainweb-node",
       "+RTS",
@@ -83,18 +84,19 @@ export function createChainwebNodeService({
       "--database-directory=/chainweb/db",
       "--disable-pow",
     ],
-    env: { DISABLE_POW_VALIDATION: "true" },
+    expose: [`${nodeServicePort}`, `${p2pPort}`],
+    environment: ["DISABLE_POW_VALIDATION=true"],
     healthCheck: {
-      test: [
+      Test: [
         "CMD",
         "/bin/bash",
         "-c",
         `exec 3<>/dev/tcp/localhost/${nodeServicePort}; printf "GET /health-check HTTP/1.1\\r\\nhost: http://localhost:${nodeServicePort}\\r\\nConnection: close\\r\\n\\r\\n" >&3; grep -q "200 OK" <&3 || exit 1`,
       ],
-      interval: "30s",
-      timeout: "30s",
-      retries: 5,
-      startPeriod: "120s",
+      Interval: 30e9,
+      Timeout: 30e9,
+      Retries: 5,
+      StartPeriod: 120e9,
     },
   };
 }
@@ -113,14 +115,15 @@ export function createMiningClientService({
   constantDelayBlockTime = 5,
   miningClientPort = MINING_CLIENT_PORT,
   nodeServicePort = NODE_SERVICE_PORT,
-}: Partial<MiningClientServiceOptions> = {}): ContainerConfig {
+}: Partial<MiningClientServiceOptions> = {}): DockerServiceConfig {
   return {
-    id: MINING_CLIENT_SERVICE_NAME,
-    name: MINING_CLIENT_SERVICE_NAME,
-    image: image.split(':')[0] || image,
-    tag: image.split(':')[1] || 'latest',
+    containerName: MINING_CLIENT_SERVICE_NAME,
+    image,
     restart: "unless-stopped",
-    dependencies: [BOOTSTRAP_NODE_SERVICE_NAME],
+    dependsOn: {
+      [BOOTSTRAP_NODE_SERVICE_NAME]: { condition: "service_healthy" },
+    },
+    // entrypoint: ["/app/chainweb-mining-client"],
     command: [
       `--public-key=${MINER_PUBLIC_KEY}`,
       `--node=${BOOTSTRAP_NODE_SERVICE_NAME}:${nodeServicePort}`,
@@ -131,7 +134,15 @@ export function createMiningClientService({
       "--no-tls",
       `--constant-delay-block-time=${constantDelayBlockTime}`,
     ],
-    ports: [{ host: miningClientPort, container: miningClientPort }],
+    // healthCheck: {
+    //   Test: ["CMD", "/bin/bash", "-c", `curl http://localhost:${miningClientPort}/make-blocks -d '{}'`],
+    //   Interval: 30e9,
+    //   Timeout: 30e9,
+    //   Retries: 5,
+    //   StartPeriod: 120e9,
+    // },
+
+    expose: [`${miningClientPort}`],
   };
 }
 
@@ -147,7 +158,7 @@ export function createMiningTriggerService({
   chainwebServiceEndpoint = `http://${BOOTSTRAP_NODE_SERVICE_NAME}:${NODE_SERVICE_PORT}`,
   miningTriggerPort = MINING_TRIGGER_PORT,
   miningConfig = {},
-}: Partial<MiningTriggerServiceOptions> = {}): ContainerConfig {
+}: Partial<MiningTriggerServiceOptions> = {}): DockerServiceConfig {
   const {
     transactionBatchPeriod = 0.05,
     confirmationCount = 5,
@@ -158,10 +169,8 @@ export function createMiningTriggerService({
     disableConfirmationWorker = false,
   } = miningConfig;
   return {
-    id: MINING_TRIGGER_SERVICE_NAME,
-    name: MINING_TRIGGER_SERVICE_NAME,
-    image: MINING_TRIGGER_IMAGE.split(':')[0] || MINING_TRIGGER_IMAGE,
-    tag: MINING_TRIGGER_IMAGE.split(':')[1] || 'latest',
+    containerName: MINING_TRIGGER_SERVICE_NAME,
+    image: MINING_TRIGGER_IMAGE,
     entrypoint: ["/usr/local/bin/mining-trigger"],
     command: [
       `--port=${miningTriggerPort}`,
@@ -176,9 +185,12 @@ export function createMiningTriggerService({
       disableConfirmationWorker ? "--disable-confirmation-worker" : undefined,
       "--dev-request-logger",
     ].filter(Boolean) as string[],
-    dependencies: [BOOTSTRAP_NODE_SERVICE_NAME, MINING_CLIENT_SERVICE_NAME],
+    dependsOn: {
+      [BOOTSTRAP_NODE_SERVICE_NAME]: { condition: "service_healthy" },
+      [MINING_CLIENT_SERVICE_NAME]: { condition: "service_healthy" },
+    },
     restart: "unless-stopped",
-    ports: [{ host: miningTriggerPort, container: miningTriggerPort }],
+    expose: [`${miningTriggerPort}`],
   };
 }
 
@@ -190,24 +202,24 @@ interface ApiProxyServiceOptions {
 export function createApiProxyService({
   image = "nginx:alpine",
   port = DEVNET_PUBLIC_PORT,
-}: Partial<ApiProxyServiceOptions> = {}): ContainerConfig {
+}: Partial<ApiProxyServiceOptions> = {}): DockerServiceConfig {
   return {
-    id: API_PROXY_SERVICE_NAME,
-    name: API_PROXY_SERVICE_NAME,
-    image: image.split(':')[0] || image,
-    tag: image.split(':')[1] || 'latest',
+    containerName: API_PROXY_SERVICE_NAME,
+    image,
     labels: {
       "com.chainweb.devnet.description": "Devnet API Proxy",
       "com.chainweb.devnet.api-proxy": "",
     },
-    dependencies: [BOOTSTRAP_NODE_SERVICE_NAME, MINING_CLIENT_SERVICE_NAME, MINING_TRIGGER_SERVICE_NAME],
-    volumes: [
-      { host: `${DEVNET_CONFIGS_DIR}/nginx.api.minimal.conf`, container: "/etc/nginx/conf.d/default.conf", mode: "ro" }
-    ],
+    dependsOn: {
+      [BOOTSTRAP_NODE_SERVICE_NAME]: { condition: "service_healthy" },
+      [MINING_CLIENT_SERVICE_NAME]: { condition: "service_healthy" },
+      [MINING_TRIGGER_SERVICE_NAME]: { condition: "service_healthy" },
+    },
+    volumes: [`${DEVNET_CONFIGS_DIR}/nginx.api.minimal.conf:/etc/nginx/conf.d/default.conf:ro`],
     ports: [
       {
-        host: port,
-        container: 80,
+        target: 80,
+        published: port,
         protocol: "tcp",
       },
     ],
