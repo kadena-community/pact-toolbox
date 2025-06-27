@@ -108,6 +108,12 @@ export const ready: typeof logger.ready = logger.ready.bind(logger);
 /** Log start messages (typically for process/task initiation) */
 export const start: typeof logger.start = logger.start.bind(logger);
 
+/** Log general messages */
+export const log: typeof logger.log = logger.log.bind(logger);
+
+/** Display a message in a box for emphasis */
+export const box: typeof logger.box = logger.box.bind(logger);
+
 /**
  * Creates a tagged logger for a specific package or component.
  * Tagged loggers prefix all messages with the tag for easier identification.

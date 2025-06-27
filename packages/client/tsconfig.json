@@ -1,8 +1,0 @@
-{
-  "extends": "@pact-toolbox/tsconfig/lib",
-  "compilerOptions": {
-    "jsx": "react-jsx",
-    "lib": ["DOM", "ESNext"]
-  },
-  "include": ["src", "tests"]
-}

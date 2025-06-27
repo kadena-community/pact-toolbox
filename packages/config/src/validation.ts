@@ -43,8 +43,11 @@ export function validateUrl(url: unknown, field: string): string {
     throw new ConfigValidationError(`${field} must be a string`, field, url);
   }
 
-  // Allow placeholders in URLs
-  const urlWithoutPlaceholders = url.replace(/{[^}]+}/g, "placeholder");
+  // Allow placeholders in URLs - replace with valid values for validation
+  const urlWithoutPlaceholders = url
+    .replace(/{port}/g, "9091")           // Replace {port} with valid port
+    .replace(/{networkId}/g, "testnet")   // Replace {networkId} with valid network ID
+    .replace(/{chainId}/g, "0");          // Replace {chainId} with valid chain ID
 
   try {
     new URL(urlWithoutPlaceholders);

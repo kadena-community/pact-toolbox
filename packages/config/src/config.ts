@@ -1,4 +1,5 @@
 import type { CommonNetworkConfig, StandardPrelude } from "@pact-toolbox/types";
+
 import { loadConfig } from "c12";
 
 import { defaultConfig } from "./defaults";
@@ -217,7 +218,7 @@ export interface PactToolboxConfigObj<T extends Record<string, NetworkConfig> = 
   contractsDir?: string;
   scriptsDir?: string;
   pactVersion?: string;
-  preludes?: StandardPrelude[];
+  preludes?: (StandardPrelude | (string & {}))[];
   downloadPreludes?: boolean;
   deployPreludes?: boolean;
 }
