@@ -12,7 +12,7 @@ env:
   DEBUG: napi:*
   APP_NAME: pact-transformer
   MACOSX_DEPLOYMENT_TARGET: "10.13"
-  CARGO_INCREMENTAL: '1'
+  CARGO_INCREMENTAL: "1"
 
 on:
   push:
@@ -44,8 +44,7 @@ jobs:
         with:
           node-version: 22
       - uses: pnpm/action-setup@v4
-        with:
-          version: 9
+
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -59,7 +58,7 @@ jobs:
         run: cd crates/pact-transformer && cargo fmt -- --check
       - name: Clippy
         run: cd crates/pact-transformer && cargo clippy -- -D warnings
-  
+
   build:
     needs: lint
     strategy:
@@ -156,8 +155,7 @@ jobs:
         with:
           node-version: 22
       - uses: pnpm/action-setup@v4
-        with:
-          version: 9
+
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         if: ${{ !matrix.settings.docker }}
@@ -227,8 +225,7 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
       - uses: pnpm/action-setup@v4
-        with:
-          version: 9
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - name: Download artifacts
@@ -260,8 +257,7 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
       - uses: pnpm/action-setup@v4
-        with:
-          version: 9
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - name: Download artifacts
@@ -293,8 +289,7 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
       - uses: pnpm/action-setup@v4
-        with:
-          version: 9
+
       - name: Install dependencies
         run: |
           pnpm config set supportedArchitectures.libc "musl"
@@ -445,7 +440,7 @@ jobs:
             corepack enable
             corepack prepare pnpm@9 --activate
             cd crates/pact-transformer && pnpm test
-  
+
   build-freebsd:
     runs-on: ubuntu-latest
     name: Build FreeBSD
@@ -485,7 +480,7 @@ jobs:
           name: bindings-x86_64-unknown-freebsd
           path: crates/pact-transformer/${{ env.APP_NAME }}.*.node
           if-no-files-found: error
-  
+
   test-wasi:
     name: Test WASI target
     runs-on: ubuntu-latest
@@ -498,8 +493,7 @@ jobs:
         with:
           node-version: 22
       - uses: pnpm/action-setup@v4
-        with:
-          version: 9
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - name: Download WASI artifact
@@ -515,7 +509,7 @@ jobs:
           cd crates/pact-transformer
           wasmtime --version
           node --experimental-wasi-unstable-preview1 --experimental-wasm-threads ./test-wasi.mjs
-  
+
   publish:
     name: Publish
     runs-on: ubuntu-latest
@@ -536,8 +530,7 @@ jobs:
         with:
           node-version: 22
       - uses: pnpm/action-setup@v4
-        with:
-          version: 9
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - name: Download all artifacts
