@@ -1,0 +1,33 @@
+{
+  "name": "@pact-toolbox/pact-transformer-android-arm-eabi",
+  "version": "0.1.0",
+  "os": [
+    "android"
+  ],
+  "cpu": [
+    "arm"
+  ],
+  "main": "pact-transformer.android-arm-eabi.node",
+  "files": [
+    "pact-transformer.android-arm-eabi.node"
+  ],
+  "description": "High-performance Pact code transformer with Rust implementation",
+  "keywords": [
+    "blockchain",
+    "kadena",
+    "pact",
+    "parser",
+    "transformer",
+    "rust",
+    "napi"
+  ],
+  "author": "Salama Ashoush <salamaashoush@gmail.com>",
+  "license": "MIT",
+  "engines": {
+    "node": ">= 20"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": "kadena-community/pact-toolbox"
+}

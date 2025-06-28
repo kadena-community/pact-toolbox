@@ -2,6 +2,7 @@ pub mod trigger_state;
 
 use std::collections::HashMap;
 use std::io;
+use std::sync::Arc;
 use std::time::Duration;
 
 use actix_cors::Cors;
@@ -9,6 +10,7 @@ use actix_web::{
     App, HttpRequest, HttpResponse, HttpServer, Responder, http::StatusCode, middleware, web,
 };
 use clap::Parser;
+use once_cell::sync::Lazy;
 use rand;
 use reqwest::{Client, header};
 use tokio::sync::mpsc;
@@ -18,9 +20,23 @@ use tracing_subscriber::{self, EnvFilter};
 
 use crate::trigger_state::{ChainId, Confirmations, TTHandle};
 
+// Global HTTP client - reuse connections
+static HTTP_CLIENT: Lazy<Client> = Lazy::new(|| {
+    Client::builder()
+        .pool_max_idle_per_host(10)
+        .pool_idle_timeout(Duration::from_secs(30))
+        .timeout(Duration::from_secs(30))
+        .build()
+        .expect("Failed to create HTTP client")
+});
+
+// Constants
+const MAX_CHAINS: u8 = 20;
+const DEFAULT_CHANNEL_BUFFER: usize = 100;
+
 struct AppState {
     tt_handle: TTHandle,
-    chainweb_service_endpoint: String,
+    chainweb_service_endpoint: Arc<str>,
     default_confirmation: usize,
     transaction_batch_period: f64,
 }
@@ -70,7 +86,7 @@ async fn main() -> io::Result<()> {
 
     info!("Starting mining trigger with args: {:?}", args);
 
-    let (tt_handle, tt_receiver) = TTHandle::new(100);
+    let (tt_handle, tt_receiver) = TTHandle::new(DEFAULT_CHANNEL_BUFFER);
     let mut handles = vec![];
 
     if !args.disable_idle_worker {
@@ -97,7 +113,7 @@ async fn main() -> io::Result<()> {
 
     let app_state = web::Data::new(AppState {
         tt_handle: tt_handle.clone(),
-        chainweb_service_endpoint: args.chainweb_service_endpoint,
+        chainweb_service_endpoint: Arc::from(args.chainweb_service_endpoint.as_str()),
         default_confirmation: args.confirmation_count,
         transaction_batch_period: args.transaction_batch_period,
     });
@@ -140,16 +156,23 @@ async fn proxy_send(
     data: web::Data<AppState>,
 ) -> impl Responder {
     info!("Received request: {:?}", req);
-    let network_id: String = req.match_info().get("network_id").unwrap().parse().unwrap();
-    let chain_id: u8 = req.match_info().get("chain_id").unwrap().parse().unwrap();
+    // Use proper error handling instead of unwrap
+    let network_id = match req.match_info().get("network_id") {
+        Some(id) => id,
+        None => return HttpResponse::BadRequest().body("Missing network_id"),
+    };
+    let chain_id: u8 = match req.match_info().get("chain_id").and_then(|id| id.parse().ok()) {
+        Some(id) => id,
+        None => return HttpResponse::BadRequest().body("Invalid chain_id"),
+    };
 
-    let client = Client::new();
+    let client = &*HTTP_CLIENT;
     let url = format!(
         "{}/chainweb/0.0/{}/chain/{}/pact/api/v1/send",
         data.chainweb_service_endpoint, network_id, chain_id
     );
 
-    let mut headers = header::HeaderMap::new();
+    let mut headers = header::HeaderMap::with_capacity(req.headers().len());
     for (name, value) in req.headers().iter() {
         if name != "host" {
             if let Ok(reqwest_name) = header::HeaderName::from_bytes(name.as_str().as_bytes()) {
@@ -210,7 +233,7 @@ async fn confirmation_trigger(
     tt_handle: TTHandle,
     mut tt_receiver: mpsc::Receiver<()>,
 ) {
-    let client = Client::new();
+    let client = &*HTTP_CLIENT;
     let confirmation_trigger_period = Duration::from_secs(confirmation_trigger_period);
     let mining_cooldown = Duration::from_secs_f64(mining_cooldown);
 
@@ -240,7 +263,10 @@ async fn confirmation_trigger(
         );
 
         for _ in 0..confirmations.0 {
-            let map: HashMap<String, usize> = chains.iter().map(|c| (c.0.to_string(), 1)).collect();
+            let mut map = HashMap::with_capacity(chains.len());
+            for chain in &chains {
+                map.insert(chain.0.to_string(), 1);
+            }
 
             let res =
                 client.post(format!("{}/make-blocks", mining_client_url)).json(&map).send().await;
@@ -267,13 +293,13 @@ async fn confirmation_trigger(
 }
 
 async fn idle_trigger(mining_client_url: &str, idle_trigger_period: u64) {
-    let client = Client::new();
+    let client = &*HTTP_CLIENT;
     loop {
         sleep(Duration::from_secs(idle_trigger_period)).await;
         info!("Idle trigger fired");
 
-        let mut map = HashMap::new();
-        let chain_id = rand::random::<u8>() % 20;
+        let mut map = HashMap::with_capacity(1);
+        let chain_id = rand::random::<u8>() % MAX_CHAINS;
         map.insert(chain_id.to_string(), 1);
 
         let res = client.post(format!("{}/make-blocks", mining_client_url)).json(&map).send().await;

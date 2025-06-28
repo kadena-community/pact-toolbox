@@ -13,7 +13,15 @@ export default defineConfig({
   },
   target: "es2022",
   platform: "node",
-  external: Object.keys(packageJson.dependencies).concat(Object.keys(packageJson.devDependencies)),
+  external: [
+    ...Object.keys(packageJson.dependencies),
+    ...Object.keys(packageJson.devDependencies),
+    // Explicitly externalize problematic native modules
+    "ssh2",
+    "cpu-features",
+    "tree-sitter",
+    "tree-sitter-pact"
+  ],
   clean: true,
   publint: true,
 });

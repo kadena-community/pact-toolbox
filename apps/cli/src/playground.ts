@@ -1,5 +1,5 @@
 import { createPactTestEnv } from "@pact-toolbox/test";
-import { logger } from "@pact-toolbox/utils";
+import { logger } from "@pact-toolbox/node-utils";
 
 const table: Record<string, number> = {};
 
@@ -10,7 +10,7 @@ async function bench(label: string, f: () => Promise<void>) {
 
   const time = end[0] * 1000 + end[1] / 1000000;
   table[label] = time;
-  console.log(`${label}: ${time}ms`);
+  logger.info(`${label}: ${time}ms`);
   return time;
 }
 async function main() {
@@ -93,7 +93,7 @@ async function main() {
   );
 
   logger.info(`Fastest: ${fastest[0]}: ${fastest[1]}ms`);
-  console.table(table);
+  logger.info("Benchmark results:", table);
 }
 
-main().catch(console.error);
+main().catch(logger.error);

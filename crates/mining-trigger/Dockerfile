@@ -5,9 +5,6 @@ FROM rust:alpine AS builder
 # Install build dependencies
 RUN apk add --no-cache \
     musl-dev \
-    openssl-dev \
-    openssl-libs-static \
-    pkgconfig \
     ca-certificates
 
 # Create app directory
@@ -40,21 +37,18 @@ RUN mkdir -p src && \
 # Copy actual source code
 COPY src ./src
 
+# Set environment variables for fully static build
+ENV RUSTFLAGS="-C target-feature=+crt-static"
+
 # Build with maximum optimizations (already configured in Cargo.toml)
 RUN cargo build --release --target $(cat /target.txt) && \
     cp target/$(cat /target.txt)/release/chainweb-mining-trigger /chainweb-mining-trigger
 
-# Runtime stage - using alpine for proper runtime support
-FROM alpine:latest
+# Runtime stage - using distroless for minimal attack surface
+FROM gcr.io/distroless/static:nonroot
 
-# Install CA certificates for HTTPS connections
-RUN apk add --no-cache ca-certificates
-
-# Copy the binary
+# Copy the binary (distroless already has nonroot user)
 COPY --from=builder /chainweb-mining-trigger /chainweb-mining-trigger
-
-# Make sure it's executable
-RUN chmod +x /chainweb-mining-trigger
 
 # Set entrypoint
 ENTRYPOINT ["/chainweb-mining-trigger"]

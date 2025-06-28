@@ -4,7 +4,7 @@ import { join } from "pathe";
 
 import { resolveConfig } from "@pact-toolbox/config";
 import { generateModule } from "@pact-toolbox/fabricator";
-import { logger, writeFile } from "@pact-toolbox/utils";
+import { logger, writeFile } from "@pact-toolbox/node-utils";
 
 export const moduleCommand = defineCommand({
   meta: {

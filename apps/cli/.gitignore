@@ -1,6 +1,15 @@
+# Build outputs
+dist/
+build/
+lib/
+bin/pact-toolbox
+
+# Dependencies
+node_modules/
+
 # Logs
-logs
-log
+logs/
+log/
 *.log
 npm-debug.log*
 yarn-debug.log*
@@ -8,25 +17,39 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
 *.local
 
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
 !.vscode/settings.json
-.idea
+.idea/
 .DS_Store
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
-.env
+
+# TypeScript
+*.tsbuildinfo
+
+# Test outputs
+coverage/
+test-results/
+
+# Pact specific
+pact/prelude/
 *.tmp.pact
-pact/prelude
-coverage
-.pact-toolbox
-salama
+pact/**/*.d.ts
+.pact-toolbox/
+
+# Development artifacts
+dist-ssr/
+.turbo/

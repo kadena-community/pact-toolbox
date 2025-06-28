@@ -1,0 +1,560 @@
+name: pact-transformer CI
+
+permissions:
+  id-token: write
+  contents: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DEBUG: napi:*
+  APP_NAME: pact-transformer
+  MACOSX_DEPLOYMENT_TARGET: "10.13"
+  CARGO_INCREMENTAL: '1'
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - "@pact-toolbox/pact-transformer@*"
+    paths-ignore:
+      - "**/*.md"
+      - "LICENSE"
+      - "**/*.gitignore"
+      - ".editorconfig"
+      - "docs/**"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "crates/pact-transformer/**"
+      - ".github/workflows/pact-transformer-ci.yml"
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          components: rustfmt, clippy
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Lint TypeScript/JavaScript
+        run: cd crates/pact-transformer && pnpm lint
+      - name: Check Rust formatting
+        run: cd crates/pact-transformer && cargo fmt -- --check
+      - name: Clippy
+        run: cd crates/pact-transformer && cargo clippy -- -D warnings
+  
+  build:
+    needs: lint
+    strategy:
+      fail-fast: false
+      matrix:
+        settings:
+          - host: macos-latest
+            target: x86_64-apple-darwin
+            build: |
+              cd crates/pact-transformer
+              pnpm build
+              strip -x *.node
+          - host: windows-latest
+            build: cd crates/pact-transformer && pnpm build
+            target: x86_64-pc-windows-msvc
+          - host: windows-latest
+            build: |
+              cd crates/pact-transformer
+              pnpm build --target i686-pc-windows-msvc
+            target: i686-pc-windows-msvc
+          - host: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            docker: ghcr.io/napi-rs/napi-rs/nodejs-rust:lts-debian
+            build: |-
+              set -e &&
+              cd crates/pact-transformer &&
+              pnpm build --target x86_64-unknown-linux-gnu &&
+              strip *.node
+          - host: ubuntu-latest
+            target: x86_64-unknown-linux-musl
+            build: |-
+              cd crates/pact-transformer &&
+              pnpm build --target x86_64-unknown-linux-musl --use-napi-cross &&
+              strip *.node
+          - host: macos-latest
+            target: aarch64-apple-darwin
+            build: |
+              cd crates/pact-transformer
+              pnpm build --target aarch64-apple-darwin
+              strip -x *.node
+          - host: ubuntu-latest
+            target: aarch64-unknown-linux-gnu
+            docker: ghcr.io/napi-rs/napi-rs/nodejs-rust:lts-debian-aarch64
+            build: |-
+              set -e &&
+              cd crates/pact-transformer &&
+              pnpm build --target aarch64-unknown-linux-gnu &&
+              aarch64-unknown-linux-gnu-strip *.node
+          - host: ubuntu-latest
+            target: armv7-unknown-linux-gnueabihf
+            setup: |
+              sudo apt-get update
+              sudo apt-get install gcc-arm-linux-gnueabihf -y
+            build: |
+              cd crates/pact-transformer
+              pnpm build --target armv7-unknown-linux-gnueabihf
+              arm-linux-gnueabihf-strip *.node
+          - host: ubuntu-latest
+            target: aarch64-unknown-linux-musl
+            build: |-
+              cd crates/pact-transformer &&
+              pnpm build --target aarch64-unknown-linux-musl --use-napi-cross &&
+              ${ANDROID_NDK_LATEST_HOME}/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip *.node || strip *.node
+          - host: windows-latest
+            target: aarch64-pc-windows-msvc
+            build: cd crates/pact-transformer && pnpm build --target aarch64-pc-windows-msvc
+          - host: ubuntu-latest
+            target: aarch64-linux-android
+            build: |
+              cd crates/pact-transformer
+              export CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER="${ANDROID_NDK_LATEST_HOME}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang"
+              pnpm build --target aarch64-linux-android
+              ${ANDROID_NDK_LATEST_HOME}/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip *.node
+          - host: ubuntu-latest
+            target: armv7-linux-androideabi
+            build: |
+              cd crates/pact-transformer
+              export CARGO_TARGET_ARMV7_LINUX_ANDROIDEABI_LINKER="${ANDROID_NDK_LATEST_HOME}/toolchains/llvm/prebuilt/linux-x86_64/bin/armv7a-linux-androideabi24-clang"
+              pnpm build --target armv7-linux-androideabi
+              ${ANDROID_NDK_LATEST_HOME}/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip *.node
+          - host: ubuntu-latest
+            target: wasm32-wasip1-threads
+            build: |
+              cd crates/pact-transformer
+              export CARGO_TARGET_WASM32_WASIP1_THREADS_RUNNER="wasmtime --wasm-features threads,bulk-memory --wasi-modules experimental-wasi-threads"
+              pnpm build --target wasm32-wasip1-threads
+    name: stable - ${{ matrix.settings.target }} - node@22
+    runs-on: ${{ matrix.settings.host }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup node
+        uses: actions/setup-node@v4
+        if: ${{ !matrix.settings.docker }}
+        with:
+          node-version: 22
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        if: ${{ !matrix.settings.docker }}
+        with:
+          toolchain: stable
+          targets: ${{ matrix.settings.target }}
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            .cargo-cache
+            target/
+          key: ${{ matrix.settings.target }}-cargo-${{ matrix.settings.host }}
+      - name: Setup toolchain
+        run: ${{ matrix.settings.setup }}
+        if: ${{ matrix.settings.setup }}
+        shell: bash
+      - uses: goto-bus-stop/setup-zig@v2
+        if: ${{ contains(matrix.settings.target, 'musl') }}
+        with:
+          version: 0.13.0
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Build in docker
+        uses: addnab/docker-run-action@v3
+        if: ${{ matrix.settings.docker }}
+        with:
+          image: ${{ matrix.settings.docker }}
+          options: "--user 0:0 -v ${{ github.workspace }}/.cargo-cache/git/db:/usr/local/cargo/git/db -v ${{ github.workspace }}/.cargo/registry/cache:/usr/local/cargo/registry/cache -v ${{ github.workspace }}/.cargo/registry/index:/usr/local/cargo/registry/index -v ${{ github.workspace }}:/build -w /build"
+          run: ${{ matrix.settings.build }}
+      - name: Build
+        run: ${{ matrix.settings.build }}
+        if: ${{ !matrix.settings.docker }}
+        shell: bash
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: bindings-${{ matrix.settings.target }}
+          path: |
+            crates/pact-transformer/${{ env.APP_NAME }}.*.node
+            crates/pact-transformer/${{ env.APP_NAME }}.*.wasm
+          if-no-files-found: error
+  test-macOS-windows-binding:
+    name: Test bindings on ${{ matrix.settings.target }} - node@${{ matrix.node }}
+    needs:
+      - build
+    strategy:
+      fail-fast: false
+      matrix:
+        settings:
+          - host: windows-latest
+            target: x86_64-pc-windows-msvc
+          - host: macos-latest
+            target: x86_64-apple-darwin
+        node:
+          - "20"
+          - "22"
+          - "24"
+    runs-on: ${{ matrix.settings.host }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: bindings-${{ matrix.settings.target }}
+          path: crates/pact-transformer
+      - name: List packages
+        run: ls -R .
+        shell: bash
+      - name: Test bindings
+        run: cd crates/pact-transformer && pnpm test
+  test-linux-x64-gnu-binding:
+    name: Test bindings on Linux-x64-gnu - node@${{ matrix.node }}
+    needs:
+      - build
+    strategy:
+      fail-fast: false
+      matrix:
+        node:
+          - "20"
+          - "22"
+          - "24"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: bindings-x86_64-unknown-linux-gnu
+          path: crates/pact-transformer
+      - name: List packages
+        run: ls -R .
+        shell: bash
+      - name: Test bindings
+        run: cd crates/pact-transformer && pnpm test
+  test-linux-x64-musl-binding:
+    name: Test bindings on x86_64-unknown-linux-musl - node@${{ matrix.node }}
+    needs:
+      - build
+    strategy:
+      fail-fast: false
+      matrix:
+        node:
+          - "20"
+          - "22"
+          - "24"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - name: Install dependencies
+        run: |
+          pnpm config set supportedArchitectures.libc "musl"
+          pnpm install --frozen-lockfile
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: bindings-x86_64-unknown-linux-musl
+          path: crates/pact-transformer
+      - name: List packages
+        run: ls -R .
+        shell: bash
+      - name: Test bindings
+        run: cd crates/pact-transformer && pnpm test
+  test-linux-aarch64-gnu-binding:
+    name: Test bindings on aarch64-unknown-linux-gnu - node@${{ matrix.node }}
+    needs:
+      - build
+    strategy:
+      fail-fast: false
+      matrix:
+        node:
+          - "20"
+          - "22"
+          - "24"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: bindings-aarch64-unknown-linux-gnu
+          path: crates/pact-transformer
+      - name: List packages
+        run: ls -R .
+        shell: bash
+      - name: Install dependencies
+        run: |
+          pnpm config set supportedArchitectures.cpu "arm64"
+          pnpm config set supportedArchitectures.libc "glibc"
+          pnpm install --frozen-lockfile
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+      - run: docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+      - name: Setup and run tests
+        uses: addnab/docker-run-action@v3
+        with:
+          image: node:${{ matrix.node }}-slim
+          options: "--platform linux/arm64 -v ${{ github.workspace }}:/build -w /build"
+          run: |
+            set -e
+            apt-get update
+            apt-get install -y ca-certificates gnupg
+            mkdir -p /etc/apt/keyrings
+            curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg
+            echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_${{ matrix.node }}.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list
+            apt-get update
+            apt-get install -y nodejs npm
+            npm install -g corepack
+            corepack enable
+            corepack prepare pnpm@9 --activate
+            cd crates/pact-transformer && pnpm test
+  test-linux-aarch64-musl-binding:
+    name: Test bindings on aarch64-unknown-linux-musl - node@lts
+    needs:
+      - build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: bindings-aarch64-unknown-linux-musl
+          path: crates/pact-transformer
+      - name: List packages
+        run: ls -R .
+        shell: bash
+      - name: Install dependencies
+        run: |
+          pnpm config set supportedArchitectures.cpu "arm64"
+          pnpm config set supportedArchitectures.libc "musl"
+          pnpm install --frozen-lockfile
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+      - run: docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+      - name: Setup and run tests
+        uses: addnab/docker-run-action@v3
+        with:
+          image: node:lts-alpine
+          options: "--platform linux/arm64 -v ${{ github.workspace }}:/build -w /build"
+          run: |
+            set -e
+            apk add --no-cache npm
+            npm install -g corepack
+            corepack enable
+            corepack prepare pnpm@9 --activate
+            cd crates/pact-transformer && pnpm test
+  test-linux-arm-gnueabihf-binding:
+    name: Test bindings on armv7-unknown-linux-gnueabihf - node@${{ matrix.node }}
+    needs:
+      - build
+    strategy:
+      fail-fast: false
+      matrix:
+        node:
+          - "20"
+          - "22"
+          - "24"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: bindings-armv7-unknown-linux-gnueabihf
+          path: crates/pact-transformer
+      - name: List packages
+        run: ls -R .
+        shell: bash
+      - name: Install dependencies
+        run: |
+          pnpm config set supportedArchitectures.cpu "arm"
+          pnpm install --frozen-lockfile
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm
+      - run: docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+      - name: Setup and run tests
+        uses: addnab/docker-run-action@v3
+        with:
+          image: node:${{ matrix.node }}-bullseye-slim
+          options: "--platform linux/arm/v7 -v ${{ github.workspace }}:/build -w /build"
+          run: |
+            set -e
+            apt-get update
+            apt-get install -y ca-certificates gnupg
+            mkdir -p /etc/apt/keyrings
+            curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg
+            echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_${{ matrix.node }}.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list
+            apt-get update
+            apt-get install -y nodejs npm
+            npm install -g corepack
+            corepack enable
+            corepack prepare pnpm@9 --activate
+            cd crates/pact-transformer && pnpm test
+  
+  build-freebsd:
+    runs-on: ubuntu-latest
+    name: Build FreeBSD
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build for FreeBSD
+        uses: cross-platform-actions/action@v0.25.0
+        env:
+          DEBUG: napi:*
+          RUSTUP_IO_THREADS: 1
+        with:
+          operating_system: freebsd
+          version: "14.2"
+          memory: 8G
+          cpu_count: 3
+          environment_variables: DEBUG RUSTUP_IO_THREADS
+          shell: bash
+          run: |
+            sudo pkg install -y -f curl
+            sudo pkg install -y -f node20 npm
+            sudo npm install -g corepack
+            corepack enable
+            corepack prepare pnpm@9 --activate
+            curl https://sh.rustup.rs -sSf --output rustup.sh
+            sh rustup.sh -y --profile minimal --default-toolchain stable
+            source "$HOME/.cargo/env"
+            cd crates/pact-transformer
+            pnpm install --frozen-lockfile
+            pnpm build
+            strip -x *.node
+            pnpm test
+            rm -rf node_modules
+            rm -rf target
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: bindings-x86_64-unknown-freebsd
+          path: crates/pact-transformer/${{ env.APP_NAME }}.*.node
+          if-no-files-found: error
+  
+  test-wasi:
+    name: Test WASI target
+    runs-on: ubuntu-latest
+    needs:
+      - build
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Download WASI artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: bindings-wasm32-wasip1-threads
+          path: crates/pact-transformer
+      - name: Install wasmtime
+        run: curl https://wasmtime.dev/install.sh -sSf | bash
+      - name: Test bindings
+        run: |
+          export PATH="$HOME/.wasmtime/bin:$PATH"
+          cd crates/pact-transformer
+          wasmtime --version
+          node --experimental-wasi-unstable-preview1 --experimental-wasm-threads ./test-wasi.mjs
+  
+  publish:
+    name: Publish
+    runs-on: ubuntu-latest
+    needs:
+      - test-macOS-windows-binding
+      - test-linux-x64-gnu-binding
+      - test-linux-x64-musl-binding
+      - test-linux-aarch64-gnu-binding
+      - test-linux-aarch64-musl-binding
+      - test-linux-arm-gnueabihf-binding
+      - build-freebsd
+      - test-wasi
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/@pact-toolbox/pact-transformer@')
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: crates/pact-transformer/artifacts
+      - name: Move artifacts
+        run: cd crates/pact-transformer && pnpm artifacts
+      - name: List packages
+        run: ls -R ./crates/pact-transformer/npm
+        shell: bash
+      - name: Publish
+        run: |
+          npm config set provenance true
+          cd crates/pact-transformer
+          echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc
+          npm publish --access public
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}

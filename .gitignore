@@ -1,27 +1,150 @@
-node_modules
-coverage
-dist
-.turbo
-build
-.vscode
-.DS_Store
-.eslintcache
-*.log*
-*.env*
-.pnpm-store
+# Dependencies
+node_modules/
+npm/*/node_modules
+napi/*/npm-dir
+.pnpm-store/
+.yarn/
+yarn-error.log
 
-pact/prelude
-.pact-toolbox
-.kadena
+# Build outputs
+dist/
+build/
+out/
+.turbo/
+.next/
+.vercel/
+.netlify/
+.output/
+
+# Test outputs
+coverage/
+.nyc_output/
+test-results/
+playwright-report/
+.vitest/
+
+# Logs
+*.log*
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Environment files
+.env*
+!.env.example
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*.tmp
+.eslintcache
+
+# Pact Toolbox specific
+pact/prelude/
+.pact-toolbox/
+.kadena/
+debug-logs/
 
 # Rust
 target/
 **/*.rs.bk
+Cargo.lock
 
 # Wasm
 **/*.wasm
 
-# node_modules
-node_modules/
-npm/*/node_modules
-napi/*/npm-dir
+# TypeScript
+*.tsbuildinfo
+.tsbuildinfo
+
+# Development artifacts
+temp-testing/
+*.temp
+*.tmp
+.cache/
+.parcel-cache/
+
+# Docker
+.dockerignore
+docker-compose.override.yml
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Monitoring/Analytics
+.monitoring/
+.sentry/
+
+# Misc
+.sass-cache/
+.connect.lock
+.typings/
+*.pid
+*.seed
+*.pid.lock
+
+# Add these patterns to .gitignore to prevent committing temporary files:
+
+# Temporary documentation and planning files
+*_SUMMARY.md
+*_PLAN.md
+*_ANALYSIS.md
+*_DESIGN.md
+*_FIXES.md
+IMPLEMENTATION_*.md
+WALLET_*.md
+SIGNING_*.md
+MULTI_*.md
+RUNTIME_*.md
+
+# Test files in root
+/test-*.pact
+/test-*.ts
+/test-*.sh
+/test-*.md
+
+# Temporary demo files in root
+/demo-*.ts
+/*-demo.ts
+
+# Backup directories
+*-backup/
+*.backup/
+backup-*/
+
+# Temporary scripts
+/cleanup-*.sh
+/verify-*.ts
+
+# Generated playground reports and results
+playwright-report/
+test-results/
+
+# Log files (already included as *.log*)
+*.log
+
+# Temporary testing directories
+/temp-*/
+/tmp-*/
+
+# intentionally ignored for now to avoid committing by mistake
+apps/admin-dashboard/
+crates/pact-playground/
+packages/playground/
+examples/playground-demo/

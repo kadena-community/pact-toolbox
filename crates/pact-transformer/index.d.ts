@@ -5,6 +5,7 @@
 
 export interface PactModule {
   name: string
+  namespace?: string
   doc?: string
   governance: string
   functions: Array<PactFunction>
@@ -53,33 +54,481 @@ export interface PactParameter {
   name: string
   parameterType?: string
 }
-/** Transform Pact source to JavaScript with performance optimizations */
-export declare function transformPactToJs(source: string, options?: TransformOptions | undefined | null): Promise<TransformationResult>
-/** Create a Pact transformer */
-export declare function createPactTransformer(): PactTransformer
+export interface PactConfig {
+  /** Transformation options */
+  transform?: TransformOptions
+  /** File output options */
+  fileOutput?: FileOutputOptions
+  /** Watch mode options */
+  watch?: WatchOptions
+  /** Plugin configurations */
+  plugins?: Array<PluginConfig>
+  /** Configuration presets */
+  presets?: Record<string, ConfigPreset>
+  /** Environment-specific overrides */
+  env?: Record<string, EnvironmentConfig>
+  /** Extends another configuration file */
+  extends?: string
+}
+export interface PluginConfig {
+  /** Plugin name or path */
+  name: string
+  /** Plugin options */
+  options?: Record<string, any>
+  /** Whether the plugin is enabled */
+  enabled?: boolean
+}
+export interface ConfigPreset {
+  /** Preset name */
+  name: string
+  /** Preset description */
+  description?: string
+  /** Transform options for this preset */
+  transform?: TransformOptions
+  /** File output options for this preset */
+  fileOutput?: FileOutputOptions
+  /** Watch options for this preset */
+  watch?: WatchOptions
+}
+export interface EnvironmentConfig {
+  /** Transform options override */
+  transform?: TransformOptions
+  /** File output options override */
+  fileOutput?: FileOutputOptions
+  /** Watch options override */
+  watch?: WatchOptions
+  /** Plugin overrides */
+  plugins?: Array<PluginConfig>
+}
+/** Config loader result */
+export interface ConfigLoadResult {
+  /** The loaded configuration */
+  config: PactConfig
+  /** Path to the configuration file */
+  configPath?: string
+  /** Whether default config was used */
+  isDefault: boolean
+}
+/** Load configuration from various sources */
+export declare function loadConfig(configPath?: string | undefined | null, environment?: string | undefined | null): Promise<ConfigLoadResult>
+/** Apply a preset to the current configuration */
+export declare function applyPreset(config: PactConfig, presetName: string): PactConfig
+/** Validate configuration */
+export declare function validateConfig(config: PactConfig): boolean
+/** Documentation generation options */
+export interface DocsOptions {
+  /** Output format: "html", "markdown", "json", "gitbook" */
+  format: string
+  /** Theme for HTML output */
+  theme?: string
+  /** Include code examples */
+  includeExamples?: boolean
+  /** Enable interactive examples */
+  interactiveExamples?: boolean
+  /** Enable API playground */
+  apiPlayground?: boolean
+  /** Custom CSS for HTML output */
+  customCss?: string
+  /** Custom JavaScript for HTML output */
+  customJs?: string
+  /** Base URL for links */
+  baseUrl?: string
+  /** Include search functionality */
+  searchEnabled?: boolean
+  /** Include table of contents */
+  tocEnabled?: boolean
+  /** Group functions by category */
+  groupByCategory?: boolean
+  /** Include source code snippets */
+  includeSource?: boolean
+  /** Syntax highlighting theme */
+  syntaxTheme?: string
+}
+/** NAPI-exposed function to generate documentation */
+export declare function generateDocumentation(modules: Array<PactModule>, options: DocsOptions): Promise<DocumentationResult>
+/** Documentation result for NAPI */
+export interface DocumentationResult {
+  content: string
+  assets: Array<DocumentationAsset>
+  toc?: string
+  searchIndex?: string
+  metadata: DocumentationMetadataResult
+}
+/** Documentation asset for NAPI */
+export interface DocumentationAsset {
+  path: string
+  content: Array<number>
+}
+/** Documentation metadata for NAPI */
+export interface DocumentationMetadataResult {
+  title: string
+  description?: string
+  version?: string
+  generatedAt: string
+  generator: string
+  totalModules: number
+  totalFunctions: number
+  totalCapabilities: number
+  totalSchemas: number
+  totalConstants: number
+}
+export interface FileOutputOptions {
+  /** Output directory for generated files */
+  outputDir: string
+  /** Output format: js-types (separate .js and .d.ts), ts (single .ts file), or js-only */
+  format: string
+  /** Whether to create output directory if it doesn't exist */
+  createDir?: boolean
+  /** Whether to preserve source directory structure */
+  preserveStructure?: boolean
+  /** Base path to strip from source files when preserving structure */
+  basePath?: string
+  /** File extension to use for output files (default based on format) */
+  extension?: string
+  /** Source map generation options */
+  sourceMaps?: SourceMapOptions
+}
+export interface FileTransformResult {
+  /** Input file path that was processed */
+  inputPath: string
+  /** Output file paths that were created */
+  outputPaths: Array<string>
+  /** Whether the transformation was successful */
+  success: boolean
+  /** Error message if transformation failed */
+  error?: string
+  /** Processing time in milliseconds */
+  processingTimeMs: number
+}
+/** Framework-specific code generation options */
+export interface CodeGenOptions {
+  /** Target framework: "vanilla", "react", "vue", "angular", "svelte" */
+  target: string
+  /** Generation patterns: "hooks", "composables", "services", "stores" */
+  patterns: Array<string>
+  /** Framework version for compatibility */
+  frameworkVersion?: string
+  /** Enable tree-shaking optimizations */
+  treeShaking?: boolean
+  /** Enable bundle splitting */
+  bundleSplitting?: boolean
+  /** TypeScript generation */
+  typescript?: boolean
+  /** Use modern syntax features */
+  modernSyntax?: boolean
+}
+/** NAPI-exposed plugin configuration */
+export interface PluginInfo {
+  /** Plugin name */
+  name: string
+  /** Plugin description */
+  description: string
+  /** Whether the plugin is enabled */
+  enabled: boolean
+  /** Plugin options */
+  options?: Record<string, any>
+}
+/** Register a built-in plugin */
+export declare function registerBuiltinPlugin(name: string): boolean
+/** Get information about all registered plugins */
+export declare function getRegisteredPlugins(): Array<PluginInfo>
+/** Enable or disable a plugin */
+export declare function setPluginEnabled(name: string, enabled: boolean): void
+/** Initialize plugins with options */
+export declare function initializePlugins(options: Record<string, Record<string, any>>): void
+export interface SourceMapOptions {
+  /** Whether to generate source maps */
+  generate?: boolean
+  /** Whether to inline source maps in the generated files */
+  inline?: boolean
+  /** Whether to include original source content in the source map */
+  sourcesContent?: boolean
+  /** File extension for separate source map files */
+  fileExtension?: string
+  /** Base URL for source files (for web deployment) */
+  sourceRoot?: string
+  /** Whether to include names mapping for better debugging */
+  includeNames?: boolean
+}
+/** Test generation options */
+export interface TestGenOptions {
+  /** Test framework: "jest", "vitest", "mocha", "ava" */
+  framework: string
+  /** Generate mock data */
+  generateMocks?: boolean
+  /** Generate test fixtures */
+  generateFixtures?: boolean
+  /** Coverage targets (function names or patterns) */
+  coverageTargets?: Array<string>
+  /** Generate integration tests */
+  integrationTests?: boolean
+  /** Use TypeScript */
+  typescript?: boolean
+  /** Test timeout in milliseconds */
+  timeout?: number
+  /** Generate property-based tests */
+  propertyTests?: boolean
+  /** Number of property test cases */
+  propertyTestRuns?: number
+  /** Generate snapshot tests */
+  snapshotTests?: boolean
+  /** Mock provider (faker, chance, casual) */
+  mockProvider?: string
+}
+/** NAPI-exposed function to generate tests */
+export declare function generateTestsForModules(modules: Array<PactModule>, options: TestGenOptions): Promise<TestGenerationResult>
+/** Test generation result for NAPI */
+export interface TestGenerationResult {
+  tests: string
+  mocks?: string
+  fixtures?: string
+  helpers?: string
+  integrationTests: Array<IntegrationTestResult>
+  propertyTests?: string
+  setupConfig: string
+  setupConfigFile: string
+  setupScript?: string
+  envFile?: string
+  dependencies: Array<DependencyInfo>
+}
+/** Integration test result for NAPI */
+export interface IntegrationTestResult {
+  name: string
+  content: string
+  description?: string
+}
+/** Dependency information for NAPI */
+export interface DependencyInfo {
+  name: string
+  version: string
+  dev: boolean
+  optional: boolean
+}
 /** Transformation result */
 export interface TransformationResult {
   modules: Array<PactModule>
   code: string
   types: string
 }
+/** Framework transformation result */
+export interface FrameworkTransformResult {
+  modules: Array<PactModule>
+  code: string
+  types: string
+  additionalFiles: Array<FrameworkFile>
+}
+/** Additional file generated by framework */
+export interface FrameworkFile {
+  name: string
+  content: string
+  description?: string
+}
 /** Transform options */
 export interface TransformOptions {
   generateTypes?: boolean
   moduleName?: string
 }
-/** Benchmark function to measure parser performance */
-export declare function benchmarkParser(source: string, iterations: number): number
-/** Warm up the parser pool for better initial performance */
-export declare function warmUpParserPool(): void
-/** Reset the parser pool */
-export declare function resetOptimizationState(): void
-/** High-performance transformer with pooled parsers */
+export interface WatchOptions {
+  /** Glob patterns to watch - examples: all pact files, src folder pact files */
+  patterns: Array<string>
+  /** Directories to watch recursively */
+  directories?: Array<string>
+  /** File extensions to watch (default: [pact]) */
+  extensions?: Array<string>
+  /** Debounce delay in milliseconds (default: 100ms) */
+  debounceMs?: number
+  /** Maximum number of concurrent transformations (default: CPU count) */
+  maxConcurrent?: number
+  /** Whether to process existing files on startup */
+  initialTransform?: boolean
+  /** Whether to watch for file deletions and clean up output files */
+  handleDeletions?: boolean
+}
+export interface WatchEvent {
+  /** Type of event: added, modified, removed */
+  eventType: string
+  /** Path of the file that changed */
+  filePath: string
+  /** Transform result (if applicable) */
+  transformResult?: FileTransformResult
+  /** Timestamp of the event */
+  timestamp: number
+}
+export interface WatchStats {
+  /** Number of files currently being watched */
+  watchedFiles: number
+  /** Total number of transformation events processed */
+  totalTransforms: number
+  /** Number of successful transformations */
+  successfulTransforms: number
+  /** Number of failed transformations */
+  failedTransforms: number
+  /** Average transformation time in milliseconds */
+  avgTransformTimeMs: number
+  /** Time since watch started in milliseconds */
+  uptimeMs: number
+}
+/** Transform operation result */
+export interface TransformResult {
+  javascript: string
+  typescript?: string
+  sourceMap?: string
+}
+/** File operation result */
+export interface FileResult {
+  sourcePath: string
+  outputPath?: string
+  success: boolean
+  error?: string
+  timeMs: number
+}
+/** Batch operation result */
+export interface BatchResult {
+  successCount: number
+  errorCount: number
+  totalTimeMs: number
+  files: Array<FileResult>
+}
+/** Module information */
+export interface ModuleInfo {
+  name: string
+  namespace?: string
+  governance: string
+  doc?: string
+  functionCount: number
+  schemaCount: number
+  capabilityCount: number
+  constantCount: number
+}
+/** Error information */
+export interface ErrorInfo {
+  message: string
+  line: number
+  column: number
+}
+/** Watch statistics */
+export interface WatchStatsResult {
+  watchedFiles: number
+  totalTransforms: number
+  successfulTransforms: number
+  failedTransforms: number
+  avgTransformTimeMs: number
+  uptimeMs: number
+}
+/** Documentation result */
+export interface DocsResult {
+  content: string
+  format: string
+  assets: Record<string, Array<number>>
+}
+/** Test generation result */
+export interface TestResult {
+  testFiles: Array<TestFile>
+  coverageReport?: string
+}
+/** Test file */
+export interface TestFile {
+  path: string
+  content: string
+}
+export declare class WatchHandle {
+  /** Get the next watch event */
+  nextEvent(): Promise<WatchEvent | null>
+  /** Get current watch statistics */
+  getStats(): Promise<WatchStats>
+  /** Stop watching and cleanup */
+  stop(): Promise<void>
+}
+/**
+ * Main Pact Transformer API
+ *
+ * This is the primary interface for all Pact transformation operations.
+ * It provides a unified API for parsing, transforming, and generating code.
+ */
 export declare class PactTransformer {
+  /** Create a new PactTransformer instance */
   constructor()
-  /** Transform Pact code with performance optimizations */
-  transform(source: string): Array<PactModule>
-  getErrors(source: string): Array<ErrorDetail>
+  /**
+   * Transform Pact source to JavaScript/TypeScript
+   *
+   * ```javascript
+   * const pact = new PactTransformer();
+   * const result = await pact.transform(source, { generateTypes: true });
+   * console.log(result.javascript, result.typescript);
+   * ```
+   */
+  transform(source: string, options?: TransformOptions | undefined | null): Promise<TransformResult>
+  /**
+   * Get parsing errors for source code
+   *
+   * ```javascript
+   * const errors = pact.getErrors(invalidSource);
+   * errors.forEach(err => console.log(`${err.line}:${err.column} ${err.message}`));
+   * ```
+   */
+  getErrors(source: string): Array<ErrorInfo>
+  /**
+   * Parse Pact source and return module AST
+   *
+   * ```javascript
+   * const modules = pact.parse(source);
+   * modules.forEach(m => console.log(`Module: ${m.name}`));
+   * ```
+   */
+  parse(source: string): Array<ModuleInfo>
+}
+/** File operations API */
+export declare class FileOps {
+  /** Transform a single file to disk */
+  static transformFile(inputPath: string, options?: TransformOptions | undefined | null, fileOptions?: FileOutputOptions | undefined | null): Promise<FileResult>
+  /** Transform multiple files to disk */
+  static transformFiles(patterns: Array<string>, options?: TransformOptions | undefined | null, fileOptions?: FileOutputOptions | undefined | null): Promise<BatchResult>
+  /** Find Pact files matching patterns */
+  static findFiles(patterns: Array<string>): Promise<Array<string>>
+}
+/** Watch API for file monitoring */
+export declare class WatchSession {
+  /** Start watching files */
+  static start(patterns: Array<string>, watchOptions?: WatchOptions | undefined | null, transformOptions?: TransformOptions | undefined | null, fileOptions?: FileOutputOptions | undefined | null): Promise<WatchSession>
+  /** Stop watching */
+  stop(): Promise<void>
+  /** Get watch statistics */
+  stats(): Promise<WatchStatsResult>
+}
+/** Documentation generation API */
+export declare class DocsGenerator {
+  /** Generate documentation from Pact source */
+  static generate(source: string, options?: DocsOptions | undefined | null): Promise<DocsResult>
+}
+/** Test generation API */
+export declare class TestGenerator {
+  /** Generate tests from Pact modules */
+  static generate(source: string, options?: TestGenOptions | undefined | null): Promise<TestResult>
+}
+/** Configuration management */
+export declare class ConfigManager {
+  /** Load configuration from file */
+  static load(path?: string | undefined | null, environment?: string | undefined | null): Promise<PactConfig>
+  /** Validate configuration */
+  static validate(config: PactConfig): boolean
+}
+/** Plugin management */
+export declare class PluginManager {
+  /** Get list of available plugins */
+  static list(): Array<PluginInfo>
+  /** Register a built-in plugin */
+  static register(name: string): boolean
+  /** Enable or disable a plugin */
+  static setEnabled(name: string, enabled: boolean): void
+}
+/** Utility functions */
+export declare class Utils {
+  /** Warm up the parser for better performance */
+  static warmUp(): void
+  /** Benchmark parser performance */
+  static benchmark(source: string, iterations: number): number
+  /** Reset optimization state */
+  static resetOptimizations(): void
 }
 export declare class ErrorDetail {
   message: string

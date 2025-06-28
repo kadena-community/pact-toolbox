@@ -1,8 +1,8 @@
 import { defineCommand } from "citty";
 
 import { resolveConfig } from "@pact-toolbox/config";
-import { createPactToolboxNetwork } from "@pact-toolbox/network";
-import { tui } from "@pact-toolbox/tui";
+import { createNetwork } from "@pact-toolbox/network";
+import { clear, boxMessage, log } from "@pact-toolbox/node-utils";
 
 export const startCommand = defineCommand({
   meta: {
@@ -45,35 +45,49 @@ export const startCommand = defineCommand({
     const config = await resolveConfig();
     const { network, quiet, tunnel } = args;
     
-    // Start TUI if not in quiet mode
+    // Show startup message if not in quiet mode
     if (!quiet && !tunnel) {
-      tui.start({
-        refreshRate: 1000,
-        enableInteraction: true,
-      });
-      
-      tui.log("info", "cli", "Starting Pact Toolbox DevNet...");
+      clear();
+      boxMessage("Pact Toolbox DevNet", ["Starting development network..."]);
+      log("info", "cli", "Starting Pact Toolbox DevNet...");
     }
     
-    await createPactToolboxNetwork(config, {
-      isDetached: !quiet && !tunnel,
+    const networkInstance = await createNetwork(config, {
+      detached: !quiet && !tunnel,
       logAccounts: true,
-      cleanup: true,
       autoStart: true,
       network,
-      conflictStrategy: "replace",
+    });
+    
+    // Setup cleanup handlers
+    const cleanup = async () => {
+      log("info", "cli", "Shutting down network...");
+      try {
+        await networkInstance.stop();
+        log("success", "cli", "Network stopped successfully");
+      } catch (error) {
+        log("error", "cli", "Error stopping network:", error);
+      }
+      process.exit(0);
+    };
+
+    // Register signal handlers for graceful shutdown
+    process.on("SIGINT", cleanup);
+    process.on("SIGTERM", cleanup);
+    process.on("exit", () => {
+      // Synchronous cleanup if needed
     });
     
     if (!quiet && !tunnel) {
-      tui.log("info", "cli", "DevNet started successfully");
-      tui.updateNetwork({
-        id: "devnet",
-        name: "Pact DevNet",
-        status: "running",
-        endpoints: [
-          { name: "API", url: `http://localhost:${config.network?.devnet?.publicPort || 8080}`, status: "up" },
-        ],
-      });
+      log("info", "cli", "DevNet started successfully");
+      // Display network information
+      boxMessage("Network Started", [
+        `DevNet is running at: http://localhost:${networkInstance.getPort()}`,
+        `Network ID: ${networkInstance.getNetworkName()}`,
+        "Status: running",
+        "",
+        "Press Ctrl+C to stop"
+      ]);
     }
     
     if (quiet || tunnel) {

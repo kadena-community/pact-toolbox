@@ -4,7 +4,7 @@ import { join } from "pathe";
 import { resolveConfig } from "@pact-toolbox/config";
 import { downloadAllPreludes } from "@pact-toolbox/prelude";
 import { PactToolboxClient } from "@pact-toolbox/runtime";
-import { logger } from "@pact-toolbox/utils";
+import { logger } from "@pact-toolbox/node-utils";
 
 export const preludeCommand = defineCommand({
   meta: {

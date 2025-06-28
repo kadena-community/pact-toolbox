@@ -116,15 +116,6 @@ debug = false
 # and we don't rely on it for debugging that much.
 debug = false
 
-[profile.dev.package]
-# Compile macros with some optimizations to make consuming crates build faster
-oxc_macros.opt-level = 1
-oxc_ast_macros.opt-level = 1
-# Compile insta and its dependencies in release mode for faster snapshot tests
-# See: https://insta.rs/docs/quickstart/#optional-faster-runs
-insta.opt-level = 3
-similar.opt-level = 3
-
 
 [profile.release]
 # Configurations explicitly listed here for clarity.
@@ -158,3 +149,7 @@ overflow-checks = true # Catch arithmetic overflow errors
 [profile.dev-no-debug-assertions]
 inherits = "dev"
 debug-assertions = false
+
+
+[profile.release.package."*"]
+opt-level = 3

@@ -1,5 +1,10 @@
-import { mergeConfig } from "vitest/config";
+import { defineConfig } from "vitest/config";
 
-import node from "@pact-toolbox/vitest-config/node";
-
-export default mergeConfig(node, {});
+export default defineConfig({
+  test: {
+    environment: "node",
+    globals: true,
+    include: ["src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}", "tests/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}"],
+    exclude: ["node_modules/**/*", "dist/**/*"],
+  },
+});

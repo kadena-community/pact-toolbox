@@ -310,12 +310,24 @@ if (!nativeBinding) {
   throw new Error(`Failed to load native binding`)
 }
 
-const { transformPactToJs, PactTransformer, createPactTransformer, benchmarkParser, warmUpParserPool, resetOptimizationState, ErrorDetail } = nativeBinding
+const { loadConfig, applyPreset, validateConfig, generateDocumentation, registerBuiltinPlugin, getRegisteredPlugins, setPluginEnabled, initializePlugins, generateTestsForModules, WatchHandle, PactTransformer, FileOps, WatchSession, DocsGenerator, TestGenerator, ConfigManager, PluginManager, Utils, ErrorDetail } = nativeBinding
 
-module.exports.transformPactToJs = transformPactToJs
+module.exports.loadConfig = loadConfig
+module.exports.applyPreset = applyPreset
+module.exports.validateConfig = validateConfig
+module.exports.generateDocumentation = generateDocumentation
+module.exports.registerBuiltinPlugin = registerBuiltinPlugin
+module.exports.getRegisteredPlugins = getRegisteredPlugins
+module.exports.setPluginEnabled = setPluginEnabled
+module.exports.initializePlugins = initializePlugins
+module.exports.generateTestsForModules = generateTestsForModules
+module.exports.WatchHandle = WatchHandle
 module.exports.PactTransformer = PactTransformer
-module.exports.createPactTransformer = createPactTransformer
-module.exports.benchmarkParser = benchmarkParser
-module.exports.warmUpParserPool = warmUpParserPool
-module.exports.resetOptimizationState = resetOptimizationState
+module.exports.FileOps = FileOps
+module.exports.WatchSession = WatchSession
+module.exports.DocsGenerator = DocsGenerator
+module.exports.TestGenerator = TestGenerator
+module.exports.ConfigManager = ConfigManager
+module.exports.PluginManager = PluginManager
+module.exports.Utils = Utils
 module.exports.ErrorDetail = ErrorDetail

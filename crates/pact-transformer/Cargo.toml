@@ -14,7 +14,7 @@ napi = { version = "2", default-features = false, features = ["napi8", "async", 
 napi-derive = "2"
 
 # Async runtime
-tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "time"] }
 
 # Tree-sitter for parsing
 tree-sitter = "0.25"
@@ -23,6 +23,8 @@ tree-sitter-pact = "0.0.10"
 # Serialization
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+toml = "0.8"
+serde_yaml = "0.9"
 
 # Parallelization
 rayon = "1.10"
@@ -44,18 +46,32 @@ num_cpus = "1"
 itoa = "1"
 ryu = "1"
 
+# File system operations and watching
+notify = "6.1"
+glob = "0.3"
+walkdir = "2"
+
+# Path manipulation
+path-clean = "1.0"
+
+# Logging
+log = "0.4"
+
+# Source maps
+sourcemap = "8.0"
+base64 = "0.22"
+
+# Testing support
+rand = "0.8"
+chrono = { version = "0.4", features = ["serde"] }
+uuid = { version = "1", features = ["v4", "serde"] }
+
+# Documentation support
+html-escape = "0.2"
+
+[dev-dependencies]
+tempfile = "3"
+
 [build-dependencies]
 napi-build = "2"
 
-[profile.release]
-lto = "fat"
-opt-level = 3
-codegen-units = 1
-strip = "symbols"
-panic = "abort"
-
-[profile.release.build-override]
-opt-level = 3
-
-# Note: For optimal performance, set RUSTFLAGS environment variable:
-# RUSTFLAGS="-C target-cpu=native"

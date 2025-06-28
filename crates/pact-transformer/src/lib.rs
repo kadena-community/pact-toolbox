@@ -12,30 +12,56 @@ use napi_derive::napi;
 
 mod ast;
 mod code_generator;
+mod config;
+mod docs;
 mod error;
+mod file_ops;
+mod frameworks;
 mod parser;
+mod plugin;
+mod source_map;
+mod testing;
 mod transformer;
 mod types;
 mod utils;
+mod watch;
 
-// Re-export components
-pub use transformer::*;
+// New consolidated API module
+mod api;
+
+// Only export the consolidated API
+pub use api::{
+  ConfigManager, DocsGenerator, FileOps, PactTransformer, PluginManager, TestGenerator, Utils,
+  WatchSession,
+};
+
+// Internal re-exports for the API module
+pub(crate) use ast::*;
+pub(crate) use config::*;
+pub(crate) use docs::*;
+pub(crate) use file_ops::{batch_file_transform, file_transform, FileOutputOptions};
+pub(crate) use frameworks::*;
+pub(crate) use plugin::*;
+pub(crate) use testing::*;
+pub(crate) use transformer::{core_transform, CoreTransformer, run_parser_benchmark, warm_up_parsers, reset_parser_pool, TransformOptions, FrameworkFile};
+pub(crate) use watch::{create_watch_session, find_pact_files, WatchHandle, WatchOptions};
 
 // Re-export for testing
+#[cfg(test)]
 pub use crate::parser::Parser as PublicParser;
 
 #[napi]
 pub struct ErrorDetail {
-    pub message: String,
-    pub line: u32,
-    pub column: u32,
+  pub message: String,
+  pub line: u32,
+  pub column: u32,
 }
 
 #[cfg(test)]
 mod integration_tests {
-    use super::*;
+  use super::*;
 
-    const SIMPLE_MODULE: &str = r#"
+  const SIMPLE_MODULE: &str = r#"
     (module simple-test GOVERNANCE
       @doc "A simple test module"
 
@@ -55,66 +81,77 @@ mod integration_tests {
     )
     "#;
 
-    #[test]
-    fn test_pact_transformer_integration() {
-        let mut transformer = PactTransformer::new();
-        let (modules, errors) = transformer.parse(SIMPLE_MODULE);
+  #[test]
+  fn test_pact_transformer_integration() {
+    let mut transformer = CoreTransformer::new();
+    let (modules, errors) = transformer.parse(SIMPLE_MODULE);
 
-        assert!(errors.is_empty(), "Should parse without errors: {:?}", errors);
-        assert_eq!(modules.len(), 1, "Should parse exactly one module");
+    assert!(
+      errors.is_empty(),
+      "Should parse without errors: {:?}",
+      errors
+    );
+    assert_eq!(modules.len(), 1, "Should parse exactly one module");
 
-        let module = &modules[0];
-        assert_eq!(module.name, "simple-test");
-        assert_eq!(module.governance, "GOVERNANCE");
+    let module = &modules[0];
+    assert_eq!(module.name, "simple-test");
+    assert_eq!(module.governance, "GOVERNANCE");
 
-        // Check functions
-        assert_eq!(module.functions.len(), 1, "Should parse one function");
-        let function = &module.functions[0];
-        assert_eq!(function.name, "create-user");
-        assert_eq!(function.parameters.len(), 2, "Function should have 2 parameters");
+    // Check functions
+    assert_eq!(module.functions.len(), 1, "Should parse one function");
+    let function = &module.functions[0];
+    assert_eq!(function.name, "create-user");
+    assert_eq!(
+      function.parameters.len(),
+      2,
+      "Function should have 2 parameters"
+    );
 
-        // Check parameters
-        assert_eq!(function.parameters[0].name, "name");
-        assert_eq!(function.parameters[1].name, "age");
+    // Check parameters
+    assert_eq!(function.parameters[0].name, "name");
+    assert_eq!(function.parameters[1].name, "age");
 
-        // Check schemas
-        assert_eq!(module.schemas.len(), 1, "Should parse one schema");
-        let schema = &module.schemas[0];
-        assert_eq!(schema.name, "user-schema");
-        assert_eq!(schema.fields.len(), 2, "Schema should have 2 fields");
+    // Check schemas
+    assert_eq!(module.schemas.len(), 1, "Should parse one schema");
+    let schema = &module.schemas[0];
+    assert_eq!(schema.name, "user-schema");
+    assert_eq!(schema.fields.len(), 2, "Schema should have 2 fields");
 
-        // Check capabilities
-        assert_eq!(module.capabilities.len(), 1, "Should parse one capability");
-        let capability = &module.capabilities[0];
-        assert_eq!(capability.name, "GOVERNANCE");
+    // Check capabilities
+    assert_eq!(module.capabilities.len(), 1, "Should parse one capability");
+    let capability = &module.capabilities[0];
+    assert_eq!(capability.name, "GOVERNANCE");
 
-        // Check constants
-        assert_eq!(module.constants.len(), 1, "Should parse one constant");
-        let constant = &module.constants[0];
-        assert_eq!(constant.name, "MAX_AGE");
-    }
+    // Check constants
+    assert_eq!(module.constants.len(), 1, "Should parse one constant");
+    let constant = &module.constants[0];
+    assert_eq!(constant.name, "MAX_AGE");
+  }
 
-    #[test]
-    fn test_empty_module_parsing() {
-        let mut transformer = PactTransformer::new();
-        let (modules, errors) = transformer.parse("(module empty GOVERNANCE)");
+  #[test]
+  fn test_empty_module_parsing() {
+    let mut transformer = CoreTransformer::new();
+    let (modules, errors) = transformer.parse("(module empty GOVERNANCE)");
 
-        assert!(errors.is_empty(), "Empty module should parse without errors");
-        assert_eq!(modules.len(), 1, "Should parse one empty module");
+    assert!(
+      errors.is_empty(),
+      "Empty module should parse without errors"
+    );
+    assert_eq!(modules.len(), 1, "Should parse one empty module");
 
-        let module = &modules[0];
-        assert_eq!(module.name, "empty");
-        assert_eq!(module.governance, "GOVERNANCE");
-        assert_eq!(module.functions.len(), 0);
-        assert_eq!(module.schemas.len(), 0);
-        assert_eq!(module.capabilities.len(), 0);
-        assert_eq!(module.constants.len(), 0);
-    }
+    let module = &modules[0];
+    assert_eq!(module.name, "empty");
+    assert_eq!(module.governance, "GOVERNANCE");
+    assert_eq!(module.functions.len(), 0);
+    assert_eq!(module.schemas.len(), 0);
+    assert_eq!(module.capabilities.len(), 0);
+    assert_eq!(module.constants.len(), 0);
+  }
 
-    #[test]
-    fn test_multiple_modules() {
-        let mut transformer = PactTransformer::new();
-        let multi_module = r#"
+  #[test]
+  fn test_multiple_modules() {
+    let mut transformer = CoreTransformer::new();
+    let multi_module = r#"
         (module first GOVERNANCE
           (defcap GOVERNANCE () true))
         
@@ -122,13 +159,16 @@ mod integration_tests {
           (defcap OTHER-GOV () true))
         "#;
 
-        let (modules, errors) = transformer.parse(multi_module);
-        assert!(errors.is_empty(), "Multi-module should parse without errors");
-        assert_eq!(modules.len(), 2, "Should parse two modules");
+    let (modules, errors) = transformer.parse(multi_module);
+    assert!(
+      errors.is_empty(),
+      "Multi-module should parse without errors"
+    );
+    assert_eq!(modules.len(), 2, "Should parse two modules");
 
-        assert_eq!(modules[0].name, "first");
-        assert_eq!(modules[0].governance, "GOVERNANCE");
-        assert_eq!(modules[1].name, "second");
-        assert_eq!(modules[1].governance, "OTHER-GOV");
-    }
+    assert_eq!(modules[0].name, "first");
+    assert_eq!(modules[0].governance, "GOVERNANCE");
+    assert_eq!(modules[1].name, "second");
+    assert_eq!(modules[1].governance, "OTHER-GOV");
+  }
 }

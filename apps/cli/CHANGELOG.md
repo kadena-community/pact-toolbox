@@ -13,7 +13,7 @@
   - @pact-toolbox/network@0.4.0
   - @pact-toolbox/prelude@2.0.0
   - @pact-toolbox/runtime@0.2.0
-  - @pact-toolbox/client@0.2.0
+  - @pact-toolbox/transaction@0.2.0
   - @pact-toolbox/config@0.2.0
   - @pact-toolbox/script@0.2.0
   - @pact-toolbox/utils@0.2.0
@@ -61,7 +61,7 @@
 
 - Updated dependencies [ebf24fb]
 - Updated dependencies [bf5ab0e]
-  - @pact-toolbox/client@0.1.0
+  - @pact-toolbox/transaction@0.1.0
   - @pact-toolbox/config@0.1.0
   - @pact-toolbox/fabricator@0.1.0
   - @pact-toolbox/init@0.1.0
@@ -162,7 +162,7 @@
 
 - more pact version manager features
 - Updated dependencies
-  - @pact-toolbox/client-utils@0.0.4
+  - @pact-toolbox/transaction-utils@0.0.4
   - @pact-toolbox/installer@0.0.4
   - @pact-toolbox/network@0.0.4
   - @pact-toolbox/prelude@0.0.4
@@ -179,7 +179,7 @@
 
 - Fix npm include files
 - Updated dependencies
-  - @pact-toolbox/client-utils@0.0.3
+  - @pact-toolbox/transaction-utils@0.0.3
   - @pact-toolbox/installer@0.0.3
   - @pact-toolbox/network@0.0.3
   - @pact-toolbox/prelude@0.0.3
@@ -203,7 +203,7 @@
 
 - publish test version
 - Updated dependencies
-  - @pact-toolbox/client-utils@0.0.2
+  - @pact-toolbox/transaction-utils@0.0.2
   - @pact-toolbox/config@0.0.2
   - @pact-toolbox/init@0.0.2
   - @pact-toolbox/installer@0.0.2

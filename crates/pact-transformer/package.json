@@ -26,20 +26,40 @@
       "defaults": true,
       "additional": [
         "x86_64-pc-windows-msvc",
-        "aarch64-pc-windows-msvc",
         "x86_64-apple-darwin",
-        "aarch64-apple-darwin",
         "x86_64-unknown-linux-gnu",
         "x86_64-unknown-linux-musl",
         "aarch64-unknown-linux-gnu",
-        "aarch64-unknown-linux-musl",
+        "i686-pc-windows-msvc",
+        "armv7-unknown-linux-gnueabihf",
+        "aarch64-apple-darwin",
         "aarch64-linux-android",
-        "armv7-unknown-linux-gnueabihf"
+        "x86_64-unknown-freebsd",
+        "aarch64-unknown-linux-musl",
+        "aarch64-pc-windows-msvc",
+        "armv7-linux-androideabi",
+        "wasm32-wasip1-threads"
       ]
     }
   },
   "engines": {
-    "node": ">= 18"
+    "node": ">= 20"
+  },
+  "optionalDependencies": {
+    "@pact-toolbox/pact-transformer-android-arm-eabi": "0.1.0",
+    "@pact-toolbox/pact-transformer-android-arm64": "0.1.0",
+    "@pact-toolbox/pact-transformer-darwin-arm64": "0.1.0",
+    "@pact-toolbox/pact-transformer-darwin-x64": "0.1.0",
+    "@pact-toolbox/pact-transformer-freebsd-x64": "0.1.0",
+    "@pact-toolbox/pact-transformer-linux-arm-gnueabihf": "0.1.0",
+    "@pact-toolbox/pact-transformer-linux-arm64-gnu": "0.1.0",
+    "@pact-toolbox/pact-transformer-linux-arm64-musl": "0.1.0",
+    "@pact-toolbox/pact-transformer-linux-x64-gnu": "0.1.0",
+    "@pact-toolbox/pact-transformer-linux-x64-musl": "0.1.0",
+    "@pact-toolbox/pact-transformer-wasm32-wasip1-threads": "0.1.0",
+    "@pact-toolbox/pact-transformer-win32-arm64-msvc": "0.1.0",
+    "@pact-toolbox/pact-transformer-win32-ia32-msvc": "0.1.0",
+    "@pact-toolbox/pact-transformer-win32-x64-msvc": "0.1.0"
   },
   "scripts": {
     "artifacts": "napi artifacts",
@@ -51,14 +71,20 @@
     "release": "pnpm test && pnpm publish",
     "test:watch": "vitest",
     "test": "vitest run",
-    "verify": "tsc --noEmit --skipLibCheck"
+    "typecheck": "tsc --noEmit --skipLibCheck",
+    "version": "napi version",
+    "format": "pnpm run format:source && pnpm run format:rs && pnpm run format:toml",
+    "format:rs": "cargo fmt",
+    "format:source": "prettier --write .",
+    "format:toml": "taplo format",
+    "lint": "oxlint ."
   },
   "dependencies": {},
   "devDependencies": {
     "@napi-rs/cli": "^2.18.4",
     "@pact-toolbox/vitest-config": "workspace:*",
-    "@types/node": "^24.0.1",
+    "@types/node": "^24.0.7",
     "typescript": "^5.8.3",
-    "vitest": "^3.2.3"
+    "vitest": "^3.2.4"
   }
 }

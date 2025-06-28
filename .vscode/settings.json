@@ -31,5 +31,9 @@
     "**/coverage": true,
     "**/.next": true
   },
-  "vitest.disableWorkspaceWarning": true
+  "vitest.disableWorkspaceWarning": true,
+  "rust-analyzer.procMacro.ignored": {
+    "napi-derive": ["napi"]
+  },
+  "svg.preview.background": "custom"
 }

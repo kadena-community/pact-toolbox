@@ -5,7 +5,7 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": ["dist/**"]
+      "outputs": ["dist/**", "*.node", "index.js", "index.d.ts"]
     },
     "dev": {
       "cache": false,
@@ -16,15 +16,15 @@
       "outputLogs": "new-only"
     },
     "lint": {
-      "dependsOn": ["^build"],
-      "outputs": ["node_modules/.cache/.eslintcache"]
-    },
-    "test": {
       "dependsOn": ["^build"]
     },
-    "verify": {
+    "test": {
       "dependsOn": ["^build"],
-      "outputs": ["node_modules/.cache/tsbuildinfo.json"]
+      "outputs": []
+    },
+    "typecheck": {
+      "dependsOn": ["^build"],
+      "outputs": []
     },
     "clean": {
       "cache": false

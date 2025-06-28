@@ -1,0 +1,33 @@
+{
+  "name": "@pact-toolbox/pact-transformer-darwin-arm64",
+  "version": "0.1.0",
+  "os": [
+    "darwin"
+  ],
+  "cpu": [
+    "arm64"
+  ],
+  "main": "pact-transformer.darwin-arm64.node",
+  "files": [
+    "pact-transformer.darwin-arm64.node"
+  ],
+  "description": "High-performance Pact code transformer with Rust implementation",
+  "keywords": [
+    "blockchain",
+    "kadena",
+    "pact",
+    "parser",
+    "transformer",
+    "rust",
+    "napi"
+  ],
+  "author": "Salama Ashoush <salamaashoush@gmail.com>",
+  "license": "MIT",
+  "engines": {
+    "node": ">= 20"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": "kadena-community/pact-toolbox"
+}
