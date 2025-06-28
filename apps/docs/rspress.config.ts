@@ -7,6 +7,7 @@ export default defineConfig({
       langs: ["lisp", "mermaid"],
     }),
   ],
+
   root: "docs",
   title: "Pact Toolbox",
   description:
@@ -15,6 +16,7 @@ export default defineConfig({
   // Base path for GitHub Pages deployment
   base: process.env.GITHUB_PAGES ? "/pact-toolbox/" : "/",
   themeConfig: {
+    lastUpdated: true,
     nav: [
       {
         text: "Guide",
