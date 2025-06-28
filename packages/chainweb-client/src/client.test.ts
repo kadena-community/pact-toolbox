@@ -228,7 +228,7 @@ describe("ChainwebClient", () => {
       const clientWithCustomUrl = new ChainwebClient({
         ...config,
         rpcUrl: (networkId, chainId) =>
-          `https://custom.example.com/chainweb/0.0/${networkId}/chain/${chainId}/pact/api/v1`,
+          `https://custom.example.com/chainweb/0.0/${networkId}/chain/${chainId}/pact`,
       });
 
       const mockResponse = {

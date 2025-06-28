@@ -248,4 +248,8 @@ See the main [pact-toolbox repository](https://github.com/kadena-community/pact-
 
 ## License
 
-MIT - see LICENSE file for details.
+MIT
+
+---
+
+Made with ❤️ by [@salamaashoush](https://github.com/salamaashoush)
