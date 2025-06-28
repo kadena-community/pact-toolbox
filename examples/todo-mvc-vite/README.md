@@ -45,3 +45,7 @@ In the project directory, you can run the following commands:
 ## Switch networks
 
 Update the `defaultNetwork` key inside `pact-toolbox.config.ts` make sure its one of the configured networks
+
+---
+
+Made with ❤️ by [@salamaashoush](https://github.com/salamaashoush)

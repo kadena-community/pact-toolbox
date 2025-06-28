@@ -5,4 +5,4 @@
 ### Patch Changes
 
 - Updated dependencies
-  - @pact-toolbox/client@0.2.0
+  - @pact-toolbox/transaction@0.2.0

@@ -5,7 +5,7 @@ import tsconfigPaths from "vite-tsconfig-paths";
 import pactVitePlugin from "@pact-toolbox/unplugin/vite";
 
 export default defineConfig({
-  plugins: [react(), tsconfigPaths(), pactVitePlugin()],
+  plugins: [react(), tsconfigPaths({ ignoreConfigErrors: true }), pactVitePlugin()],
   test: {
     environment: "happy-dom",
     testTimeout: 1000000,

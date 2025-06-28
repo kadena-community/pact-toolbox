@@ -8,6 +8,8 @@ import {
 
 export default defineConfig({
   defaultNetwork: "devnet",
+  preludes: ["kadena/chainweb"],
+  downloadPreludes: true,
   deployPreludes: true,
   networks: {
     pactServer: createPactServerNetworkConfig(),

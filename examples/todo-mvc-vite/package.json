@@ -17,16 +17,20 @@
     "pact:run": "pact-toolbox run"
   },
   "dependencies": {
-    "@pact-toolbox/client": "workspace:*",
-    "@tanstack/react-query": "^5.80.7",
+    "@pact-toolbox/transaction": "workspace:*",
+    "@pact-toolbox/wallet-adapters": "workspace:*",
+    "@pact-toolbox/wallet-ui": "workspace:*",
+    "@tanstack/react-query": "^5.81.5",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"
   },
   "devDependencies": {
+    "@pact-toolbox/script": "workspace:*",
     "@pact-toolbox/test": "workspace:*",
     "@pact-toolbox/unplugin": "workspace:*",
-    "@testing-library/react": "~16.3.0",
-    "@testing-library/user-event": "~14.6.1",
+    "@playwright/test": "^1.53.1",
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^14.6.1",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
     "@vitejs/plugin-react-swc": "^3.10.2",
@@ -34,13 +38,13 @@
     "pact-toolbox": "workspace:*",
     "tsx": "^4.20.3",
     "typescript": "^5.8.3",
-    "vite": "^6.3.5",
+    "vite": "^7.0.0",
     "vite-tsconfig-paths": "^5.1.4",
-    "vitest": "^3.2.3",
+    "vitest": "^3.2.4",
     "vitest-dom": "^0.1.1"
   },
   "engines": {
-    "node": ">=22.0.0 <24.0.0"
+    "node": ">=22.0.0"
   },
   "pnpm": {
     "onlyBuiltDependencies": [

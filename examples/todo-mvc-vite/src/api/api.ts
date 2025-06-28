@@ -1,7 +1,9 @@
-import { getUuid } from "@pact-toolbox/client";
-
 // importing from pact files
 import * as todosContract from "~/pact/todos.pact";
+
+function getUuid() {
+  return crypto.randomUUID();
+}
 
 export async function getAllTodos() {
   return todosContract.getTodos().build().dirtyRead();
