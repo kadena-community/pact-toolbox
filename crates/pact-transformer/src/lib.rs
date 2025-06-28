@@ -7,6 +7,7 @@
 #![allow(clippy::wildcard_imports)]
 #![allow(clippy::module_name_repetitions)]
 #![allow(clippy::cast_possible_truncation)]
+#![allow(clippy::too_many_lines)]
 
 use napi_derive::napi;
 
@@ -36,14 +37,15 @@ pub use api::{
 };
 
 // Internal re-exports for the API module
-pub(crate) use ast::*;
 pub(crate) use config::*;
 pub(crate) use docs::*;
 pub(crate) use file_ops::{batch_file_transform, file_transform, FileOutputOptions};
-pub(crate) use frameworks::*;
 pub(crate) use plugin::*;
 pub(crate) use testing::*;
-pub(crate) use transformer::{core_transform, CoreTransformer, run_parser_benchmark, warm_up_parsers, reset_parser_pool, TransformOptions, FrameworkFile};
+pub(crate) use transformer::{
+  core_transform, reset_parser_pool, run_parser_benchmark, warm_up_parsers, CoreTransformer,
+  TransformOptions,
+};
 pub(crate) use watch::{create_watch_session, find_pact_files, WatchHandle, WatchOptions};
 
 // Re-export for testing

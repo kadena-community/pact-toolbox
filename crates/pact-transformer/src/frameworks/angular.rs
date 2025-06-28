@@ -346,8 +346,9 @@ impl AngularGenerator {
 
     // Generate effects for each function
     for function in &module.functions {
-      let effect_name = format!("{}$", utils::to_camel_case(&function.name));
-      let action_name = utils::to_camel_case(&function.name);
+      let camel_case_name = utils::to_camel_case(&function.name);
+      let effect_name = format!("{}$", camel_case_name);
+      let action_name = camel_case_name;
 
       writeln!(&mut code, "  {} = createEffect(() =>", effect_name)?;
       writeln!(&mut code, "    this.actions$.pipe(")?;

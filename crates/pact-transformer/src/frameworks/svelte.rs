@@ -290,23 +290,21 @@ impl SvelteGenerator {
       } else if function.name.starts_with("get") {
         writeln!(&mut code, "      this.currentItem = result;")?;
       }
-    } else {
-      if function.name.starts_with("create") || function.name.starts_with("add") {
-        writeln!(&mut code, "      this.items = [...this.items, result];")?;
-      } else if function.name.starts_with("update") {
-        writeln!(
-          &mut code,
-          "      const index = this.items.findIndex(item => item.id === result.id);"
-        )?;
-        writeln!(&mut code, "      if (index !== -1) {{")?;
-        writeln!(&mut code, "        this.items[index] = result;")?;
-        writeln!(&mut code, "      }}")?;
-      } else if function.name.starts_with("delete") || function.name.starts_with("remove") {
-        writeln!(
-          &mut code,
-          "      this.items = this.items.filter(item => item.id !== result.id);"
-        )?;
-      }
+    } else if function.name.starts_with("create") || function.name.starts_with("add") {
+      writeln!(&mut code, "      this.items = [...this.items, result];")?;
+    } else if function.name.starts_with("update") {
+      writeln!(
+        &mut code,
+        "      const index = this.items.findIndex(item => item.id === result.id);"
+      )?;
+      writeln!(&mut code, "      if (index !== -1) {{")?;
+      writeln!(&mut code, "        this.items[index] = result;")?;
+      writeln!(&mut code, "      }}")?;
+    } else if function.name.starts_with("delete") || function.name.starts_with("remove") {
+      writeln!(
+        &mut code,
+        "      this.items = this.items.filter(item => item.id !== result.id);"
+      )?;
     }
 
     writeln!(&mut code, "      return result;")?;
@@ -363,29 +361,27 @@ impl SvelteGenerator {
       } else if function.name.starts_with("get") {
         writeln!(&mut code, "    currentItem.set(result);")?;
       }
-    } else {
-      if function.name.starts_with("create") || function.name.starts_with("add") {
-        writeln!(
-          &mut code,
-          "    items.update($items => [...$items, result]);"
-        )?;
-      } else if function.name.starts_with("update") {
-        writeln!(&mut code, "    items.update($items => {{")?;
-        writeln!(
-          &mut code,
-          "      const index = $items.findIndex(item => item.id === result.id);"
-        )?;
-        writeln!(&mut code, "      if (index !== -1) {{")?;
-        writeln!(&mut code, "        $items[index] = result;")?;
-        writeln!(&mut code, "      }}")?;
-        writeln!(&mut code, "      return $items;")?;
-        writeln!(&mut code, "    }});")?;
-      } else if function.name.starts_with("delete") || function.name.starts_with("remove") {
-        writeln!(
-          &mut code,
-          "    items.update($items => $items.filter(item => item.id !== result.id));"
-        )?;
-      }
+    } else if function.name.starts_with("create") || function.name.starts_with("add") {
+      writeln!(
+        &mut code,
+        "    items.update($items => [...$items, result]);"
+      )?;
+    } else if function.name.starts_with("update") {
+      writeln!(&mut code, "    items.update($items => {{")?;
+      writeln!(
+        &mut code,
+        "      const index = $items.findIndex(item => item.id === result.id);"
+      )?;
+      writeln!(&mut code, "      if (index !== -1) {{")?;
+      writeln!(&mut code, "        $items[index] = result;")?;
+      writeln!(&mut code, "      }}")?;
+      writeln!(&mut code, "      return $items;")?;
+      writeln!(&mut code, "    }});")?;
+    } else if function.name.starts_with("delete") || function.name.starts_with("remove") {
+      writeln!(
+        &mut code,
+        "    items.update($items => $items.filter(item => item.id !== result.id));"
+      )?;
     }
 
     writeln!(&mut code, "    return result;")?;
@@ -705,12 +701,10 @@ impl FrameworkGenerator for SvelteGenerator {
       } else {
         "stores.ts"
       }
+    } else if self.use_runes {
+      "svelte.js"
     } else {
-      if self.use_runes {
-        "svelte.js"
-      } else {
-        "stores.js"
-      }
+      "stores.js"
     }
   }
 }

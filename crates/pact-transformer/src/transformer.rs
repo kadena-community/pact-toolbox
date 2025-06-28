@@ -139,7 +139,6 @@ impl CoreTransformer {
   }
 }
 
-
 /// Transform Pact source to framework-specific code
 pub async fn transform_to_framework(
   source: String,

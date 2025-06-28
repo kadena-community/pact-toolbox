@@ -1,5 +1,4 @@
 use crate::ast::*;
-use crate::error::TransformResult;
 use crate::plugin::get_plugin_manager;
 use crate::types::{convert_to_jsdoc, pact_type_to_typescript};
 use rayon::prelude::*;
@@ -13,20 +12,16 @@ pub struct CodeGenerator {
 #[allow(dead_code)]
 pub fn generate_js(modules: &[PactModule]) -> String {
   let mut generator = CodeGenerator::new(false);
-  match generator.generate(modules) {
-    Ok((code, _)) => code,
-    Err(_) => String::new(),
-  }
+  let (code, _) = generator.generate(modules);
+  code
 }
 
 /// Generate TypeScript types from modules
 #[allow(dead_code)]
 pub fn generate_types(modules: &[PactModule]) -> String {
   let mut generator = CodeGenerator::new(true);
-  match generator.generate(modules) {
-    Ok((_, types)) => types,
-    Err(_) => String::new(),
-  }
+  let (_, types) = generator.generate(modules);
+  types
 }
 
 impl CodeGenerator {
@@ -34,7 +29,7 @@ impl CodeGenerator {
     Self { generate_types }
   }
 
-  pub fn generate(&mut self, modules: &[PactModule]) -> TransformResult<(String, String)> {
+  pub fn generate(&mut self, modules: &[PactModule]) -> (String, String) {
     // Apply plugin transformations first
     let mut transformed_modules = modules.to_vec();
 
@@ -93,7 +88,7 @@ impl CodeGenerator {
       log::warn!("Plugin post-generation error: {}", e);
     }
 
-    Ok((code, types))
+    (code, types)
   }
 
   fn generate_module_code(&self, module: &PactModule) -> String {
@@ -103,7 +98,7 @@ impl CodeGenerator {
     let function_codes: Vec<String> = module
       .functions
       .par_iter()
-      .map(|func| self.generate_function_code(func, module))
+      .map(|func| Self::generate_function_code(func, module))
       .collect();
 
     for func_code in function_codes {
@@ -114,7 +109,7 @@ impl CodeGenerator {
     code
   }
 
-  fn generate_function_code(&self, function: &PactFunction, module: &PactModule) -> String {
+  fn generate_function_code(function: &PactFunction, module: &PactModule) -> String {
     let mut code = String::with_capacity(1024);
 
     // Generate JSDoc
@@ -174,18 +169,18 @@ impl CodeGenerator {
 
     // Generate schema types first
     for schema in &module.schemas {
-      types.push_str(&self.generate_schema_type(schema));
+      types.push_str(&Self::generate_schema_type(schema));
     }
 
     // Generate function types
     for function in &module.functions {
-      types.push_str(&self.generate_function_type(function));
+      types.push_str(&Self::generate_function_type(function));
     }
 
     types
   }
 
-  fn generate_schema_type(&self, schema: &PactSchema) -> String {
+  fn generate_schema_type(schema: &PactSchema) -> String {
     let mut types = String::with_capacity(512);
 
     if let Some(doc) = &schema.doc {
@@ -209,7 +204,7 @@ impl CodeGenerator {
     types
   }
 
-  fn generate_function_type(&self, function: &PactFunction) -> String {
+  fn generate_function_type(function: &PactFunction) -> String {
     let mut types = String::with_capacity(256);
 
     if let Some(doc) = &function.doc {
@@ -305,7 +300,7 @@ mod tests {
   fn test_generate_empty_module() {
     let module = PactModule::new("test".to_string(), "governance".to_string());
     let mut generator = CodeGenerator::new(false);
-    let (code, _) = generator.generate(&[module]).unwrap();
+    let (code, _) = generator.generate(&[module]);
 
     assert!(code.contains("import { execution, continuation }"));
   }
@@ -333,7 +328,7 @@ mod tests {
     module.add_function(function);
 
     let mut generator = CodeGenerator::new(true);
-    let (code, types) = generator.generate(&[module]).unwrap();
+    let (code, types) = generator.generate(&[module]);
 
     // Check JavaScript generation
     assert!(code.contains("export function createTodo(id, title) {"));
@@ -364,7 +359,7 @@ mod tests {
     module.add_function(function);
 
     let mut generator = CodeGenerator::new(false);
-    let (code, _) = generator.generate(&[module]).unwrap();
+    let (code, _) = generator.generate(&[module]);
 
     assert!(code.contains("return execution(`(free.todos.get-todos)`);"));
     assert!(code.contains("export function getTodos() {"));
@@ -388,7 +383,7 @@ mod tests {
     module.add_function(function);
 
     let mut generator = CodeGenerator::new(false);
-    let (code, _) = generator.generate(&[module]).unwrap();
+    let (code, _) = generator.generate(&[module]);
 
     assert!(code.contains("return execution(`(utils.helper-func ${JSON.stringify(value)})`);"));
     assert!(code.contains("export function helperFunc(value) {"));
@@ -418,7 +413,7 @@ mod tests {
     module.add_function(defpact);
 
     let mut generator = CodeGenerator::new(false);
-    let (code, _) = generator.generate(&[module]).unwrap();
+    let (code, _) = generator.generate(&[module]);
 
     assert!(code.contains("return continuation(`(transfers.cross-chain-transfer"));
     assert!(code.contains("export function crossChainTransfer(from, to) {"));
@@ -439,7 +434,7 @@ mod tests {
     module.add_function(function);
 
     let mut generator = CodeGenerator::new(true);
-    let (code, types) = generator.generate(&[module]).unwrap();
+    let (code, types) = generator.generate(&[module]);
 
     assert!(code.contains("export function getCount() {"));
     assert!(code.contains("return execution(`(counter.get-count)`);"));
@@ -483,7 +478,7 @@ mod tests {
     module.add_function(function);
 
     let mut generator = CodeGenerator::new(true);
-    let (code, types) = generator.generate(&[module]).unwrap();
+    let (code, types) = generator.generate(&[module]);
 
     assert!(code
       .contains("export function createUserProfile(user-id, first-name, last-name, email, age) {"));
@@ -521,7 +516,7 @@ mod tests {
     module.add_schema(schema);
 
     let mut generator = CodeGenerator::new(true);
-    let (_, types) = generator.generate(&[module]).unwrap();
+    let (_, types) = generator.generate(&[module]);
 
     assert!(types.contains("export interface UserProfile {"));
     assert!(types.contains("userId: string;"));
@@ -565,7 +560,7 @@ mod tests {
     module2.add_function(function2);
 
     let mut generator = CodeGenerator::new(false);
-    let (code, _) = generator.generate(&[module1, module2]).unwrap();
+    let (code, _) = generator.generate(&[module1, module2]);
 
     assert!(code.contains("export function createTodo(id) {"));
     assert!(code.contains("return execution(`(free.todos.create-todo ${JSON.stringify(id)})`);"));
@@ -617,7 +612,7 @@ mod tests {
     }
 
     let mut generator = CodeGenerator::new(true);
-    let (_, types) = generator.generate(&[module]).unwrap();
+    let (_, types) = generator.generate(&[module]);
 
     assert!(types.contains("PactTransactionBuilder<PactExecPayload, Item>;"));
     assert!(types.contains("PactTransactionBuilder<PactExecPayload, Item[]>;"));
@@ -643,7 +638,7 @@ mod tests {
     module.add_function(function);
 
     let mut generator = CodeGenerator::new(false);
-    let (code, _) = generator.generate(&[module]).unwrap();
+    let (code, _) = generator.generate(&[module]);
 
     assert!(code.contains("/**"));
     assert!(code.contains("* This is a well documented function"));
@@ -713,7 +708,7 @@ mod tests {
     module.add_function(function);
 
     let mut generator = CodeGenerator::new(true);
-    let (_, types) = generator.generate(&[module]).unwrap();
+    let (_, types) = generator.generate(&[module]);
 
     assert!(types.contains("noType: any"));
     assert!(types.contains("withType: string"));
@@ -734,7 +729,7 @@ mod tests {
     module.add_function(function);
 
     let mut generator = CodeGenerator::new(false); // No types
-    let (code, types) = generator.generate(&[module]).unwrap();
+    let (code, types) = generator.generate(&[module]);
 
     assert!(code.contains("export function simpleFunc() {"));
     assert!(types.is_empty());
@@ -743,7 +738,7 @@ mod tests {
   #[test]
   fn test_empty_modules_list() {
     let mut generator = CodeGenerator::new(true);
-    let (code, types) = generator.generate(&[]).unwrap();
+    let (code, types) = generator.generate(&[]);
 
     assert!(code.is_empty());
     assert!(types.is_empty());

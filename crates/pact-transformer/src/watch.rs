@@ -554,9 +554,7 @@ mod tests {
 
     let patterns = vec![format!("{}/**/*.pact", temp_dir.path().display())];
 
-    let found_files = find_pact_files(patterns, None, None)
-      .await
-      .unwrap();
+    let found_files = find_pact_files(patterns, None, None).await.unwrap();
 
     assert_eq!(found_files.len(), 3); // Only .pact files
 

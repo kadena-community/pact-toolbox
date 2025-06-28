@@ -143,9 +143,7 @@ async fn file_transform_impl(
   } else {
     // Use regular generator
     let mut generator = CodeGenerator::new(transform_opts.generate_types.unwrap_or(true));
-    let (js, ts) = generator
-      .generate(&modules)
-      .with_context(|| format!("Failed to generate code for: {}", input_path))?;
+    let (js, ts) = generator.generate(&modules);
     (js, ts, None)
   };
 
@@ -369,9 +367,7 @@ pub async fn batch_file_transform(
     .map(|path| {
       let file_opts = file_opts.clone();
       let transform_opts = transform_opts.clone();
-      tokio::spawn(async move {
-        file_transform(path, Some(transform_opts), Some(file_opts)).await
-      })
+      tokio::spawn(async move { file_transform(path, Some(transform_opts), Some(file_opts)).await })
     })
     .collect();
 

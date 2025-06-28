@@ -166,7 +166,8 @@ impl WatchSession {
     let mut watch_opts = watch_options.unwrap_or_default();
     watch_opts.patterns = patterns;
 
-    let handle = crate::create_watch_session(Some(watch_opts), transform_options, file_options).await?;
+    let handle =
+      crate::create_watch_session(Some(watch_opts), transform_options, file_options).await?;
 
     Ok(WatchSession { handle })
   }

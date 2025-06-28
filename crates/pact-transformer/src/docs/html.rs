@@ -15,7 +15,7 @@ pub struct HtmlGenerator {
 
 impl HtmlGenerator {
   pub fn new() -> Self {
-    let mut templates = HashMap::new();
+    let templates = HashMap::new();
 
     // Base HTML template
     // templates.insert("base".to_string(), include_str!("../templates/docs/base.html").to_string());
@@ -87,7 +87,7 @@ impl HtmlGenerator {
     )
   }
 
-  fn generate_css(&self, options: &DocsOptions) -> String {
+  fn generate_css(&self, _options: &DocsOptions) -> String {
     let primary_color = "#2563eb"; // Blue
     let secondary_color = "#10b981"; // Green
 
