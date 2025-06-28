@@ -45,22 +45,6 @@
   "engines": {
     "node": ">= 20"
   },
-  "optionalDependencies": {
-    "@pact-toolbox/pact-transformer-android-arm-eabi": "0.1.0",
-    "@pact-toolbox/pact-transformer-android-arm64": "0.1.0",
-    "@pact-toolbox/pact-transformer-darwin-arm64": "0.1.0",
-    "@pact-toolbox/pact-transformer-darwin-x64": "0.1.0",
-    "@pact-toolbox/pact-transformer-freebsd-x64": "0.1.0",
-    "@pact-toolbox/pact-transformer-linux-arm-gnueabihf": "0.1.0",
-    "@pact-toolbox/pact-transformer-linux-arm64-gnu": "0.1.0",
-    "@pact-toolbox/pact-transformer-linux-arm64-musl": "0.1.0",
-    "@pact-toolbox/pact-transformer-linux-x64-gnu": "0.1.0",
-    "@pact-toolbox/pact-transformer-linux-x64-musl": "0.1.0",
-    "@pact-toolbox/pact-transformer-wasm32-wasip1-threads": "0.1.0",
-    "@pact-toolbox/pact-transformer-win32-arm64-msvc": "0.1.0",
-    "@pact-toolbox/pact-transformer-win32-ia32-msvc": "0.1.0",
-    "@pact-toolbox/pact-transformer-win32-x64-msvc": "0.1.0"
-  },
   "scripts": {
     "artifacts": "napi artifacts",
     "build": "napi build --platform --release",
