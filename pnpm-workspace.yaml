@@ -4,3 +4,4 @@ packages:
   - "tooling/*"
   - "examples/*"
   - "crates/pact-transformer"
+  - "crates/pact-transformer/npm/*"

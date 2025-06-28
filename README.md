@@ -123,16 +123,13 @@ pact-toolbox/
 │   └── ...            # 20+ specialized packages
 ├── apps/              # Applications
 │   ├── cli/           # pact-toolbox CLI
-│   ├── admin-dashboard/ # Web monitoring dashboard
 │   └── docs/          # Documentation site
 ├── crates/            # Rust components
 │   ├── pact-transformer/ # Tree-sitter parser & TypeScript generator
-│   ├── pact-playground/  # WebSocket-based execution server
 │   └── mining-trigger/   # Mining service for DevNet
 ├── examples/          # Example projects
 │   ├── todo-mvc-vite/    # Vite example
-│   ├── todo-mvc-nextjs/  # Next.js example
-│   └── playground-demo/  # Interactive playground
+│   └── todo-mvc-nextjs/  # Next.js example
 └── tooling/           # Shared configurations
     ├── oxlint/        # Linting (not ESLint)
     ├── prettier/      # Code formatting

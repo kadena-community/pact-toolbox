@@ -66,14 +66,12 @@ cd crates/pact-transformer && cargo test
 - **packages/**: Core library packages (25+ packages including transaction, chainweb-client, wallet-*, etc.)
 - **apps/**: Applications
   - `cli/`: Main pact-toolbox CLI with commands for init, start, test, run, generate, doctor, prelude
-  - `admin-dashboard/`: Web-based monitoring and management dashboard
   - `docs/`: Documentation site built with Next.js and Fumadocs
 - **crates/**: Rust components
   - `pact-transformer/`: Tree-sitter based parser with TypeScript type generation
-  - `pact-playground/`: WebSocket-based Pact execution server
   - `mining-trigger/`: Mining service for local DevNet
 - **tooling/**: Shared development configurations (oxlint, prettier, tsconfig, tsdown, vitest)
-- **examples/**: Example applications (todo-mvc-vite, todo-mvc-nextjs, playground-demo)
+- **examples/**: Example applications (todo-mvc-vite, todo-mvc-nextjs)
 
 ### Key Architectural Patterns
 
@@ -83,7 +81,6 @@ cd crates/pact-transformer && cargo test
 
 3. **Rust-TypeScript Bridge**: Multiple Rust crates use NAPI-RS to expose high-performance functionality:
    - `pact-transformer`: Pact parsing and TypeScript/framework-specific code generation
-   - `pact-playground`: WebSocket-based Pact execution with load balancing
 
 4. **Testing Framework**: Built on Vitest with REPL-based testing for Pact contracts. The `@pact-toolbox/test` package provides utilities for testing Pact code with `.repl` file support.
 

@@ -134,7 +134,6 @@ Pact Toolbox is a TypeScript/Rust monorepo using pnpm workspaces and Turbo for b
 pact-toolbox/
 ├── apps/                          # Applications
 │   ├── cli/                       # Main pact-toolbox CLI
-│   ├── admin-dashboard/           # Web monitoring dashboard
 │   └── docs/                      # Documentation site
 ├── packages/                      # Core library packages
 │   ├── chainweb-client/          # Zero-dependency Chainweb API client
@@ -164,12 +163,10 @@ pact-toolbox/
 │   └── wallet-ui/                # Wallet UI components
 ├── crates/                        # Rust components
 │   ├── mining-trigger/           # Mining service for DevNet
-│   ├── pact-playground/          # WebSocket execution server
 │   └── pact-transformer/         # Tree-sitter parser & TypeScript generator
 ├── examples/                      # Example applications
 │   ├── todo-mvc-vite/            # Vite example
-│   ├── todo-mvc-nextjs/          # Next.js example
-│   └── playground-demo/          # Playground demonstration
+│   └── todo-mvc-nextjs/          # Next.js example
 ├── tooling/                       # Shared development tools
 │   ├── oxlint/                   # Linting configuration
 │   ├── prettier/                 # Code formatting

@@ -144,7 +144,4 @@ test-results/
 /tmp-*/
 
 # intentionally ignored for now to avoid committing by mistake
-apps/admin-dashboard/
-crates/pact-playground/
-packages/playground/
-examples/playground-demo/
+private/
