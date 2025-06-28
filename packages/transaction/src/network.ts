@@ -167,20 +167,6 @@ export class ToolboxNetworkContext {
   }
 }
 
-/**
- * Initialize network context without automatic wallet registration
- * Wallets should be explicitly provided or selected through the UI
- */
-export function registerDefaultToolboxWallet(context: ToolboxNetworkContext = getGlobalNetworkContext()): void {
-  // No automatic wallet registration - users must explicitly provide wallets or use the wallet selector
-  const networkConfig = context.getNetworkConfig();
-  console.debug("Network context initialized:", {
-    networkId: networkConfig.networkId,
-    type: networkConfig.type,
-    requiresExplicitWallet: true,
-  });
-}
-
 // Global context management
 // @ts-expect-error
 let globalContext: ToolboxNetworkContext | null = globalThis["__PACT_TOOLBOX_CONTEXT__"];
@@ -195,7 +181,6 @@ export function createToolboxNetworkContext(
     (globalThis as any).__PACT_TOOLBOX_CONTEXT__ = globalContext;
     (globalThis as any).__PACT_TOOLBOX_NETWORK_CONTEXT__ = globalContext;
   }
-  registerDefaultToolboxWallet(context);
   return context;
 }
 

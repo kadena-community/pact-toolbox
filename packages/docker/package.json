@@ -39,7 +39,7 @@
   },
   "devDependencies": {
     "@types/dockerode": "^3.3.41",
-    "@types/node": "^24.0.4",
+    "@types/node": "^24.0.7",
     "@types/tar-fs": "^2.0.4",
     "oxlint": "^1.3.0",
     "tsdown": "^0.12.9",

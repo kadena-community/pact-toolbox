@@ -11,6 +11,13 @@ import {
 } from "./validation";
 
 /**
+ * Default testnet RPC URL for Kadena chainweb
+ */
+export const DEFAULT_TESTNET_RPC_URL: string = createChainwebRpcUrl({
+  host: "https://api.testnet.chainweb.com",
+});
+
+/**
  * Create a Pact Server configuration with defaults
  * @param overrides - Configuration overrides
  * @returns Complete Pact Server configuration
@@ -192,9 +199,7 @@ export function createChainwebNetworkConfig(overrides?: Partial<ChainwebNetworkC
 export function createTestNetNetworkConfig(overrides?: Partial<ChainwebNetworkConfig>): ChainwebNetworkConfig {
   const defaults = {
     type: "chainweb" as const,
-    rpcUrl: createChainwebRpcUrl({
-      host: "https://testnet.chainweb.com",
-    }),
+    rpcUrl: DEFAULT_TESTNET_RPC_URL,
     networkId: "testnet04",
     keyPairs: [],
     keysets: {},

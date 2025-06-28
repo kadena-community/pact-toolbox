@@ -1,0 +1,55 @@
+{
+  "name": "@pact-toolbox/wallet-core",
+  "version": "0.0.0",
+  "description": "Core wallet interfaces and base implementations for Pact Toolbox",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsdown src/index.ts",
+    "dev": "tsdown src/index.ts --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "lint": "oxlint .",
+    "lint:fix": "oxlint . --fix"
+  },
+  "dependencies": {
+    "@pact-toolbox/types": "workspace:*"
+  },
+  "devDependencies": {
+    "@pact-toolbox/tsconfig": "workspace:*",
+    "@pact-toolbox/tsdown": "workspace:*",
+    "vitest": "^3.2.4"
+  },
+  "license": "MIT",
+  "author": {
+    "name": "Mohamed Elshafey",
+    "email": "mohamed.elshafae@kadena.io",
+    "url": "https://github.com/salamaashoush"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kadena-community/pact-toolbox.git",
+    "directory": "packages/wallet-core"
+  },
+  "keywords": [
+    "pact",
+    "toolbox",
+    "wallet",
+    "core",
+    "kadena",
+    "blockchain"
+  ]
+}

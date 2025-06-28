@@ -4,7 +4,7 @@
 
 ## Overview
 
-The `@pact-toolbox/runtime` package provides a comprehensive Node.js client for interacting with Pact smart contracts. It offers high-level APIs for contract deployment, transaction execution, and blockchain interactions with support for multiple network types and configurations.
+The `@pact-toolbox/runtime` package provides a comprehensive Node.js client for interacting with Pact smart contracts on the Kadena blockchain. It offers high-level APIs for contract deployment, transaction execution, and blockchain interactions with support for multiple network types including local Pact servers, devnets, testnets, and mainnet.
 
 ## Installation
 
@@ -16,39 +16,46 @@ pnpm add @pact-toolbox/runtime
 
 ## Features
 
-- =� **Contract Deployment** - Deploy single or multiple contracts with ease
-- =� **Transaction Building** - Fluent API for building complex transactions
-- < **Multi-Network Support** - Works with local, devnet, and mainnet
-- = **Signer Integration** - Environment variable and wallet support
-- =� **File System Integration** - Load contracts directly from files
-- � **Performance Options** - Preflight, local execution, and dirty reads
-- = **Transaction Management** - Submit, listen, and poll for results
-- =� **Developer Tools** - Module introspection and namespace management
+- 📄 **Contract Deployment** - Deploy single or multiple contracts with ease
+- 🔧 **Transaction Building** - Fluent API for building complex transactions
+- 🌐 **Multi-Network Support** - Works with local, devnet, testnet, and mainnet
+- 🔑 **Signer Integration** - Environment variable and wallet support
+- 📁 **File System Integration** - Load contracts directly from files
+- ⚡ **Performance Options** - Preflight, local execution, and dirty reads
+- 📡 **Transaction Management** - Submit, listen, and poll for results
+- 🛠️ **Developer Tools** - Module introspection and namespace management
 
 ## Quick Start
 
 ```typescript
-import { PactToolboxClient } from '@pact-toolbox/runtime';
+import { PactToolboxClient } from "@pact-toolbox/runtime";
 
 // Create client with configuration
 const client = new PactToolboxClient({
-  network: {
-    type: 'devnet',
-    name: 'local-devnet',
+  defaultNetwork: "devnet",
+  contractsDir: "./contracts",
+  networks: {
     devnet: {
-      url: 'http://localhost:8080',
-      chainIds: ['0', '1', '2', '3']
-    }
+      type: "chainweb-devnet",
+      name: "local-devnet",
+      networkId: "devnet",
+      rpcUrl: "http://localhost:8080",
+      senderAccount: "sender00",
+      keyPairs: [],
+      keysets: {},
+      meta: { chainId: "0" },
+    },
   },
-  contractsDir: './contracts'
 });
 
 // Deploy a contract
-await client.deployContract('./contracts/my-module.pact');
+await client.deployContract("./contracts/my-module.pact");
 
 // Execute a transaction
-const result = await client.execution('(my-module.hello-world)')
-  .addData({ name: 'Alice' })
+const result = await client
+  .execution("(my-module.hello-world)")
+  .addData({ name: "Alice" })
+  .sign(client.getWallet())
   .submitAndListen();
 
 console.log(result);
@@ -59,18 +66,24 @@ console.log(result);
 ### Creating a Client
 
 ```typescript
-import { PactToolboxClient } from '@pact-toolbox/runtime';
-import { resolveConfig } from '@pact-toolbox/config';
+import { PactToolboxClient } from "@pact-toolbox/runtime";
+import { resolveConfig } from "@pact-toolbox/config";
 
 // Option 1: With inline configuration
 const client1 = new PactToolboxClient({
-  network: {
-    type: 'pact-server',
-    name: 'local',
-    pactServer: {
-      url: 'http://localhost:9001'
-    }
-  }
+  defaultNetwork: "local",
+  networks: {
+    local: {
+      type: "pact-server",
+      name: "local",
+      networkId: "pact-server",
+      rpcUrl: "http://localhost:9001",
+      senderAccount: "sender00",
+      keyPairs: [],
+      keysets: {},
+      meta: { chainId: "0" },
+    },
+  },
 });
 
 // Option 2: From resolved configuration
@@ -79,10 +92,12 @@ const client2 = new PactToolboxClient(config);
 
 // Option 3: With custom directories
 const client3 = new PactToolboxClient({
-  contractsDir: './pact',
-  scriptsDir: './pact/scripts',
-  preludesDir: './pact/preludes',
-  network: { /* ... */ }
+  contractsDir: "./pact",
+  scriptsDir: "./pact/scripts",
+  defaultNetwork: "devnet",
+  networks: {
+    /* ... */
+  },
 });
 ```
 
@@ -92,13 +107,19 @@ const client3 = new PactToolboxClient({
 
 ```typescript
 const client = new PactToolboxClient({
-  network: {
-    type: 'pact-server',
-    name: 'local',
-    pactServer: {
-      url: 'http://localhost:9001'
-    }
-  }
+  defaultNetwork: "local",
+  networks: {
+    local: {
+      type: "pact-server",
+      name: "local",
+      networkId: "pact-server",
+      rpcUrl: "http://localhost:9001",
+      senderAccount: "sender00",
+      keyPairs: [],
+      keysets: {},
+      meta: { chainId: "0" },
+    },
+  },
 });
 ```
 
@@ -106,17 +127,19 @@ const client = new PactToolboxClient({
 
 ```typescript
 const client = new PactToolboxClient({
-  network: {
-    type: 'chainweb-devnet',
-    name: 'devnet',
+  defaultNetwork: "devnet",
+  networks: {
     devnet: {
-      url: 'http://localhost:8080',
-      chainIds: ['0', '1', '2', '3'],
-      miningConfig: {
-        onDemandMining: true
-      }
-    }
-  }
+      type: "chainweb-devnet",
+      name: "devnet",
+      networkId: "devnet",
+      rpcUrl: "http://localhost:8080",
+      senderAccount: "sender00",
+      keyPairs: [],
+      keysets: {},
+      meta: { chainId: "0" },
+    },
+  },
 });
 ```
 
@@ -124,15 +147,19 @@ const client = new PactToolboxClient({
 
 ```typescript
 const client = new PactToolboxClient({
-  network: {
-    type: 'chainweb',
-    name: 'testnet',
-    chainweb: {
-      networkId: 'testnet04',
-      apiHost: 'https://api.testnet.chainweb.com',
-      chainIds: ['0', '1']
-    }
-  }
+  defaultNetwork: "testnet",
+  networks: {
+    testnet: {
+      type: "chainweb",
+      name: "testnet",
+      networkId: "testnet04",
+      rpcUrl: "https://api.testnet.chainweb.com",
+      senderAccount: "sender00",
+      keyPairs: [],
+      keysets: {},
+      meta: { chainId: "0" },
+    },
+  },
 });
 ```
 
@@ -142,40 +169,42 @@ const client = new PactToolboxClient({
 
 ```typescript
 // Deploy from file
-await client.deployContract('./contracts/token.pact');
+await client.deployContract("./contracts/token.pact");
 
 // Deploy with options
-await client.deployContract('./contracts/token.pact', {
-  chainIds: ['0', '1'],      // Deploy to specific chains
-  preflight: false,          // Skip preflight
-  signatureVerification: false,
-  listen: true               // Wait for confirmation
-});
+await client.deployContract(
+  "./contracts/token.pact",
+  {
+    preflight: false, // Skip preflight
+    listen: true, // Wait for confirmation
+  },
+  ["0", "1"],
+); // Deploy to specific chains
 
 // Deploy raw code
-await client.deployCode('(module test GOVERNANCE ...)');
+await client.deployCode("(module test GOVERNANCE ...)");
 ```
 
 ### Deploy Multiple Contracts
 
 ```typescript
 // Deploy multiple files
-await client.deployContracts([
-  './contracts/token.pact',
-  './contracts/exchange.pact',
-  './contracts/governance.pact'
-]);
+await client.deployContracts(["./contracts/token.pact", "./contracts/exchange.pact", "./contracts/governance.pact"]);
 
 // Deploy with dependencies in order
 const contracts = [
-  { path: './base.pact', chainIds: ['0'] },
-  { path: './dependent.pact', chainIds: ['0'] }
+  { path: "./base.pact", chainIds: ["0"] },
+  { path: "./dependent.pact", chainIds: ["0"] },
 ];
 
 for (const contract of contracts) {
-  await client.deployContract(contract.path, {
-    chainIds: contract.chainIds
-  });
+  await client.deployContract(
+    contract.path,
+    {
+      listen: true,
+    },
+    contract.chainIds,
+  );
 }
 ```
 
@@ -183,22 +212,22 @@ for (const contract of contracts) {
 
 ```typescript
 // Check before deploying
-const isDeployed = await client.isContractDeployed('my-module');
+const isDeployed = await client.isContractDeployed("my-module");
 if (!isDeployed) {
-  await client.deployContract('./my-module.pact');
+  await client.deployContract("./my-module.pact");
 }
 
-// Deploy with custom signers
-const result = await client.deployContract('./token.pact', {
-  signers: [{
-    pubKey: 'admin-public-key',
-    scheme: 'ED25519'
-  }],
-  meta: {
-    chainId: '0',
-    sender: 'admin-account',
-    gasLimit: 100000
-  }
+// Deploy with custom wallet
+const result = await client.deployContract("./token.pact", {
+  wallet: {
+    publicKey: "admin-public-key",
+    secretKey: "admin-secret-key",
+    account: "admin-account",
+  },
+  builder: {
+    chainId: "0",
+    senderAccount: "admin-account",
+  },
 });
 ```
 
@@ -208,46 +237,41 @@ const result = await client.deployContract('./token.pact', {
 
 ```typescript
 // Simple execution
-const result = await client.execution('(coin.details "alice")')
-  .submitAndListen();
+const result = await client.execution('(coin.details "alice")').sign(client.getWallet()).submitAndListen();
 
 // With data
-const transfer = await client.execution('(coin.transfer "alice" "bob" amount)')
+const transfer = await client
+  .execution('(coin.transfer "alice" "bob" amount)')
   .addData({ amount: 10.0 })
+  .sign(client.getWallet())
   .submitAndListen();
 ```
 
 ### Advanced Transaction Building
 
 ```typescript
-const result = await client.execution('(my-module.complex-operation)')
+const result = await client
+  .execution("(my-module.complex-operation)")
   // Add metadata
-  .setMeta({
-    chainId: '0',
-    sender: 'gas-payer',
+  .withMeta({
+    chainId: "0",
+    sender: "gas-payer",
     gasLimit: 10000,
     gasPrice: 0.00001,
-    ttl: 600
+    ttl: 600,
   })
   // Add signers
-  .addSigner({
-    pubKey: 'alice-key',
-    scheme: 'ED25519',
-    caps: [['my-module.TRANSFER', 'alice', 'bob', 10.0]]
-  })
+  .withSigner("alice-key", (signFor) => [signFor("my-module.TRANSFER", "alice", "bob", 10.0)])
   // Add keyset
-  .addKeyset('admin-keyset', {
-    keys: ['admin-key-1', 'admin-key-2'],
-    pred: 'keys-all'
+  .withKeyset("admin-keyset", {
+    keys: ["admin-key-1", "admin-key-2"],
+    pred: "keys-all",
   })
-  // Add capabilities
-  .addCapability('my-module.TRANSFER', 'alice', 'bob', 10.0)
   // Add data
-  .addData({
-    config: { timeout: 30 },
-    metadata: { version: '1.0' }
-  })
-  // Execute
+  .withData("config", { timeout: 30 })
+  .withData("metadata", { version: "1.0" })
+  // Sign and execute
+  .sign(client.getWallet())
   .submitAndListen();
 ```
 
@@ -255,34 +279,27 @@ const result = await client.execution('(my-module.complex-operation)')
 
 ```typescript
 // Submit without waiting (returns request key)
-const requestKey = await client.execution('(my-module.async-op)')
-  .submit();
+const requestKey = await client.execution("(my-module.async-op)").sign(client.getWallet()).submit();
 
 // Submit and listen for result
-const result = await client.execution('(my-module.sync-op)')
-  .submitAndListen();
+const result = await client.execution("(my-module.sync-op)").sign(client.getWallet()).submitAndListen();
 
 // Local execution (validation only)
-const localResult = await client.execution('(my-module.validate)')
-  .local();
+const localResult = await client.execution("(my-module.validate)").build().local();
 
 // Dirty read (fast, no consensus)
-const dirtyResult = await client.execution('(coin.get-balance "alice")')
-  .dirtyRead();
+const dirtyResult = await client.execution('(coin.get-balance "alice")').build().dirtyRead();
 ```
 
 ### Multi-Chain Transactions
 
 ```typescript
 // Execute on specific chains
-const result = await client.execution('(my-module.deploy)')
-  .onChains(['0', '1', '2'])
-  .submitAndListen();
+const result = await client.deployContract("my-module.pact", {}, ["0", "1", "2"]);
 
-// Execute on all chains
-const allChains = await client.execution('(my-module.global-update)')
-  .onAllChains()
-  .submitAndListen();
+// Execute on all available chains
+const allChains = client.getNetworkConfig().meta?.chainId ? [client.getNetworkConfig().meta.chainId] : ["0"];
+const results = await client.deployContract("my-module.pact", {}, allChains);
 ```
 
 ## Contract Interaction
@@ -292,49 +309,50 @@ const allChains = await client.execution('(my-module.global-update)')
 ```typescript
 // List all modules
 const modules = await client.listModules();
-console.log('Deployed modules:', modules);
+console.log("Deployed modules:", modules);
 
 // Describe module interface
-const moduleInfo = await client.describeModule('coin');
-console.log('Module interface:', moduleInfo);
+const moduleInfo = await client.describeModule("coin");
+console.log("Module interface:", moduleInfo);
 
 // Check if module exists
-const exists = await client.isContractDeployed('my-module');
-console.log('Module deployed:', exists);
+const exists = await client.isContractDeployed("my-module");
+console.log("Module deployed:", exists);
 ```
 
 ### Namespace Management
 
 ```typescript
 // List namespaces
-const namespaces = await client.execution('(list-namespaces)')
-  .dirtyRead();
+const namespaces = await client.execution("(list-namespaces)").build().dirtyRead();
 
 // Describe namespace
-const nsInfo = await client.describeNamespace('free');
-console.log('Namespace info:', nsInfo);
+const nsInfo = await client.describeNamespace("free");
+console.log("Namespace info:", nsInfo);
 
 // Check namespace existence
-const nsDefined = await client.isNamespaceDefined('my-namespace');
+const nsDefined = await client.isNamespaceDefined("my-namespace");
 ```
 
 ### Reading Contract State
 
 ```typescript
 // Read table data
-const accounts = await client.execution('(map (read coin.coin-table) (keys coin.coin-table))')
-  .dirtyRead();
+const accounts = await client.execution("(map (read coin.coin-table) (keys coin.coin-table))").build().dirtyRead();
 
 // Query specific data
-const balance = await client.execution('(coin.get-balance "alice")')
-  .dirtyRead();
+const balance = await client.execution('(coin.get-balance "alice")').build().dirtyRead();
 
 // Complex queries
-const topHolders = await client.execution(`
+const topHolders = await client
+  .execution(
+    `
   (let* ((accounts (keys coin.coin-table))
          (balances (map (read coin.coin-table) accounts)))
     (take 10 (sort (lambda (a b) (> (at 'balance a) (at 'balance b))) balances)))
-`)
+`,
+  )
+  .build()
   .dirtyRead();
 ```
 
@@ -344,32 +362,48 @@ const topHolders = await client.execution(`
 
 ```typescript
 // Set environment variables
-process.env.PACT_TOOLBOX_PUBLIC_KEY = 'your-public-key';
-process.env.PACT_TOOLBOX_SECRET_KEY = 'your-secret-key';
+process.env.PACT_TOOLBOX_PUBLIC_KEY = "your-public-key";
+process.env.PACT_TOOLBOX_SECRET_KEY = "your-secret-key";
 
 // Client automatically uses env signers
 const client = new PactToolboxClient(config);
 
-// Or explicitly
-const signer = client.getSigner();
+// Or for network-specific signers
+process.env.DEVNET_PUBLIC_KEY = "devnet-public-key";
+process.env.DEVNET_SECRET_KEY = "devnet-secret-key";
+
+// Get signer keys
+const signer = client.getSignerKeys();
 ```
 
 ### Custom Signers
 
 ```typescript
-// Provide keypair
+// Provide keypair in configuration
 const client = new PactToolboxClient({
-  network: { /* ... */ },
-  signers: [{
-    public: 'public-key-hex',
-    secret: 'secret-key-hex'
-  }]
+  defaultNetwork: "local",
+  networks: {
+    local: {
+      type: "pact-server",
+      name: "local",
+      networkId: "pact-server",
+      rpcUrl: "http://localhost:9001",
+      senderAccount: "admin-account",
+      keyPairs: [
+        {
+          publicKey: "public-key-hex",
+          secretKey: "secret-key-hex",
+          account: "admin-account",
+        },
+      ],
+      keysets: {},
+      meta: { chainId: "0" },
+    },
+  },
 });
 
-// Use with transaction
-const result = await client.execution('(my-module.admin-op)')
-  .withSigner(customSigner)
-  .submitAndListen();
+// Or use wallet parameter in execution
+const result = await client.execution("(my-module.admin-op)").sign(client.getWallet()).submitAndListen();
 ```
 
 ## File Management
@@ -378,17 +412,17 @@ const result = await client.execution('(my-module.admin-op)')
 
 ```typescript
 // Get contract code
-const code = await client.getContractCode('token.pact');
-console.log('Contract code:', code);
+const code = await client.getContractCode("token.pact");
+console.log("Contract code:", code);
 
 // Load from custom directory
-const customCode = await client.getContractCode('../shared/base.pact');
+const customCode = await client.getContractCode("../shared/base.pact");
 
 // Handle missing files
 try {
-  const code = await client.getContractCode('missing.pact');
+  const code = await client.getContractCode("missing.pact");
 } catch (error) {
-  console.error('Contract not found:', error.message);
+  console.error("Contract not found:", error.message);
 }
 ```
 
@@ -396,14 +430,16 @@ try {
 
 ```typescript
 const client = new PactToolboxClient({
-  contractsDir: './pact/contracts',
-  scriptsDir: './pact/scripts',
-  preludesDir: './pact/preludes',
-  network: { /* ... */ }
+  contractsDir: "./pact/contracts",
+  scriptsDir: "./pact/scripts",
+  defaultNetwork: "local",
+  networks: {
+    /* ... */
+  },
 });
 
 // Paths are resolved relative to configured directories
-await client.deployContract('token.pact'); // Loads from ./pact/contracts/token.pact
+await client.deployContract("token.pact"); // Loads from ./pact/contracts/token.pact
 ```
 
 ## Advanced Features
@@ -412,14 +448,18 @@ await client.deployContract('token.pact'); // Loads from ./pact/contracts/token.
 
 ```typescript
 // Simulate transaction before submission
-const simulation = await client.execution('(coin.transfer "alice" "bob" 100.0)')
-  .addCapability('coin.TRANSFER', 'alice', 'bob', 100.0)
+const simulation = await client
+  .execution('(coin.transfer "alice" "bob" 100.0)')
+  .withSigner("alice-key", (signFor) => [signFor("coin.TRANSFER", "alice", "bob", 100.0)])
+  .build()
   .local();
 
-if (simulation.result.status === 'success') {
+if (simulation.result.status === "success") {
   // Safe to submit
-  const result = await client.execution('(coin.transfer "alice" "bob" 100.0)')
-    .addCapability('coin.TRANSFER', 'alice', 'bob', 100.0)
+  const result = await client
+    .execution('(coin.transfer "alice" "bob" 100.0)')
+    .withSigner("alice-key", (signFor) => [signFor("coin.TRANSFER", "alice", "bob", 100.0)])
+    .sign(client.getWallet())
     .submitAndListen();
 }
 ```
@@ -429,27 +469,19 @@ if (simulation.result.status === 'success') {
 ```typescript
 // Deploy multiple contracts efficiently
 async function deployAll() {
-  const contracts = [
-    'base.pact',
-    'token.pact',
-    'exchange.pact',
-    'governance.pact'
-  ];
-  
+  const contracts = ["base.pact", "token.pact", "exchange.pact", "governance.pact"];
+
   const results = await Promise.all(
-    contracts.map(contract => 
-      client.deployContract(contract, { 
+    contracts.map((contract) =>
+      client.deployContract(contract, {
         preflight: false,
-        listen: false 
-      })
-    )
+        listen: false,
+      }),
+    ),
   );
-  
-  // Wait for all deployments
-  const requestKeys = results.map(r => r.requestKey);
-  const finalResults = await client.pollRequests(requestKeys);
-  
-  return finalResults;
+
+  // Results will contain request keys for tracking
+  return results;
 }
 ```
 
@@ -457,64 +489,46 @@ async function deployAll() {
 
 ```typescript
 try {
-  const result = await client.execution('(my-module.risky-op)')
-    .submitAndListen();
-    
-  if (result.result.status === 'failure') {
-    console.error('Transaction failed:', result.result.error);
+  const result = await client.execution("(my-module.risky-op)").sign(client.getWallet()).submitAndListen();
+
+  if (result.result.status === "failure") {
+    console.error("Transaction failed:", result.result.error);
     // Handle business logic failure
   }
 } catch (error) {
   // Handle network or validation errors
-  if (error.code === 'NETWORK_ERROR') {
-    console.error('Network issue:', error.message);
-  } else if (error.code === 'VALIDATION_ERROR') {
-    console.error('Invalid transaction:', error.message);
+  if (error.code === "NETWORK_ERROR") {
+    console.error("Network issue:", error.message);
+  } else if (error.code === "VALIDATION_ERROR") {
+    console.error("Invalid transaction:", error.message);
   }
 }
 ```
 
-### Custom Network Context
-
-```typescript
-// Override network for specific operations
-const testnetClient = client.withNetwork({
-  type: 'chainweb',
-  name: 'testnet',
-  chainweb: {
-    networkId: 'testnet04',
-    apiHost: 'https://api.testnet.chainweb.com'
-  }
-});
-
-// Use different network temporarily
-const result = await testnetClient.execution('(my-module.test)')
-  .submitAndListen();
-```
-
 ## Testing
 
-### Mock Client for Tests
+### Testing with Mock Dependencies
 
 ```typescript
-import { createMockClient } from '@pact-toolbox/runtime/testing';
+import { describe, test, expect, vi } from "vitest";
+import { PactToolboxClient } from "@pact-toolbox/runtime";
 
-describe('My Contract Tests', () => {
+// Mock the transaction module
+vi.mock("@pact-toolbox/transaction", () => ({
+  createToolboxNetworkContext: vi.fn(() => mockContext),
+  execution: vi.fn(() => mockBuilder),
+}));
+
+describe("My Contract Tests", () => {
   let client;
-  
+
   beforeEach(() => {
-    client = createMockClient({
-      modules: ['coin', 'my-module'],
-      responses: {
-        '(coin.get-balance "alice")': { balance: 1000 }
-      }
-    });
+    client = new PactToolboxClient(testConfig);
   });
-  
-  test('balance query', async () => {
-    const result = await client.execution('(coin.get-balance "alice")')
-      .dirtyRead();
-    expect(result.balance).toBe(1000);
+
+  test("deploys contract", async () => {
+    await client.deployContract("token.pact");
+    // Assert on mock calls
   });
 });
 ```
@@ -522,27 +536,26 @@ describe('My Contract Tests', () => {
 ### Integration Testing
 
 ```typescript
-import { PactToolboxClient } from '@pact-toolbox/runtime';
-import { createPactTestEnv } from '@pact-toolbox/test';
+import { PactToolboxClient } from "@pact-toolbox/runtime";
+import { createPactTestEnv } from "@pact-toolbox/test";
 
-describe('Contract Integration', () => {
+describe("Contract Integration", () => {
   let client;
   let testEnv;
-  
+
   beforeAll(async () => {
     testEnv = await createPactTestEnv();
     await testEnv.start();
     client = new PactToolboxClient(testEnv.config);
   });
-  
+
   afterAll(async () => {
     await testEnv.stop();
   });
-  
-  test('deploy and interact', async () => {
-    await client.deployContract('./test-contract.pact');
-    const result = await client.execution('(test-contract.get-value)')
-      .dirtyRead();
+
+  test("deploy and interact", async () => {
+    await client.deployContract("./test-contract.pact");
+    const result = await client.execution("(test-contract.get-value)").build().dirtyRead();
     expect(result).toBeDefined();
   });
 });
@@ -555,38 +568,45 @@ describe('Contract Integration', () => {
 ```typescript
 // Use environment-specific configs
 const getClient = () => {
-  const env = process.env.NODE_ENV || 'development';
-  const config = {
+  const env = process.env.NODE_ENV || "development";
+  const configs = {
     development: {
-      network: { type: 'pact-server', /* ... */ }
+      defaultNetwork: "local",
+      networks: {
+        /* local config */
+      },
     },
     test: {
-      network: { type: 'chainweb-devnet', /* ... */ }
+      defaultNetwork: "devnet",
+      networks: {
+        /* devnet config */
+      },
     },
     production: {
-      network: { type: 'chainweb', /* ... */ }
-    }
+      defaultNetwork: "mainnet",
+      networks: {
+        /* mainnet config */
+      },
+    },
   };
-  
-  return new PactToolboxClient(config[env]);
+
+  return new PactToolboxClient(configs[env]);
 };
 ```
 
 ### 2. Transaction Reliability
 
 ```typescript
-// Implement retry logic
 async function reliableTransaction(client, code, options = {}) {
   const maxRetries = options.retries || 3;
   const delay = options.delay || 1000;
-  
+
   for (let i = 0; i < maxRetries; i++) {
     try {
-      return await client.execution(code)
-        .submitAndListen();
+      return await client.execution(code).sign(client.getWallet()).submitAndListen();
     } catch (error) {
       if (i === maxRetries - 1) throw error;
-      await new Promise(r => setTimeout(r, delay * (i + 1)));
+      await new Promise((r) => setTimeout(r, delay * (i + 1)));
     }
   }
 }
@@ -595,19 +615,20 @@ async function reliableTransaction(client, code, options = {}) {
 ### 3. Resource Management
 
 ```typescript
-// Clean up resources
 class ManagedClient {
   constructor(config) {
     this.client = new PactToolboxClient(config);
     this.pendingRequests = new Set();
   }
-  
+
   async execute(code) {
-    const requestKey = await this.client.execution(code).submit();
+    const tx = await this.client.execution(code).sign(this.client.getWallet()).getSignedTransaction();
+
+    const requestKey = tx.hash;
     this.pendingRequests.add(requestKey);
-    
+
     try {
-      const result = await this.client.pollRequest(requestKey);
+      const result = await this.client.execution(code).sign(this.client.getWallet()).submitAndListen();
       this.pendingRequests.delete(requestKey);
       return result;
     } catch (error) {
@@ -615,9 +636,9 @@ class ManagedClient {
       throw error;
     }
   }
-  
+
   async cleanup() {
-    // Cancel pending requests
+    // Cancel pending requests if needed
     for (const requestKey of this.pendingRequests) {
       // Implement cancellation logic
     }
@@ -652,19 +673,63 @@ class ManagedClient {
 ### Debug Mode
 
 ```typescript
-// Enable debug logging
-const client = new PactToolboxClient({
-  debug: true,
-  network: { /* ... */ }
-});
+// The runtime package uses @pact-toolbox/node-utils logger
+// Set environment variable to enable debug logging
+process.env.DEBUG = "pact-toolbox:*";
 
-// Log all transactions
-client.on('transaction', (tx) => {
-  console.log('Transaction:', tx);
-});
+const client = new PactToolboxClient(config);
 
-// Log all responses
-client.on('response', (res) => {
-  console.log('Response:', res);
-});
+// Logs will appear for contract loading, deployments, etc.
 ```
+
+## API Reference
+
+### PactToolboxClient
+
+The main client class with the following key methods:
+
+- `constructor(config?, network?)` - Create a new client instance
+- `execution(command)` - Create a transaction builder
+- `deployContract(path, options?, chainId?)` - Deploy a contract file
+- `deployContracts(paths, options?, chainId?)` - Deploy multiple contracts
+- `deployCode(code, options?, chainId?)` - Deploy raw Pact code
+- `getSignerKeys(signerLike?)` - Get signer keypair
+- `getWallet(walletLike?)` - Get wallet instance
+- `listModules()` - List deployed modules
+- `describeModule(module)` - Get module interface
+- `isContractDeployed(module)` - Check if module exists
+- `getContractCode(path)` - Read contract from filesystem
+
+### TransactionBuilderData
+
+Configuration object for transaction builders:
+
+- `senderAccount` - Account paying for gas
+- `chainId` - Target chain ID
+- `init` - Initialize contract (default: true)
+- `namespace` - Contract namespace
+- `keysets` - Keyset definitions
+- `data` - Additional transaction data
+- `upgrade` - Upgrade mode (default: false)
+
+### DeployContractOptions
+
+Options for contract deployment:
+
+- `preflight` - Run preflight checks (default: true)
+- `listen` - Wait for confirmation (default: true)
+- `skipSign` - Skip transaction signing
+- `wallet` - Wallet or signer configuration
+- `builder` - Custom transaction builder config
+
+## Contributing
+
+See the main [pact-toolbox contributing guide](../../CONTRIBUTING.md).
+
+## License
+
+MIT
+
+---
+
+Made with ❤️ by [@salamaashoush](https://github.com/salamaashoush)

@@ -1,0 +1,103 @@
+{
+  "name": "@pact-toolbox/wallet-adapters",
+  "version": "0.1.0",
+  "description": "Wallet adapters for various Kadena wallets",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kadena-community/pact-toolbox.git",
+    "directory": "packages/wallet-adapters"
+  },
+  "author": "Pact Toolbox Team",
+  "license": "MIT",
+  "type": "module",
+  "private": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./ecko": {
+      "types": "./dist/ecko.d.ts",
+      "import": "./dist/ecko.js",
+      "require": "./dist/ecko.cjs"
+    },
+    "./chainweaver": {
+      "types": "./dist/chainweaver.d.ts",
+      "import": "./dist/chainweaver.js",
+      "require": "./dist/chainweaver.cjs"
+    },
+    "./zelcore": {
+      "types": "./dist/zelcore.d.ts",
+      "import": "./dist/zelcore.js",
+      "require": "./dist/zelcore.cjs"
+    },
+    "./walletconnect": {
+      "types": "./dist/walletconnect.d.ts",
+      "import": "./dist/walletconnect.js",
+      "require": "./dist/walletconnect.cjs"
+    },
+    "./keypair": {
+      "types": "./dist/keypair.d.ts",
+      "import": "./dist/keypair.js",
+      "require": "./dist/keypair.cjs"
+    },
+    "./magic": {
+      "types": "./dist/magic.d.ts",
+      "import": "./dist/magic.js",
+      "require": "./dist/magic.cjs"
+    }
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsdown",
+    "dev": "tsdown --watch",
+    "test": "vitest run",
+    "test:watch": "vitest --watch",
+    "typecheck": "tsc --noEmit --skipLibCheck",
+    "lint": "oxlint .",
+    "lint:fix": "oxlint . --fix",
+    "prepack": "pnpm run build"
+  },
+  "dependencies": {
+    "@magic-ext/kadena": "^1.1.0",
+    "@pact-toolbox/chainweb-client": "workspace:*",
+    "@pact-toolbox/crypto": "workspace:*",
+    "@pact-toolbox/dev-wallet": "workspace:*",
+    "@pact-toolbox/signers": "workspace:*",
+    "@pact-toolbox/types": "workspace:*",
+    "@pact-toolbox/utils": "workspace:*",
+    "@pact-toolbox/wallet-core": "workspace:*"
+  },
+  "devDependencies": {
+    "@pact-toolbox/tsdown": "workspace:*",
+    "@types/node": "^24.0.7",
+    "@walletconnect/modal": "^2.7.0",
+    "@walletconnect/sign-client": "^2.21.4",
+    "magic-sdk": "^29.1.0",
+    "oxlint": "^1.3.0",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.4"
+  },
+  "optionalDependencies": {
+    "@walletconnect/modal": "^2.7.0",
+    "@walletconnect/sign-client": "^2.21.4",
+    "magic-sdk": "^29.1.0"
+  },
+  "keywords": [
+    "pact",
+    "kadena",
+    "wallet",
+    "blockchain",
+    "smart-contracts",
+    "adaptor"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
+}

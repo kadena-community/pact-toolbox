@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dev Wallet Test Page</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #f5f5f5;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .wallet-container {
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .controls {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+    button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      background: #4CAF50;
+      color: white;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    button:hover {
+      background: #45a049;
+    }
+    .status {
+      padding: 10px;
+      border-radius: 4px;
+      background: #e3f2fd;
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Dev Wallet Test Page</h1>
+    
+    <div class="status" id="status">
+      Status: Ready
+    </div>
+
+    <div class="controls">
+      <button onclick="connectWallet()">Connect Wallet</button>
+      <button onclick="getAccounts()">Get Accounts</button>
+      <button onclick="signTransaction()">Sign Transaction</button>
+      <button onclick="signMessage()">Sign Message</button>
+      <button onclick="disconnect()">Disconnect</button>
+    </div>
+
+    <div class="wallet-container">
+      <toolbox-wallet-container id="wallet"></toolbox-wallet-container>
+    </div>
+
+    <div id="output"></div>
+  </div>
+
+  <script type="module">
+    // For E2E testing, we'll create a mock wallet
+    const mockWallet = {
+      isConnected: false,
+      account: null,
+      
+      async connect() {
+        this.isConnected = true;
+        this.account = {
+          address: 'k:mock-address-123',
+          publicKey: 'mock-public-key-123',
+          name: 'Test Account'
+        };
+        updateStatus(`Connected: ${this.account.address}`);
+        updateOutput('Connected', this.account);
+        return this.account;
+      },
+      
+      async getAccount() {
+        if (!this.isConnected) throw new Error('Not connected');
+        return this.account;
+      },
+      
+      async getAccounts() {
+        if (!this.isConnected) throw new Error('Not connected');
+        return [this.account];
+      },
+      
+      async signTransaction(tx) {
+        if (!this.isConnected) throw new Error('Not connected');
+        const signed = { ...tx, sigs: [{ sig: 'mock-signature' }] };
+        updateStatus('Transaction signed successfully');
+        updateOutput('Signed Transaction', signed);
+        return signed;
+      },
+      
+      async signMessage(message) {
+        if (!this.isConnected) throw new Error('Not connected');
+        const signature = 'mock-signature-for-' + message;
+        updateStatus('Message signed successfully');
+        updateOutput('Signature', { message, signature });
+        return signature;
+      },
+      
+      async disconnect() {
+        this.isConnected = false;
+        this.account = null;
+        updateStatus('Disconnected');
+        updateOutput('Disconnected', {});
+      }
+    };
+
+    // Make wallet available globally for testing
+    window.devWallet = mockWallet;
+    const wallet = mockWallet;
+
+    // Update status
+    function updateStatus(message) {
+      document.getElementById('status').textContent = `Status: ${message}`;
+    }
+
+    // Connect wallet
+    window.connectWallet = async () => {
+      try {
+        const account = await wallet.connect();
+        updateStatus(`Connected: ${account.address}`);
+        updateOutput('Connected', account);
+      } catch (error) {
+        updateStatus(`Error: ${error.message}`);
+      }
+    };
+
+    // Get accounts
+    window.getAccounts = async () => {
+      try {
+        const accounts = await wallet.getAccounts();
+        updateStatus(`Found ${accounts.length} accounts`);
+        updateOutput('Accounts', accounts);
+      } catch (error) {
+        updateStatus(`Error: ${error.message}`);
+      }
+    };
+
+    // Sign transaction
+    window.signTransaction = async () => {
+      try {
+        const transaction = {
+          cmd: JSON.stringify({
+            payload: { 
+              exec: { 
+                code: '(coin.transfer "alice" "bob" 1.0)', 
+                data: {} 
+              } 
+            },
+            signers: [{ 
+              pubKey: (await wallet.getAccount()).publicKey,
+              clist: [{ name: 'coin.TRANSFER', args: ['alice', 'bob', 1.0] }]
+            }],
+            meta: { 
+              chainId: '0', 
+              sender: 'alice',
+              gasLimit: 1000,
+              gasPrice: 0.000001,
+              ttl: 28800
+            },
+            networkId: 'testnet04',
+            nonce: Date.now().toString(),
+          })
+        };
+
+        const signed = await wallet.signTransaction(transaction);
+        updateStatus('Transaction signed successfully');
+        updateOutput('Signed Transaction', signed);
+      } catch (error) {
+        updateStatus(`Error: ${error.message}`);
+      }
+    };
+
+    // Sign message
+    window.signMessage = async () => {
+      try {
+        const message = 'Hello, Kadena!';
+        const signature = await wallet.signMessage(message);
+        updateStatus('Message signed successfully');
+        updateOutput('Signature', { message, signature });
+      } catch (error) {
+        updateStatus(`Error: ${error.message}`);
+      }
+    };
+
+    // Disconnect
+    window.disconnect = async () => {
+      try {
+        await wallet.disconnect();
+        updateStatus('Disconnected');
+        updateOutput('Disconnected', {});
+      } catch (error) {
+        updateStatus(`Error: ${error.message}`);
+      }
+    };
+
+    // Update output
+    function updateOutput(title, data) {
+      const output = document.getElementById('output');
+      const section = document.createElement('div');
+      section.innerHTML = `
+        <h3>${title}</h3>
+        <pre>${JSON.stringify(data, null, 2)}</pre>
+      `;
+      output.insertBefore(section, output.firstChild);
+    }
+
+    // Listen for wallet events
+    document.addEventListener('wallet-connected', (event) => {
+      console.log('Wallet connected:', event.detail);
+    });
+
+    document.addEventListener('wallet-disconnected', (event) => {
+      console.log('Wallet disconnected:', event.detail);
+    });
+
+    document.addEventListener('transaction-signed', (event) => {
+      console.log('Transaction signed:', event.detail);
+    });
+
+    // Initial status
+    updateStatus('Wallet initialized');
+  </script>
+</body>
+</html>

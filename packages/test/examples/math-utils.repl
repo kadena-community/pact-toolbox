@@ -1,0 +1,154 @@
+;; Mathematical utility functions tests
+;; @unit @regression
+;; Test suite for mathematical operations
+
+(module math-utils GOV
+  ;; Utility functions for mathematical operations
+  
+  (defun add (x:decimal y:decimal)
+    ;; @fast
+    ;; Add two numbers
+    (+ x y))
+  
+  (defun multiply (x:decimal y:decimal)
+    ;; @fast  
+    ;; Multiply two numbers
+    (* x y))
+  
+  (defun divide (x:decimal y:decimal)
+    ;; @validation
+    ;; Divide two numbers with zero check
+    (enforce (!= y 0.0) "Division by zero")
+    (/ x y))
+  
+  (defun factorial (n:integer)
+    ;; @slow @recursive
+    ;; Calculate factorial recursively
+    (if (<= n 1)
+      1
+      (* n (factorial (- n 1)))))
+  
+  (defun is-prime (n:integer)
+    ;; @slow @complex
+    ;; Check if number is prime
+    (if (<= n 1)
+      false
+      (if (= n 2)
+        true
+        (let ((sqrt-n (floor (sqrt n))))
+          (defun check-divisor (i)
+            (if (> i sqrt-n)
+              true
+              (if (= (mod n i) 0)
+                false
+                (check-divisor (+ i 1)))))
+          (check-divisor 2)))))
+)
+
+;; @unit @fast
+;; Test basic addition
+(defun test-add-positive ()
+  (expect "2 + 3 = 5"
+    5.0
+    (add 2.0 3.0)))
+
+;; @unit @fast
+;; Test addition with negative numbers
+(defun test-add-negative ()
+  (expect "5 + (-3) = 2"
+    2.0
+    (add 5.0 -3.0)))
+
+;; @unit @fast
+;; Test multiplication
+(defun test-multiply ()
+  (expect "4 * 5 = 20"
+    20.0
+    (multiply 4.0 5.0)))
+
+;; @unit @fast
+;; Test zero multiplication
+(defun test-multiply-zero ()
+  (expect "Any number * 0 = 0"
+    0.0
+    (multiply 42.0 0.0)))
+
+;; @unit @validation
+;; Test division
+(defun test-divide ()
+  (expect "10 / 2 = 5"
+    5.0
+    (divide 10.0 2.0)))
+
+;; @unit @validation
+;; Test division by zero fails
+(defun test-divide-by-zero-fails ()
+  (expect-failure "Division by zero should fail"
+    "Division by zero"
+    (divide 10.0 0.0)))
+
+;; @slow @recursive
+;; Test factorial calculation
+(defun test-factorial ()
+  (expect "0! = 1"
+    1
+    (factorial 0))
+  
+  (expect "1! = 1"
+    1
+    (factorial 1))
+  
+  (expect "5! = 120"
+    120
+    (factorial 5)))
+
+;; @slow @complex
+;; Test prime number detection
+(defun test-is-prime ()
+  (expect "2 is prime"
+    true
+    (is-prime 2))
+  
+  (expect "3 is prime"
+    true
+    (is-prime 3))
+  
+  (expect "4 is not prime"
+    false
+    (is-prime 4))
+  
+  (expect "17 is prime"
+    true
+    (is-prime 17))
+  
+  (expect "25 is not prime"
+    false
+    (is-prime 25)))
+
+;; @property
+;; Property-based test: addition is commutative
+(defun test-addition-commutative ()
+  (let ((a 7.0) (b 13.0))
+    (expect "Addition is commutative"
+      (add a b)
+      (add b a))))
+
+;; @property
+;; Property-based test: multiplication is associative
+(defun test-multiplication-associative ()
+  (let ((a 2.0) (b 3.0) (c 4.0))
+    (expect "Multiplication is associative"
+      (multiply (multiply a b) c)
+      (multiply a (multiply b c)))))
+
+;; Run all tests
+(test-add-positive)
+(test-add-negative)
+(test-multiply)
+(test-multiply-zero)
+(test-divide)
+(test-divide-by-zero-fails)
+(test-factorial)
+(test-is-prime)
+(test-addition-commutative)
+(test-multiplication-associative)

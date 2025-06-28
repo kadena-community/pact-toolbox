@@ -30,6 +30,7 @@ export class KeypairWalletProvider implements WalletProvider {
         ? "Development wallet with key management UI"
         : "Built-in keypair-based wallet for development and testing",
       type: "built-in",
+      icon: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEyIDJDNi40NzcgMiAyIDYuNDc3IDIgMTJDMiAxNy41MjMgNi40NzcgMjIgMTIgMjJDMTcuNTIzIDIyIDIyIDE3LjUyMyAyMiAxMkMyMiA2LjQ3NyAxNy41MjMgMiAxMiAyWiIgZmlsbD0iIzAwNjdEQiIvPgo8cGF0aCBkPSJNMTIgNkw5IDlIMTBWMTJIOVYxNEgxMFYxN0g5TDEyIDIwTDE1IDE3SDE0VjE0SDE1VjEySDE0VjlIMTVMMTIgNloiIGZpbGw9IndoaXRlIi8+Cjwvc3ZnPg==",
       features: isBrowser
         ? ["sign", "batch-sign", "key-management", "ui-approval", "deterministic-keys", "export-keys"]
         : ["sign", "batch-sign", "deterministic-keys", "export-keys"],

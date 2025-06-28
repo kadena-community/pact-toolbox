@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pact Wallet UI Demo</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: #f5f5f5;
+      min-height: 100vh;
+    }
+    
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: white;
+      padding: 40px;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    h1 {
+      margin: 0 0 20px;
+      color: #0066cc;
+    }
+    
+    .demo-section {
+      margin: 40px 0;
+    }
+    
+    .demo-section h2 {
+      margin: 0 0 20px;
+      color: #333;
+    }
+    
+    .button-group {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    
+    button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      background: #0066cc;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    
+    button:hover {
+      background: #0052a3;
+    }
+    
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    
+    .output {
+      margin-top: 20px;
+      padding: 20px;
+      background: #f5f5f5;
+      border-radius: 8px;
+      font-family: monospace;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    
+    .theme-selector {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="theme-selector">
+    <button id="toggle-theme">🌙 Toggle Theme</button>
+  </div>
+  
+  <div class="container">
+    <h1>Pact Wallet UI Demo</h1>
+    <p>This demo showcases the cross-framework wallet UI components for pact-toolbox.</p>
+    
+    <div class="demo-section">
+      <h2>Modal Manager</h2>
+      <div class="button-group">
+        <button id="show-wallet-selector">Show Wallet Selector</button>
+        <button id="show-toolbox-wallet">Show Toolbox Wallet</button>
+        <button id="show-transaction-approval">Show Transaction Approval</button>
+      </div>
+      <div id="modal-output" class="output" style="display: none;"></div>
+    </div>
+    
+    <div class="demo-section">
+      <h2>Signing Interceptor</h2>
+      <div class="button-group">
+        <button id="install-interceptor">Install Interceptor</button>
+        <button id="uninstall-interceptor">Uninstall Interceptor</button>
+        <button id="test-sign">Test Sign (will show UI)</button>
+      </div>
+      <div id="signing-output" class="output" style="display: none;"></div>
+    </div>
+    
+    <div class="demo-section">
+      <h2>Custom Web Components</h2>
+      <button id="add-modal">Add Custom Modal</button>
+      <div id="custom-container"></div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { ModalManager } from '../dist/index.browser.mjs';
+    
+    // Initialize modal manager
+    const modalManager = ModalManager.getInstance({
+      theme: 'light'
+    });
+    modalManager.initialize();
+    
+    // Theme toggle
+    let currentTheme = 'light';
+    document.getElementById('toggle-theme').addEventListener('click', () => {
+      currentTheme = currentTheme === 'light' ? 'dark' : 'light';
+      modalManager.setTheme(currentTheme);
+      document.getElementById('toggle-theme').textContent = currentTheme === 'light' ? '🌙 Toggle Theme' : '☀️ Toggle Theme';
+    });
+    
+    // Modal demos
+    document.getElementById('show-wallet-selector').addEventListener('click', async () => {
+      const output = document.getElementById('modal-output');
+      output.style.display = 'block';
+      output.textContent = 'Opening wallet selector...';
+      
+      try {
+        const walletId = await modalManager.showWalletSelector();
+        output.textContent = walletId 
+          ? `Selected wallet: ${walletId}` 
+          : 'Wallet selection cancelled';
+      } catch (error) {
+        output.textContent = `Error: ${error.message}`;
+      }
+    });
+    
+    document.getElementById('show-toolbox-wallet').addEventListener('click', async () => {
+      const output = document.getElementById('modal-output');
+      output.style.display = 'block';
+      output.textContent = 'Opening toolbox wallet...';
+      
+      try {
+        await modalManager.showToolboxWallet();
+        output.textContent = 'Toolbox wallet closed';
+      } catch (error) {
+        output.textContent = `Error: ${error.message}`;
+      }
+    });
+    
+    document.getElementById('show-transaction-approval').addEventListener('click', async () => {
+      const output = document.getElementById('modal-output');
+      output.style.display = 'block';
+      output.textContent = 'Opening transaction approval...';
+      
+      // Mock transaction
+      const mockTransaction = {
+        cmd: JSON.stringify({
+          networkId: 'testnet04',
+          meta: {
+            chainId: '0',
+            gasLimit: 1000,
+            gasPrice: 0.00001,
+            ttl: 600,
+            sender: 'k:1234567890abcdef'
+          },
+          payload: {
+            exec: {
+              code: '(coin.transfer "alice" "bob" 10.0)',
+              data: {}
+            }
+          },
+          signers: [{
+            pubKey: '1234567890abcdef',
+            clist: [{ name: 'coin.TRANSFER', args: ['alice', 'bob', 10.0] }]
+          }],
+          nonce: 'test-nonce-123'
+        }),
+        hash: 'test-hash-123',
+        sigs: []
+      };
+      
+      try {
+        const approved = await modalManager.showTransactionApproval(mockTransaction);
+        output.textContent = approved 
+          ? 'Transaction approved!' 
+          : 'Transaction rejected';
+      } catch (error) {
+        output.textContent = `Error: ${error.message}`;
+      }
+    });
+    
+    // Signing interceptor demos
+    let interceptor = null;
+    
+    document.getElementById('install-interceptor').addEventListener('click', () => {
+      const output = document.getElementById('signing-output');
+      output.style.display = 'block';
+      
+      if (!interceptor) {
+        interceptor = SigningInterceptor.install({
+          autoShowUI: true,
+          requireApproval: true
+        });
+        output.textContent = 'Signing interceptor installed! Now sign() and quickSign() will show UI automatically.';
+      } else {
+        output.textContent = 'Interceptor already installed';
+      }
+    });
+    
+    document.getElementById('uninstall-interceptor').addEventListener('click', () => {
+      const output = document.getElementById('signing-output');
+      output.style.display = 'block';
+      
+      if (interceptor) {
+        SigningInterceptor.uninstall();
+        interceptor = null;
+        output.textContent = 'Signing interceptor uninstalled';
+      } else {
+        output.textContent = 'No interceptor to uninstall';
+      }
+    });
+    
+    document.getElementById('test-sign').addEventListener('click', async () => {
+      const output = document.getElementById('signing-output');
+      output.style.display = 'block';
+      output.textContent = 'Testing sign functionality...';
+      
+      // This would normally trigger the wallet UI if interceptor is installed
+      output.textContent = interceptor 
+        ? 'Sign would show wallet UI (interceptor installed)' 
+        : 'Sign would proceed normally (no interceptor)';
+    });
+    
+    // Custom component demo
+    document.getElementById('add-modal').addEventListener('click', () => {
+      const container = document.getElementById('custom-container');
+      
+      // Create a custom modal
+      const modal = document.createElement('pact-wallet-modal');
+      modal.heading = 'Custom Modal Example';
+      modal.innerHTML = `
+        <div style="padding: 20px;">
+          <h3>This is a custom modal!</h3>
+          <p>You can put any content here.</p>
+          <button id="close-custom">Close Modal</button>
+        </div>
+      `;
+      
+      container.appendChild(modal);
+      modal.open = true;
+      
+      // Add close handler
+      modal.addEventListener('close', () => {
+        container.removeChild(modal);
+      });
+      
+      // Close button inside modal
+      setTimeout(() => {
+        const closeBtn = modal.querySelector('#close-custom');
+        if (closeBtn) {
+          closeBtn.addEventListener('click', () => modal.close());
+        }
+      }, 100);
+    });
+  </script>
+</body>
+</html>

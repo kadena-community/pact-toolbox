@@ -2,15 +2,17 @@ import { fillTemplatePlaceholders } from "@pact-toolbox/utils";
 
 const TEMPLATE = `
 (namespace "{{namespace}}")
-(module {{name}} GOVERNANCE
+(module {{name}} {{adminKeyset}}
   (implements gas-payer-v1)
   (use coin)
 
   (defcap GOVERNANCE ()
-    (enforce-keyset "{{namespace}}.{{adminKeyset}}")
+    (enforce-keyset {{adminKeyset}})
   )
 
   (defcap ALLOW_GAS () true)
+
+  (defcap ACCOUNT_GUARD () true)
 
   (defconst GAS_STATION_ACCOUNT "{{account}}")
 
@@ -61,14 +63,22 @@ const TEMPLATE = `
 )
 `;
 
-interface GasStationTemplateContext {
-  name?: string;
+export interface GasStationContext {
+  name: string;
   namespace?: string;
   adminKeyset?: string;
   account: string;
   module: string;
 }
 
-export function generateGasStation(context: GasStationTemplateContext): string {
-  return fillTemplatePlaceholders(TEMPLATE.trim(), context);
+export function generateGasStation(context: GasStationContext): string {
+  const fullContext = {
+    name: context.name,
+    namespace: context.namespace ?? "free",
+    adminKeyset: context.adminKeyset ?? "admin-keyset",
+    account: context.account,
+    module: context.module
+  };
+  
+  return fillTemplatePlaceholders(TEMPLATE.trim(), fullContext);
 }

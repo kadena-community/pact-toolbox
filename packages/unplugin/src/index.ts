@@ -1,1 +1,2 @@
-export * from "./plugin/factory";
+export * from "./transform";
+export * from "./plugin";

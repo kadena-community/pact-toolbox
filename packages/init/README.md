@@ -48,12 +48,12 @@ pact-toolbox init --skip-install
 
 ## Features
 
-- =æ **Dependency Management** - Automatically installs required Pact packages
-- ™ **Configuration Generation** - Creates `pact-toolbox.config.js/ts`
-- =Ý **NPM Scripts** - Adds helpful Pact development scripts
+- =ï¿½ **Dependency Management** - Automatically installs required Pact packages
+- ï¿½ **Configuration Generation** - Creates `pact-toolbox.config.js/ts`
+- =ï¿½ **NPM Scripts** - Adds helpful Pact development scripts
 - =' **TypeScript Integration** - Updates tsconfig.json for Pact types
-- <¨ **Vite Plugin** - Adds Pact plugin to existing Vite config
-- =Ä **Sample Contracts** - Creates hello-world example to get started
+- <ï¿½ **Vite Plugin** - Adds Pact plugin to existing Vite config
+- =ï¿½ **Sample Contracts** - Creates hello-world example to get started
 - = **Auto-Detection** - Detects project type and package manager
 
 ## What Gets Added
@@ -457,6 +457,8 @@ If you're currently using Pact without Pact Toolbox:
 
 ## Support
 
-- **Documentation**: [pact-toolbox.kadena.io](https://pact-toolbox.kadena.io)
-- **Issues**: [GitHub Issues](https://github.com/kadena/pact-toolbox/issues)
-- **Discord**: [Kadena Discord](https://discord.gg/kadena)
+- **Issues**: [GitHub Issues](https://github.com/kadena-community/pact-toolbox/issues)
+
+---
+
+Made with â¤ï¸ by [@salamaashoush](https://github.com/salamaashoush)

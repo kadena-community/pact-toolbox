@@ -16,13 +16,12 @@ pnpm add -D @pact-toolbox/test vitest
 
 ## Features
 
-- **REPL Test Runner** - Execute traditional Pact REPL tests
-- **Test Environment** - Create isolated environments for integration tests
-- **Concurrent Execution** - Run tests in parallel for faster feedback
-- **Watch Mode** - Automatic test re-run on file changes
-- **Vitest Integration** - Combine Pact and JavaScript tests
-- **Network Isolation** - Each test gets its own network instance
+- **REPL Test Runner** - Execute traditional Pact REPL tests (.repl files)
+- **Test Environment** - Create isolated devnet/pact-server environments for integration tests
+- **Automatic Wallet Injection** - Test mode automatically uses keypair wallet for signing
+- **Network Isolation** - Each test gets its own network instance with unique ports
 - **Clean Output** - Formatted test results with clear pass/fail status
+- **Vitest Integration** - Combine Pact and JavaScript tests seamlessly
 
 ## Quick Start
 
@@ -32,7 +31,7 @@ Create a `.repl` test file:
 
 ```pact
 ;; tests/coin.repl
-(load "../contracts/coin.pact")
+(load "prelude/init.repl")
 
 (begin-tx "Create account test")
   (coin.create-account "alice" (read-keyset "alice-ks"))
@@ -49,17 +48,27 @@ Create a `.repl` test file:
 (commit-tx)
 ```
 
-Run tests:
+Run tests programmatically:
 
-```bash
-# Run all tests
-pact-toolbox test
+```typescript
+import { runReplTests } from "@pact-toolbox/test";
 
-# Run only REPL tests
-pact-toolbox test --repl-only
+// Run all .repl files in contracts directory
+await runReplTests();
 
-# Watch mode
-pact-toolbox test --watch
+// Run with custom config
+await runReplTests({
+  contractsDir: "./pact",
+  networks: {
+    testnet: {
+      networkId: "testnet",
+      rpcUrl: "http://localhost:8080",
+      type: "pact-server",
+      chainId: "0",
+    },
+  },
+  defaultNetwork: "testnet",
+});
 ```
 
 ### Integration Tests
@@ -67,276 +76,287 @@ pact-toolbox test --watch
 Create isolated test environments:
 
 ```typescript
-import { describe, test, beforeEach, afterEach } from "vitest";
+import { describe, test, beforeAll, afterAll } from "vitest";
 import { createPactTestEnv } from "@pact-toolbox/test";
+import { CoinService } from "@pact-toolbox/kda";
 
 describe("Contract Integration", () => {
   let testEnv;
+  let coinService;
 
-  beforeEach(async () => {
-    testEnv = await createPactTestEnv();
+  beforeAll(async () => {
+    testEnv = await createPactTestEnv({
+      privateKey: "your-test-private-key", // Optional
+      accountName: "test-account", // Optional
+    });
     await testEnv.start();
+
+    // Initialize services with test environment
+    coinService = new CoinService({
+      context: testEnv.client.getContext(),
+      defaultChainId: "0",
+      wallet: testEnv.wallet,
+    });
   });
 
-  afterEach(async () => {
+  afterAll(async () => {
     await testEnv.stop();
   });
 
-  test("deploy and interact with contract", async () => {
-    const { client } = testEnv;
+  test("transfer coins between accounts", async () => {
+    // Check sender00 balance (pre-funded account)
+    const balance = await coinService.getBalance("sender00");
+    expect(parseFloat(balance)).toBeGreaterThan(0);
 
-    // Deploy contract
-    await client.deployContract("./contracts/my-contract.pact");
+    // Transfer coins
+    const result = await coinService.transfer({
+      from: "sender00",
+      to: "k:test-public-key",
+      amount: "10.0",
+    });
 
-    // Execute transaction
-    const result = await client.execute('(my-module.my-function "arg")');
-
-    expect(result).toBe("expected-value");
+    expect(result).toBe("Write succeeded");
   });
 });
 ```
 
 ## API Reference
 
-### `runReplTests(options)`
+### `runReplTests(config?, options?)`
 
 Executes all REPL test files in the contracts directory.
 
 ```typescript
-interface RunReplTestsOptions {
-  contractsDir?: string; // Directory containing contracts and tests
-  concurrency?: number; // Number of parallel test workers
-  filter?: string; // Filter test files by pattern
-  verbose?: boolean; // Enable verbose output
-  continueOnError?: boolean; // Continue running tests after failures
-}
+import { runReplTests } from "@pact-toolbox/test";
+import type { PactToolboxConfigObj } from "@pact-toolbox/config";
 
-const results = await runReplTests({
+// Use default configuration
+await runReplTests();
+
+// Use custom configuration
+const config: PactToolboxConfigObj = {
   contractsDir: "./pact",
-  concurrency: 4,
-  filter: "coin*.repl",
-});
+  networks: {
+    testnet: {
+      networkId: "testnet", 
+      rpcUrl: "http://localhost:8080",
+      type: "pact-server",
+      chainId: "0",
+    },
+  },
+  defaultNetwork: "testnet",
+  scriptsDir: "./scripts",
+  pactVersion: "4.0.0",
+  preludes: [],
+  downloadPreludes: true,
+  deployPreludes: true,
+};
+
+await runReplTests(config);
 ```
 
-### `createPactTestEnv(options)`
+**Behavior:**
+- Searches for all `*.repl` files in the contracts directory
+- Ignores files in `prelude/` directories by default
+- Executes tests using the `pact` command with `-t` flag
+- Runs tests with configurable concurrency (defaults to CPU count)
+- Reports results with formatted output
+
+### `createPactTestEnv(options?)`
 
 Creates an isolated test environment with network and client.
 
 ```typescript
+import { createPactTestEnv } from "@pact-toolbox/test";
+
 interface CreatePactTestEnvOptions {
-  config?: Partial<PactToolboxConfig>; // Custom configuration
-  networkType?: "pact-server" | "devnet"; // Network type
-  port?: number; // Custom port (0 for random)
+  /** Private key for test wallet (generates random if not provided) */
+  privateKey?: string;
+  
+  /** Account name for test wallet */
+  accountName?: string;
+  
+  /** Network type to use ("devnet" | "pact-server") */
+  network?: string;
+  
+  /** Configuration overrides */
+  configOverrides?: Partial<PactToolboxConfigObj>;
 }
 
 const testEnv = await createPactTestEnv({
-  networkType: "pact-server",
-  config: {
-    preludes: ["kadena/chainweb"],
-  },
-});
-
-// Available properties
-testEnv.client; // PactToolboxClient instance
-testEnv.config; // Resolved configuration
-testEnv.network; // Network instance
-testEnv.start(); // Start network
-testEnv.stop(); // Stop network
-testEnv.restart(); // Restart network
-```
-
-## REPL Testing
-
-### Test Structure
-
-REPL tests follow a structured format:
-
-```pact
-;; 1. Load dependencies and setup
-(load "prelude/init.repl")
-
-;; 2. Environment setup
-(env-data {
-  'alice-ks: { "keys": ["alice-key"], "pred": "keys-all" },
-  'bob-ks: { "keys": ["bob-key"], "pred": "keys-all" }
-})
-
-;; 3. Load module under test
-(load "../contracts/my-module.pact")
-
-;; 4. Test transactions
-(begin-tx "Test case description")
-  ;; Test setup
-  (my-module.init)
-
-  ;; Assertions
-  (expect "description" actual expected)
-  (expect-failure "should fail"
-    (my-module.invalid-call)
-    "Error message")
-(commit-tx)
-
-;; 5. More test cases...
-```
-
-### Common Test Patterns
-
-#### Testing Module Deployment
-
-```pact
-(begin-tx "Deploy module")
-  (load "../contracts/my-module.pact")
-  (expect "Module deployed" true true)
-(commit-tx)
-```
-
-#### Testing Capabilities
-
-```pact
-(begin-tx "Test capabilities")
-  (test-capability (my-module.TRANSFER "alice" "bob" 10.0))
-  (my-module.transfer "alice" "bob" 10.0)
-  (expect "Transfer succeeded" true true)
-(commit-tx)
-```
-
-#### Testing Guards
-
-```pact
-(begin-tx "Test keyset guard")
-  (env-keys ["alice-key"])
-  (my-module.guarded-function)
-  (expect "Function executed" true true)
-(rollback-tx)
-
-(begin-tx "Test guard failure")
-  (env-keys ["wrong-key"])
-  (expect-failure "Guard check failed"
-    (my-module.guarded-function)
-    "Keyset failure")
-(rollback-tx)
-```
-
-### Prelude Files
-
-Organize common test setup in prelude files:
-
-```pact
-;; prelude/init.repl
-;; Common test setup
-
-;; Define test keysets
-(env-data {
-  'admin-ks: { "keys": ["admin-key"], "pred": "keys-all" },
-  'test-ks: { "keys": ["test-key"], "pred": "keys-all" }
-})
-
-;; Set default environment
-(env-chain-data {
-  "block-height": 0,
-  "block-time": (time "2024-01-01T00:00:00Z"),
-  "chain-id": "0",
-  "gas-limit": 100000,
-  "gas-price": 0.00001,
-  "sender": "sender00"
-})
-
-;; Load common modules
-(load "../../preludes/coin-v5.pact")
-```
-
-## Integration Testing
-
-### Test Helpers
-
-```typescript
-import { test } from "vitest";
-import { createPactTestEnv } from "@pact-toolbox/test";
-import { PactTransactionBuilder } from "@pact-toolbox/client";
-
-test("complex transaction flow", async () => {
-  const env = await createPactTestEnv();
-  await env.start();
-
-  try {
-    const { client } = env;
-
-    // Deploy contracts
-    await client.deployContract("./contracts/token.pact");
-    await client.deployContract("./contracts/exchange.pact");
-
-    // Create accounts
-    await PactTransactionBuilder.create()
-      .code('(token.create-account "alice" (read-keyset "alice-ks"))')
-      .addKeyset("alice-ks", {
-        keys: ["alice-public-key"],
-        pred: "keys-all",
-      })
-      .client(client)
-      .execute();
-
-    // Perform operations
-    const result = await client.execute('(exchange.swap "token" "kda" 100.0 "alice")');
-
-    expect(result.status).toBe("success");
-  } finally {
-    await env.stop();
-  }
-});
-```
-
-### Custom Test Configuration
-
-```typescript
-const testEnv = await createPactTestEnv({
-  config: {
-    // Custom network configuration
-    network: {
-      type: "devnet",
-      devnet: {
+  privateKey: "251a920c403ae8c8f65f59142316af3c82b631fba46ddea92ee8c95035bd2898",
+  accountName: "sender00",
+  network: "devnet", // or "pact-server" 
+  configOverrides: {
+    defaultNetwork: "devnet",
+    networks: {
+      devnet: createDevNetNetworkConfig({
         containerConfig: {
-          onDemandMining: true,
           persistDb: false,
+          onDemandMining: true,
         },
-      },
+      }),
     },
+  },
+});
 
-    // Custom preludes
-    preludes: ["kadena/chainweb", "test-helpers"],
+// Available properties and methods
+testEnv.client;     // PactToolboxClient instance
+testEnv.config;     // Resolved configuration
+testEnv.network;    // Network instance  
+testEnv.wallet;     // Test wallet (KeypairWallet)
+testEnv.start();    // Start the network
+testEnv.stop();     // Stop the network
+testEnv.restart();  // Restart the network
+```
 
-    // Custom accounts
-    accounts: {
-      alice: {
-        keys: { public: "alice-pub", secret: "alice-sec" },
-        balance: 1000,
-      },
+**Key Features:**
+- **Automatic Port Management** - Finds free ports to avoid conflicts
+- **Test Mode Flag** - Sets `globalThis.__PACT_TOOLBOX_TEST_MODE__ = true`
+- **Wallet Injection** - Automatically configures wallet for test transactions
+- **Network Isolation** - Each environment runs in isolated Docker containers
+- **Clean Startup/Shutdown** - Proper resource management
+
+### Utility Functions
+
+```typescript
+import { getConfigOverrides, updatePorts, injectNetworkConfig } from "@pact-toolbox/test";
+
+// Get configuration overrides for testing
+const overrides = getConfigOverrides({
+  contractsDir: "./test-contracts",
+});
+
+// Update ports in configuration to avoid conflicts
+await updatePorts(config);
+
+// Inject network configuration into global scope
+injectNetworkConfig(config);
+```
+
+## Test Environment Details
+
+### Automatic Wallet Injection
+
+When you create a test environment, the package automatically:
+
+1. **Sets Test Mode Flag** - `globalThis.__PACT_TOOLBOX_TEST_MODE__ = true`
+2. **Creates Keypair Wallet** - Uses provided private key or generates one
+3. **Configures Transaction Builder** - Automatically uses test wallet for signing
+4. **Injects Network Config** - Makes network accessible to services
+
+This means your services will automatically use the test wallet without manual configuration:
+
+```typescript
+const testEnv = await createPactTestEnv();
+await testEnv.start();
+
+// Services automatically use the test wallet
+const coinService = new CoinService({
+  context: testEnv.client.getContext(),
+  defaultChainId: "0",
+  // wallet: testEnv.wallet <- Optional, injected automatically in test mode
+});
+
+// Transactions are automatically signed with test wallet
+await coinService.transfer({
+  from: "sender00", 
+  to: "k:target-account",
+  amount: "10.0",
+});
+```
+
+### Network Configurations
+
+#### DevNet (Recommended for most tests)
+```typescript
+import { createDevNetNetworkConfig } from "@pact-toolbox/config";
+
+const testEnv = await createPactTestEnv({
+  network: "devnet",
+  configOverrides: {
+    networks: {
+      devnet: createDevNetNetworkConfig({
+        containerConfig: {
+          persistDb: false,        // Clean state for each test
+          onDemandMining: true,    // Mine blocks on demand
+        },
+      }),
     },
   },
 });
 ```
 
-## CLI Integration
+#### Pact Server (For simpler scenarios)
+```typescript
+import { createPactServerNetworkConfig } from "@pact-toolbox/config";
 
-The test command integrates with pact-toolbox CLI:
+const testEnv = await createPactTestEnv({
+  network: "pact-server",
+  configOverrides: {
+    networks: {
+      testnet: createPactServerNetworkConfig({
+        containerConfig: {
+          persistDb: false,
+          onDemandMining: true,
+        },
+      }),
+    },
+  },
+});
+```
 
-```bash
-# Run all tests (REPL + Vitest)
-pact-toolbox test
+## Integration with Services
 
-# Run only REPL tests
-pact-toolbox test --repl-only
+The test package integrates seamlessly with pact-toolbox services:
 
-# Run only Vitest tests
-pact-toolbox test --vitest-only
+```typescript
+import { createPactTestEnv } from "@pact-toolbox/test";
+import { CoinService, MarmaladeService } from "@pact-toolbox/kda";
 
-# Watch mode
-pact-toolbox test --watch
+describe("Service Integration Tests", () => {
+  let testEnv;
+  let coinService;
+  let marmaladeService;
 
-# Filter tests
-pact-toolbox test --filter "coin"
+  beforeAll(async () => {
+    testEnv = await createPactTestEnv({
+      privateKey: "251a920c403ae8c8f65f59142316af3c82b631fba46ddea92ee8c95035bd2898",
+      accountName: "sender00",
+    });
+    await testEnv.start();
 
-# Specify test directory
-pact-toolbox test --contracts-dir ./my-contracts
+    const context = testEnv.client.getContext();
+    const wallet = testEnv.wallet;
+
+    coinService = new CoinService({ context, defaultChainId: "0", wallet });
+    marmaladeService = new MarmaladeService({ context, defaultChainId: "0", wallet });
+  });
+
+  afterAll(async () => {
+    await testEnv.stop();
+  });
+
+  test("coin operations work", async () => {
+    const balance = await coinService.getBalance("sender00");
+    expect(parseFloat(balance)).toBeGreaterThan(0);
+  });
+
+  test("marmalade operations work", async () => {
+    // Note: MarmaladeService requires marmalade-v2 to be deployed
+    try {
+      await marmaladeService.createToken({
+        id: "test-token",
+        precision: 0,
+        uri: "https://example.com/token.json",
+        policies: [],
+      });
+    } catch (error) {
+      // Expected if marmalade-v2 is not deployed on devnet
+      expect(error.message).toContain("marmalade-v2");
+    }
+  });
+});
 ```
 
 ## Best Practices
@@ -345,165 +365,141 @@ pact-toolbox test --contracts-dir ./my-contracts
 
 ```
 contracts/
---- coin.pact
---- exchange.pact
---- tests/
-    --- coin.repl
-    --- exchange.repl
-    --- integration.test.ts
---- prelude/
-    --- test-init.repl
+├── coin.pact
+├── exchange.pact
+├── tests/
+│   ├── coin.repl
+│   ├── exchange.repl
+│   └── integration.test.ts
+└── prelude/
+    └── init.repl
 ```
 
-### 2. Isolated Test Cases
-
-```pact
-;; Use separate transactions for isolation
-(begin-tx "Test case 1")
-  ;; Test logic
-(rollback-tx)  ; or commit-tx
-
-(begin-tx "Test case 2")
-  ;; Different test logic
-(rollback-tx)
-```
-
-### 3. Clear Test Descriptions
-
-```pact
-(expect "should calculate 10% fee correctly"
-  (exchange.calculate-fee 100.0)
-  10.0)
-
-(expect-failure "should reject negative amounts"
-  (exchange.swap -10.0)
-  "Amount must be positive")
-```
-
-### 4. Environment Management
+### 2. Environment Management
 
 ```typescript
 // Always clean up test environments
-const env = await createPactTestEnv();
-try {
-  await env.start();
-  // Run tests
-} finally {
-  await env.stop();
-}
+describe("My Tests", () => {
+  let testEnv;
+
+  beforeAll(async () => {
+    testEnv = await createPactTestEnv();
+    await testEnv.start();
+  });
+
+  afterAll(async () => {
+    if (testEnv) {
+      await testEnv.stop();
+    }
+  });
+
+  // Your tests here...
+});
+```
+
+### 3. Account Management
+
+```typescript
+// Use consistent test accounts
+const testEnv = await createPactTestEnv({
+  privateKey: "251a920c403ae8c8f65f59142316af3c82b631fba46ddea92ee8c95035bd2898",
+  accountName: "sender00", // This account is pre-funded on devnet
+});
+
+// Create additional test accounts
+const aliceAccount = "k:368820f80c324bbc7c2b0610688a7da43e39f91d118732671cd9c7500ff43cca";
+const aliceKeyset = {
+  keys: ["368820f80c324bbc7c2b0610688a7da43e39f91d118732671cd9c7500ff43cca"],
+  pred: "keys-all",
+};
+```
+
+### 4. Error Handling
+
+```typescript
+test("should handle expected errors gracefully", async () => {
+  try {
+    await coinService.transfer({
+      from: "sender00",
+      to: "non-existent-account",
+      amount: "999999999.0", // More than available
+    });
+    
+    // Should not reach here
+    expect(true).toBe(false);
+  } catch (error) {
+    expect(error.message).toMatch(/insufficient|funds|balance/i);
+  }
+});
 ```
 
 ## Troubleshooting
 
 ### Common Issues
 
-1. **Port conflicts**
+1. **Port Conflicts**
+   - The package automatically finds free ports
+   - If issues persist, check for Docker container conflicts
 
-   ```typescript
-   // Use random ports for tests
-   const env = await createPactTestEnv({ port: 0 });
-   ```
+2. **Docker Issues**
+   - Ensure Docker is running
+   - Check for permission issues with Docker volumes
+   - Clean up old containers: `docker system prune -f`
 
-2. **Test discovery issues**
+3. **Network Startup Failures**
+   - Check Docker logs: `docker logs <container-name>`
+   - Ensure sufficient disk space
+   - Try restarting Docker
 
-   ```bash
-   # Verify test files are found
-   pact-toolbox test --verbose
-   ```
-
-3. **Module loading errors**
-
-   ```pact
-   ;; Use relative paths from test file
-   (load "../contracts/module.pact")
-   ```
-
-4. **Environment data conflicts**
-   ```pact
-   ;; Clear environment between tests
-   (env-data {})
-   (env-keys [])
-   ```
+4. **Test Timeouts** 
+   - DevNet takes time to start (10-15 seconds)
+   - Increase test timeouts if needed
+   - Use smaller test datasets
 
 ### Debug Options
 
 ```typescript
 // Enable debug logging
-const env = await createPactTestEnv({
-  config: {
-    logLevel: "debug",
+const testEnv = await createPactTestEnv({
+  configOverrides: {
+    networks: {
+      devnet: createDevNetNetworkConfig({
+        containerConfig: {
+          logLevel: "debug",
+        },
+      }),
+    },
   },
 });
-
-// Get network logs
-console.log(await env.network.getLogs());
 ```
 
 ## Examples
 
-### Complete Test Suite
+Check the integration tests in this package for complete examples:
 
-```typescript
-// vitest.config.ts
-import { defineConfig } from "vitest";
+- `src/coin-service.integration.test.ts` - Coin operations testing
+- `src/marmalade-service.integration.test.ts` - NFT operations testing
+- `examples/` - Sample REPL test files
 
-export default defineConfig({
-  test: {
-    globals: true,
-    setupFiles: ["./test-setup.ts"],
-  },
-});
+These examples demonstrate:
+- Test environment setup and teardown
+- Service integration patterns
+- Error handling strategies
+- Concurrent testing approaches
 
-// test-setup.ts
-import { beforeAll, afterAll } from "vitest";
-import { createPactTestEnv } from "@pact-toolbox/test";
+## Contributing
 
-let globalEnv;
+When contributing to this package:
 
-beforeAll(async () => {
-  globalEnv = await createPactTestEnv();
-  await globalEnv.start();
-  global.pactClient = globalEnv.client;
-});
+1. **Write Tests** - All new functionality must have unit tests
+2. **Update Documentation** - Keep README and code comments current
+3. **Follow Patterns** - Use existing patterns for consistency
+4. **Test Integration** - Verify compatibility with other pact-toolbox packages
 
-afterAll(async () => {
-  await globalEnv?.stop();
-});
-```
+## License
 
-### Property-Based Testing
+MIT
 
-```pact
-;; Use loops for property tests
-(begin-tx "Property: transfer preserves total supply")
-  (let ((amounts [1.0 10.0 100.0 1000.0]))
-    (map (lambda (amount)
-      (let ((before-alice (coin.get-balance "alice"))
-            (before-bob (coin.get-balance "bob")))
-        (coin.transfer "alice" "bob" amount)
-        (expect (format "Total preserved for {}" [amount])
-          (+ (coin.get-balance "alice") (coin.get-balance "bob"))
-          (+ before-alice before-bob))))
-      amounts))
-(rollback-tx)
-```
+---
 
-### Continuous Integration
-
-```yaml
-# .github/workflows/test.yml
-name: Test
-on: [push, pull_request]
-
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-        with:
-          node-version: "22"
-      - run: pnpm install
-      - run: pnpm build
-      - run: pnpm test
-```
+Made with ❤️ by [@salamaashoush](https://github.com/salamaashoush)

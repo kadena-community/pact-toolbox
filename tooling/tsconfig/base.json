@@ -8,7 +8,7 @@
     "resolveJsonModule": true,
     "moduleDetection": "force",
     "isolatedModules": true,
-    "isolatedDeclarations": true,
+    "isolatedDeclarations": false,
     "declaration": true,
     "verbatimModuleSyntax": true,
 
@@ -16,6 +16,18 @@
 
     "strict": true,
     "noUncheckedIndexedAccess": true,
+    "noImplicitAny": true,
+    "noImplicitReturns": true,
+    "noImplicitThis": true,
+    "noImplicitOverride": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "noUncheckedSideEffectImports": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitUseStrict": false,
+    "allowUnusedLabels": false,
+    "allowUnreachableCode": false,
+    "allowUmdGlobalAccess": false,
+    "forceConsistentCasingInFileNames": true,
 
     "module": "Preserve",
     "moduleResolution": "Bundler",

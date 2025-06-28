@@ -1,0 +1,75 @@
+{
+  "name": "@pact-toolbox/dev-wallet",
+  "version": "0.0.0",
+  "description": "Development wallet provider for Pact Toolbox with browser UI and Node.js support",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./test-utils": {
+      "types": "./dist/test-utils/test-helpers.d.ts",
+      "import": "./dist/test-utils/test-helpers.js",
+      "default": "./dist/test-utils/test-helpers.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "dev:test": "vite serve . --port 5173",
+    "typecheck": "tsc --noEmit",
+    "lint": "oxlint --import-plugin --deny-warnings",
+    "lint:fix": "oxlint --import-plugin --deny-warnings --fix"
+  },
+  "dependencies": {
+    "@pact-toolbox/chainweb-client": "workspace:*",
+    "@pact-toolbox/crypto": "workspace:*",
+    "@pact-toolbox/signers": "workspace:*",
+    "@pact-toolbox/types": "workspace:*",
+    "@pact-toolbox/ui-shared": "workspace:*",
+    "@pact-toolbox/wallet-core": "workspace:*",
+    "idb": "^8.0.3",
+    "lit": "^3.3.0"
+  },
+  "devDependencies": {
+    "@pact-toolbox/tsconfig": "workspace:*",
+    "@pact-toolbox/tsdown": "workspace:*",
+    "@playwright/test": "^1.53.1",
+    "jsdom": "^26.1.0",
+    "playwright": "^1.53.1",
+    "vite": "^7.0.0",
+    "vitest": "^3.2.4"
+  },
+  "license": "MIT",
+  "author": {
+    "name": "Mohamed Elshafey",
+    "email": "mohamed.elshafae@kadena.io",
+    "url": "https://github.com/salamaashoush"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kadena-community/pact-toolbox.git",
+    "directory": "packages/dev-wallet"
+  },
+  "keywords": [
+    "pact",
+    "toolbox",
+    "wallet",
+    "development",
+    "kadena",
+    "blockchain"
+  ]
+}

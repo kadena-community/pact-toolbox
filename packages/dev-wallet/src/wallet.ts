@@ -194,10 +194,10 @@ export class DevWallet extends BaseWallet {
 
       // Finalize transactions to get proper hash and format
       const finalizedTransactions = signed.map(finalizeTransaction);
-      
+
       // Add transaction to history using finalized transaction
-      console.log('Finalized transaction:', finalizedTransactions[0]);
-      console.log('Transaction hash for polling:', finalizedTransactions[0]?.hash);
+      console.log("Finalized transaction:", finalizedTransactions[0]);
+      console.log("Transaction hash for polling:", finalizedTransactions[0]?.hash);
       await this.addTransactionToHistory(transactions[0]!, finalizedTransactions[0]!);
 
       return Array.isArray(txOrTxs) ? finalizedTransactions : finalizedTransactions[0]!;
@@ -311,7 +311,7 @@ export class DevWallet extends BaseWallet {
         this.dispatchEvent("toolbox-sign-requested", { transaction });
       }, 100);
 
-      const handleSignApproved = (event: Event) => {
+      const handleSignApproved = (_event: Event) => {
         console.log("Sign approved event received");
         cleanup();
         // Hide modal after approval
@@ -368,15 +368,15 @@ export class DevWallet extends BaseWallet {
       }
 
       // Start polling for transaction status if we have a hash
-      console.log('Transaction hash for polling:', finalizedTx.hash);
+      console.log("Transaction hash for polling:", finalizedTx.hash);
       if (finalizedTx.hash) {
-        console.log('Starting polling for transaction:', finalizedTx.hash);
+        console.log("Starting polling for transaction:", finalizedTx.hash);
         // Start polling in the background (don't await)
-        this.pollTransactionStatus(finalizedTx.hash, newTx.id).catch(error => {
-          console.error('Background polling failed:', error);
+        this.pollTransactionStatus(finalizedTx.hash, newTx.id).catch((error) => {
+          console.error("Background polling failed:", error);
         });
       } else {
-        console.log('No hash found, skipping polling');
+        console.log("No hash found, skipping polling");
       }
     } catch (error) {
       console.error("Failed to add transaction to history:", error);
@@ -384,7 +384,7 @@ export class DevWallet extends BaseWallet {
   }
 
   private async pollTransactionStatus(hash: string, transactionId: string): Promise<void> {
-    const pollInterval = 5000; // 5 seconds (pollUntilResult will handle retries)
+    const pollInterval = 5000; // 5 seconds (waitForResult will handle retries)
 
     console.log(`Starting polling for transaction ${hash}`);
 
@@ -392,68 +392,70 @@ export class DevWallet extends BaseWallet {
       // Get chainweb client from global context or create a new one
       let client;
       const globalContext = (window as any).__PACT_TOOLBOX_CONTEXT__ || (globalThis as any).__PACT_TOOLBOX_CONTEXT__;
-      
-      if (globalContext && typeof globalContext.getClient === 'function') {
+
+      if (globalContext && typeof globalContext.getClient === "function") {
         client = globalContext.getClient();
-        console.log('Using global context client');
+        console.log("Using global context client");
       } else {
         // Fallback: create a new client
-        console.log('Creating new ChainwebClient for polling');
-        const { ChainwebClient } = await import('@pact-toolbox/chainweb-client');
+        console.log("Creating new ChainwebClient for polling");
+        const { ChainwebClient } = await import("@pact-toolbox/chainweb-client");
         client = new ChainwebClient({
-          networkId: this.config.networkId || 'development',
-          chainId: '0',
+          networkId: this.config.networkId || "development",
+          chainId: "0",
           rpcUrl: (networkId: string, chainId: string) => {
             return this.config.rpcUrl.replace("{networkId}", networkId).replace("{chainId}", chainId);
-          }
+          },
         });
       }
 
-      console.log('Polling with client:', client);
-      console.log('About to call pollUntilResult with hash:', hash);
-      
+      console.log("Polling with client:", client);
+      console.log("About to call waitForResult with hash:", hash);
+
       // Poll for transaction result using the chainweb client (this will handle retries internally)
-      const result = await client.pollUntilResult(hash, pollInterval);
-      console.log('Poll result:', result);
-      
+      const result = await client.waitForResult(hash, pollInterval);
+      console.log("Poll result:", result);
+
       // Transaction result found
-      const status = result.result?.status === 'success' ? 'success' : 'failure';
-      
+      const status = result.result?.status === "success" ? "success" : "failure";
+
       // Update transaction status in storage
       await this.updateTransactionStatus(transactionId, status, result);
-      
+
       // Notify UI of status change
       if (this.shouldUseUI()) {
-        this.dispatchEvent("toolbox-transaction-updated", { 
-          transactionId, 
-          status, 
-          result 
+        this.dispatchEvent("toolbox-transaction-updated", {
+          transactionId,
+          status,
+          result,
         });
       }
-      
+
       console.log(`Transaction ${hash} completed with status: ${status}`);
     } catch (error) {
       console.error(`Error polling transaction ${hash}:`, error);
-      console.error('Error details:', {
+      console.error("Error details:", {
         message: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined
+        stack: error instanceof Error ? error.stack : undefined,
       });
     }
   }
 
-  private async updateTransactionStatus(transactionId: string, status: 'success' | 'failure', result?: any): Promise<void> {
+  private async updateTransactionStatus(
+    transactionId: string,
+    status: "success" | "failure",
+    result?: any,
+  ): Promise<void> {
     try {
       const transactions = await this.storage.getTransactions();
-      const updatedTransactions = transactions.map(tx => 
-        tx.id === transactionId 
-          ? { ...tx, status, result, updatedAt: Date.now() }
-          : tx
+      const updatedTransactions = transactions.map((tx) =>
+        tx.id === transactionId ? { ...tx, status, result, updatedAt: Date.now() } : tx,
       );
-      
+
       // Save updated transactions
       await this.storage.saveTransactions(updatedTransactions);
     } catch (error) {
-      console.error('Failed to update transaction status:', error);
+      console.error("Failed to update transaction status:", error);
     }
   }
 

@@ -1,12 +1,9 @@
 import type { NetworkConfig, PactToolboxConfigObj } from "@pact-toolbox/config";
 
 import { isLocalNetwork, getNetworkPort } from "@pact-toolbox/config";
-import {
-  PactToolboxNetwork,
-  createPactToolboxNetwork as createPactToolboxNetworkInstance,
-} from "@pact-toolbox/network";
+import { PactToolboxNetwork, createNetwork as createPactToolboxNetworkInstance } from "@pact-toolbox/network";
 import { PactToolboxClient } from "@pact-toolbox/runtime";
-import { logger, isPortTaken } from "@pact-toolbox/utils";
+import { logger, isPortTaken } from "@pact-toolbox/node-utils";
 
 import type { PluginOptions } from "./types";
 
@@ -17,69 +14,18 @@ interface StartOptions {
   networkConfig: NetworkConfig;
 }
 
-// Global registry to track running networks
-const RUNNING_NETWORKS_KEY = Symbol.for("__PACT_TOOLBOX_RUNNING_NETWORKS__");
+// Simple network tracking
+let runningNetwork: PactToolboxNetwork | null = null;
 
-interface RunningNetworkInfo {
-  networkName: string;
-  port: number | string;
-  startTime: number;
-  client: PactToolboxClient;
-  network: PactToolboxNetwork | null;
-}
-
-function getRunningNetworksRegistry(): Map<string, RunningNetworkInfo> {
-  if (!(globalThis as any)[RUNNING_NETWORKS_KEY]) {
-    (globalThis as any)[RUNNING_NETWORKS_KEY] = new Map<string, RunningNetworkInfo>();
-  }
-  return (globalThis as any)[RUNNING_NETWORKS_KEY];
-}
-
-async function isNetworkRunning(networkConfig: NetworkConfig): Promise<boolean> {
-  const registry = getRunningNetworksRegistry();
-  const registryKey = `${networkConfig.name || "unknown"}-${networkConfig.type}`;
-
-  // Check if network is in our registry
-  const registeredNetwork = registry.get(registryKey);
-  if (registeredNetwork) {
-    // Double-check by testing the port
-    const portInUse = await isPortTaken(registeredNetwork.port);
-    if (portInUse) {
-      return true;
-    } else {
-      // Clean up stale registry entry
-      registry.delete(registryKey);
-      return false;
+export async function stopRunningNetwork(): Promise<void> {
+  if (runningNetwork) {
+    try {
+      await runningNetwork.stop();
+      runningNetwork = null;
+    } catch (error) {
+      logger.error("Error stopping network:", error);
     }
   }
-
-  // Use the proper utility to get network port
-  try {
-    const port = getNetworkPort(networkConfig);
-    return await isPortTaken(port);
-  } catch {
-    return false;
-  }
-}
-
-function registerRunningNetwork(
-  networkConfig: NetworkConfig,
-  client: PactToolboxClient,
-  network: PactToolboxNetwork | null,
-): void {
-  const registry = getRunningNetworksRegistry();
-  const registryKey = `${networkConfig.name || "unknown"}-${networkConfig.type}`;
-
-  // Use the proper utility to get network port
-  const port = getNetworkPort(networkConfig);
-
-  registry.set(registryKey, {
-    networkName: networkConfig.name || "unknown",
-    port,
-    startTime: Date.now(),
-    client,
-    network,
-  });
 }
 
 interface StartToolboxNetworkResult {
@@ -103,54 +49,83 @@ export async function createPactToolboxNetwork(
     };
   }
 
-  // Check if network is already running
-  const isRunning = await isNetworkRunning(networkConfig);
-  if (isRunning) {
+  // Check if we already have a running network
+  if (runningNetwork) {
+    logger.info("Network already running, reusing existing instance");
     if (onReady) {
       await onReady(client);
     }
+    return {
+      network: runningNetwork,
+      client,
+    };
+  }
+
+  // Check if port is already in use
+  try {
+    const port = getNetworkPort(networkConfig);
+    const portInUse = await isPortTaken(port);
+
+    if (portInUse) {
+      logger.info(`Port ${port} is already in use, assuming network is running`);
+      if (onReady) {
+        await onReady(client);
+      }
+      return {
+        network: null,
+        client,
+      };
+    }
+  } catch (error) {
+    logger.debug("Error checking port availability:", error);
+  }
+
+  // Try to start the network
+  try {
+    logger.info(`Starting network ${networkConfig.name || "local"}...`);
+
+    const network = await createPactToolboxNetworkInstance(toolboxConfig, {
+      client,
+      logAccounts: true,
+      detached: true,
+      autoStart: true,
+    });
+
+    runningNetwork = network;
+
+    logger.success(`Network ${networkConfig.name || "local"} started successfully`);
+
+    // Call onReady callback if provided
+    if (onReady) {
+      try {
+        await onReady(client);
+      } catch (error) {
+        logger.error("onReady callback failed:", error);
+      }
+    }
+
+    return {
+      network,
+      client,
+    };
+  } catch (error) {
+    logger.error(`Failed to start network:`, error);
+
+    // If network startup failed but not because it's already running, throw the error
+    if (error instanceof Error && !error.message.includes("already running")) {
+      throw error;
+    }
+
+    // Network is already running, continue without error
+    if (onReady) {
+      await onReady(client);
+    }
+
     return {
       network: null,
       client,
     };
   }
-  let network: PactToolboxNetwork;
-  try {
-    network = await createPactToolboxNetworkInstance(toolboxConfig, {
-      client,
-      logAccounts: true,
-      conflictStrategy: "ignore",
-      isDetached: true,
-      autoStart: startNetwork,
-      cleanup: true,
-    });
-
-    // Register the network as running
-    registerRunningNetwork(networkConfig, client, network);
-  } catch (error) {
-    // Check if the error is about network already running
-    if (error instanceof Error && error.message.includes("already running")) {
-      registerRunningNetwork(networkConfig, client, null);
-    } else {
-      logger.error(`[startToolboxNetwork] Failed to start network ${networkConfig.name}:`, error);
-      throw error;
-    }
-  }
-
-  // Call onReady callback if provided
-  if (onReady) {
-    try {
-      await onReady(client);
-    } catch (error) {
-      logger.error(`[startToolboxNetwork] onReady callback failed for ${networkConfig.name}:`, error);
-    }
-  }
-
-  return {
-    // @ts-ignore
-    network,
-    client,
-  };
 }
 
 // export async function createDtsFiles(contractsDir: string = "pact"): Promise<void> {

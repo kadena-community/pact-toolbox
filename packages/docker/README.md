@@ -486,3 +486,7 @@ const orchestrator = new ContainerOrchestrator({
 ## License
 
 MIT
+
+---
+
+Made with ❤️ by [@salamaashoush](https://github.com/salamaashoush)

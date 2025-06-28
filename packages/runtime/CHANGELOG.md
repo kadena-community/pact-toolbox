@@ -9,7 +9,7 @@
 ### Patch Changes
 
 - Updated dependencies
-  - @pact-toolbox/client@0.2.0
+  - @pact-toolbox/transaction@0.2.0
   - @pact-toolbox/config@0.2.0
 
 ## 0.1.0
@@ -21,7 +21,7 @@
 ### Patch Changes
 
 - Updated dependencies [ebf24fb]
-  - @pact-toolbox/client@0.1.0
+  - @pact-toolbox/transaction@0.1.0
   - @pact-toolbox/config@0.1.0
 
 ## 0.0.5
@@ -37,7 +37,7 @@
 
 - more pact version manager features
 - Updated dependencies
-  - @pact-toolbox/client-utils@0.0.4
+  - @pact-toolbox/transaction-utils@0.0.4
   - @pact-toolbox/config@0.0.4
   - @pact-toolbox/wallet@0.0.4
 
@@ -47,7 +47,7 @@
 
 - Fix npm include files
 - Updated dependencies
-  - @pact-toolbox/client-utils@0.0.3
+  - @pact-toolbox/transaction-utils@0.0.3
   - @pact-toolbox/config@0.0.3
   - @pact-toolbox/wallet@0.0.3
 
@@ -57,6 +57,6 @@
 
 - publish test version
 - Updated dependencies
-  - @pact-toolbox/client-utils@0.0.2
+  - @pact-toolbox/transaction-utils@0.0.2
   - @pact-toolbox/config@0.0.2
   - @pact-toolbox/wallet@0.0.2

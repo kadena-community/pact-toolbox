@@ -1,18 +1,18 @@
 import type { PactToolboxConfigObj } from "@pact-toolbox/config";
 
-import { getNetworkConfig, isLocalNetwork, resolveConfig } from "@pact-toolbox/config";
+import { getDefaultNetworkConfig, isLocalNetwork, resolveConfig } from "@pact-toolbox/config";
 import { PactToolboxClient } from "@pact-toolbox/runtime";
-import { logger, writeFile } from "@pact-toolbox/utils";
+import { logger, writeFile } from "@pact-toolbox/node-utils";
 
 import { createPactToJSTransformer } from "./transform";
-import { prettyPrintError } from "./api";
+import { prettyPrintError } from "./plugin/utils";
 
 const cache = {
   resolvedConfig: undefined as PactToolboxConfigObj | undefined,
   client: undefined as PactToolboxClient | undefined,
 };
 const transformPactToJS = createPactToJSTransformer({
-  debug: process.env.DEBUG === "true" || process.env.DEBUG === "1" || process.env.NODE_ENV === "development",
+  debug: process.env["DEBUG"] === "true" || process.env["DEBUG"] === "1" || process.env.NODE_ENV === "development",
 });
 
 async function transformAndDeploy(id: string, src: string) {
@@ -24,7 +24,7 @@ async function transformAndDeploy(id: string, src: string) {
     cache.client = new PactToolboxClient(cache.resolvedConfig);
   }
 
-  const { code, types, modules } = await transformPactToJS(src);
+  const { code, types, modules } = await transformPactToJS(src, id);
   try {
     const client = cache.client;
     const isDeployed =
@@ -33,11 +33,11 @@ async function transformAndDeploy(id: string, src: string) {
         : false;
     await writeFile(`${id}.d.ts`, types);
     // TODO: Deploy only in dev mode
-    const networkConfig = getNetworkConfig(cache.resolvedConfig);
+    const networkConfig = getDefaultNetworkConfig(cache.resolvedConfig);
     if (isLocalNetwork(networkConfig)) {
       logger.start(`[pactLoader] Deploying contract ${id} to ${networkConfig.name}`);
       await client.deployCode(src, {
-        build: {
+        builder: {
           upgrade: isDeployed,
           init: !isDeployed,
         },

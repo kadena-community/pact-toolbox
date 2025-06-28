@@ -2,26 +2,33 @@ import { fillTemplatePlaceholders } from "@pact-toolbox/utils";
 
 const TEMPLATE = `
 (namespace "{{namespace}}")
-(module {{name}} GOVERNANCE
+(module {{name}} {{adminKeyset}}
   (defcap GOVERNANCE ()
-    (enforce-keyset "{{namespace}}.{{adminKeyset}}")
+    (enforce-keyset {{adminKeyset}})
   )
-  (defun test (name:string)
-    (format "Hello from {{name}} module!")
-  )
+  (defun upgrade ()
+    @doc "Upgrade the module"
+    (with-capability (GOVERNANCE)
+      "Module upgraded"))
+
+  (defun my-function ()
+    @doc "Example function"
+    "Hello from {{name}} module!")
 )
 
-(if (read-msg "upgrade")
-  ["Module upgraded."]
-  []
-)
 `;
 
-interface ModuleTemplateContext {
+export interface ModuleContext {
   name: string;
   namespace?: string;
   adminKeyset?: string;
 }
-export function generateModule(context: ModuleTemplateContext): string {
-  return fillTemplatePlaceholders(TEMPLATE.trim(), context);
+export function generateModule(context: ModuleContext): string {
+  const fullContext = {
+    name: context.name,
+    namespace: context.namespace ?? "free",
+    adminKeyset: context.adminKeyset ?? "admin-keyset"
+  };
+  
+  return fillTemplatePlaceholders(TEMPLATE.trim(), fullContext);
 }

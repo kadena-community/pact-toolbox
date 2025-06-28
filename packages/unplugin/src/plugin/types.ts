@@ -14,4 +14,5 @@ export interface PluginOptions {
   onReady?: (runtime: PactToolboxClient) => Promise<void>;
   startNetwork?: boolean;
   client?: PactToolboxClient;
+  cacheSize?: number;
 }

@@ -3,20 +3,22 @@ import type { ConfigEnv, UserConfig } from "vite";
 import { createUnplugin } from "unplugin";
 
 import {
-  getNetworkConfig,
-  getSerializableNetworkConfig,
+  getDefaultNetworkConfig,
+  getSerializableMultiNetworkConfig,
   isLocalNetwork,
   resolveConfig,
   type NetworkConfig,
   type PactToolboxConfigObj,
 } from "@pact-toolbox/config";
 import { PactToolboxClient } from "@pact-toolbox/runtime";
-import { spinner, writeFile } from "@pact-toolbox/utils";
+import { writeFile, logger } from "@pact-toolbox/node-utils";
 import path from "node:path";
-import type { CachedTransform, PluginOptions } from "./types";
+import type { PluginOptions } from "./types";
 import { createPactToJSTransformer } from "../transform";
-import { PLUGIN_NAME, prettyPrintError, createPactToolboxNetwork } from "./utils";
-import type { PactToolboxNetwork } from "@pact-toolbox/network";
+import { PactTransformCache, createSourceHash } from "../cache";
+import { PLUGIN_NAME, prettyPrintError } from "./utils";
+import { PactToolboxNetwork, createNetwork } from "@pact-toolbox/network";
+import { cleanupTransformer } from "../transform";
 
 /**
  * Factory function to create the Vite plugin.
@@ -25,7 +27,7 @@ import type { PactToolboxNetwork } from "@pact-toolbox/network";
  */
 export const unpluginFactory: UnpluginFactory<PluginOptions | undefined> = (options = {}) => {
   const { startNetwork = true } = options;
-  const cache = new Map<string, CachedTransform>();
+  const cache = new PactTransformCache(options.cacheSize || 1000);
 
   const toolboxConfigPromise = resolveConfig();
 
@@ -34,12 +36,26 @@ export const unpluginFactory: UnpluginFactory<PluginOptions | undefined> = (opti
   let client: PactToolboxClient | undefined = options.client;
   let network: PactToolboxNetwork | null = null;
 
-  // Determine environment flags
+  // Update environment flags based on Vite command
   let isTest = process.env.NODE_ENV === "test";
   let isServe = false;
-  const deploySpinner = spinner({ indicator: "dots" });
   // Initialize the transformer with visitor
-  const transformPactToJS = createPactToJSTransformer();
+  const transformPactToJS = createPactToJSTransformer({
+    generateTypes: true,
+    debug: process.env.NODE_ENV === "development",
+  });
+
+  /**
+   * Sets up the global context for the runtime
+   */
+  const setupGlobalContext = () => {
+    if (client && !(globalThis as any).__PACT_TOOLBOX_CONTEXT__) {
+      (globalThis as any).__PACT_TOOLBOX_CONTEXT__ = {
+        network: client.context,
+        getNetworkConfig: () => client?.getNetworkConfig(),
+      };
+    }
+  };
 
   /**
    * Asynchronous function to handle server configuration.
@@ -47,23 +63,26 @@ export const unpluginFactory: UnpluginFactory<PluginOptions | undefined> = (opti
   const configureServer = async () => {
     try {
       resolvedConfig = await toolboxConfigPromise;
-      networkConfig = getNetworkConfig(resolvedConfig);
+      networkConfig = getDefaultNetworkConfig(resolvedConfig);
       client = new PactToolboxClient(resolvedConfig);
 
-      // // Generate TypeScript declaration files for contracts
-      // await createDtsFiles(resolvedConfig.contractsDir);
-      if (startNetwork) {
-        // Start the Pact Toolbox network
-        const { network: networkInstance, client: networkClient } = await createPactToolboxNetwork(
-          { isServe, isTest, client, networkConfig: networkConfig },
-          resolvedConfig,
-          options,
-        );
-        network = networkInstance;
-        client = networkClient;
+      if (startNetwork && isLocalNetwork(networkConfig) && (!isTest || isServe)) {
+        // Create and start the network using the simplified API
+        network = await createNetwork(resolvedConfig, {
+          autoStart: true,
+          detached: true,
+        });
+
+        // Ensure the global context is set
+        setupGlobalContext();
+
+        // Call onReady hook if provided
+        if (options.onReady) {
+          await options.onReady(client);
+        }
       }
     } catch (error) {
-      console.error("Error during server configuration:", error);
+      logger.error("Error during server configuration:", error);
     }
   };
 
@@ -71,23 +90,26 @@ export const unpluginFactory: UnpluginFactory<PluginOptions | undefined> = (opti
    * Asynchronous function to handle configuration resolution.
    * @param config Vite resolved configuration.
    */
-  const onConfig = async (config: UserConfig, { command }: ConfigEnv) => {
+  const onConfig = async (config: UserConfig, { command, mode }: ConfigEnv) => {
     // Replace 'any' with actual Vite config type
+    isServe = command === "serve";
     try {
       resolvedConfig = await toolboxConfigPromise;
 
-      // Update environment flags based on Vite command
-      //@ts-expect-error
-      isTest = command === "test" || isTest;
-      isServe = command === "serve";
-
       if (!isTest) {
-        const serializableNetworkConfig = getSerializableNetworkConfig(resolvedConfig);
+        // Inject multi-network configuration
+        const multiNetworkConfig = getSerializableMultiNetworkConfig(resolvedConfig, {
+          isDev: mode !== "production",
+          isTest,
+        });
+
         config.define = config.define || {};
-        config.define["globalThis.__PACT_TOOLBOX_NETWORK_CONFIG__"] = JSON.stringify(serializableNetworkConfig);
+        // Check if globalThis has updated config at build time
+        const configValue = (globalThis as any).__PACT_TOOLBOX_NETWORKS__ || JSON.stringify(multiNetworkConfig);
+        config.define["globalThis.__PACT_TOOLBOX_NETWORKS__"] = configValue;
       }
     } catch (error) {
-      console.error("Error during config resolution:", error);
+      logger.error("Error during config resolution:", error);
     }
   };
 
@@ -100,20 +122,23 @@ export const unpluginFactory: UnpluginFactory<PluginOptions | undefined> = (opti
   const transformFile = async (src: string, id: string) => {
     if (!id.endsWith(".pact")) return null;
 
-    // Check cache to avoid redundant transformations
-    const cached = cache.get(id);
-    const shouldTransform = !cached || cached.src !== src;
+    const sourceHash = createSourceHash(src);
     const cleanName = path.basename(id);
 
-    if (!shouldTransform) {
+    // Check cache to avoid redundant transformations
+    const cached = cache.get(id, sourceHash);
+    if (cached) {
       return {
-        code: cached!.code,
-        map: null,
+        code: cached.code,
+        map: cached.sourceMap || null,
       };
     }
 
     try {
-      const { code, types, modules } = await transformPactToJS(src);
+      // Transform with file path for better error messages
+      const result = await transformPactToJS(src, id);
+
+      const { code, types, modules, sourceMap } = result;
 
       // Check if contracts are deployed
       const isDeployed =
@@ -121,37 +146,40 @@ export const unpluginFactory: UnpluginFactory<PluginOptions | undefined> = (opti
           ? (await Promise.all(modules.map((m) => client?.isContractDeployed(m.path)))).every(Boolean)
           : false;
 
+      // Convert modules to ModuleInfo format for cache (simplified since transform module interface is basic)
+      const moduleInfos = modules.map((m) => ({
+        name: m.name,
+        namespace: undefined,
+        governance: "",
+        doc: undefined,
+        functionCount: 0,
+        schemaCount: 0,
+        capabilityCount: 0,
+        constantCount: 0,
+      }));
+
       // Update cache with new transformation data
-      cache.set(id, { code, types, src, isDeployed });
+      cache.set(id, sourceHash, { javascript: code, typescript: types }, moduleInfos, isDeployed);
 
       // Handle deployment if required
-      if (isLocalNetwork(networkConfig) && network) {
-        deployContract(id, src, isDeployed).catch((error) => {
+      if (isLocalNetwork(networkConfig) && (await network?.isHealthy())) {
+        deployContract(id, src, isDeployed, types).catch((error) => {
           prettyPrintError(`Failed to deploy contract ${cleanName}`, error);
         });
       }
 
       return {
         code,
-        map: null,
+        map: sourceMap || null,
       };
     } catch (error) {
       // Handle errors from the Rust transformer
       if (error instanceof Error && error.message.includes("Pact transformation failed")) {
-        console.error(`Transformation error in ${id}:`, error.message);
+        logger.error(`Transformation error in ${id}:`, error.message);
         return null; // Prevent further processing for invalid files
       }
 
-      // Handle parsing errors (maintain backward compatibility)
-      // if (error instanceof ParsingError) {
-      //   console.error(`Parsing error in ${id}:`);
-      //   // error.errors.forEach((err: ErrorDetail) => {
-      //   //   console.error(`  Line ${err.line}, Column ${err.column}: ${err.message}`);
-      //   // });
-      //   return null; // Prevent further processing for invalid files
-      // }
-
-      console.error(`Unexpected error during transformation of ${id}:`, error);
+      logger.error(`Unexpected error during transformation of ${id}:`, error);
       throw error; // Rethrow to let Vite handle it
     }
   };
@@ -161,34 +189,32 @@ export const unpluginFactory: UnpluginFactory<PluginOptions | undefined> = (opti
    * @param id File identifier (path).
    * @param src Source code of the `.pact` file.
    * @param isDeployed Flag indicating if the contract is already deployed.
+   * @param types TypeScript definitions to write.
    */
-  const deployContract = async (id: string, src: string, isDeployed: boolean) => {
+  const deployContract = async (id: string, src: string, isDeployed: boolean, types: string) => {
     if (!client) {
-      console.error("PactToolboxClient is not initialized.");
+      logger.error("PactToolboxClient is not initialized.");
       return;
     }
 
-    deploySpinner.start(`Deploying contract ${path.basename(id)}...`);
+    const contractName = path.basename(id);
+    logger.info(`Deploying contract ${contractName}...`);
 
     return Promise.all([
       // Write TypeScript declaration file
-      writeFile(`${id}.d.ts`, cache.get(id)!.types),
+      writeFile(`${id}.d.ts`, types),
       // Deploy the contract
       client
         .deployCode(src, {
-          build: {
+          builder: {
             upgrade: isDeployed,
             init: !isDeployed,
           },
         })
         .then(() => {
           // Update deployment status in cache
-          const cached = cache.get(id);
-          if (cached) {
-            cached.isDeployed = true;
-            cache.set(id, cached);
-          }
-          deploySpinner.stop(`Contract ${path.basename(id)} deployed successfully.`);
+          cache.setDeploymentStatus(id, true);
+          logger.info(`Contract ${contractName} deployed successfully.`);
         }),
     ]);
   };
@@ -202,10 +228,13 @@ export const unpluginFactory: UnpluginFactory<PluginOptions | undefined> = (opti
     try {
       const { DefinePlugin } = await import("@rspack/core");
       resolvedConfig = await toolboxConfigPromise;
-      const serializableNetworkConfig = getSerializableNetworkConfig(resolvedConfig);
+      const serializableNetworkConfig = getSerializableMultiNetworkConfig(resolvedConfig);
+
+      // Check if globalThis has updated config at build time
+      const configValue = (globalThis as any).__PACT_TOOLBOX_NETWORKS__ || JSON.stringify(serializableNetworkConfig);
 
       const definePlugin = new DefinePlugin({
-        "globalThis.__PACT_TOOLBOX_NETWORK_CONFIG__": JSON.stringify(serializableNetworkConfig),
+        "globalThis.__PACT_TOOLBOX_NETWORKS__": configValue,
       });
 
       if (!client) {
@@ -213,34 +242,33 @@ export const unpluginFactory: UnpluginFactory<PluginOptions | undefined> = (opti
       }
 
       if (!networkConfig) {
-        networkConfig = getNetworkConfig(resolvedConfig);
+        networkConfig = getDefaultNetworkConfig(resolvedConfig);
       }
 
       definePlugin.apply(compiler);
 
-      if (compiler.options.mode === "development") {
-        const { network: networkInstance, client: networkClient } = await createPactToolboxNetwork(
-          { isServe: true, isTest: false, client, networkConfig: networkConfig },
-          resolvedConfig,
-          options,
-        );
-        network = networkInstance;
-        client = networkClient;
+      if (compiler.options.mode === "development" && isLocalNetwork(networkConfig)) {
+        network = await createNetwork(resolvedConfig, {
+          autoStart: true,
+          detached: true,
+        });
+
+        // Ensure the global context is set
+        setupGlobalContext();
+
+        if (options.onReady) {
+          await options.onReady(client);
+        }
       }
 
       compiler.hooks.shutdown.tap(PLUGIN_NAME, async () => {
-        const shutdownSpinner = spinner({ indicator: "timer" });
         if (network) {
-          try {
-            shutdownSpinner.start("Shutting down network...");
-            await Promise.race([network.stop(), new Promise((resolve) => setTimeout(resolve, 10000))]);
-          } finally {
-            shutdownSpinner.stop("Network stopped!");
-          }
+          await network.stop();
         }
+        cleanupTransformer();
       });
     } catch (error) {
-      console.error("Error during Rspack configuration:", error);
+      logger.error("Error during Rspack configuration:", error);
     }
   };
 
@@ -251,13 +279,44 @@ export const unpluginFactory: UnpluginFactory<PluginOptions | undefined> = (opti
   const setupEsbuild = async (build: any) => {
     // Replace 'any' with actual Esbuild build type
     try {
-      const serializableNetworkConfig = getSerializableNetworkConfig(await toolboxConfigPromise);
+      resolvedConfig = await toolboxConfigPromise;
+      networkConfig = getDefaultNetworkConfig(resolvedConfig);
+
+      const serializableNetworkConfig = getSerializableMultiNetworkConfig(resolvedConfig);
+      // Check if globalThis has updated config at build time
+      const configValue = (globalThis as any).__PACT_TOOLBOX_NETWORKS__ || JSON.stringify(serializableNetworkConfig);
+
       build.initialOptions.define = {
         ...build.initialOptions.define,
-        "globalThis.__PACT_TOOLBOX_NETWORK_CONFIG__": JSON.stringify(serializableNetworkConfig),
+        "globalThis.__PACT_TOOLBOX_NETWORKS__": configValue,
       };
+
+      // For esbuild in dev mode, start the network
+      if (startNetwork && isLocalNetwork(networkConfig) && !isTest) {
+        network = await createNetwork(resolvedConfig, {
+          autoStart: true,
+          detached: true,
+        });
+
+        // Initialize client if not already done
+        if (!client) {
+          client = new PactToolboxClient(resolvedConfig);
+        }
+
+        // Ensure the global context is set
+        if (client && !(globalThis as any).__PACT_TOOLBOX_CONTEXT__) {
+          (globalThis as any).__PACT_TOOLBOX_CONTEXT__ = {
+            network: client.context,
+            getNetworkConfig: () => client?.getNetworkConfig(),
+          };
+        }
+
+        if (options.onReady) {
+          await options.onReady(client);
+        }
+      }
     } catch (error) {
-      console.error("Error during Esbuild setup:", error);
+      logger.error("Error during Esbuild setup:", error);
     }
   };
 
@@ -297,18 +356,13 @@ export const unpluginFactory: UnpluginFactory<PluginOptions | undefined> = (opti
     vite: {
       config: onConfig,
       closeBundle: async (error) => {
-        const shutdownSpinner = spinner({ indicator: "timer" });
         if (error) {
-          console.error("Error during Vite bundle:", error);
+          logger.error("Error during Vite bundle:", error);
         }
         if (network) {
-          try {
-            shutdownSpinner.start("Shutting down network...");
-            await Promise.race([network.stop(), new Promise((resolve) => setTimeout(resolve, 10000))]);
-          } finally {
-            shutdownSpinner.stop("Network stopped!");
-          }
+          await network.stop();
         }
+        cleanupTransformer();
       },
     },
     /**
@@ -323,6 +377,14 @@ export const unpluginFactory: UnpluginFactory<PluginOptions | undefined> = (opti
      * @param compiler Rspack compiler instance.
      */
     rspack: configureRspack,
+
+    /**
+     * Webpack integration hooks
+     */
+    webpack(compiler) {
+      // Use the rspack configuration for webpack too
+      configureRspack(compiler);
+    },
   };
 };
 

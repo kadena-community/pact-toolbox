@@ -2,7 +2,7 @@ import { LitElement, html, css } from "lit";
 import { customElement, state } from "lit/decorators.js";
 import { baseStyles } from "@pact-toolbox/ui-shared";
 import { themeMapping } from "../styles/theme-mapping";
-import type { Account, Transaction, Network, WalletScreen, WalletState } from "../../types";
+import type { Account, Transaction, Network, WalletScreen, WalletState, DevWalletSettings } from "../../types";
 import { DevWalletStorage } from "../../storage";
 import "../screens/accounts-screen";
 import "../screens/transactions-screen";
@@ -20,6 +20,11 @@ export class ToolboxWalletContainer extends LitElement {
     accounts: [],
     transactions: [],
     networks: [],
+  };
+
+  @state() private settings: DevWalletSettings = {
+    autoLock: false,
+    showTestNetworks: true,
   };
 
   private storage = new DevWalletStorage();
@@ -97,12 +102,14 @@ export class ToolboxWalletContainer extends LitElement {
   override connectedCallback() {
     super.connectedCallback();
     this.loadWalletData();
+    this.loadSettings();
     this.setupEventListeners();
   }
 
   override disconnectedCallback() {
     super.disconnectedCallback();
     this.removeEventListeners();
+    this.stopAutoLockTimer();
   }
 
   private setupEventListeners() {
@@ -118,6 +125,10 @@ export class ToolboxWalletContainer extends LitElement {
     document.addEventListener("sign-rejected", this.handleSignRejected as EventListener);
     document.addEventListener("toolbox-transaction-added", this.handleTransactionAdded as any);
     document.addEventListener("toolbox-transaction-updated", this.handleTransactionUpdated as any);
+    document.addEventListener("account-created", this.handleAccountCreated as any);
+    document.addEventListener("wallet-data-cleared", this.handleWalletDataCleared as any);
+    document.addEventListener("wallet-export-requested", this.handleWalletExportRequested as any);
+    document.addEventListener("settings-changed", this.handleSettingsChanged as any);
   }
 
   private removeEventListeners() {
@@ -133,6 +144,10 @@ export class ToolboxWalletContainer extends LitElement {
     document.removeEventListener("sign-rejected", this.handleSignRejected as EventListener);
     document.removeEventListener("toolbox-transaction-added", this.handleTransactionAdded as any);
     document.removeEventListener("toolbox-transaction-updated", this.handleTransactionUpdated as any);
+    document.removeEventListener("account-created", this.handleAccountCreated as any);
+    document.removeEventListener("wallet-data-cleared", this.handleWalletDataCleared as any);
+    document.removeEventListener("wallet-export-requested", this.handleWalletExportRequested as any);
+    document.removeEventListener("settings-changed", this.handleSettingsChanged as any);
   }
 
   private handleNavigation = (event: CustomEvent<{ screen: WalletScreen }>) => {
@@ -191,7 +206,7 @@ export class ToolboxWalletContainer extends LitElement {
     };
   };
 
-  private handleConnectApproved = (event: CustomEvent<{ account: Account }>) => {
+  private handleConnectApproved = (_event: CustomEvent<{ account: Account }>) => {
     // The connect screen already dispatches the connect-approved event
     // Check if we have a pending sign request
     if (this.walletState.pendingTransaction) {
@@ -229,7 +244,7 @@ export class ToolboxWalletContainer extends LitElement {
     });
   };
 
-  private handleSignApproved = (event: CustomEvent) => {
+  private handleSignApproved = (_event: CustomEvent) => {
     console.log("Sign approved - clearing pending transaction");
     // Clear pending transaction and return to transactions screen
     this.walletState = {
@@ -260,6 +275,138 @@ export class ToolboxWalletContainer extends LitElement {
     // Reload transaction history to show the updated status
     await this.loadTransactionHistory();
   };
+
+  private handleAccountCreated = async (event: CustomEvent<{ account: Account }>) => {
+    console.log("Account created event received:", event.detail);
+    const newAccount = event.detail.account;
+    
+    // Add the new account to the state
+    this.walletState = {
+      ...this.walletState,
+      accounts: [...this.walletState.accounts, newAccount],
+      // Set as selected if it's the first account
+      selectedAccount: this.walletState.accounts.length === 0 ? newAccount : this.walletState.selectedAccount,
+    };
+    
+    // Save the account to storage
+    await this.storage.saveKey({
+      address: newAccount.address,
+      publicKey: newAccount.publicKey,
+      privateKey: newAccount.privateKey || "",
+      name: newAccount.name,
+      createdAt: Date.now(),
+    });
+  };
+
+  private handleWalletDataCleared = async () => {
+    console.log("Wallet data cleared event received");
+    
+    // Clear all data through storage service
+    await this.storage.clearAllData();
+    
+    // Reset wallet state to initial empty state
+    this.walletState = {
+      ...this.walletState,
+      accounts: [],
+      transactions: [],
+      selectedAccount: undefined,
+    };
+    
+    console.log("All wallet data cleared and state reset");
+  };
+
+  private handleWalletExportRequested = async () => {
+    console.log("Wallet export requested");
+    
+    try {
+      // Get all accounts and transactions from storage
+      const accounts = await this.storage.getKeys();
+      const transactions = await this.storage.getTransactions();
+      
+      if (accounts.length === 0) {
+        alert("No accounts to export");
+        return;
+      }
+
+      // Create export data
+      const exportData = {
+        version: "1.0",
+        timestamp: new Date().toISOString(),
+        accounts: accounts.map(account => ({
+          address: account.address,
+          publicKey: account.publicKey,
+          privateKey: account.privateKey,
+          name: account.name,
+          createdAt: account.createdAt,
+        })),
+        transactions: transactions.slice(0, 100), // Limit to last 100 transactions
+      };
+
+      // Create download
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `pact-toolbox-wallet-export-${Date.now()}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      console.log("Wallet data exported successfully");
+    } catch (error) {
+      console.error("Failed to export wallet data:", error);
+      alert("Failed to export wallet data. Please try again.");
+    }
+  };
+
+  private handleSettingsChanged = async (event: CustomEvent<{ settings: DevWalletSettings }>) => {
+    console.log("Settings changed event received:", event.detail);
+    this.settings = event.detail.settings;
+    
+    // Handle auto-lock setting
+    if (this.settings.autoLock) {
+      this.startAutoLockTimer();
+    } else {
+      this.stopAutoLockTimer();
+    }
+  };
+
+  private autoLockTimer: NodeJS.Timeout | null = null;
+  
+  private startAutoLockTimer() {
+    this.stopAutoLockTimer(); // Clear any existing timer
+    
+    // Set auto-lock for 5 minutes (300000ms)
+    this.autoLockTimer = setTimeout(() => {
+      console.log("Auto-lock triggered - clearing wallet state");
+      this.walletState = {
+        ...this.walletState,
+        selectedAccount: undefined,
+        currentScreen: "accounts",
+      };
+    }, 300000);
+  }
+  
+  private stopAutoLockTimer() {
+    if (this.autoLockTimer) {
+      clearTimeout(this.autoLockTimer);
+      this.autoLockTimer = null;
+    }
+  }
+
+  private async loadSettings() {
+    try {
+      this.settings = await this.storage.getSettings();
+      
+      // Start auto-lock timer if enabled
+      if (this.settings.autoLock) {
+        this.startAutoLockTimer();
+      }
+    } catch (error) {
+      console.error("Failed to load settings:", error);
+    }
+  }
 
   private async loadWalletData() {
     // Load from global context if available

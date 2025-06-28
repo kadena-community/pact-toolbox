@@ -1,0 +1,97 @@
+;; Sample token contract tests
+;; @unit @critical
+;; Tests for basic token functionality
+
+(module sample-token GOV
+  ;; Simple token contract for testing
+  (defschema token-schema
+    balance:decimal
+    guard:guard)
+  
+  (deftable tokens:{token-schema})
+  
+  (defun create-account (account:string guard:guard)
+    ;; @fast
+    ;; Create a new account with zero balance
+    (insert tokens account
+      { "balance": 0.0
+      , "guard": guard }))
+  
+  (defun get-balance (account:string)
+    ;; @fast
+    ;; Get account balance
+    (at "balance" (read tokens account)))
+  
+  (defun transfer (from:string to:string amount:decimal)
+    ;; @slow @integration
+    ;; Transfer tokens between accounts
+    (with-read tokens from { "balance":= from-bal, "guard":= from-guard }
+      (enforce-guard from-guard)
+      (enforce (>= from-bal amount) "Insufficient balance")
+      (update tokens from { "balance": (- from-bal amount) })
+      (with-default-read tokens to
+        { "balance": 0.0, "guard": (create-user-guard (create-principal (keyset-ref-guard "test-keyset"))) }
+        { "balance":= to-bal }
+        (write tokens to
+          { "balance": (+ to-bal amount)
+          , "guard": (at "guard" (read tokens to)) }))))
+)
+
+;; Test setup
+(env-data { "test-keyset": ["test-key"] })
+(env-keys ["test-key"])
+
+;; @unit @fast
+;; Test account creation
+(defun test-create-account ()
+  (expect "Account created successfully"
+    "Write succeeded"
+    (create-account "alice" (keyset-ref-guard "test-keyset"))))
+
+;; @unit @fast  
+;; Test balance retrieval
+(defun test-get-balance ()
+  (expect "Initial balance is zero"
+    0.0
+    (get-balance "alice")))
+
+;; @integration @slow
+;; Test transfer between accounts
+(defun test-transfer ()
+  ;; Setup accounts
+  (create-account "bob" (keyset-ref-guard "test-keyset"))
+  (update tokens "alice" { "balance": 100.0 })
+  
+  ;; Test transfer
+  (transfer "alice" "bob" 50.0)
+  
+  (expect "Alice balance reduced"
+    50.0
+    (get-balance "alice"))
+  
+  (expect "Bob balance increased"
+    50.0
+    (get-balance "bob")))
+
+;; @unit @authorization
+;; Test unauthorized transfer fails
+(defun test-unauthorized-transfer-fails ()
+  (env-keys [])
+  (expect-failure "Unauthorized transfer should fail"
+    "Keyset failure"
+    (transfer "alice" "bob" 10.0)))
+
+;; @unit @validation
+;; Test insufficient balance fails
+(defun test-insufficient-balance-fails ()
+  (env-keys ["test-key"])
+  (expect-failure "Insufficient balance should fail"
+    "Insufficient balance"
+    (transfer "alice" "bob" 1000.0)))
+
+;; Run all tests
+(test-create-account)
+(test-get-balance)
+(test-transfer)
+(test-unauthorized-transfer-fails)
+(test-insufficient-balance-fails)

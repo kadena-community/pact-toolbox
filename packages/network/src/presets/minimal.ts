@@ -51,7 +51,7 @@ export function createChainwebNodeService({
     stopGracePeriod: 20,
     ulimits: [{ Name: "nofile", Soft: 65535, Hard: 65535 }],
     volumes: [
-      persistDb ? `${volume}:/chainweb/db` : undefined,
+      persistDb && volume ? `${volume}:/chainweb/db` : undefined,
       `${DEVNET_CONFIGS_DIR}/devnet-bootstrap-node.cert.pem:/chainweb/devnet-bootstrap-node.cert.pem:ro`,
       `${DEVNET_CONFIGS_DIR}/devnet-bootstrap-node.key.pem:/chainweb/devnet-bootstrap-node.key.pem:ro`,
       `${DEVNET_CONFIGS_DIR}/chainweb-node.common.yaml:/chainweb/config/chainweb-node.common.yaml:ro`,
@@ -240,7 +240,8 @@ export function createMinimalDevNet({
   networkName = MINIMAL_NETWORK_NAME,
   persistDb = true,
 }: Partial<MinimalDevNetOptions> = {}): DevNetServiceDefinition {
-  const volume = `devnet_db_${clusterId.replace("-", "_")}`;
+  // Generate unique volume name with timestamp to ensure isolation in stateless mode
+  const volume = persistDb ? `devnet_db_${clusterId.replace("-", "_")}` : `devnet_db_${Date.now()}_${Math.random().toString(36).substring(7)}`;
   return {
     clusterId,
     networkName,
@@ -249,7 +250,7 @@ export function createMinimalDevNet({
       bootstrapNode: createChainwebNodeService({
         clusterId,
         persistDb,
-        volume,
+        volume: persistDb ? volume : undefined,
       }),
       miningClient: createMiningClientService(),
       miningTrigger: createMiningTriggerService(),

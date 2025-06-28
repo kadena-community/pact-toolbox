@@ -2,11 +2,19 @@ import { LitElement, html, css } from "lit";
 import { customElement, state } from "lit/decorators.js";
 import { baseStyles } from "@pact-toolbox/ui-shared";
 import { themeMapping, buttonStyles } from "../styles/theme-mapping";
+import { DevWalletStorage } from "../../storage";
+import type { DevWalletSettings } from "../../types";
 
 @customElement("pact-toolbox-settings-screen")
 export class PactToolboxSettingsScreen extends LitElement {
   @state() private showExportWarning = false;
   @state() private showClearDataWarning = false;
+  @state() private settings: DevWalletSettings = {
+    autoLock: false,
+    showTestNetworks: true,
+  };
+
+  private storage = new DevWalletStorage();
 
   static override styles = [
     baseStyles,
@@ -206,43 +214,57 @@ export class PactToolboxSettingsScreen extends LitElement {
     `,
   ];
 
-  private handleExportKeys() {
-    // Get all accounts from localStorage
-    const accounts = localStorage.getItem("pact-toolbox-wallet-accounts");
-    if (!accounts) {
-      alert("No accounts to export");
-      return;
+  override async connectedCallback() {
+    super.connectedCallback();
+    await this.loadSettings();
+  }
+
+  private async loadSettings() {
+    try {
+      this.settings = await this.storage.getSettings();
+    } catch (error) {
+      console.error("Failed to load settings:", error);
     }
+  }
 
-    // Create a safe export (without private keys for display)
-    const accountsData = JSON.parse(accounts);
-    const exportData = {
-      version: "1.0",
-      timestamp: new Date().toISOString(),
-      accounts: accountsData,
-    };
+  private async updateSetting(key: keyof DevWalletSettings, value: boolean) {
+    const newSettings = { ...this.settings, [key]: value };
+    
+    try {
+      await this.storage.saveSettings(newSettings);
+      this.settings = newSettings;
+      
+      // Dispatch event to notify parent of settings change
+      this.dispatchEvent(new CustomEvent('settings-changed', {
+        detail: { settings: newSettings },
+        bubbles: true,
+        composed: true,
+      }));
+    } catch (error) {
+      console.error("Failed to save settings:", error);
+    }
+  }
 
-    // Create download
-    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `pact-toolbox-wallet-export-${Date.now()}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+  private async handleToggleAutoLock() {
+    await this.updateSetting('autoLock', !this.settings.autoLock);
+  }
+
+  private async handleToggleShowTestNetworks() {
+    await this.updateSetting('showTestNetworks', !this.settings.showTestNetworks);
+  }
+
+  private async handleExportKeys() {
+    // Notify parent to handle export
+    this.dispatchEvent(new CustomEvent('wallet-export-requested', {
+      bubbles: true,
+      composed: true,
+    }));
 
     this.showExportWarning = false;
   }
 
-  private handleClearData() {
-    // Clear all wallet data
-    localStorage.removeItem("pact-toolbox-wallet-accounts");
-    localStorage.removeItem("pact-toolbox-wallet-transactions");
-    localStorage.removeItem("pact-toolbox-wallet-settings");
-    
-    // Notify parent to reload
+  private async handleClearData() {
+    // Notify parent to clear all data through storage service
     this.dispatchEvent(new CustomEvent('wallet-data-cleared', {
       bubbles: true,
       composed: true,
@@ -266,7 +288,10 @@ export class PactToolboxSettingsScreen extends LitElement {
             <div class="setting-label">Auto-lock</div>
             <div class="setting-sublabel">Lock wallet after 5 minutes of inactivity</div>
           </div>
-          <div class="toggle-switch"></div>
+          <div 
+            class="toggle-switch ${this.settings.autoLock ? 'active' : ''}" 
+            @click=${this.handleToggleAutoLock}
+          ></div>
         </div>
 
         <div class="setting-item">
@@ -274,7 +299,10 @@ export class PactToolboxSettingsScreen extends LitElement {
             <div class="setting-label">Show test networks</div>
             <div class="setting-sublabel">Display testnet and local networks</div>
           </div>
-          <div class="toggle-switch active"></div>
+          <div 
+            class="toggle-switch ${this.settings.showTestNetworks ? 'active' : ''}" 
+            @click=${this.handleToggleShowTestNetworks}
+          ></div>
         </div>
       </div>
 

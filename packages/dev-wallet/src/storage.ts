@@ -1,5 +1,5 @@
 import { openDB, type IDBPDatabase } from "idb";
-import type { DevWalletKey, DevWalletTransaction } from "./types";
+import type { DevWalletKey, DevWalletTransaction, DevWalletSettings } from "./types";
 
 export class DevWalletStorage {
   private dbName = "pact-toolbox-dev-wallet";
@@ -23,6 +23,9 @@ export class DevWalletStorage {
           }
           if (!db.objectStoreNames.contains("transactions")) {
             db.createObjectStore("transactions", { keyPath: "id" });
+          }
+          if (!db.objectStoreNames.contains("settings")) {
+            db.createObjectStore("settings", { keyPath: "key" });
           }
         },
       });
@@ -150,6 +153,64 @@ export class DevWalletStorage {
       } else {
         localStorage.removeItem(`${this.prefix}-selected-key`);
       }
+    }
+  }
+
+  async getSettings(): Promise<DevWalletSettings> {
+    const defaultSettings: DevWalletSettings = {
+      autoLock: false,
+      showTestNetworks: true,
+    };
+
+    const db = await this.getDB();
+    if (db) {
+      const stored = await db.get("settings", "wallet-settings");
+      return stored ? stored.value : defaultSettings;
+    }
+
+    // Fallback to localStorage in browser
+    if (typeof window !== "undefined" && typeof localStorage !== "undefined") {
+      const stored = localStorage.getItem(`${this.prefix}-settings`);
+      return stored ? JSON.parse(stored) : defaultSettings;
+    }
+
+    return defaultSettings;
+  }
+
+  async saveSettings(settings: DevWalletSettings): Promise<void> {
+    const db = await this.getDB();
+    if (db) {
+      await db.put("settings", { key: "wallet-settings", value: settings });
+      return;
+    }
+
+    // Fallback to localStorage in browser
+    if (typeof window !== "undefined" && typeof localStorage !== "undefined") {
+      localStorage.setItem(`${this.prefix}-settings`, JSON.stringify(settings));
+    }
+  }
+
+  async clearAllData(): Promise<void> {
+    const db = await this.getDB();
+    if (db) {
+      // Clear IndexedDB
+      const transaction = db.transaction(['keys', 'transactions', 'settings'], 'readwrite');
+      await transaction.objectStore('keys').clear();
+      await transaction.objectStore('transactions').clear();
+      await transaction.objectStore('settings').clear();
+      await transaction.done;
+    }
+
+    // Clear localStorage fallback data
+    if (typeof window !== "undefined" && typeof localStorage !== "undefined") {
+      localStorage.removeItem(`${this.prefix}-keys`);
+      localStorage.removeItem(`${this.prefix}-transactions`);
+      localStorage.removeItem(`${this.prefix}-selected-key`);
+      localStorage.removeItem(`${this.prefix}-settings`);
+      // Also clear legacy localStorage keys that might exist
+      localStorage.removeItem("pact-toolbox-wallet-accounts");
+      localStorage.removeItem("pact-toolbox-wallet-transactions");
+      localStorage.removeItem("pact-toolbox-wallet-settings");
     }
   }
 }

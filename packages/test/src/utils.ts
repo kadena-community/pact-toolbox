@@ -1,12 +1,12 @@
 import type { NetworkConfig, PactToolboxConfigObj } from "@pact-toolbox/config";
 
 import {
-  getNetworkConfig,
+  getDefaultNetworkConfig,
   getSerializableNetworkConfig,
   isDevNetworkConfig,
   isPactServerNetworkConfig,
 } from "@pact-toolbox/config";
-import { getRandomNetworkPorts } from "@pact-toolbox/utils";
+import { getRandomNetworkPorts } from "@pact-toolbox/node-utils";
 
 export function getConfigOverrides(
   configOverrides?: Partial<PactToolboxConfigObj> | string,
@@ -21,12 +21,12 @@ export function getConfigOverrides(
 
 export function injectNetworkConfig(config: PactToolboxConfigObj): void {
   const network = getSerializableNetworkConfig(config);
-  (globalThis as any).__PACT_TOOLBOX_NETWORK_CONFIG__ = network;
+  (globalThis as any).__PACT_TOOLBOX_NETWORKS__ = network;
 }
 
 export async function updatePorts(config: PactToolboxConfigObj): Promise<NetworkConfig> {
   const ports = await getRandomNetworkPorts();
-  const network = getNetworkConfig(config);
+  const network = getDefaultNetworkConfig(config);
   if (isPactServerNetworkConfig(network)) {
     if (network.serverConfig) {
       network.serverConfig.port = ports.service;

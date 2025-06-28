@@ -1,0 +1,215 @@
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { ToolboxWalletContainerRefactored } from "./wallet-container";
+import { WalletStateManager } from "../services/wallet-state-manager";
+import { DevWalletStorage } from "../storage";
+import { setupBrowserMocks, resetMocks, createMockAccount } from "../test-utils/setup";
+
+// Mock lit element
+vi.mock("lit", () => ({
+  LitElement: class {
+    static styles = [];
+    requestUpdate() {}
+    dispatchEvent(_event: Event) {
+      return true;
+    }
+  },
+  html: (strings: TemplateStringsArray, ..._values: any[]) => {
+    return strings.join("");
+  },
+  css: (strings: TemplateStringsArray) => {
+    return strings.join("");
+  },
+  customElement: (_name: string) => (target: any) => target,
+  property: (_options?: any) => (_target: any, _key: string) => {},
+  state: () => (_target: any, _key: string) => {},
+}));
+
+describe.skip("ToolboxWalletContainerRefactored", () => {
+  let container: ToolboxWalletContainerRefactored;
+  let storage: DevWalletStorage;
+
+  beforeEach(() => {
+    setupBrowserMocks();
+
+    // Create mock DOM element
+    const mockElement = document.createElement("div");
+    container = new ToolboxWalletContainerRefactored();
+    Object.defineProperty(container, "shadowRoot", {
+      value: mockElement,
+      writable: true,
+    });
+
+    storage = new DevWalletStorage();
+    container.storage = storage;
+  });
+
+  afterEach(() => {
+    resetMocks();
+  });
+
+  describe("initialization", () => {
+    it("should initialize with default state", async () => {
+      await container.connectedCallback();
+
+      expect(container.currentScreen).toBe("accounts");
+      expect(container.isLocked).toBe(false);
+      expect(container.theme).toBe("dark");
+    });
+
+    it("should initialize state manager", async () => {
+      await container.connectedCallback();
+
+      expect(container["stateManager"]).toBeDefined();
+      expect(container["stateManager"]).toBeInstanceOf(WalletStateManager);
+    });
+  });
+
+  describe("screen navigation", () => {
+    beforeEach(async () => {
+      await container.connectedCallback();
+    });
+
+    it("should handle screen navigation", () => {
+      container["handleScreenChange"]({ detail: { screen: "settings" } } as CustomEvent);
+
+      expect(container.currentScreen).toBe("settings");
+    });
+
+    it("should emit navigation event", () => {
+      const dispatchSpy = vi.spyOn(container, "dispatchEvent");
+
+      container["handleScreenChange"]({ detail: { screen: "transactions" } } as CustomEvent);
+
+      expect(dispatchSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: "wallet-navigation",
+          detail: { screen: "transactions" },
+        }),
+      );
+    });
+  });
+
+  describe("state synchronization", () => {
+    beforeEach(async () => {
+      await container.connectedCallback();
+    });
+
+    it("should update UI when state changes", async () => {
+      const requestUpdateSpy = vi.spyOn(container, "requestUpdate");
+      const newAccount = createMockAccount();
+
+      // Trigger state change
+      await container["stateManager"].addAccount(newAccount);
+
+      expect(requestUpdateSpy).toHaveBeenCalled();
+      expect(container.accounts).toContainEqual(
+        expect.objectContaining({
+          id: newAccount.id,
+        }),
+      );
+    });
+
+    it("should handle theme changes", async () => {
+      await container["stateManager"].updateSettings({ theme: "light" });
+
+      expect(container.theme).toBe("light");
+    });
+  });
+
+  describe("lock/unlock functionality", () => {
+    beforeEach(async () => {
+      await container.connectedCallback();
+    });
+
+    it("should handle lock event", async () => {
+      await container["handleLock"]();
+
+      expect(container.isLocked).toBe(true);
+      expect(container.currentScreen).toBe("unlock");
+    });
+
+    it("should handle unlock event", async () => {
+      await container["handleLock"]();
+      await container["handleUnlock"]();
+
+      expect(container.isLocked).toBe(false);
+      expect(container.currentScreen).toBe("accounts");
+    });
+  });
+
+  describe("account management", () => {
+    beforeEach(async () => {
+      await container.connectedCallback();
+    });
+
+    it("should handle account creation", async () => {
+      const dispatchSpy = vi.spyOn(container, "dispatchEvent");
+
+      await container["handleAccountCreated"]({
+        detail: { name: "New Account" },
+      } as CustomEvent);
+
+      expect(dispatchSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: "wallet-account-created",
+        }),
+      );
+      expect(container.accounts).toHaveLength(1);
+    });
+
+    it("should handle account selection", async () => {
+      const account = createMockAccount();
+      await container["stateManager"].addAccount(account);
+
+      await container["handleAccountSelected"]({
+        detail: { accountId: account.id },
+      } as CustomEvent);
+
+      expect(container.activeAccountId).toBe(account.id);
+    });
+  });
+
+  describe("error handling", () => {
+    beforeEach(async () => {
+      await container.connectedCallback();
+    });
+
+    it("should display errors from state", () => {
+      container.errors = [
+        {
+          code: "TEST_ERROR",
+          message: "Test error message",
+          severity: "high",
+          timestamp: Date.now(),
+        },
+      ];
+
+      const errorDisplay = container["renderErrorDisplay"]();
+      expect(errorDisplay).toBeTruthy();
+    });
+
+    it("should handle error events", () => {
+      container["handleError"]({
+        detail: {
+          code: "WALLET_ERROR",
+          message: "Wallet operation failed",
+        },
+      } as CustomEvent);
+
+      expect(container.errors).toHaveLength(1);
+      expect(container.errors[0].code).toBe("WALLET_ERROR");
+    });
+  });
+
+  describe("cleanup", () => {
+    it("should cleanup on disconnect", async () => {
+      await container.connectedCallback();
+
+      const cleanupSpy = vi.spyOn(container["eventCoordinator"], "cleanup");
+
+      container.disconnectedCallback();
+
+      expect(cleanupSpy).toHaveBeenCalled();
+    });
+  });
+});

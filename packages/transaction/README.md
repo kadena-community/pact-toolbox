@@ -452,3 +452,7 @@ async function deployModule(moduleCode: string, adminKeyset: any, wallet: any) {
 ## License
 
 MIT
+
+---
+
+Made with ❤️ by [@salamaashoush](https://github.com/salamaashoush)

@@ -17,6 +17,7 @@ export { WalletError, BaseWallet, detectBrowserExtension } from "@pact-toolbox/w
 export { WalletService, walletService } from "./wallet-service";
 
 import type { ConnectOptions, Wallet, AutoConnectOptions, WalletProvider } from "@pact-toolbox/wallet-core";
+import type { ChainId } from "@pact-toolbox/types";
 // Convenience functions
 import { walletService } from "./wallet-service";
 
@@ -98,7 +99,7 @@ export interface WalletConnectConfig {
 export interface MagicConfig {
   magicApiKey: string;
   chainwebApiUrl?: string;
-  chainId?: string;
+  chainId?: ChainId;
   networkId?: string;
   createAccountsOnChain?: boolean;
 }

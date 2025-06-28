@@ -1,164 +1,126 @@
-import type { NetworkConfig, PactToolboxConfigObj } from "@pact-toolbox/config";
 import type { NextConfig } from "next";
-import type { ChildProcess } from "node:child_process";
-import { fileURLToPath } from "node:url";
-import path from "node:path";
 
-import { getNetworkConfig, getSerializableNetworkConfig, resolveConfig } from "@pact-toolbox/config";
+import { getSerializableMultiNetworkConfig, resolveConfig } from "@pact-toolbox/config";
+import { logger } from "@pact-toolbox/node-utils";
 import { PactToolboxClient } from "@pact-toolbox/runtime";
-import { tui } from "@pact-toolbox/tui";
-import { processPatterns, getOrchestrator } from "@pact-toolbox/process-manager";
 
 import type { PluginOptions } from "./plugin/types";
-import type { PactToolboxNetwork } from "@pact-toolbox/network";
+import { PactToolboxNetwork, createNetwork } from "@pact-toolbox/network";
 
-// Global singleton state to track initialization across multiple calls
-interface GlobalPactToolboxState {
-  isInitialized: boolean;
-  isInitializing: boolean;
-  initPromise: Promise<void> | null;
-  resolvedConfig: PactToolboxConfigObj | null;
-  networkConfig: NetworkConfig | null;
-  client: PactToolboxClient | null;
-  network: PactToolboxNetwork | null;
-  networkProcess: ChildProcess | null;
-  error: Error | null;
-  isCleaningUp: boolean;
+// Unique symbol to prevent conflicts with other plugins
+const NETWORK_KEY = Symbol.for("pact-toolbox-next-network");
+const INIT_FLAG_KEY = Symbol.for("pact-toolbox-next-initialized");
+
+// Use global registry to manage instances across hot reloads
+interface GlobalNetworkRegistry {
+  [NETWORK_KEY]?: PactToolboxNetwork;
+  [INIT_FLAG_KEY]?: boolean;
 }
 
-// Use a Symbol to create a truly global state that persists across module reloads
-const GLOBAL_STATE_KEY = Symbol.for("__PACT_TOOLBOX_GLOBAL_STATE__");
-
-function getGlobalState(): GlobalPactToolboxState {
-  if (!(globalThis as any)[GLOBAL_STATE_KEY]) {
-    (globalThis as any)[GLOBAL_STATE_KEY] = {
-      isInitialized: false,
-      isInitializing: false,
-      initPromise: null,
-      resolvedConfig: null,
-      networkConfig: null,
-      network: null,
-      client: null,
-      networkProcess: null,
-      error: null,
-      isCleaningUp: false,
-    };
+const getGlobalRegistry = (): GlobalNetworkRegistry => {
+  if (typeof globalThis !== "undefined") {
+    return globalThis as any;
   }
-  return (globalThis as any)[GLOBAL_STATE_KEY];
-}
+  return global as any;
+};
 
-async function initializePactToolbox(options: PluginOptions = {}): Promise<void> {
-  const isDev = process.argv.includes("dev");
-  const state = getGlobalState();
+async function cleanupExistingNetwork(): Promise<void> {
+  const registry = getGlobalRegistry();
+  const existingNetwork = registry[NETWORK_KEY];
 
-  // If already initialized, return immediately
-  if (state.isInitialized && !state.error) {
-    return;
-  }
-
-  // If currently initializing, wait for the current initialization to complete
-  if (state.isInitializing && state.initPromise) {
-    await state.initPromise;
-    return;
-  }
-
-  // Start initialization
-  state.isInitializing = true;
-  state.error = null;
-
-  const initPromise = (async () => {
+  if (existingNetwork) {
     try {
-      const { client: passedClient, startNetwork: _startNetwork = true } = options;
-      const isTest = process.env.NODE_ENV === "test";
-      // Resolve configuration
-      if (!state.resolvedConfig) {
-        state.resolvedConfig = await resolveConfig();
-      }
-
-      // Get network configuration
-      if (!state.networkConfig) {
-        state.networkConfig = getNetworkConfig(state.resolvedConfig);
-      }
-
-      // Create or reuse client
-      if (!state.client) {
-        state.client = passedClient ?? new PactToolboxClient(state.resolvedConfig);
-      }
-
-      // Start network if requested and not in test mode
-      if (isDev && !isTest) {
-        try {
-          tui.log("info", "next-plugin", "Starting network worker process");
-          
-          const __filename = fileURLToPath(import.meta.url);
-          const __dirname = path.dirname(__filename);
-          const workerPath = path.resolve(__dirname, "enhanced-network-worker.js");
-
-          // Create network worker process using pattern
-          const orchestrator = getOrchestrator();
-          await orchestrator.start(processPatterns.worker({
-            id: "next-network-worker",
-            name: "Next.js Network Worker",
-            command: process.execPath,
-            args: [workerPath],
-            healthCommand: `curl -f http://localhost:${state.networkConfig.devnet?.publicPort || 8080}/health`,
-          }));
-
-          tui.log("info", "next-plugin", "Network worker process started successfully");
-          
-          // Update TUI with network information
-          tui.updateNetwork({
-            id: "next-devnet",
-            name: "Next.js DevNet",
-            status: "running",
-            endpoints: [
-              { 
-                name: "API", 
-                url: `http://localhost:${state.networkConfig.devnet?.publicPort || 8080}`, 
-                status: "up" 
-              },
-            ],
-          });
-        } catch (error) {
-          tui.log("error", "next-plugin", `Error starting network worker: ${error}`);
-          // Don't throw here - allow the plugin to continue working even if network fails
-          state.error = error instanceof Error ? error : new Error(String(error));
-        }
-      }
-
-      state.isInitialized = true;
+      logger.info("[next-plugin] Cleaning up existing network...");
+      await existingNetwork.stop();
+      registry[NETWORK_KEY] = undefined;
+      registry[INIT_FLAG_KEY] = false;
+      // Reset environment flag
+      delete process.env["_PACT_TOOLBOX_NEXT"];
     } catch (error) {
-      state.error = error instanceof Error ? error : new Error(String(error));
-      console.error("[withPactToolbox] Initialization failed:", state.error);
-      throw state.error;
-    } finally {
-      state.isInitializing = false;
-      state.initPromise = null;
+      logger.error(`[next-plugin] Error cleaning up existing network: ${error}`);
     }
-  })();
+  }
+}
 
-  state.initPromise = initPromise;
-  await initPromise;
+async function startNetwork(): Promise<void> {
+  const isDev = process.env.NODE_ENV === "development";
+  const isTest = process.env.NODE_ENV === "test";
+  const registry = getGlobalRegistry();
+
+  // Only start in dev mode and not in test
+  if (!isDev || isTest) {
+    return;
+  }
+
+  // Use environment variable to prevent multiple initialization
+  if (process.env["_PACT_TOOLBOX_NEXT"] === "1") {
+    logger.info("[next-plugin] Network already initialized, skipping...");
+    return;
+  }
+  process.env["_PACT_TOOLBOX_NEXT"] = "1";
+
+  try {
+    // Clean up any existing network first
+    await cleanupExistingNetwork();
+
+    logger.info("[next-plugin] Starting Pact network...");
+
+    // Load configuration
+    const resolvedConfig = await resolveConfig();
+
+    // Create and start network with Next.js specific settings
+    const network = await createNetwork(resolvedConfig, {
+      autoStart: true,
+      detached: true,
+    });
+
+    // Store in global registry to survive hot reloads
+    registry[NETWORK_KEY] = network;
+    registry[INIT_FLAG_KEY] = true;
+
+    // Setup proper cleanup for Next.js hot reloads
+    if (process.env.NODE_ENV === "development") {
+      const cleanup = async () => {
+        await cleanupExistingNetwork();
+      };
+
+      // Register cleanup for graceful shutdown
+      process.once("SIGINT", cleanup);
+      process.once("SIGTERM", cleanup);
+      process.once("beforeExit", cleanup);
+
+      // Handle Next.js specific cleanup
+      if (typeof process.on === "function") {
+        process.on("exit", cleanup);
+      }
+    }
+    logger.info("[next-plugin] Pact network started successfully");
+  } catch (error) {
+    logger.error(`[next-plugin] Failed to start network: ${error}`);
+    // Reset flags on failure
+    registry[NETWORK_KEY] = undefined;
+    registry[INIT_FLAG_KEY] = false;
+    // Reset environment flag
+    delete process.env["_PACT_TOOLBOX_NEXT"];
+    // Don't throw - allow the plugin to continue without network
+  }
 }
 
 function withPactToolbox(options: PluginOptions = {}) {
   return async (nextConfig: NextConfig = {}): Promise<NextConfig> => {
+    // Start network on first load (non-blocking)
+    void startNetwork();
+
     try {
-      await initializePactToolbox(options);
+      // Resolve configuration
+      const resolvedConfig = await resolveConfig();
 
-      const state = getGlobalState();
-
-      if (!state.resolvedConfig) {
-        throw new Error("Failed to resolve Pact Toolbox configuration");
+      // Initialize client if needed
+      const { client: passedClient } = options;
+      if (passedClient || options.client !== undefined) {
+        // Client provided by user - they manage it
+        void (passedClient ?? new PactToolboxClient(resolvedConfig));
       }
-
-      // Define turbopack rules for .pact files
-      const rules = {
-        "*.pact": {
-          loaders: ["@pact-toolbox/unplugin/loader"],
-          as: "*.js",
-        },
-      };
 
       // Return the enhanced Next.js configuration
       const enhancedConfig: NextConfig = {
@@ -167,63 +129,78 @@ function withPactToolbox(options: PluginOptions = {}) {
           ...nextConfig.compiler,
           define: {
             ...nextConfig.compiler?.define,
-            "globalThis.__PACT_TOOLBOX_NETWORK_CONFIG__": JSON.stringify(
-              getSerializableNetworkConfig(state.resolvedConfig),
-            ),
+            "globalThis.__PACT_TOOLBOX_NETWORKS__":
+              (globalThis as any).__PACT_TOOLBOX_NETWORKS__ ||
+              JSON.stringify(
+                getSerializableMultiNetworkConfig(resolvedConfig, {
+                  isDev: process.env.NODE_ENV !== "production",
+                  isTest: process.env.NODE_ENV === "test",
+                }),
+              ),
           },
         },
         turbopack: {
           ...nextConfig.turbopack,
           rules: {
             ...nextConfig.turbopack?.rules,
-            ...rules,
+            "*.pact": {
+              loaders: ["@pact-toolbox/unplugin/loader"],
+              as: "*.js",
+            },
           },
+        },
+        webpack: (config, context) => {
+          // Add webpack rule for .pact files
+          config.module.rules.push({
+            test: /\.pact$/,
+            use: [
+              {
+                loader: "@pact-toolbox/unplugin/loader",
+                options: {},
+              },
+            ],
+            type: "javascript/auto",
+          });
+
+          // Call the original webpack function if it exists
+          if (typeof nextConfig.webpack === "function") {
+            return nextConfig.webpack(config, context);
+          }
+
+          return config;
         },
       };
 
-      const handleShutdown = async (signal: string) => {
-        const state = getGlobalState();
-        if (state.isCleaningUp) {
-          tui.log("warn", "next-plugin", "Shutdown already in progress");
-          return;
-        }
-        state.isCleaningUp = true;
-        
-        tui.log("info", "next-plugin", `${signal} received, shutting down...`);
-        
-        try {
-          // Use process orchestrator for coordinated shutdown
-          const orchestrator = getOrchestrator();
-          await orchestrator.shutdownAll();
-          
-          // Fallback: stop network directly if orchestrator didn't handle it
-          if (state.network) {
-            await state.network.stop();
-          }
-          
-          tui.log("info", "next-plugin", "Shutdown completed successfully");
-        } catch (error) {
-          tui.log("error", "next-plugin", `Error during shutdown: ${error}`);
-          console.error(`Error during graceful shutdown:`, error);
-        }
-        process.exit(0);
-      };
-
-      // Only set up handlers if not already set up
-      if (!process.listenerCount("SIGINT")) {
-        process.on("SIGINT", () => handleShutdown("SIGINT"));
-      }
-      if (!process.listenerCount("SIGTERM")) {
-        process.on("SIGTERM", () => handleShutdown("SIGTERM"));
-      }
-
       return enhancedConfig;
     } catch (error) {
-      console.error("[withPactToolbox] Failed to enhance Next.js configuration:", error);
+      logger.error("[withPactToolbox] Failed to enhance Next.js configuration:", error);
       // Return the original config if enhancement fails
       return nextConfig;
     }
   };
+}
+
+/**
+ * Manual cleanup function for testing or explicit shutdown
+ */
+export async function cleanup(): Promise<void> {
+  await cleanupExistingNetwork();
+}
+
+/**
+ * Get the current network instance
+ */
+export function getNetwork(): PactToolboxNetwork | undefined {
+  const registry = getGlobalRegistry();
+  return registry[NETWORK_KEY];
+}
+
+/**
+ * Check if the network is initialized
+ */
+export function isNetworkInitialized(): boolean {
+  const registry = getGlobalRegistry();
+  return !!registry[INIT_FLAG_KEY];
 }
 
 export default withPactToolbox;

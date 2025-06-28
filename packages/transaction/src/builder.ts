@@ -26,14 +26,14 @@ import {
   updatePactCommandSigners,
 } from "./utils";
 import type { Wallet } from "@pact-toolbox/wallet-core";
-import { getWalletWithUI, type WalletUIOptions, getWalletUIConfig } from "./wallet-ui-integration";
+import { getWalletWithUI, type WalletUIOptions, getWalletUIConfig } from "./wallet-ui";
 
 /**
  * Builder class for creating and configuring Pact transactions
- * 
+ *
  * @template Payload - The type of Pact command payload (execution or continuation)
  * @template Result - The expected result type from transaction execution
- * 
+ *
  * @example
  * ```typescript
  * // Create an execution transaction
@@ -42,7 +42,7 @@ import { getWalletWithUI, type WalletUIOptions, getWalletUIConfig } from "./wall
  *   .withSigner("alice-public-key")
  *   .sign() // Shows wallet selector in browser
  *   .submitAndListen();
- * 
+ *
  * // Create with explicit wallet
  * const tx = execution('(coin.transfer "alice" "bob" 10.0)')
  *   .withSigner("alice-public-key", (signFor) => [signFor("coin.TRANSFER", "alice", "bob", 10.0)])
@@ -57,7 +57,7 @@ export class PactTransactionBuilder<Payload extends PactCmdPayload, Result = unk
 
   /**
    * Create a new transaction builder
-   * 
+   *
    * @param payload - The Pact command payload (execution or continuation)
    * @param context - Optional network context. Uses global context if not provided
    */
@@ -68,7 +68,7 @@ export class PactTransactionBuilder<Payload extends PactCmdPayload, Result = unk
 
   /**
    * Add data to the transaction's data map
-   * 
+   *
    * @param key - The key to store the data under
    * @param value - The value to store (must be JSON serializable)
    * @returns This builder instance for chaining
@@ -84,7 +84,7 @@ export class PactTransactionBuilder<Payload extends PactCmdPayload, Result = unk
 
   /**
    * Add multiple data entries at once
-   * 
+   *
    * @param data - Object containing key-value pairs to add to transaction data
    * @returns This builder instance for chaining
    */
@@ -97,7 +97,7 @@ export class PactTransactionBuilder<Payload extends PactCmdPayload, Result = unk
 
   /**
    * Add a keyset to the transaction data
-   * 
+   *
    * @param name - The name of the keyset
    * @param keyset - The keyset definition with keys and predicate
    * @returns This builder instance for chaining
@@ -109,7 +109,7 @@ export class PactTransactionBuilder<Payload extends PactCmdPayload, Result = unk
 
   /**
    * Add multiple keysets at once
-   * 
+   *
    * @param keysets - Object containing keyset name to keyset mappings
    * @returns This builder instance for chaining
    */
@@ -122,7 +122,7 @@ export class PactTransactionBuilder<Payload extends PactCmdPayload, Result = unk
 
   /**
    * Set the chain ID for this transaction
-   * 
+   *
    * @param chainId - Chain ID (0-19 for Kadena mainnet/testnet)
    * @returns This builder instance for chaining
    */
@@ -133,7 +133,7 @@ export class PactTransactionBuilder<Payload extends PactCmdPayload, Result = unk
 
   /**
    * Set transaction metadata (gas limit, gas price, sender, TTL, etc.)
-   * 
+   *
    * @param meta - Partial metadata object to merge with current metadata
    * @returns This builder instance for chaining
    */
@@ -144,16 +144,16 @@ export class PactTransactionBuilder<Payload extends PactCmdPayload, Result = unk
 
   /**
    * Add a signer to the transaction
-   * 
+   *
    * @param signer - Public key string or signer object, or array of signers
    * @param capability - Optional capability function to define required capabilities
    * @returns This builder instance for chaining
-   * 
+   *
    * @example
    * ```typescript
    * // Simple signer
    * .withSigner("alice-public-key")
-   * 
+   *
    * // Signer with capabilities
    * .withSigner("alice-public-key", (signFor) => [
    *   signFor("coin.TRANSFER", "alice", "bob", 10.0),
@@ -168,7 +168,7 @@ export class PactTransactionBuilder<Payload extends PactCmdPayload, Result = unk
 
   /**
    * Add a verifier to the transaction
-   * 
+   *
    * @param verifier - Verifier configuration
    * @returns This builder instance for chaining
    */
@@ -182,7 +182,7 @@ export class PactTransactionBuilder<Payload extends PactCmdPayload, Result = unk
 
   /**
    * Set the network ID for this transaction
-   * 
+   *
    * @param networkId - Network identifier (e.g., "mainnet01", "testnet04")
    * @returns This builder instance for chaining
    */
@@ -193,7 +193,7 @@ export class PactTransactionBuilder<Payload extends PactCmdPayload, Result = unk
 
   /**
    * Set a custom nonce for this transaction
-   * 
+   *
    * @param nonce - Unique nonce string
    * @returns This builder instance for chaining
    */
@@ -204,7 +204,7 @@ export class PactTransactionBuilder<Payload extends PactCmdPayload, Result = unk
 
   /**
    * Set the network context for this transaction
-   * 
+   *
    * @param context - Network context to use
    * @returns This builder instance for chaining
    */
@@ -217,7 +217,7 @@ export class PactTransactionBuilder<Payload extends PactCmdPayload, Result = unk
 
   /**
    * Build the transaction without signing (returns unsigned transaction)
-   * 
+   *
    * @param context - Optional network context to use for this build
    * @returns A transaction dispatcher for executing the unsigned transaction
    */
@@ -238,20 +238,20 @@ export class PactTransactionBuilder<Payload extends PactCmdPayload, Result = unk
    * @param walletOrId - Wallet instance, wallet ID, or undefined to show wallet selector
    * @param options - UI options for wallet selection and approval
    * @returns A transaction dispatcher for executing the signed transaction
-   * 
+   *
    * @example
    * ```typescript
    * // Show wallet selector in browser (default behavior)
    * const result = await execution('(coin.get-balance "alice")')
    *   .sign()
    *   .submitAndListen();
-   * 
+   *
    * // Use specific wallet
    * const result = await execution('(coin.transfer "alice" "bob" 10.0)')
    *   .withSigner("alice-key", (signFor) => [signFor("coin.TRANSFER", "alice", "bob", 10.0)])
    *   .sign(myWallet)
    *   .submitAndListen();
-   * 
+   *
    * // Disable UI and require explicit wallet
    * const result = await execution('(coin.get-balance "alice")')
    *   .sign("keypair", { showUI: false })
@@ -279,7 +279,7 @@ export class PactTransactionBuilder<Payload extends PactCmdPayload, Result = unk
 
   /**
    * Convert the transaction to a JSON string representation
-   * 
+   *
    * @returns JSON string of the transaction
    */
   toString(): string {
@@ -288,7 +288,7 @@ export class PactTransactionBuilder<Payload extends PactCmdPayload, Result = unk
 
   /**
    * Get the partially signed transaction (internal method)
-   * 
+   *
    * @returns Promise resolving to the transaction
    */
   getPartialTransaction(): Promise<PartiallySignedTransaction> {
@@ -297,7 +297,7 @@ export class PactTransactionBuilder<Payload extends PactCmdPayload, Result = unk
 
   /**
    * Get the raw Pact command (internal method)
-   * 
+   *
    * @returns The Pact command
    */
   getCommand(): PactCommand<Payload> {
@@ -307,12 +307,12 @@ export class PactTransactionBuilder<Payload extends PactCmdPayload, Result = unk
 
 /**
  * Create a new Pact execution transaction
- * 
+ *
  * @template Result - The expected result type from the execution
  * @param code - Pact code to execute
  * @param context - Optional network context to use
  * @returns A new transaction builder for the execution
- * 
+ *
  * @example
  * ```typescript
  * // Simple query
@@ -320,7 +320,7 @@ export class PactTransactionBuilder<Payload extends PactCmdPayload, Result = unk
  *   .withChainId("1")
  *   .build()
  *   .dirtyRead();
- * 
+ *
  * // Transaction with signing
  * const result = await execution('(coin.transfer "alice" "bob" 10.0)')
  *   .withSigner("alice-key", (signFor) => [
@@ -348,12 +348,12 @@ export function execution<Result>(
 
 /**
  * Create a new Pact continuation transaction
- * 
+ *
  * @template Result - The expected result type from the continuation
  * @param cont - Continuation configuration (pactId, step, rollback, etc.)
  * @param context - Optional network context to use
  * @returns A new transaction builder for the continuation
- * 
+ *
  * @example
  * ```typescript
  * // Continue a multi-step pact

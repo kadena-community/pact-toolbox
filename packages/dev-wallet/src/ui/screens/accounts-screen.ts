@@ -301,11 +301,7 @@ export class PactToolboxAccountsScreen extends LitElement {
         chainId: "0",
       };
 
-      // Save to localStorage
-      const updatedAccounts = [...this.accounts, newAccount];
-      localStorage.setItem("pact-toolbox-wallet-accounts", JSON.stringify(updatedAccounts));
-      
-      // Notify parent
+      // Notify parent - let the parent handle storage
       this.dispatchEvent(new CustomEvent('account-created', {
         detail: { account: newAccount },
         bubbles: true,
@@ -347,12 +343,8 @@ export class PactToolboxAccountsScreen extends LitElement {
         chainId: "0",
       };
 
-      // Save to localStorage
-      const updatedAccounts = [...this.accounts, newAccount];
-      localStorage.setItem("pact-toolbox-wallet-accounts", JSON.stringify(updatedAccounts));
-      
-      // Notify parent
-      this.dispatchEvent(new CustomEvent('account-imported', {
+      // Notify parent - let the parent handle storage
+      this.dispatchEvent(new CustomEvent('account-created', {
         detail: { account: newAccount },
         bubbles: true,
         composed: true,

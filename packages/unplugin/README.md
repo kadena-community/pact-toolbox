@@ -1,10 +1,6 @@
 # @pact-toolbox/unplugin
 
-> Universal plugin for seamless Pact smart contract development across all major JavaScript bundlers
-
-## Overview
-
-The `@pact-toolbox/unplugin` package provides a universal plugin that enables Pact smart contract development in any JavaScript bundler. It automatically transforms `.pact` files into JavaScript modules with full TypeScript support, manages local development networks, and provides hot module replacement for rapid iteration.
+Universal plugin for Pact smart contract development across all major JavaScript bundlers and test frameworks. Automatically transforms `.pact` files into JavaScript modules with TypeScript support.
 
 ## Installation
 
@@ -16,14 +12,17 @@ pnpm add -D @pact-toolbox/unplugin
 
 ## Features
 
-- **Universal Plugin** - Works with Vite, Webpack, Rollup, esbuild, and 7+ other bundlers
-- **Rust-Powered Parser** - High-performance Pact parsing using tree-sitter
-- **TypeScript Generation** - Automatic type definitions from Pact contracts
+- **Universal Plugin** - Works with Vite, Webpack, Rollup, esbuild, Rspack, Rsbuild, Farm, Next.js, Nuxt, and Astro
+- **Jest Transformer** - Async transformer for testing Pact contracts with Jest
+- **Rust-Powered Parser** - High-performance Pact parsing using tree-sitter via `@pact-toolbox/pact-transformer`
+- **TypeScript Generation** - Automatic type definitions from Pact contracts with full type safety
 - **Hot Module Replacement** - Live contract updates during development
 - **Network Management** - Automatic local blockchain startup and management
-- **Auto-Deployment** - Contracts deployed/upgraded on file changes
-- **Smart Caching** - Optimized builds with transformation caching
-- **Developer Experience** - Clear error messages and debugging support
+- **Auto-Deployment** - Contracts deployed/upgraded on file changes in development
+- **Smart Caching** - LRU cache with source hash validation for optimal performance
+- **Instance Pooling** - Reuses parser instances for better performance
+- **Source Maps** - Support for source map generation (when available)
+- **Developer Experience** - Clear error messages with file paths and line numbers
 
 ## Quick Start
 
@@ -103,6 +102,55 @@ export default defineNuxtConfig({
     ],
   ],
 });
+```
+
+### Jest
+
+The package includes an async transformer for Jest that allows you to import `.pact` files directly in your tests:
+
+```javascript
+// jest.config.js
+module.exports = {
+  transform: {
+    "\\.pact$": ["@pact-toolbox/unplugin/jest", { generateTypes: true }],
+  },
+  extensionsToTreatAsEsm: [".pact"],
+  // For ESM support
+  testEnvironment: "node",
+  testMatch: ["**/*.test.js", "**/*.test.ts"],
+};
+```
+
+Then in your tests:
+
+```javascript
+// __tests__/contract.test.js
+import { myContract } from "../contracts/my-contract.pact";
+
+describe("MyContract", () => {
+  it("should execute contract functions", async () => {
+    const result = await myContract.someFunction("arg");
+    expect(result).toBeDefined();
+  });
+});
+```
+
+#### Jest Transformer Options
+
+```typescript
+interface JestTransformerOptions {
+  /**
+   * Generate TypeScript types
+   * @default true
+   */
+  generateTypes?: boolean;
+
+  /**
+   * Enable debug logging
+   * @default false
+   */
+  debug?: boolean;
+}
 ```
 
 ## Usage
@@ -219,39 +267,31 @@ interface PluginOptions {
   /**
    * Callback when the runtime is ready
    */
-  onReady?: (runtime: PactToolboxRuntime) => void;
+  onReady?: (runtime: PactToolboxClient) => Promise<void>;
 
   /**
-   * Custom transformation options
+   * Cache size limit (number of entries)
+   * @default 1000
    */
-  transform?: {
-    /**
-     * Generate TypeScript types
-     * @default true
-     */
-    generateTypes?: boolean;
-
-    /**
-     * Parser pool size for concurrent transformations
-     * @default 4
-     */
-    parserPoolSize?: number;
-  };
+  cacheSize?: number;
 }
 ```
 
 ### Environment Variables
 
 ```bash
+# Default network selection
+PACT_TOOLBOX_NETWORK=testnet
+
 # Disable network startup
 PACT_TOOLBOX_NO_NETWORK=true
 
-# Custom network configuration
-PACT_NETWORK_ID=testnet04
-PACT_RPC_URL=https://api.testnet.chainweb.com
-
 # Enable debug logging
 DEBUG=pact-toolbox:*
+
+# Environment-specific behavior
+NODE_ENV=production  # Excludes local networks and private keys
+NODE_ENV=development # Includes all networks with private keys
 ```
 
 ## Development Features
@@ -274,32 +314,35 @@ if (import.meta.hot) {
 }
 ```
 
-### Network Management
+### Multi-Network Management
 
-The plugin automatically manages a local Pact network:
+The plugin automatically injects multiple network configurations and manages network switching:
 
 ```typescript
-// Access network configuration
-const config = window.__PACT_TOOLBOX_NETWORK_CONFIG__;
-console.log("Network:", config.networkId);
-console.log("RPC URL:", config.rpcUrl);
+// Access multi-network configuration
+const multiConfig = window.__PACT_TOOLBOX_NETWORKS__;
+console.log("Default network:", multiConfig.default);
+console.log("Available networks:", Object.keys(multiConfig.configs));
+console.log("Environment:", multiConfig.environment);
 
-// Use the global client
-import { getGlobalClient } from "@pact-toolbox/unplugin/runtime";
+// Use the global network context
+import { getGlobalNetworkContext } from "@pact-toolbox/transaction";
 
-const client = await getGlobalClient();
+const context = getGlobalNetworkContext();
+console.log("Current network:", context.getCurrentNetwork());
+
+// Switch networks at runtime
+await context.switchNetwork("testnet");
+
+// Use the current network's client
+const client = context.getClient();
 const result = await client.local("(+ 1 2)");
 console.log(result); // 3
 ```
 
 ### Contract Deployment
 
-Contracts are automatically deployed during development:
-
-1. **Initial Deployment**: Uses namespace and keyset from config
-2. **Updates**: Detects existing contracts and upgrades them
-3. **Error Recovery**: Handles deployment failures gracefully
-4. **Status Tracking**: Maintains deployment state in cache
+Contracts are automatically deployed during development. The plugin detects existing contracts and upgrades them, handles deployment failures gracefully, and maintains deployment state in cache.
 
 ## Advanced Usage
 
@@ -366,182 +409,90 @@ export default defineConfig(({ mode }) => ({
 }));
 ```
 
-## Performance Optimization
+## Performance
 
-### Parser Pooling
-
-The plugin uses a Rust-based parser with pooling for performance:
-
-```typescript
-// Warm up parser pool on startup
-await warmUpParserPool();
-
-// Transformation uses pooled parsers
-const result = await transformPactToJs(code, {
-  generateTypes: true,
-  moduleName: "my-module",
-});
-```
-
-### Caching Strategy
-
-Transformations are cached to improve build performance:
-
-1. **Source Tracking**: Cache entries include source hash
-2. **Selective Invalidation**: Only affected files are retransformed
-3. **Memory Management**: Cache size limits prevent memory issues
-4. **Persistent Cache**: Optional disk-based caching for CI/CD
+The plugin uses a Rust-based parser with instance pooling and caching for optimal performance. Transformations are cached based on source content hash, and only changed files are retransformed during development.
 
 ## Error Handling
 
-The plugin provides detailed error messages:
+The plugin provides detailed error messages with file context:
 
 ```typescript
-// Syntax errors show line/column information
-Error: Syntax error in hello.pact:
-  5 | (defun say-hello (name:string
-    |                              ^
-  Expected ')' but found end of file
+// Syntax errors include file path
+Error: Syntax error in Pact code (/src/contracts/hello.pact): parse error at line 5
+
+// Transformation errors are specific
+Error: Failed to transform Pact code (/src/contracts/broken.pact): unexpected token
 
 // Deployment errors include context
-Error: Failed to deploy contract 'hello':
+Error: Failed to deploy contract hello.pact:
   Contract already exists without upgrade capability
-
-  To fix: Add (implements upgradeable-v1) to your module
+  To fix: Add upgrade capability to your module
 ```
 
-## Testing
+## Testing with Jest
 
-### Unit Tests
+The package includes a Jest transformer that allows you to test Pact contracts directly:
 
-```typescript
-// Mock the plugin for unit tests
-vi.mock("@pact-toolbox/unplugin/vite", () => ({
-  default: () => ({
-    name: "pact-plugin-mock",
-    transform: vi.fn(),
-  }),
-}));
+```javascript
+// jest.config.js
+module.exports = {
+  transform: {
+    "\\.pact$": ["@pact-toolbox/unplugin/jest", { generateTypes: true }],
+  },
+  extensionsToTreatAsEsm: [".pact"],
+  testEnvironment: "node",
+};
 ```
 
-### Integration Tests
+```javascript
+// __tests__/my-contract.test.js
+import { myContract } from "../contracts/my-contract.pact";
 
-```typescript
-// test/setup.ts
-import { beforeAll, afterAll } from "vitest";
-import { createPactToolboxNetwork } from "@pact-toolbox/network";
-
-let network;
-
-beforeAll(async () => {
-  // Start test network
-  network = await createPactToolboxNetwork({
-    type: "pact-server",
-    port: 9001,
+describe("My Contract", () => {
+  it("should have the correct module name", () => {
+    expect(myContract.__module.name).toBe("my-contract");
   });
-  await network.start();
+
+  it("should execute functions", () => {
+    const result = myContract.someFunction("arg");
+    expect(result).toBeDefined();
+  });
 });
-
-afterAll(async () => {
-  await network?.stop();
-});
 ```
 
-## Best Practices
+## TypeScript Configuration
 
-### 1. Project Structure
+For TypeScript projects using the Jest transformer, update your `tsconfig.json`:
 
-```
-src/
---- contracts/
-   --- token.pact      # Token contract
-   --- governance.pact # Governance contract
-   --- index.ts        # Re-export contracts
---- lib/
-   --- pact-client.ts  # Client wrapper
---- main.ts
-```
-
-### 2. Type Safety
-
-```typescript
-// Create typed wrappers for contracts
-import { token } from "../contracts/token.pact";
-import type { TokenModule } from "../contracts/token.pact";
-
-export class TokenService {
-  constructor(private module: TokenModule = token) {}
-
-  async transfer(from: string, to: string, amount: number) {
-    return this.module.transfer(from, to, amount);
-  }
-
-  async balance(account: string): Promise<number> {
-    return this.module.getBalance(account);
-  }
+```json
+{
+  "compilerOptions": {
+    "types": ["jest", "@types/node"],
+    "moduleResolution": "node",
+    "esModuleInterop": true
+  },
+  "include": ["src", "**/*.pact.d.ts"]
 }
 ```
 
-### 3. Environment Configuration
-
-```typescript
-// env.d.ts
-interface ImportMetaEnv {
-  readonly VITE_PACT_NETWORK_ID: string;
-  readonly VITE_PACT_RPC_URL: string;
-}
-
-interface ImportMeta {
-  readonly env: ImportMetaEnv;
-}
-
-// Global network config
-declare global {
-  interface Window {
-    __PACT_TOOLBOX_NETWORK_CONFIG__: {
-      networkId: string;
-      rpcUrl: string;
-      chainId: string;
-    };
-  }
-}
-```
-
-### 4. Error Boundaries
-
-```typescript
-// Handle contract errors gracefully
-try {
-  await contract.someFunction();
-} catch (error) {
-  if (error.type === "TxFailure") {
-    console.error("Transaction failed:", error.message);
-  } else if (error.type === "NetworkError") {
-    console.error("Network error:", error.message);
-  } else {
-    throw error;
-  }
-}
-```
+The plugin automatically generates TypeScript declarations for your `.pact` files, so no manual type declarations are needed.
 
 ## Troubleshooting
 
 ### Common Issues
 
 1. **"Cannot find module '\*.pact'"**
-
    - Ensure the plugin is properly configured
    - Check that `.pact` files are in the correct location
    - Verify TypeScript includes `.pact` declarations
 
 2. **"Network failed to start"**
-
    - Check if port 8080 is available
    - Ensure Docker is running (for devnet)
    - Try setting `startNetwork: false`
 
 3. **"Contract deployment failed"**
-
    - Verify namespace and keyset configuration
    - Check contract syntax with `pact` CLI
    - Ensure upgrade capability for existing contracts
@@ -590,6 +541,7 @@ import { myContract } from "./contracts/my-contract.pact";
 await myContract.transfer("alice", "bob", 1.0);
 ```
 
-## Contributing
+---
 
-See [CONTRIBUTING.md](../../CONTRIBUTING.md) for development setup and guidelines.
+Made with ❤️ by [@salamaashoush](https://github.com/salamaashoush)
+

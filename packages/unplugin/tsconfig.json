@@ -1,7 +1,10 @@
 {
   "extends": "@pact-toolbox/tsconfig/lib",
   "compilerOptions": {
-    "types": ["node"]
+    "types": ["node"],
+    "skipLibCheck": true,
+    "noEmit": false
   },
-  "include": ["src", "tests", "scripts", "playground", "tsdown.config.ts"]
+  "include": ["src", "tests", "scripts", "playground", "tsdown.config.ts"],
+  "exclude": ["**/*.test.ts", "**/*.spec.ts"]
 }

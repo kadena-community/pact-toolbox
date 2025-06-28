@@ -25,6 +25,8 @@ vi.mock("consola", () => {
     fail: vi.fn(),
     ready: vi.fn(),
     start: vi.fn(),
+    log: vi.fn(),
+    box: vi.fn(),
     withTag: vi.fn(),
     level: 3,
   };
@@ -58,8 +60,8 @@ describe("logger", () => {
 
   describe("log level configuration", () => {
     it("should use default info level", async () => {
-      delete process.env['DEBUG'];
-      delete process.env['LOG_LEVEL'];
+      delete process.env["DEBUG"];
+      delete process.env["LOG_LEVEL"];
 
       // Re-import to test environment detection
       vi.resetModules();
@@ -68,12 +70,12 @@ describe("logger", () => {
       expect(createConsola).toHaveBeenCalledWith(
         expect.objectContaining({
           level: 3, // info level
-        })
+        }),
       );
     });
 
     it("should use debug level when DEBUG=1", async () => {
-      process.env['DEBUG'] = "1";
+      process.env["DEBUG"] = "1";
 
       vi.resetModules();
       await import("../src/logger");
@@ -81,12 +83,12 @@ describe("logger", () => {
       expect(createConsola).toHaveBeenCalledWith(
         expect.objectContaining({
           level: 4, // debug level
-        })
+        }),
       );
     });
 
     it("should use debug level when DEBUG=true", async () => {
-      process.env['DEBUG'] = "true";
+      process.env["DEBUG"] = "true";
 
       vi.resetModules();
       await import("../src/logger");
@@ -94,7 +96,7 @@ describe("logger", () => {
       expect(createConsola).toHaveBeenCalledWith(
         expect.objectContaining({
           level: 4, // debug level
-        })
+        }),
       );
     });
 
@@ -112,20 +114,20 @@ describe("logger", () => {
       ];
 
       for (const { env, expected } of testCases) {
-        process.env['LOG_LEVEL'] = env;
+        process.env["LOG_LEVEL"] = env;
         vi.resetModules();
         await import("../src/logger");
 
         expect(createConsola).toHaveBeenCalledWith(
           expect.objectContaining({
             level: expected,
-          })
+          }),
         );
       }
     });
 
     it("should handle uppercase LOG_LEVEL", async () => {
-      process.env['LOG_LEVEL'] = "DEBUG";
+      process.env["LOG_LEVEL"] = "DEBUG";
 
       vi.resetModules();
       await import("../src/logger");
@@ -133,7 +135,7 @@ describe("logger", () => {
       expect(createConsola).toHaveBeenCalledWith(
         expect.objectContaining({
           level: 4,
-        })
+        }),
       );
     });
   });
@@ -204,29 +206,20 @@ describe("logger", () => {
     it("should log performance metrics", () => {
       logPerformance("database.query", 123);
 
-      expect(logger.debug).toHaveBeenCalledWith(
-        "[PERF] database.query completed in 123ms",
-        undefined
-      );
+      expect(logger.debug).toHaveBeenCalledWith("[PERF] database.query completed in 123ms", undefined);
     });
 
     it("should log performance with additional data", () => {
       const data = { query: "SELECT * FROM users", rows: 100 };
       logPerformance("database.query", 456, data);
 
-      expect(logger.debug).toHaveBeenCalledWith(
-        "[PERF] database.query completed in 456ms",
-        data
-      );
+      expect(logger.debug).toHaveBeenCalledWith("[PERF] database.query completed in 456ms", data);
     });
 
     it("should handle zero duration", () => {
       logPerformance("cache.hit", 0);
 
-      expect(logger.debug).toHaveBeenCalledWith(
-        "[PERF] cache.hit completed in 0ms",
-        undefined
-      );
+      expect(logger.debug).toHaveBeenCalledWith("[PERF] cache.hit completed in 0ms", undefined);
     });
   });
 
@@ -261,12 +254,7 @@ describe("logger", () => {
     });
 
     it("should handle all log levels", () => {
-      const levels: Array<"info" | "warn" | "error" | "debug"> = [
-        "info",
-        "warn",
-        "error",
-        "debug",
-      ];
+      const levels: Array<"info" | "warn" | "error" | "debug"> = ["info", "warn", "error", "debug"];
 
       levels.forEach((level) => {
         logWithContext(level, "test", `${level} message`);
@@ -278,7 +266,7 @@ describe("logger", () => {
   describe("color utility exports", () => {
     it("should export color utilities", async () => {
       const loggerModule = await import("../src/logger");
-      
+
       // These are re-exported from consola/utils
       expect(loggerModule).toHaveProperty("colors");
       expect(loggerModule).toHaveProperty("getColor");

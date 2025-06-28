@@ -40,4 +40,4 @@ export type Spinner = ReturnType<typeof spinner>;
  * outro('Setup complete!');
  * ```
  */
-export { spinner, isCancel, select, text, intro, outro, multiselect } from "@clack/prompts";
+export { spinner, isCancel, select, text, intro, outro, multiselect, confirm } from "@clack/prompts";

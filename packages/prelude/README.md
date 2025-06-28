@@ -601,3 +601,7 @@ const prelude: PreludeDefinition = {
   ]
 };
 ```
+
+---
+
+Made with ❤️ by [@salamaashoush](https://github.com/salamaashoush)

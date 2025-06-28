@@ -86,6 +86,11 @@ export interface Network {
 
 export type WalletScreen = "accounts" | "transactions" | "networks" | "settings" | "connect" | "sign";
 
+export interface DevWalletSettings {
+  autoLock: boolean;
+  showTestNetworks: boolean;
+}
+
 export interface WalletState {
   currentScreen: WalletScreen;
   accounts: Account[];
@@ -95,4 +100,5 @@ export interface WalletState {
   activeNetwork?: Network;
   pendingTransaction?: any;
   isConnecting?: boolean;
+  settings?: DevWalletSettings;
 }

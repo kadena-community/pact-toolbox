@@ -29,6 +29,21 @@ export interface CommonNetworkConfig {
 
 export interface SerializableNetworkConfig extends CommonNetworkConfig {
   type: "chainweb-local" | "chainweb" | "pact-server" | "chainweb-devnet";
+  // Only minimal server config needed for client-side (e.g., port for URL construction)
+  serverConfig?: {
+    port?: number;
+  };
+  containerConfig?: {
+    port?: number;
+  };
+  // autoStart is useful for client-side to know if network should be running
+  autoStart?: boolean;
+}
+
+export interface MultiNetworkConfig {
+  default: string;
+  configs: Record<string, SerializableNetworkConfig>;
+  environment: "development" | "production" | "test";
 }
 
 export type StandardPrelude = "kadena/chainweb" | "kadena/marmalade";

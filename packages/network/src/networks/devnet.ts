@@ -32,6 +32,7 @@ export class DevNetNetwork implements NetworkApi {
   private client: PactToolboxClient;
   private logger: Logger;
   private definition: DevNetServiceDefinition;
+  private _statelessPort?: number;
 
   constructor(config: DevNetworkConfig, client: PactToolboxClient, logger: Logger = defaultLogger) {
     this.config = config;
@@ -64,13 +65,27 @@ export class DevNetNetwork implements NetworkApi {
 
     this.logger.info("Starting DevNet...");
 
-    // Update for stateless mode
+    // Update for stateless mode with unique configuration
     if (stateless) {
+      // Generate unique port for stateless mode to avoid conflicts
+      const basePort = this.config.containerConfig?.port ?? DEVNET_PUBLIC_PORT;
+      const randomOffset = Math.floor(Math.random() * 1000);
+      const uniquePort = basePort + randomOffset;
+      this._statelessPort = uniquePort;
+      
       this.definition = createMinimalDevNet({
+        clusterId: `devnet-${this.id}`,
         networkName: `devnet-${this.id}-network`,
-        port: this.getPort(),
+        port: uniquePort,
         persistDb: false,
         miningConfig: this.config.miningConfig,
+      });
+      
+      // Update orchestrator with new network name
+      this.orchestrator = new ContainerOrchestrator({
+        networkName: this.definition.networkName,
+        volumes: [], // No volumes in stateless mode
+        logger: this.logger,
       });
     }
 
@@ -102,6 +117,9 @@ export class DevNetNetwork implements NetworkApi {
     } catch {
       // Ignore cleanup errors
     }
+    
+    // Reset stateless port
+    this._statelessPort = undefined;
   }
 
   async restart(options?: NetworkStartOptions): Promise<void> {
@@ -118,6 +136,10 @@ export class DevNetNetwork implements NetworkApi {
   }
 
   getPort(): number {
+    // Return the stateless port if it was set during start
+    if (this._statelessPort !== undefined) {
+      return this._statelessPort;
+    }
     return this.config.containerConfig?.port ?? DEVNET_PUBLIC_PORT;
   }
 

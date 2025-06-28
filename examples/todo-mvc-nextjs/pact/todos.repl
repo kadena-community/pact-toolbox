@@ -1,0 +1,34 @@
+(load "prelude/init.repl")
+(begin-tx "Load todos module")
+(env-data {
+  'upgrade: false
+})
+
+(load "todos.pact")
+(commit-tx)
+
+(begin-tx "add todos")
+(expect "should have empty todos" (free.todos.get-todos) [])
+(expect "should add a todo" (free.todos.create-todo "1" "Hello, World!") "Write succeeded")
+(expect "should have one todo" (free.todos.get-todos) [{"completed": false,"deleted": false,"id": "1","title": "Hello, World!"}])
+(commit-tx)
+
+(begin-tx "toggle todo status")
+(expect "should complete a todo" (free.todos.toggle-todo "1") "Write succeeded")
+(expect "should have one completed todo" (free.todos.get-todo "1") {"completed": true,"deleted": false,"id": "1","title": "Hello, World!"})
+(commit-tx)
+
+
+(begin-tx "delete todo")
+(expect "should delete a todo" (free.todos.delete-todo "1") "Write succeeded")
+(expect "should have one deleted todo" (free.todos.get-todo "1") {"completed": true,"deleted": true,"id": "1","title": "Hello, World!"})
+(commit-tx)
+
+(begin-tx "edit todo")
+(expect "should edit a todo" (free.todos.update-todo "1" "Hello, World! 2") "Write succeeded")
+(expect "should have one edited todo" (free.todos.get-todo "1") {"completed": true,"deleted": true,"id": "1","title": "Hello, World! 2"})
+(commit-tx)
+
+(begin-tx "read todos")
+(print (free.todos.get-todos))
+(commit-tx)

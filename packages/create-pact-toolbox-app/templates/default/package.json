@@ -17,12 +17,16 @@
     "prepare": "pact-toolbox prelude"
   },
   "dependencies": {
-    "@pact-toolbox/client": "latest",
-    "@tanstack/react-query": "^5.80.7",
+    "@pact-toolbox/transaction": "latest",
+    "@pact-toolbox/wallet-adapters": "latest",
+    "@pact-toolbox/wallet-ui": "latest",
+    "@tanstack/react-query": "^5.81.5",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"
   },
   "devDependencies": {
+    "@pact-toolbox/config": "latest",
+    "@pact-toolbox/script": "latest",
     "@pact-toolbox/test": "latest",
     "@pact-toolbox/unplugin": "latest",
     "@testing-library/react": "~16.3.0",
@@ -33,22 +37,20 @@
     "happy-dom": "^18.0.1",
     "pact-toolbox": "latest",
     "typescript": "^5.8.3",
-    "vite": "^6.3.5",
+    "vite": "^7.0.0",
     "vite-tsconfig-paths": "^5.1.4",
-    "vitest": "^3.2.3",
+    "vitest": "^3.2.4",
     "vitest-dom": "^0.1.1"
   },
   "engines": {
-    "node": ">=22.0.0 <24.0.0"
+    "node": ">=22.0.0"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
       "@swc/core",
       "cpu-features",
       "protobufjs",
-      "ssh2",
-      "tree-sitter",
-      "tree-sitter-pact"
+      "ssh2"
     ]
   }
 }

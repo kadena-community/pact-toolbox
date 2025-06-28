@@ -1,0 +1,37 @@
+{
+  "name": "@pact-toolbox/docs",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Pact Toolbox documentation site built with Rspress",
+  "type": "module",
+  "scripts": {
+    "dev": "rspress dev",
+    "build": "pnpm build:api && rspress build",
+    "build:api": "tsx generate-api.ts",
+    "preview": "rspress preview"
+  },
+  "keywords": [
+    "pact",
+    "kadena",
+    "blockchain",
+    "documentation"
+  ],
+  "author": "salamaashoush@gmail.com",
+  "license": "MIT",
+  "packageManager": "pnpm@10.12.4",
+  "dependencies": {
+    "@rspress/plugin-shiki": "^1.44.0",
+    "@rspress/plugin-last-updated": "^1.44.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "rspress": "^1.44.0",
+    "shiki": "^3.7.0"
+  },
+  "devDependencies": {
+    "typedoc": "^0.28.6",
+    "typedoc-plugin-markdown": "^4.7.0",
+    "typedoc-plugin-coverage": "^4.0.1",
+    "typedoc-plugin-merge-modules": "^7.0.0",
+    "tsx": "^4.20.3"
+  }
+}

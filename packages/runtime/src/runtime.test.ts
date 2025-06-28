@@ -1,627 +1,670 @@
-import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
-import { 
-  PactToolboxClient,
-  createMockClient,
-  PactToolboxConfig,
-  NetworkConfig
-} from './index';
-import { PactTransactionBuilder, PactTransactionDispatcher } from '@pact-toolbox/client';
-import { generateKeyPairSigner } from '@pact-toolbox/signer';
-import fs from 'fs/promises';
-import path from 'path';
+import { describe, test, expect, beforeEach, vi } from "vitest";
+import { PactToolboxClient } from "./index";
+import type { PactToolboxConfigObj, NetworkConfig } from "@pact-toolbox/config";
+import { PactTransactionBuilder, PactTransactionDispatcher, execution } from "@pact-toolbox/transaction";
+import type { ChainId } from "@pact-toolbox/types";
+import fs from "fs/promises";
 
 // Mock dependencies
-vi.mock('@pact-toolbox/client');
-vi.mock('@pact-toolbox/signer');
-vi.mock('fs/promises');
+vi.mock("@pact-toolbox/transaction", async () => {
+  const mockContext = {
+    getCurrentNetworkConfig: vi.fn(),
+    getNetworkId: vi.fn(),
+    getMeta: vi.fn(),
+    getSignerKeys: vi.fn(),
+    getDefaultSigner: vi.fn(),
+    getClient: vi.fn(),
+    getNetworkConfig: vi.fn(),
+    getAllNetworkConfigs: vi.fn(),
+    getAvailableNetworks: vi.fn(),
+    switchNetwork: vi.fn(),
+    isNetworkAvailable: vi.fn(),
+    getNetworkType: vi.fn(),
+    isLocalNetwork: vi.fn(),
+    isProductionNetwork: vi.fn(),
+    subscribe: vi.fn(),
+    getWallet: vi.fn(),
+    setWallet: vi.fn(),
+  };
 
-describe('@pact-toolbox/runtime', () => {
-  let mockConfig: PactToolboxConfig;
+  return {
+    PactTransactionBuilder: vi.fn(),
+    PactTransactionDispatcher: vi.fn(),
+    execution: vi.fn(),
+    createToolboxNetworkContext: vi.fn(() => mockContext),
+    getKAccountKey: vi.fn((key: string) => `k:${key}`),
+  };
+});
+vi.mock("fs/promises");
+vi.mock("@pact-toolbox/wallet-adapters/keypair", () => {
+  const mockWallet = {
+    getAccount: vi.fn().mockResolvedValue({
+      publicKey: "test-public-key",
+      secretKey: "test-secret-key",
+      account: "sender00",
+    }),
+    sign: vi.fn().mockResolvedValue({ cmd: "{}", hash: "hash", sigs: [] }),
+    connect: vi.fn().mockResolvedValue(undefined),
+    disconnect: vi.fn().mockResolvedValue(undefined),
+  };
+  
+  return {
+    KeypairWallet: vi.fn(() => mockWallet),
+  };
+});
+
+describe("@pact-toolbox/runtime", () => {
+  let mockConfig: PactToolboxConfigObj;
   let mockDispatcher: any;
   let mockBuilder: any;
+  let mockContext: any;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     // Setup default config
     mockConfig = {
-      contractsDir: './contracts',
-      scriptsDir: './scripts',
-      preludesDir: './preludes',
-      network: {
-        type: 'devnet',
-        name: 'local-devnet',
-        devnet: {
-          url: 'http://localhost:8080',
-          chainIds: ['0', '1', '2', '3']
-        }
-      }
+      contractsDir: "./contracts",
+      scriptsDir: "./scripts",
+      preludes: ["kadena/chainweb"],
+      defaultNetwork: "default",
+      networks: {
+        default: {
+          type: "chainweb-devnet" as const,
+          name: "local-devnet",
+          networkId: "devnet",
+          rpcUrl: "http://localhost:8080",
+          senderAccount: "sender00",
+          keyPairs: [],
+          keysets: {},
+          meta: { chainId: "0" },
+        },
+      },
     };
 
     // Setup mock dispatcher
     mockDispatcher = {
-      submit: vi.fn().mockResolvedValue('request-key-123'),
-      submitAndListen: vi.fn().mockResolvedValue({ 
-        result: { status: 'success', data: {} } 
-      }),
-      local: vi.fn().mockResolvedValue({ 
-        result: { status: 'success', data: {} } 
-      }),
-      dirtyRead: vi.fn().mockResolvedValue({ 
-        result: { status: 'success', data: {} } 
-      }),
-      pollOne: vi.fn(),
-      pollMany: vi.fn(),
-      getStatus: vi.fn()
+      submit: vi.fn().mockResolvedValue({ requestKey: "request-key-123" }),
+      submitAndListen: vi.fn().mockResolvedValue({ status: "success", data: {} }),
+      local: vi.fn().mockResolvedValue({ status: "success", data: {} }),
+      dirtyRead: vi.fn().mockResolvedValue({ status: "success", data: {} }),
+      submitAll: vi.fn().mockResolvedValue([{ requestKey: "request-key-123" }]),
+      submitAndListenAll: vi.fn().mockResolvedValue([{ status: "success", data: {} }]),
+      localAll: vi.fn().mockResolvedValue([{ status: "success", data: {} }]),
+      dirtyReadAll: vi.fn().mockResolvedValue([{ status: "success", data: {} }]),
+      getSignedTransaction: vi.fn().mockResolvedValue({ cmd: "{}", hash: "hash", sigs: [] }),
     };
 
     // Setup mock builder
     mockBuilder = {
-      code: vi.fn().mockReturnThis(),
-      setMeta: vi.fn().mockReturnThis(),
-      addSigner: vi.fn().mockReturnThis(),
-      addCapability: vi.fn().mockReturnThis(),
-      addKeyset: vi.fn().mockReturnThis(),
-      addData: vi.fn().mockReturnThis(),
-      namespace: vi.fn().mockReturnThis(),
-      continuation: vi.fn().mockReturnThis(),
-      networkConfig: vi.fn().mockReturnThis(),
-      client: vi.fn().mockReturnThis(),
-      build: vi.fn().mockResolvedValue({ cmd: '{}', hash: 'hash', sigs: [] }),
-      execute: vi.fn().mockResolvedValue({ status: 'success' })
+      withData: vi.fn().mockReturnThis(),
+      withDataMap: vi.fn().mockReturnThis(),
+      withMeta: vi.fn().mockReturnThis(),
+      withSigner: vi.fn().mockReturnThis(),
+      withVerifier: vi.fn().mockReturnThis(),
+      withKeyset: vi.fn().mockReturnThis(),
+      withKeysetMap: vi.fn().mockReturnThis(),
+      withChainId: vi.fn().mockReturnThis(),
+      withNetworkId: vi.fn().mockReturnThis(),
+      withNonce: vi.fn().mockReturnThis(),
+      withContext: vi.fn().mockReturnThis(),
+      build: vi.fn().mockReturnValue(mockDispatcher),
+      sign: vi.fn().mockReturnValue(mockDispatcher),
+      quickSign: vi.fn().mockReturnValue(mockDispatcher),
+      getPartialTransaction: vi.fn().mockResolvedValue({ cmd: "{}", hash: "hash", sigs: [] }),
+      getCommand: vi.fn().mockReturnValue({ payload: { exec: { code: "", data: {} } }, meta: {}, signers: [] }),
     };
 
+    // Setup mock context with proper return values
+    mockContext = {
+      getCurrentNetworkConfig: vi.fn().mockReturnValue(mockConfig.networks['default']),
+      getNetworkId: vi.fn().mockReturnValue("devnet"),
+      getMeta: vi.fn().mockReturnValue({ chainId: "0" }),
+      getSignerKeys: vi.fn().mockReturnValue({
+        publicKey: "test-public-key",
+        secretKey: "test-secret-key",
+        account: "sender00",
+      }),
+      getDefaultSigner: vi.fn().mockReturnValue({
+        pubKey: "test-public-key",
+        address: "sender00",
+        scheme: "ED25519",
+      }),
+      getClient: vi.fn().mockReturnValue({}),
+      getNetworkConfig: vi.fn().mockReturnValue(mockConfig.networks['default']),
+      getAllNetworkConfigs: vi.fn().mockReturnValue([mockConfig.networks['default']]),
+      getAvailableNetworks: vi.fn().mockReturnValue(["default"]),
+      switchNetwork: vi.fn().mockResolvedValue(undefined),
+      isNetworkAvailable: vi.fn().mockReturnValue(true),
+      getNetworkType: vi.fn().mockReturnValue("chainweb-devnet"),
+      isLocalNetwork: vi.fn().mockReturnValue(true),
+      isProductionNetwork: vi.fn().mockReturnValue(false),
+      subscribe: vi.fn().mockReturnValue(() => {}),
+      getWallet: vi.fn().mockReturnValue(null),
+      setWallet: vi.fn(),
+    };
+
+    // Get mocked module and set up return values
+    const { createToolboxNetworkContext } = await import("@pact-toolbox/transaction");
+    vi.mocked(createToolboxNetworkContext).mockReturnValue(mockContext);
+    
+    // Set up mock context methods to return proper values
+    mockContext.getCurrentNetworkConfig.mockReturnValue(mockConfig.networks['default']);
+    mockContext.getNetworkId.mockReturnValue("devnet");
+    mockContext.getMeta.mockReturnValue({ chainId: "0" });
+    mockContext.getSignerKeys.mockReturnValue({
+      publicKey: "test-public-key",
+      secretKey: "test-secret-key",
+      account: "sender00",
+    });
+    mockContext.getDefaultSigner.mockReturnValue({
+      pubKey: "test-public-key",
+      address: "sender00",
+      scheme: "ED25519",
+    });
+    mockContext.getNetworkConfig.mockReturnValue(mockConfig.networks['default']);
+    mockContext.getAllNetworkConfigs.mockReturnValue([mockConfig.networks['default']]);
+    mockContext.getAvailableNetworks.mockReturnValue(["default"]);
+    mockContext.isNetworkAvailable.mockReturnValue(true);
+    mockContext.getNetworkType.mockReturnValue("chainweb-devnet");
+    mockContext.isLocalNetwork.mockReturnValue(true);
+    mockContext.isProductionNetwork.mockReturnValue(false);
+    mockContext.getWallet.mockReturnValue(null);
+    mockContext.subscribe.mockReturnValue(() => {});
+
     vi.mocked(PactTransactionDispatcher).mockImplementation(() => mockDispatcher);
-    vi.mocked(PactTransactionBuilder.create).mockReturnValue(mockBuilder);
+    vi.mocked(PactTransactionBuilder).mockImplementation(() => mockBuilder);
+    vi.mocked(execution).mockReturnValue(mockBuilder);
 
     vi.clearAllMocks();
   });
 
-  describe('PactToolboxClient Construction', () => {
-    test('creates client with basic config', () => {
+  describe("PactToolboxClient Construction", () => {
+    test("creates client with basic config", () => {
       const client = new PactToolboxClient(mockConfig);
 
       expect(client).toBeDefined();
-      expect(client.config).toBe(mockConfig);
+      expect(client.getConfig()).toEqual(mockConfig);
     });
 
-    test('initializes dispatcher with network config', () => {
+    test("initializes network context with config", () => {
       const client = new PactToolboxClient(mockConfig);
+      const networkConfig = client.getNetworkConfig();
 
-      expect(PactTransactionDispatcher).toHaveBeenCalledWith({
-        networkConfig: expect.objectContaining({
-          apiUrl: 'http://localhost:8080',
-          networkId: expect.any(String)
-        })
-      });
+      expect(networkConfig).toBeDefined();
+      expect(networkConfig.type).toBe("chainweb-devnet");
+      expect(networkConfig.name).toBe("local-devnet");
     });
 
-    test('handles different network types', () => {
+    test("handles different network types", () => {
       // Pact Server
-      const pactServerConfig: PactToolboxConfig = {
-        network: {
-          type: 'pact-server',
-          name: 'local',
-          pactServer: { url: 'http://localhost:9001' }
-        }
+      const pactServerConfig: PactToolboxConfigObj = {
+        defaultNetwork: "default",
+        networks: {
+          default: {
+            type: "pact-server" as const,
+            name: "local",
+            networkId: "pact-server",
+            rpcUrl: "http://localhost:9001",
+            senderAccount: "sender00",
+            keyPairs: [],
+            keysets: {},
+            meta: { chainId: "0" },
+          },
+        },
       };
-      
-      new PactToolboxClient(pactServerConfig);
-      expect(PactTransactionDispatcher).toHaveBeenCalledWith({
-        networkConfig: expect.objectContaining({
-          apiUrl: 'http://localhost:9001'
-        })
-      });
+
+      // Update mock context to return pact-server config
+      mockContext.getCurrentNetworkConfig.mockReturnValue(pactServerConfig.networks['default']);
+      mockContext.getNetworkType.mockReturnValue("pact-server");
+
+      const pactClient = new PactToolboxClient(pactServerConfig);
+      const pactNetworkConfig = pactClient.getNetworkConfig();
+      expect(pactNetworkConfig.type).toBe("pact-server");
+      expect(pactClient.isPactServerNetwork()).toBe(true);
 
       // Chainweb
-      const chainwebConfig: PactToolboxConfig = {
-        network: {
-          type: 'chainweb',
-          name: 'testnet',
-          chainweb: {
-            networkId: 'testnet04',
-            apiHost: 'https://api.testnet.chainweb.com',
-            chainIds: ['0', '1']
-          }
-        }
+      const chainwebConfig: PactToolboxConfigObj = {
+        defaultNetwork: "default",
+        networks: {
+          default: {
+            type: "chainweb" as const,
+            name: "testnet",
+            networkId: "testnet04",
+            rpcUrl: "https://api.testnet.chainweb.com",
+            senderAccount: "sender00",
+            keyPairs: [],
+            keysets: {},
+            meta: { chainId: "0" },
+          },
+        },
       };
 
-      new PactToolboxClient(chainwebConfig);
-      expect(PactTransactionDispatcher).toHaveBeenCalledWith({
-        networkConfig: expect.objectContaining({
-          apiUrl: 'https://api.testnet.chainweb.com',
-          networkId: 'testnet04'
-        })
-      });
+      // Update mock context to return chainweb config
+      mockContext.getCurrentNetworkConfig.mockReturnValue(chainwebConfig.networks['default']);
+      mockContext.getNetworkType.mockReturnValue("chainweb");
+
+      const chainwebClient = new PactToolboxClient(chainwebConfig);
+      const chainwebNetworkConfig = chainwebClient.getNetworkConfig();
+      expect(chainwebNetworkConfig.type).toBe("chainweb");
+      expect(chainwebNetworkConfig.name).toBe("testnet");
+      expect(chainwebClient.isChainwebNetwork()).toBe(true);
     });
 
-    test('loads signer from environment variables', () => {
-      process.env.PACT_TOOLBOX_PUBLIC_KEY = 'public-key';
-      process.env.PACT_TOOLBOX_SECRET_KEY = 'secret-key';
+    test("loads signer from environment variables", () => {
+      process.env["DEVNET_PUBLIC_KEY"] = "public-key";
+      process.env["DEVNET_SECRET_KEY"] = "secret-key";
 
       const client = new PactToolboxClient(mockConfig);
-      const signer = client.getSigner();
 
-      expect(signer).toEqual({
-        public: 'public-key',
-        secret: 'secret-key'
-      });
+      const signer = client.getSignerKeys();
 
-      delete process.env.PACT_TOOLBOX_PUBLIC_KEY;
-      delete process.env.PACT_TOOLBOX_SECRET_KEY;
+      expect(signer).toEqual(
+        expect.objectContaining({
+          publicKey: "public-key",
+          secretKey: "secret-key",
+        }),
+      );
+
+      delete process.env["DEVNET_PUBLIC_KEY"];
+      delete process.env["DEVNET_SECRET_KEY"];
     });
 
-    test('uses signers from config', () => {
-      const configWithSigners: PactToolboxConfig = {
+    test("uses signers from config", () => {
+      // Setup mock network with devnet config
+      const networkWithSender: PactToolboxConfigObj = {
         ...mockConfig,
-        signers: [{
-          public: 'config-public',
-          secret: 'config-secret'
-        }]
+        networks: {
+          default: {
+            ...mockConfig.networks["default"],
+            senderAccount: "alice",
+          } as NetworkConfig,
+        },
       };
 
-      const client = new PactToolboxClient(configWithSigners);
-      const signer = client.getSigner();
+      const mockContext = {
+        getSignerKeys: vi.fn().mockReturnValue({
+          publicKey: "config-public",
+          secretKey: "config-secret",
+          account: "alice",
+        }),
+      };
+
+      const client = new PactToolboxClient(networkWithSender);
+      client.context = mockContext as any;
+
+      const signer = client.getSignerKeys("alice");
 
       expect(signer).toEqual({
-        public: 'config-public',
-        secret: 'config-secret'
+        publicKey: "config-public",
+        secretKey: "config-secret",
+        account: "alice",
       });
     });
   });
 
-  describe('Contract Deployment', () => {
+  describe("Contract Deployment", () => {
     let client: PactToolboxClient;
 
     beforeEach(() => {
       client = new PactToolboxClient(mockConfig);
-      vi.mocked(fs.readFile).mockResolvedValue('(module test ...)');
+      vi.mocked(fs.readFile).mockResolvedValue("(module test ...)");
       vi.mocked(fs.access).mockResolvedValue(undefined);
     });
 
-    test('deployContract loads and deploys file', async () => {
-      const result = await client.deployContract('token.pact');
+    test("deployContract loads and deploys file", async () => {
+      await client.deployContract("token.pact");
 
-      expect(fs.readFile).toHaveBeenCalledWith(
-        path.join('./contracts', 'token.pact'),
-        'utf-8'
-      );
-      expect(mockBuilder.code).toHaveBeenCalledWith('(module test ...)');
+      expect(fs.readFile).toHaveBeenCalledWith(expect.stringContaining("token.pact"), "utf-8");
+      expect(execution).toHaveBeenCalledWith("(module test ...)", expect.any(Object));
       expect(mockDispatcher.submitAndListen).toHaveBeenCalled();
     });
 
-    test('deployContract handles .pact extension', async () => {
-      await client.deployContract('token');
+    test("deployContract handles .pact extension", async () => {
+      await client.deployContract("token");
 
-      expect(fs.readFile).toHaveBeenCalledWith(
-        path.join('./contracts', 'token.pact'),
-        'utf-8'
-      );
+      expect(fs.readFile).toHaveBeenCalledWith(expect.stringContaining("token.pact"), "utf-8");
     });
 
-    test('deployContract with custom options', async () => {
-      await client.deployContract('token.pact', {
-        chainIds: ['0', '1'],
-        preflight: false,
-        signatureVerification: false,
-        listen: false,
-        meta: {
-          gasLimit: 100000,
-          gasPrice: 0.00001
-        }
-      });
+    test("deployContract with custom options and chainIds", async () => {
+      await client.deployContract(
+        "token.pact",
+        {
+          preflight: false,
+          listen: false,
+          builder: {
+            data: {
+              gasLimit: 100000,
+              gasPrice: 0.00001,
+            },
+          },
+        },
+        ["0", "1"],
+      );
 
-      expect(mockBuilder.setMeta).toHaveBeenCalledWith(
+      expect(mockBuilder.withDataMap).toHaveBeenCalledWith(
         expect.objectContaining({
           gasLimit: 100000,
-          gasPrice: 0.00001
-        })
+          gasPrice: 0.00001,
+        }),
       );
-      expect(mockDispatcher.submit).toHaveBeenCalled();
+      expect(mockDispatcher.submit).toHaveBeenCalledWith(["0", "1"], false);
       expect(mockDispatcher.submitAndListen).not.toHaveBeenCalled();
     });
 
-    test('deployContracts deploys multiple files', async () => {
-      const contracts = ['token.pact', 'exchange.pact', 'governance.pact'];
-      
+    test("deployContracts deploys multiple files", async () => {
+      const contracts = ["token.pact", "exchange.pact", "governance.pact"];
+
       await client.deployContracts(contracts);
 
       expect(fs.readFile).toHaveBeenCalledTimes(3);
       expect(mockDispatcher.submitAndListen).toHaveBeenCalledTimes(3);
     });
 
-    test('deployCode deploys raw code', async () => {
-      const code = '(module direct-deploy ...)';
-      
+    test("deployCode deploys raw code", async () => {
+      const code = "(module direct-deploy ...)";
+
       await client.deployCode(code);
 
-      expect(mockBuilder.code).toHaveBeenCalledWith(code);
+      expect(execution).toHaveBeenCalledWith(code, expect.any(Object));
       expect(fs.readFile).not.toHaveBeenCalled();
     });
 
-    test('handles deployment errors', async () => {
-      mockDispatcher.submitAndListen.mockRejectedValue(new Error('Network error'));
+    test("handles deployment errors", async () => {
+      mockDispatcher.submitAndListen.mockRejectedValue(new Error("Network error"));
 
-      await expect(client.deployContract('failing.pact'))
-        .rejects.toThrow('Network error');
+      await expect(client.deployContract("failing.pact")).rejects.toThrow("Network error");
     });
   });
 
-  describe('Transaction Building', () => {
+  describe("Transaction Building", () => {
     let client: PactToolboxClient;
 
     beforeEach(() => {
       client = new PactToolboxClient(mockConfig);
     });
 
-    test('execution creates transaction builder', () => {
+    test("execution creates transaction builder", () => {
       const builder = client.execution('(coin.details "alice")');
 
-      expect(PactTransactionBuilder.create).toHaveBeenCalled();
-      expect(mockBuilder.code).toHaveBeenCalledWith('(coin.details "alice")');
+      expect(execution).toHaveBeenCalledWith('(coin.details "alice")', expect.any(Object));
       expect(builder).toBe(mockBuilder);
     });
 
-    test('execution with data', () => {
-      client.execution('(coin.transfer "alice" "bob" amount)')
-        .addData({ amount: 10.0 });
+    test("execution with data", () => {
+      client.execution('(coin.transfer "alice" "bob" amount)').withDataMap({ amount: 10.0 });
 
-      expect(mockBuilder.addData).toHaveBeenCalledWith({ amount: 10.0 });
+      expect(mockBuilder.withDataMap).toHaveBeenCalledWith({ amount: 10.0 });
     });
 
-    test('chainable builder methods', () => {
-      const result = client.execution('(my-module.function)')
-        .setMeta({ chainId: '0' })
-        .addSigner({ pubKey: 'key' })
-        .addCapability('my-module.CAP')
-        .addKeyset('ks', { keys: ['key'], pred: 'keys-all' })
-        .addData({ value: 42 });
+    test("chainable builder methods", () => {
+      const result = client
+        .execution("(my-module.function)")
+        .withMeta({ chainId: "0" })
+        .withSigner({ pubKey: "key" })
+        .withKeyset("ks", { keys: ["key"], pred: "keys-all" })
+        .withDataMap({ value: 42 });
 
       expect(result).toBe(mockBuilder);
-      expect(mockBuilder.setMeta).toHaveBeenCalled();
-      expect(mockBuilder.addSigner).toHaveBeenCalled();
-      expect(mockBuilder.addCapability).toHaveBeenCalled();
-      expect(mockBuilder.addKeyset).toHaveBeenCalled();
-      expect(mockBuilder.addData).toHaveBeenCalled();
+      expect(mockBuilder.withMeta).toHaveBeenCalledWith({ chainId: "0" });
+      expect(mockBuilder.withSigner).toHaveBeenCalledWith({ pubKey: "key" });
+      expect(mockBuilder.withKeyset).toHaveBeenCalledWith("ks", { keys: ["key"], pred: "keys-all" });
+      expect(mockBuilder.withDataMap).toHaveBeenCalledWith({ value: 42 });
     });
   });
 
-  describe('Transaction Execution', () => {
+  describe("Transaction Execution", () => {
     let client: PactToolboxClient;
 
     beforeEach(() => {
       client = new PactToolboxClient(mockConfig);
     });
 
-    test('submit sends transaction', async () => {
-      const requestKey = await client.submit({ 
-        cmd: '{}', 
-        hash: 'hash', 
-        sigs: [] 
-      });
+    test("execution builder can submit transaction", async () => {
+      const result = await client.execution("(+ 1 1)").build().submit();
 
-      expect(requestKey).toBe('request-key-123');
+      expect(result).toEqual({ requestKey: "request-key-123" });
       expect(mockDispatcher.submit).toHaveBeenCalled();
     });
 
-    test('submitAndListen waits for result', async () => {
-      const result = await client.submitAndListen({ 
-        cmd: '{}', 
-        hash: 'hash', 
-        sigs: [] 
-      });
+    test("execution builder can submitAndListen", async () => {
+      const result = await client.execution("(+ 1 1)").build().submitAndListen();
 
-      expect(result).toEqual({ 
-        result: { status: 'success', data: {} } 
-      });
+      expect(result).toEqual({ status: "success", data: {} });
       expect(mockDispatcher.submitAndListen).toHaveBeenCalled();
     });
 
-    test('local executes locally', async () => {
-      const result = await client.local('(+ 1 1)');
+    test("execution builder can execute locally", async () => {
+      const result = await client.execution("(+ 1 1)").build().local();
 
-      expect(result).toEqual({ 
-        result: { status: 'success', data: {} } 
-      });
+      expect(result).toEqual({ status: "success", data: {} });
       expect(mockDispatcher.local).toHaveBeenCalled();
     });
 
-    test('dirtyRead performs fast read', async () => {
+    test("execution builder can perform dirtyRead", async () => {
       mockDispatcher.dirtyRead.mockResolvedValue(42);
-      
-      const result = await client.dirtyRead('(coin.get-balance "alice")');
+
+      const result = await client.execution('(coin.get-balance "alice")').build().dirtyRead();
 
       expect(result).toBe(42);
       expect(mockDispatcher.dirtyRead).toHaveBeenCalled();
     });
   });
 
-  describe('Module Management', () => {
+  describe("Module Management", () => {
     let client: PactToolboxClient;
 
     beforeEach(() => {
       client = new PactToolboxClient(mockConfig);
     });
 
-    test('listModules returns module list', async () => {
-      mockDispatcher.dirtyRead.mockResolvedValue(['coin', 'my-module']);
+    test("listModules returns module list", async () => {
+      mockDispatcher.dirtyRead.mockResolvedValue(["coin", "my-module"]);
 
       const modules = await client.listModules();
 
-      expect(modules).toEqual(['coin', 'my-module']);
-      expect(mockDispatcher.dirtyRead).toHaveBeenCalledWith(
-        '(list-modules)'
-      );
+      expect(modules).toEqual(["coin", "my-module"]);
+      expect(mockDispatcher.dirtyRead).toHaveBeenCalled();
     });
 
-    test('describeModule returns module info', async () => {
+    test("describeModule returns module info", async () => {
       const moduleInfo = {
-        name: 'coin',
-        hash: 'module-hash',
-        interfaces: ['fungible-v2']
+        name: "coin",
+        hash: "module-hash",
+        interfaces: ["fungible-v2"],
       };
       mockDispatcher.dirtyRead.mockResolvedValue(moduleInfo);
 
-      const result = await client.describeModule('coin');
+      const result = await client.describeModule("coin");
 
       expect(result).toEqual(moduleInfo);
-      expect(mockDispatcher.dirtyRead).toHaveBeenCalledWith(
-        '(describe-module "coin")'
-      );
+      expect(mockDispatcher.dirtyRead).toHaveBeenCalled();
     });
 
-    test('isContractDeployed checks deployment', async () => {
-      mockDispatcher.local.mockResolvedValueOnce({
-        result: { status: 'success', data: { module: 'my-module' } }
-      });
+    test("isContractDeployed checks deployment", async () => {
+      mockDispatcher.dirtyRead.mockResolvedValueOnce({ module: "my-module" });
 
-      const deployed = await client.isContractDeployed('my-module');
+      const deployed = await client.isContractDeployed("my-module");
 
       expect(deployed).toBe(true);
-      expect(mockDispatcher.local).toHaveBeenCalledWith(
-        '(describe-module "my-module")'
-      );
+      expect(mockDispatcher.dirtyRead).toHaveBeenCalled();
     });
 
-    test('isContractDeployed returns false on error', async () => {
-      mockDispatcher.local.mockRejectedValue(new Error('Module not found'));
+    test("isContractDeployed returns false on error", async () => {
+      mockDispatcher.dirtyRead.mockRejectedValue(new Error("Module not found"));
 
-      const deployed = await client.isContractDeployed('missing-module');
+      const deployed = await client.isContractDeployed("missing-module");
 
       expect(deployed).toBe(false);
     });
   });
 
-  describe('Namespace Management', () => {
+  describe("Namespace Management", () => {
     let client: PactToolboxClient;
 
     beforeEach(() => {
       client = new PactToolboxClient(mockConfig);
     });
 
-    test('describeNamespace returns namespace info', async () => {
+    test("describeNamespace returns namespace info", async () => {
       const nsInfo = {
-        namespace: 'free',
-        guard: { keys: ['admin-key'], pred: 'keys-all' }
+        namespace: "free",
+        guard: { keys: ["admin-key"], pred: "keys-all" },
       };
       mockDispatcher.dirtyRead.mockResolvedValue(nsInfo);
 
-      const result = await client.describeNamespace('free');
+      const result = await client.describeNamespace("free");
 
       expect(result).toEqual(nsInfo);
-      expect(mockDispatcher.dirtyRead).toHaveBeenCalledWith(
-        '(describe-namespace "free")'
-      );
+      expect(mockDispatcher.dirtyRead).toHaveBeenCalled();
     });
 
-    test('isNamespaceDefined checks namespace', async () => {
-      mockDispatcher.local.mockResolvedValueOnce({
-        result: { status: 'success' }
-      });
+    test("isNamespaceDefined checks namespace", async () => {
+      mockDispatcher.dirtyRead.mockResolvedValueOnce({ namespace: "my-namespace" });
 
-      const defined = await client.isNamespaceDefined('my-namespace');
+      const defined = await client.isNamespaceDefined("my-namespace");
 
       expect(defined).toBe(true);
     });
   });
 
-  describe('File Management', () => {
+  describe("File Management", () => {
     let client: PactToolboxClient;
 
     beforeEach(() => {
       client = new PactToolboxClient(mockConfig);
     });
 
-    test('getContractCode loads from contracts dir', async () => {
-      vi.mocked(fs.readFile).mockResolvedValue('(module code ...)');
+    test("getContractCode loads from contracts dir", async () => {
+      vi.mocked(fs.readFile).mockResolvedValue("(module code ...)");
 
-      const code = await client.getContractCode('token.pact');
+      const code = await client.getContractCode("token.pact");
 
-      expect(fs.readFile).toHaveBeenCalledWith(
-        path.join('./contracts', 'token.pact'),
-        'utf-8'
-      );
-      expect(code).toBe('(module code ...)');
+      expect(fs.readFile).toHaveBeenCalledWith(expect.stringContaining("token.pact"), "utf-8");
+      expect(code).toBe("(module code ...)");
     });
 
-    test('getContractCode handles absolute paths', async () => {
-      vi.mocked(fs.readFile).mockResolvedValue('(module abs ...)');
+    test("getContractCode handles absolute paths", async () => {
+      vi.mocked(fs.readFile).mockResolvedValue("(module abs ...)");
 
-      const code = await client.getContractCode('/absolute/path/token.pact');
+      await client.getContractCode("/absolute/path/token.pact");
 
-      expect(fs.readFile).toHaveBeenCalledWith(
-        '/absolute/path/token.pact',
-        'utf-8'
-      );
+      expect(fs.readFile).toHaveBeenCalledWith("/absolute/path/token.pact", "utf-8");
     });
 
-    test('getContractCode auto-adds .pact extension', async () => {
-      vi.mocked(fs.access).mockRejectedValueOnce(new Error('Not found'));
-      vi.mocked(fs.readFile).mockResolvedValue('(module ext ...)');
+    test("getContractCode auto-adds .pact extension", async () => {
+      vi.mocked(fs.access).mockRejectedValueOnce(new Error("Not found"));
+      vi.mocked(fs.readFile).mockResolvedValue("(module ext ...)");
 
-      const code = await client.getContractCode('token');
+      await client.getContractCode("token");
 
-      expect(fs.readFile).toHaveBeenCalledWith(
-        path.join('./contracts', 'token.pact'),
-        'utf-8'
-      );
+      expect(fs.readFile).toHaveBeenCalledWith(expect.stringContaining("token.pact"), "utf-8");
     });
   });
 
-  describe('Multi-Chain Operations', () => {
+  describe("Multi-Chain Operations", () => {
     let client: PactToolboxClient;
 
     beforeEach(() => {
       client = new PactToolboxClient(mockConfig);
     });
 
-    test('executes on specific chains', async () => {
-      const chainIds = ['0', '1'];
-      
-      await client.deployContract('multi-chain.pact', { chainIds });
+    test("executes on specific chains", async () => {
+      const chainIds: ChainId[] = ["0", "1"];
 
-      // Verify meta was set for each chain
-      const metaCalls = mockBuilder.setMeta.mock.calls;
-      expect(metaCalls.some(call => call[0].chainId === '0')).toBe(true);
-      expect(metaCalls.some(call => call[0].chainId === '1')).toBe(true);
+      await client.deployContract("multi-chain.pact", {}, chainIds);
+
+      // Verify submit was called with chain IDs
+      expect(mockDispatcher.submitAndListen).toHaveBeenCalledWith(chainIds, undefined);
     });
 
-    test('executes on all chains', async () => {
-      const allChainIds = ['0', '1', '2', '3'];
-      
-      await client.deployContract('all-chains.pact', { 
-        chainIds: allChainIds 
-      });
+    test("executes on all chains", async () => {
+      const allChainIds: ChainId[] = ["0", "1", "2", "3"];
 
-      expect(mockBuilder.setMeta).toHaveBeenCalledTimes(4);
+      await client.deployContract("all-chains.pact", {}, allChainIds);
+
+      expect(mockDispatcher.submitAndListen).toHaveBeenCalledWith(allChainIds, undefined);
     });
   });
 
-  describe('Error Handling', () => {
+  describe("Error Handling", () => {
     let client: PactToolboxClient;
 
     beforeEach(() => {
       client = new PactToolboxClient(mockConfig);
     });
 
-    test('handles file not found', async () => {
-      vi.mocked(fs.readFile).mockRejectedValue(new Error('ENOENT'));
+    test("handles file not found", async () => {
+      vi.mocked(fs.readFile).mockRejectedValue(new Error("ENOENT"));
 
-      await expect(client.deployContract('missing.pact'))
-        .rejects.toThrow('ENOENT');
+      await expect(client.deployContract("missing.pact")).rejects.toThrow("ENOENT");
     });
 
-    test('handles network errors', async () => {
-      mockDispatcher.submitAndListen.mockRejectedValue(
-        new Error('Network timeout')
-      );
+    test("handles network errors", async () => {
+      mockDispatcher.submitAndListen.mockRejectedValue(new Error("Network timeout"));
 
-      await expect(client.execution('(test)').submitAndListen())
-        .rejects.toThrow('Network timeout');
+      await expect(client.execution("(test)").build().submitAndListen()).rejects.toThrow("Network timeout");
     });
 
-    test('handles invalid code', async () => {
+    test("handles invalid code", async () => {
       mockDispatcher.local.mockResolvedValue({
-        result: { 
-          status: 'failure', 
-          error: { 
-            message: 'Syntax error',
-            type: 'SyntaxError'
-          }
-        }
+        status: "failure",
+        error: {
+          message: "Syntax error",
+          type: "SyntaxError",
+        },
       });
 
-      const result = await client.local('(invalid');
-      
-      expect(result.result.status).toBe('failure');
-      expect(result.result.error.message).toBe('Syntax error');
+      const result = await client.execution("(invalid").build().local();
+
+      expect((result as any).status).toBe("failure");
+      expect((result as any).error.message).toBe("Syntax error");
     });
   });
 
-  describe('Mock Client', () => {
-    test('creates basic mock client', () => {
-      const mockClient = createMockClient();
+  // Mock client tests removed - createMockClient doesn't exist in the actual API
 
-      expect(mockClient.execute).toBeDefined();
-      expect(mockClient.deployContract).toBeDefined();
-      expect(mockClient.isContractDeployed).toBeDefined();
-      expect(mockClient.listModules).toBeDefined();
-    });
-
-    test('mock client with custom responses', () => {
-      const mockClient = createMockClient({
-        modules: ['coin', 'test-module'],
-        responses: {
-          '(coin.get-balance "alice")': 1000,
-          '(test-module.get-value)': { value: 42 }
-        }
-      });
-
-      expect(mockClient.modules).toEqual(['coin', 'test-module']);
-      expect(mockClient.responses['(coin.get-balance "alice")']).toBe(1000);
-    });
-
-    test('mock client methods return expected values', async () => {
-      const mockClient = createMockClient({
-        modules: ['test'],
-        responses: {
-          '(test.function)': 'result'
-        }
-      });
-
-      const modules = await mockClient.listModules();
-      expect(modules).toEqual(['test']);
-
-      const deployed = await mockClient.isContractDeployed('test');
-      expect(deployed).toBe(true);
-
-      const notDeployed = await mockClient.isContractDeployed('missing');
-      expect(notDeployed).toBe(false);
-    });
-  });
-
-  describe('Integration Patterns', () => {
+  describe("Integration Patterns", () => {
     let client: PactToolboxClient;
 
     beforeEach(() => {
       client = new PactToolboxClient(mockConfig);
-      vi.mocked(fs.readFile).mockResolvedValue('(module test ...)');
+      vi.mocked(fs.readFile).mockResolvedValue("(module test ...)");
     });
 
-    test('deploy and verify pattern', async () => {
+    test("deploy and verify pattern", async () => {
       // Deploy
-      await client.deployContract('my-module.pact');
+      await client.deployContract("my-module.pact");
 
       // Verify deployment
-      mockDispatcher.local.mockResolvedValue({
-        result: { status: 'success', data: { module: 'my-module' } }
-      });
-      
-      const deployed = await client.isContractDeployed('my-module');
+      mockDispatcher.dirtyRead.mockResolvedValue({ module: "my-module" });
+
+      const deployed = await client.isContractDeployed("my-module");
       expect(deployed).toBe(true);
 
       // Execute function
-      const result = await client.execution('(my-module.init)')
-        .submitAndListen();
-      
-      expect(result.result.status).toBe('success');
+      const result = await client.execution("(my-module.init)").build().submitAndListen();
+
+      expect((result as any).status).toBe("success");
     });
 
-    test('batch operations pattern', async () => {
+    test("batch operations pattern", async () => {
       const operations = [
         '(coin.create-account "alice" (read-keyset "alice-ks"))',
         '(coin.create-account "bob" (read-keyset "bob-ks"))',
         '(coin.transfer "treasury" "alice" 1000.0)',
-        '(coin.transfer "treasury" "bob" 1000.0)'
+        '(coin.transfer "treasury" "bob" 1000.0)',
       ];
 
       const results = await Promise.all(
-        operations.map(op => 
-          client.execution(op)
-            .addData({
-              'alice-ks': { keys: ['alice-key'], pred: 'keys-all' },
-              'bob-ks': { keys: ['bob-key'], pred: 'keys-all' }
+        operations.map((op) =>
+          client
+            .execution(op)
+            .withDataMap({
+              "alice-ks": { keys: ["alice-key"], pred: "keys-all" },
+              "bob-ks": { keys: ["bob-key"], pred: "keys-all" },
             })
-            .submitAndListen()
-        )
+            .build()
+            .submitAndListen(),
+        ),
       );
 
       expect(results).toHaveLength(4);

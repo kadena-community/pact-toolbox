@@ -13,7 +13,7 @@ import {
   writeTSConfig,
 } from "pkg-types";
 
-import { logger } from "@pact-toolbox/utils";
+import { logger } from "@pact-toolbox/node-utils";
 
 import { createHelloWorld } from "./hello";
 
@@ -89,7 +89,7 @@ export interface InitToolboxArgs {
 }
 
 async function installDeps(args: InitToolboxArgs) {
-  const deps = ["@kadena/client", "@pact-toolbox/client"];
+  const deps = ["@pact-toolbox/chainweb-client", "@pact-toolbox/transaction"];
   const devDeps = ["pact-toolbox", "@pact-toolbox/unplugin"];
   logger.start(`Installing dependencies ${deps.join(", ")} ...`);
   const packageManager = await detectPackageManager(args.cwd, {

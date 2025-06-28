@@ -1,12 +1,24 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { DevWallet } from "./wallet";
-import { DevWalletStorage } from "./storage";
 
-// Mock browser environment for storage tests
-Object.defineProperty(globalThis, 'window', {
-  value: undefined,
-  writable: true
-});
+// Mock crypto module
+vi.mock('@pact-toolbox/crypto', () => ({
+  generateKeyPair: vi.fn().mockResolvedValue({
+    publicKey: 'mock-public-key-test',
+    secretKey: 'mock-secret-key-test',
+  }),
+  exportBase16Key: vi.fn().mockImplementation((key: any) => key),
+  fromHex: vi.fn().mockReturnValue({
+    publicKey: 'imported-public-key',
+    secretKey: 'imported-secret-key',
+  }),
+  toHex: vi.fn().mockImplementation((key: any) => key),
+  sign: vi.fn().mockResolvedValue({ sig: 'mock-signature' }),
+  createKeyPairFromPrivateKeyBytes: vi.fn().mockReturnValue({
+    publicKey: 'created-public-key',
+    secretKey: 'created-secret-key',
+  }),
+}));
 
 describe("DevWallet", () => {
   let wallet: DevWallet;

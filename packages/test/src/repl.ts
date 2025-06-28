@@ -1,11 +1,9 @@
 import type { PactToolboxConfigObj } from "@pact-toolbox/config";
 import { join } from "pathe";
-import readdir from "tiny-readdir-glob";
-import chalk from "chalk";
-import ora from "ora";
 import { cpus } from "node:os";
 import { resolveConfig } from "@pact-toolbox/config";
-import { execAsync } from "@pact-toolbox/utils";
+import { execAsync, glob, startSpinner, updateSpinner, stopSpinner, boxMessage, table } from "@pact-toolbox/node-utils";
+import { error as errorUI, info as infoUI } from "@pact-toolbox/node-utils";
 
 interface TestResult {
   filePath: string;
@@ -58,17 +56,23 @@ async function runWithConcurrency<T, R>(
   return results;
 }
 
-export async function runReplTests(config?: Required<PactToolboxConfigObj>): Promise<void> {
+interface RunReplTestsOptions {
+  watch?: boolean;
+}
+export async function runReplTests(
+  config?: Required<PactToolboxConfigObj>,
+  _options?: RunReplTestsOptions,
+): Promise<void> {
   const startTime = Date.now();
   if (!config) {
     config = await resolveConfig();
   }
 
-  const spinner = ora("Finding REPL tests").start();
+  startSpinner("Finding REPL tests");
 
   const cwd = join(process.cwd(), config.contractsDir);
   const aborter = new AbortController();
-  const result = await readdir(`**/*.repl`, {
+  const result = await glob(`**/*.repl`, {
     cwd,
     depth: 20,
     limit: 1_000_000,
@@ -80,12 +84,14 @@ export async function runReplTests(config?: Required<PactToolboxConfigObj>): Pro
   const testFiles = result.files;
 
   if (testFiles.length === 0) {
-    spinner.succeed("No REPL tests found.");
+    stopSpinner(true, "No REPL tests found.");
     return;
   }
 
-  spinner.info(`${testFiles.length} tests found.`);
-  spinner.start(`Running REPL tests...`);
+  stopSpinner(true, `Found ${testFiles.length} REPL test file${testFiles.length > 1 ? 's' : ''}`);
+
+  infoUI("repl-test", `${testFiles.length} tests found.`);
+  updateSpinner(`Running REPL tests...`);
 
   let completed = 0;
 
@@ -96,11 +102,11 @@ export async function runReplTests(config?: Required<PactToolboxConfigObj>): Pro
       await execAsync(`pact -t ${file}`);
       const duration = Date.now() - testStartTime;
       completed++;
-      spinner.text = `[${completed}/${testFiles.length}] Running REPL tests... (${cleanedFile})`;
+      updateSpinner(`[${completed}/${testFiles.length}] Running REPL tests... (${cleanedFile})`);
       return { filePath: cleanedFile, status: "passed", duration };
     } catch (error) {
       completed++;
-      spinner.text = `[${completed}/${testFiles.length}] Running REPL tests... (${cleanedFile})`;
+      updateSpinner(`[${completed}/${testFiles.length}] Running REPL tests... (${cleanedFile})`);
       const duration = Date.now() - testStartTime;
       return {
         filePath: cleanedFile,
@@ -114,43 +120,42 @@ export async function runReplTests(config?: Required<PactToolboxConfigObj>): Pro
   const concurrency = Math.max(1, cpus().length - 1);
   const allResults = await runWithConcurrency(testFiles, runTest, concurrency);
 
-  spinner.stop();
+  stopSpinner();
   const totalDuration = Date.now() - startTime;
 
   const passedTests = allResults.filter((r) => r.status === "passed");
   const failedTests = allResults.filter((r) => r.status === "failed");
 
-  console.log("\n");
+  infoUI("repl-test", "");
 
-  for (const result of allResults) {
-    if (result.status === "passed") {
-      console.log(`${chalk.green.bold("PASS")} ${result.filePath} ${chalk.gray(`(${result.duration}ms)`)}`);
-    } else {
-      console.log(`${chalk.red.bold("FAIL")} ${result.filePath} ${chalk.gray(`(${result.duration}ms)`)}`);
-    }
-  }
+  // Create results table
+  const tableHeaders = ["Status", "File", "Duration"];
+  const tableRows = allResults.map(result => [
+    result.status === "passed" ? "PASS" : "FAIL",
+    result.filePath,
+    `${result.duration}ms`
+  ]);
+
+  table(tableHeaders, tableRows);
 
   if (failedTests.length > 0) {
-    console.log(`\n${chalk.red.bold("Failed Tests:")}`);
+    infoUI("repl-test", "\nFailed Tests:");
     for (const test of failedTests) {
-      console.log(`\n${chalk.red.bold("●")} ${test.filePath}`);
+      errorUI("repl-test", test.filePath);
       const errorMessage = test.error?.message ?? "Unknown error";
       const cleanedError = errorMessage.includes("Command failed:")
         ? (errorMessage.split("Command failed:")[1]?.trim() ?? "")
         : errorMessage;
-      console.log(`${chalk.red(cleanedError)}`);
+      infoUI("repl-test", `  ${cleanedError}`);
     }
   }
 
-  console.log("\n");
-  console.log(chalk.bold("REPL Test-runner Summary"));
-  console.log(
-    `  ${chalk.bold("Test Suites:")} ${
-      failedTests.length > 0 ? `${chalk.red.bold(`${failedTests.length} failed`)}, ` : ""
-    }${chalk.green.bold(`${passedTests.length} passed`)}, ${allResults.length} total`,
-  );
-  console.log(`  ${chalk.bold("Time:")}        ${(totalDuration / 1000).toFixed(2)}s`);
-  console.log("\n");
+  infoUI("repl-test", "");
+  boxMessage("REPL Test-runner Summary", [
+    `Test Suites: ${failedTests.length > 0 ? `${failedTests.length} failed, ` : ""}${passedTests.length} passed, ${allResults.length} total`,
+    `Time: ${(totalDuration / 1000).toFixed(2)}s`
+  ]);
+  infoUI("repl-test", "");
 
   if (failedTests.length > 0) {
     process.exit(1);

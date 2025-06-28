@@ -1,0 +1,7 @@
+{
+  "extends": "@pact-toolbox/tsconfig/lib",
+  "compilerOptions": {
+    "lib": ["ESNext"]
+  },
+  "include": ["src"]
+}
