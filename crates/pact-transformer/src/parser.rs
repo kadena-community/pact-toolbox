@@ -9,8 +9,8 @@ pub struct Parser {
   ts_parser: TSParser,
 }
 
-impl Parser {
-  pub fn new() -> Self {
+impl Default for Parser {
+  fn default() -> Self {
     let mut ts_parser = TSParser::new();
     let language = tree_sitter_pact::LANGUAGE;
     ts_parser
@@ -19,16 +19,20 @@ impl Parser {
 
     Self { ts_parser }
   }
+}
+
+impl Parser {
+  #[must_use]
+  pub fn new() -> Self {
+    Self::default()
+  }
 
   pub fn parse(&mut self, source: &str) -> (Vec<PactModule>, Vec<ParseError>) {
-    let tree = match self.ts_parser.parse(source, None) {
-      Some(tree) => tree,
-      None => {
-        return (
-          vec![],
-          vec![ParseError::new("Failed to parse".to_string(), 0, 0)],
-        );
-      }
+    let Some(tree) = self.ts_parser.parse(source, None) else {
+      return (
+        vec![],
+        vec![ParseError::new("Failed to parse".to_string(), 0, 0)],
+      );
     };
 
     let root_node = tree.root_node();
@@ -42,18 +46,18 @@ impl Parser {
 
     // Extract namespace and modules
     let source_arc = Arc::new(source.to_string());
-    let current_namespace = self.find_current_namespace(root_node, &source_arc);
-    let module_nodes = self.find_modules(root_node);
+    let current_namespace = Self::find_current_namespace(root_node, &source_arc);
+    let module_nodes = Self::find_modules(root_node);
 
     let modules: Vec<PactModule> = module_nodes
       .into_par_iter()
-      .filter_map(|node| self.parse_module(node, &source_arc, current_namespace.clone()))
+      .filter_map(|node| Self::parse_module(node, &source_arc, current_namespace.clone()))
       .collect();
 
     (modules, errors)
   }
 
-  fn find_current_namespace(&self, root: Node, source: &Arc<String>) -> Option<String> {
+  fn find_current_namespace(root: Node, source: &Arc<String>) -> Option<String> {
     let mut cursor = root.walk();
 
     for child in root.children(&mut cursor) {
@@ -75,7 +79,7 @@ impl Parser {
     None
   }
 
-  fn find_modules<'a>(&self, root: Node<'a>) -> Vec<Node<'a>> {
+  fn find_modules(root: Node) -> Vec<Node> {
     let mut modules = Vec::new();
     let mut cursor = root.walk();
 
@@ -95,7 +99,6 @@ impl Parser {
   }
 
   fn parse_module(
-    &self,
     node: Node,
     source: &Arc<String>,
     namespace: Option<String>,
@@ -130,37 +133,37 @@ impl Parser {
         for child in &children {
           match child.kind() {
             "defun" => {
-              if let Some(func) = self.parse_function(*child, source) {
+              if let Some(func) = Self::parse_function(*child, source) {
                 functions.push(func);
               }
             }
             "defcap" => {
-              if let Some(cap) = self.parse_capability(*child, source) {
+              if let Some(cap) = Self::parse_capability(*child, source) {
                 capabilities.push(cap);
               }
             }
             "defschema" => {
-              if let Some(schema) = self.parse_schema(*child, source) {
+              if let Some(schema) = Self::parse_schema(*child, source) {
                 schemas.push(schema);
               }
             }
             "defconst" => {
-              if let Some(constant) = self.parse_constant(*child, source) {
+              if let Some(constant) = Self::parse_constant(*child, source) {
                 constants.push(constant);
               }
             }
             "use" => {
-              if let Some(use_stmt) = self.parse_use(*child, source) {
+              if let Some(use_stmt) = Self::parse_use(*child, source) {
                 uses.push(use_stmt);
               }
             }
             "implements" => {
-              if let Some(impl_stmt) = self.parse_implements(*child, source) {
+              if let Some(impl_stmt) = Self::parse_implements(*child, source) {
                 implements.push(impl_stmt);
               }
             }
             "doc" => {
-              if let Some(doc) = self.extract_doc(*child, source) {
+              if let Some(doc) = Self::extract_doc(*child, source) {
                 docs.push(doc);
               }
             }
@@ -190,7 +193,7 @@ impl Parser {
     Some(module)
   }
 
-  fn parse_function(&self, node: Node, source: &Arc<String>) -> Option<PactFunction> {
+  fn parse_function(node: Node, source: &Arc<String>) -> Option<PactFunction> {
     // Find the def_identifier node and type annotation
     let name_with_type_node = Self::find_child_by_kind(node, "def_identifier")?;
     let name = name_with_type_node
@@ -210,7 +213,7 @@ impl Parser {
           if next.kind() == "type_annotation" {
             return_type = Self::find_child_by_kind(*next, "type_identifier")
               .and_then(|n| n.utf8_text(source.as_bytes()).ok())
-              .map(|s| s.to_string());
+              .map(std::string::ToString::to_string);
           }
         }
         break;
@@ -219,26 +222,26 @@ impl Parser {
 
     // Find parameter_list node
     let params_node = Self::find_child_by_kind(node, "parameter_list")?;
-    let parameters = self.parse_parameters(params_node, source);
+    let parameters = Self::parse_parameters(params_node, source);
 
     let mut function = PactFunction {
       name,
       doc: None,
       parameters,
       return_type,
-      body: self.extract_function_body(node, source),
+      body: Self::extract_function_body(node, source),
       is_defun: true,
     };
 
     // Check for doc strings
     if let Some(doc_node) = Self::find_child_by_kind(node, "doc") {
-      function.doc = self.extract_doc(doc_node, source);
+      function.doc = Self::extract_doc(doc_node, source);
     }
 
     Some(function)
   }
 
-  fn parse_capability(&self, node: Node, source: &Arc<String>) -> Option<PactCapability> {
+  fn parse_capability(node: Node, source: &Arc<String>) -> Option<PactCapability> {
     // Similar to parse_function
     let name_node = Self::find_child_by_kind(node, "def_identifier")?;
     let name = name_node.utf8_text(source.as_bytes()).ok()?.to_string();
@@ -254,7 +257,7 @@ impl Parser {
           if next.kind() == "type_annotation" {
             return_type = Self::find_child_by_kind(*next, "type_identifier")
               .and_then(|n| n.utf8_text(source.as_bytes()).ok())
-              .map(|s| s.to_string());
+              .map(std::string::ToString::to_string);
           }
         }
         break;
@@ -262,7 +265,7 @@ impl Parser {
     }
 
     let params_node = Self::find_child_by_kind(node, "parameter_list")?;
-    let parameters = self.parse_parameters(params_node, source);
+    let parameters = Self::parse_parameters(params_node, source);
 
     let mut capability = PactCapability {
       name,
@@ -279,7 +282,7 @@ impl Parser {
 
     for (i, child) in children.iter().enumerate() {
       match child.kind() {
-        "doc" => capability.doc = self.extract_doc(*child, source),
+        "doc" => capability.doc = Self::extract_doc(*child, source),
         "managed" => {
           // @managed is followed by parameter and optional manager function
           if let Some(param_node) = children.get(i + 1) {
@@ -289,7 +292,7 @@ impl Parser {
                 .get(i + 2)
                 .filter(|n| n.kind() == "reference")
                 .and_then(|n| n.utf8_text(source.as_bytes()).ok())
-                .map(|s| s.to_string());
+                .map(std::string::ToString::to_string);
               capability.managed = Some(ManagedInfo {
                 parameter,
                 manager_function,
@@ -312,7 +315,7 @@ impl Parser {
     Some(capability)
   }
 
-  fn parse_schema(&self, node: Node, source: &Arc<String>) -> Option<PactSchema> {
+  fn parse_schema(node: Node, source: &Arc<String>) -> Option<PactSchema> {
     let name_node = Self::find_child_by_kind(node, "def_identifier")?;
     let name = name_node.utf8_text(source.as_bytes()).ok()?.to_string();
 
@@ -327,7 +330,7 @@ impl Parser {
       let mut cursor = field_list.walk();
       for field_node in field_list.children(&mut cursor) {
         if field_node.kind() == "schema_field" {
-          if let Some(field) = self.parse_schema_field(field_node, source) {
+          if let Some(field) = Self::parse_schema_field(field_node, source) {
             schema.fields.push(field);
           }
         }
@@ -336,13 +339,13 @@ impl Parser {
 
     // Check for doc
     if let Some(doc_node) = Self::find_child_by_kind(node, "doc") {
-      schema.doc = self.extract_doc(doc_node, source);
+      schema.doc = Self::extract_doc(doc_node, source);
     }
 
     Some(schema)
   }
 
-  fn parse_constant(&self, node: Node, source: &Arc<String>) -> Option<PactConstant> {
+  fn parse_constant(node: Node, source: &Arc<String>) -> Option<PactConstant> {
     let name_node = Self::find_child_by_kind(node, "def_identifier")?;
     let name = name_node.utf8_text(source.as_bytes()).ok()?.to_string();
 
@@ -357,7 +360,7 @@ impl Parser {
           if next.kind() == "type_annotation" {
             constant_type = Self::find_child_by_kind(*next, "type_identifier")
               .and_then(|n| n.utf8_text(source.as_bytes()).ok())
-              .map(|s| s.to_string());
+              .map(std::string::ToString::to_string);
           }
         }
         break;
@@ -386,29 +389,29 @@ impl Parser {
 
     // Check for doc
     if let Some(doc_node) = Self::find_child_by_kind(node, "doc") {
-      constant.doc = self.extract_doc(doc_node, source);
+      constant.doc = Self::extract_doc(doc_node, source);
     }
 
     Some(constant)
   }
 
-  fn parse_parameters(&self, node: Node, source: &Arc<String>) -> Vec<PactParameter> {
+  fn parse_parameters(node: Node, source: &Arc<String>) -> Vec<PactParameter> {
     let mut cursor = node.walk();
     node
       .children(&mut cursor)
       .filter(|child| child.kind() == "parameter")
-      .filter_map(|param_node| self.parse_parameter(param_node, source))
+      .filter_map(|param_node| Self::parse_parameter(param_node, source))
       .collect()
   }
 
-  fn parse_parameter(&self, node: Node, source: &Arc<String>) -> Option<PactParameter> {
+  fn parse_parameter(node: Node, source: &Arc<String>) -> Option<PactParameter> {
     let name_node = Self::find_child_by_kind(node, "parameter_identifier")?;
     let name = name_node.utf8_text(source.as_bytes()).ok()?.to_string();
 
     let parameter_type = Self::find_child_by_kind(node, "type_annotation")
       .and_then(|n| Self::find_child_by_kind(n, "type_identifier"))
       .and_then(|n| n.utf8_text(source.as_bytes()).ok())
-      .map(|s| s.to_string());
+      .map(std::string::ToString::to_string);
 
     Some(PactParameter {
       name,
@@ -416,41 +419,40 @@ impl Parser {
     })
   }
 
-  fn parse_schema_field(&self, node: Node, source: &Arc<String>) -> Option<SchemaField> {
+  fn parse_schema_field(node: Node, source: &Arc<String>) -> Option<SchemaField> {
     let name_node = Self::find_child_by_kind(node, "schema_field_identifier")?;
     let name = name_node.utf8_text(source.as_bytes()).ok()?.to_string();
 
     let field_type = Self::find_child_by_kind(node, "type_annotation")
       .and_then(|n| Self::find_child_by_kind(n, "type_identifier"))
       .and_then(|n| n.utf8_text(source.as_bytes()).ok())
-      .map(|s| s.to_string())
-      .unwrap_or_else(|| "string".to_string());
+      .map_or_else(|| "string".to_string(), std::string::ToString::to_string);
 
     Some(SchemaField { name, field_type })
   }
 
-  fn parse_use(&self, node: Node, source: &Arc<String>) -> Option<String> {
+  fn parse_use(node: Node, source: &Arc<String>) -> Option<String> {
     // Use statements have a reference node as child
     Self::find_child_by_kind(node, "reference")
       .and_then(|n| n.utf8_text(source.as_bytes()).ok())
-      .map(|s| s.to_string())
+      .map(std::string::ToString::to_string)
   }
 
-  fn parse_implements(&self, node: Node, source: &Arc<String>) -> Option<String> {
+  fn parse_implements(node: Node, source: &Arc<String>) -> Option<String> {
     // Implements statements have a reference node as child
     Self::find_child_by_kind(node, "reference")
       .and_then(|n| n.utf8_text(source.as_bytes()).ok())
-      .map(|s| s.to_string())
+      .map(std::string::ToString::to_string)
   }
 
-  fn extract_doc(&self, node: Node, source: &Arc<String>) -> Option<String> {
+  fn extract_doc(node: Node, source: &Arc<String>) -> Option<String> {
     // Doc node contains a doc_string child
     Self::find_child_by_kind(node, "doc_string")
       .and_then(|n| n.utf8_text(source.as_bytes()).ok())
       .map(|s| s.trim_matches('"').to_string())
   }
 
-  fn extract_function_body(&self, node: Node, source: &Arc<String>) -> String {
+  fn extract_function_body(node: Node, source: &Arc<String>) -> String {
     let mut cursor = node.walk();
     let children: Vec<Node> = node.children(&mut cursor).collect();
 
@@ -573,10 +575,10 @@ mod tests {
     let mut parser = Parser::new();
 
     // Test with quotes
-    let source1 = r#"
+    let source1 = r"
 (namespace 'free)
 (module test GOVERNANCE)
-"#;
+";
     let (modules, _) = parser.parse(source1);
     assert_eq!(modules[0].namespace, Some("free".to_string()));
 
@@ -778,17 +780,17 @@ mod tests {
     assert_eq!(errors.len(), 0);
     assert_eq!(modules.len(), 2);
 
-    let module1 = &modules[0];
-    assert_eq!(module1.name, "module1");
-    assert_eq!(module1.namespace, Some("free".to_string()));
-    assert_eq!(module1.functions.len(), 1);
-    assert_eq!(module1.functions[0].name, "func1");
+    let first_module = &modules[0];
+    assert_eq!(first_module.name, "module1");
+    assert_eq!(first_module.namespace, Some("free".to_string()));
+    assert_eq!(first_module.functions.len(), 1);
+    assert_eq!(first_module.functions[0].name, "func1");
 
-    let module2 = &modules[1];
-    assert_eq!(module2.name, "module2");
-    assert_eq!(module2.namespace, Some("free".to_string()));
-    assert_eq!(module2.functions.len(), 1);
-    assert_eq!(module2.functions[0].name, "func2");
+    let second_module = &modules[1];
+    assert_eq!(second_module.name, "module2");
+    assert_eq!(second_module.namespace, Some("free".to_string()));
+    assert_eq!(second_module.functions.len(), 1);
+    assert_eq!(second_module.functions[0].name, "func2");
   }
 
   #[test]
@@ -947,24 +949,24 @@ mod tests {
   #[test]
   fn test_parse_invalid_source() {
     let mut parser = Parser::new();
-    let source = r#"
+    let source = r"
 (module incomplete GOVERNANCE
   (defun unclosed-function
-"#;
+";
 
     let (_modules, errors) = parser.parse(source);
 
     // Should still parse what it can, but report errors
-    assert!(errors.len() > 0);
+    assert!(!errors.is_empty());
     // Implementation may vary - might parse partial module or no modules
   }
 
   #[test]
   fn test_parse_namespace_without_module() {
     let mut parser = Parser::new();
-    let source = r#"
+    let source = r"
 (namespace 'free)
-"#;
+";
 
     let (modules, errors) = parser.parse(source);
 
@@ -995,7 +997,7 @@ mod tests {
 
   #[test]
   fn test_find_current_namespace() {
-    let parser = Parser::new();
+    let _parser = Parser::new();
     let mut ts_parser = tree_sitter::Parser::new();
     let language = tree_sitter_pact::LANGUAGE;
     ts_parser.set_language(&language.into()).unwrap();
@@ -1005,13 +1007,13 @@ mod tests {
     let tree = ts_parser.parse(source_text, None).unwrap();
     let root = tree.root_node();
 
-    let namespace = parser.find_current_namespace(root, &source);
+    let namespace = Parser::find_current_namespace(root, &source);
     assert_eq!(namespace, Some("free".to_string()));
   }
 
   #[test]
   fn test_find_modules() {
-    let parser = Parser::new();
+    let _parser = Parser::new();
     let mut ts_parser = tree_sitter::Parser::new();
     let language = tree_sitter_pact::LANGUAGE;
     ts_parser.set_language(&language.into()).unwrap();
@@ -1020,7 +1022,7 @@ mod tests {
     let tree = ts_parser.parse(source, None).unwrap();
     let root = tree.root_node();
 
-    let modules = parser.find_modules(root);
+    let modules = Parser::find_modules(root);
     assert_eq!(modules.len(), 2);
   }
 }

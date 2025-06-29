@@ -98,7 +98,8 @@ export class PactTransformCache {
     let oldestId: string | null = null;
     let oldestTime = Infinity;
 
-    for (const [id, cached] of this.cache.entries()) {
+    // Use Array.from to avoid downlevelIteration requirement
+    for (const [id, cached] of Array.from(this.cache.entries())) {
       if (cached.lastTransformed < oldestTime) {
         oldestTime = cached.lastTransformed;
         oldestId = id;

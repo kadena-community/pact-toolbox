@@ -37,7 +37,7 @@ pub fn pact_type_to_typescript(pact_type: &str) -> String {
     let inner_type = &pact_type[1..pact_type.len() - 1];
     if !inner_type.is_empty() {
       let mapped_inner = pact_type_to_typescript(inner_type);
-      return format!("{}[]", mapped_inner);
+      return format!("{mapped_inner}[]");
     }
     return "unknown[]".to_string();
   }
@@ -51,17 +51,14 @@ pub fn pact_type_to_typescript(pact_type: &str) -> String {
   // Handle module types
   if pact_type.starts_with("module{") && pact_type.ends_with('}') {
     let interfaces = &pact_type[7..pact_type.len() - 1];
-    return format!("Record<string, {}>", interfaces);
+    return format!("Record<string, {interfaces}>");
   }
 
   // Map basic types
-  PACT_TO_TS_TYPE_MAP
-    .get(pact_type)
-    .unwrap_or(&"unknown")
-    .to_string()
+  (*PACT_TO_TS_TYPE_MAP.get(pact_type).unwrap_or(&"unknown")).to_string()
 }
 
-/// Convert snake_case or kebab-case to PascalCase
+/// Convert `snake_case` or kebab-case to `PascalCase`
 fn to_pascal_case(s: &str) -> String {
   let mut result = String::new();
   let mut capitalize_next = true;
@@ -86,7 +83,7 @@ pub fn convert_to_jsdoc(doc: Option<&str>) -> String {
       if text.trim().is_empty() {
         String::new()
       } else {
-        let lines: Vec<String> = text.lines().map(|line| format!(" * {}", line)).collect();
+        let lines: Vec<String> = text.lines().map(|line| format!(" * {line}")).collect();
         format!("/**\n{}\n */\n", lines.join("\n"))
       }
     }

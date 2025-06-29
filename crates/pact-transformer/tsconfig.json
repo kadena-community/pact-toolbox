@@ -1,0 +1,9 @@
+{
+  "extends": "../../tooling/tsconfig/base.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "."
+  },
+  "include": ["index.d.ts", "vitest.config.ts"],
+  "exclude": ["node_modules", "dist", "target"]
+}

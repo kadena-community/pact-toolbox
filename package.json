@@ -70,5 +70,8 @@
       "unrs-resolver"
     ]
   },
-  "prettier": "@pact-toolbox/prettier-config"
+  "prettier": "@pact-toolbox/prettier-config",
+  "dependencies": {
+    "source-map": "^0.7.4"
+  }
 }

@@ -17,6 +17,7 @@ interface TransformationResult {
   code: string;
   types: string;
   sourceMap?: string;
+  declarationMap?: string;
 }
 
 type PactToJSTransformer = (pactCode: string, filePath?: string) => Promise<TransformationResult>;
@@ -52,11 +53,16 @@ export function createPactToJSTransformer({
     const startTime = debug ? performance.now() : 0;
 
     try {
-      // Transform the code
-      const result: TransformResult = await pactToolbox.transform(pactCode, {
-        generateTypes,
-        moduleName,
-      });
+      // Transform the code with source maps if we have a file path
+      const result: TransformResult = filePath
+        ? await pactToolbox.transformFile(pactCode, filePath, {
+            generateTypes,
+            moduleName,
+          })
+        : await pactToolbox.transform(pactCode, {
+            generateTypes,
+            moduleName,
+          });
 
       // Parse modules to get module information
       let modules: ModuleInfo[];
@@ -80,6 +86,7 @@ export function createPactToJSTransformer({
         code: result.javascript,
         types: result.typescript || "",
         sourceMap: result.sourceMap,
+        declarationMap: result.declarationMap,
       };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);

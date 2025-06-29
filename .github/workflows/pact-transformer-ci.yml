@@ -74,11 +74,6 @@ jobs:
           - host: windows-latest
             build: cd crates/pact-transformer && pnpm build
             target: x86_64-pc-windows-msvc
-          - host: windows-latest
-            build: |
-              cd crates/pact-transformer
-              pnpm build --target i686-pc-windows-msvc
-            target: i686-pc-windows-msvc
           - host: ubuntu-latest
             target: x86_64-unknown-linux-gnu
             docker: ghcr.io/napi-rs/napi-rs/nodejs-rust:lts-debian
@@ -108,15 +103,6 @@ jobs:
               pnpm build --target aarch64-unknown-linux-gnu &&
               aarch64-unknown-linux-gnu-strip *.node
           - host: ubuntu-latest
-            target: armv7-unknown-linux-gnueabihf
-            setup: |
-              sudo apt-get update
-              sudo apt-get install gcc-arm-linux-gnueabihf -y
-            build: |
-              cd crates/pact-transformer
-              pnpm build --target armv7-unknown-linux-gnueabihf
-              arm-linux-gnueabihf-strip *.node
-          - host: ubuntu-latest
             target: aarch64-unknown-linux-musl
             build: |-
               cd crates/pact-transformer &&
@@ -125,20 +111,6 @@ jobs:
           - host: windows-latest
             target: aarch64-pc-windows-msvc
             build: cd crates/pact-transformer && pnpm build --target aarch64-pc-windows-msvc
-          - host: ubuntu-latest
-            target: aarch64-linux-android
-            build: |
-              cd crates/pact-transformer
-              export CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER="${ANDROID_NDK_LATEST_HOME}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang"
-              pnpm build --target aarch64-linux-android
-              ${ANDROID_NDK_LATEST_HOME}/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip *.node
-          - host: ubuntu-latest
-            target: armv7-linux-androideabi
-            build: |
-              cd crates/pact-transformer
-              export CARGO_TARGET_ARMV7_LINUX_ANDROIDEABI_LINKER="${ANDROID_NDK_LATEST_HOME}/toolchains/llvm/prebuilt/linux-x86_64/bin/armv7a-linux-androideabi24-clang"
-              pnpm build --target armv7-linux-androideabi
-              ${ANDROID_NDK_LATEST_HOME}/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip *.node
           - host: ubuntu-latest
             target: wasm32-wasip1-threads
             build: |
@@ -391,95 +363,7 @@ jobs:
             corepack enable
             corepack prepare pnpm@9 --activate
             cd crates/pact-transformer && pnpm test
-  test-linux-arm-gnueabihf-binding:
-    name: Test bindings on armv7-unknown-linux-gnueabihf - node@${{ matrix.node }}
-    needs:
-      - build
-    strategy:
-      fail-fast: false
-      matrix:
-        node:
-          - "20"
-          - "22"
-          - "24"
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Download artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: bindings-armv7-unknown-linux-gnueabihf
-          path: crates/pact-transformer
-      - name: List packages
-        run: ls -R .
-        shell: bash
-      - name: Install dependencies
-        run: |
-          pnpm config set supportedArchitectures.cpu "arm"
-          pnpm install --frozen-lockfile
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-        with:
-          platforms: arm
-      - run: docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
-      - name: Setup and run tests
-        uses: addnab/docker-run-action@v3
-        with:
-          image: node:${{ matrix.node }}-bullseye-slim
-          options: "--platform linux/arm/v7 -v ${{ github.workspace }}:/build -w /build"
-          run: |
-            set -e
-            apt-get update
-            apt-get install -y ca-certificates gnupg
-            mkdir -p /etc/apt/keyrings
-            curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg
-            echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_${{ matrix.node }}.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list
-            apt-get update
-            apt-get install -y nodejs npm
-            npm install -g corepack
-            corepack enable
-            corepack prepare pnpm@9 --activate
-            cd crates/pact-transformer && pnpm test
 
-  build-freebsd:
-    runs-on: ubuntu-latest
-    name: Build FreeBSD
-    steps:
-      - uses: actions/checkout@v4
-      - name: Build for FreeBSD
-        uses: cross-platform-actions/action@v0.25.0
-        env:
-          DEBUG: napi:*
-          RUSTUP_IO_THREADS: 1
-        with:
-          operating_system: freebsd
-          version: "14.1"
-          memory: 8G
-          cpu_count: 3
-          environment_variables: DEBUG RUSTUP_IO_THREADS
-          shell: bash
-          run: |
-            sudo pkg install -y -f curl
-            sudo pkg install -y -f node20 npm
-            sudo npm install -g corepack
-            corepack enable
-            corepack prepare pnpm@9 --activate
-            curl https://sh.rustup.rs -sSf --output rustup.sh
-            sh rustup.sh -y --profile minimal --default-toolchain stable
-            source "$HOME/.cargo/env"
-            cd crates/pact-transformer
-            pnpm install --frozen-lockfile
-            pnpm build
-            strip -x *.node
-            pnpm test
-            rm -rf node_modules
-            rm -rf target
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: bindings-x86_64-unknown-freebsd
-          path: crates/pact-transformer/${{ env.APP_NAME }}.*.node
-          if-no-files-found: error
 
   test-wasi:
     name: Test WASI target
@@ -519,8 +403,6 @@ jobs:
       - test-linux-x64-musl-binding
       - test-linux-aarch64-gnu-binding
       - test-linux-aarch64-musl-binding
-      - test-linux-arm-gnueabihf-binding
-      - build-freebsd
       - test-wasi
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/@pact-toolbox/pact-transformer@')
     steps:

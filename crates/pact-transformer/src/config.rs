@@ -111,23 +111,24 @@ impl Default for PactConfig {
 
 /// Load configuration from various sources
 #[napi]
-pub async fn load_config(
+#[allow(clippy::needless_pass_by_value)]
+pub fn load_config(
   config_path: Option<String>,
   environment: Option<String>,
 ) -> Result<ConfigLoadResult, napi::Error> {
-  match load_config_impl(config_path.as_deref(), environment.as_deref()).await {
+  match load_config_impl(config_path.as_deref(), environment.as_deref()) {
     Ok(result) => Ok(result),
     Err(e) => Err(napi::Error::from_reason(e.to_string())),
   }
 }
 
-async fn load_config_impl(
+fn load_config_impl(
   config_path: Option<&str>,
   environment: Option<&str>,
 ) -> Result<ConfigLoadResult> {
   // If specific path provided, load from there
   if let Some(path) = config_path {
-    let config = load_from_file(path).await?;
+    let config = load_from_file(path)?;
     let merged = apply_environment(&config, environment)?;
     return Ok(ConfigLoadResult {
       config: merged,
@@ -150,24 +151,24 @@ async fn load_config_impl(
 
   for path in &search_paths {
     if Path::new(path).exists() {
-      match load_from_file(path).await {
+      match load_from_file(path) {
         Ok(config) => {
           let merged = apply_environment(&config, environment)?;
           return Ok(ConfigLoadResult {
             config: merged,
-            config_path: Some(path.to_string()),
+            config_path: Some((*path).to_string()),
             is_default: false,
           });
         }
         Err(e) => {
-          log::warn!("Failed to load config from {}: {}", path, e);
+          log::warn!("Failed to load config from {path}: {e}");
         }
       }
     }
   }
 
   // Try loading from package.json
-  if let Ok(config) = load_from_package_json().await {
+  if let Ok(config) = load_from_package_json() {
     let merged = apply_environment(&config, environment)?;
     return Ok(ConfigLoadResult {
       config: merged,
@@ -184,81 +185,56 @@ async fn load_config_impl(
   })
 }
 
-async fn load_from_file(path: &str) -> Result<PactConfig> {
+fn load_from_file(path: &str) -> Result<PactConfig> {
   let extension = Path::new(path)
     .extension()
     .and_then(|ext| ext.to_str())
     .unwrap_or("");
 
   match extension {
-    "js" => load_js_config(path).await,
     "json" => load_json_config(path),
     "toml" => load_toml_config(path),
     "yaml" | "yml" => load_yaml_config(path),
     _ => {
       // Try to detect format by content
-      let content = fs::read_to_string(path)
-        .with_context(|| format!("Failed to read config file: {}", path))?;
+      let content =
+        fs::read_to_string(path).with_context(|| format!("Failed to read config file: {path}"))?;
 
       if content.trim().starts_with('{') {
         serde_json::from_str(&content)
-          .with_context(|| format!("Failed to parse JSON config: {}", path))
-      } else if content.contains(" = ") || content.contains("[") {
-        toml::from_str(&content).with_context(|| format!("Failed to parse TOML config: {}", path))
+          .with_context(|| format!("Failed to parse JSON config: {path}"))
+      } else if content.contains(" = ") || content.contains('[') {
+        toml::from_str(&content).with_context(|| format!("Failed to parse TOML config: {path}"))
       } else {
         serde_yaml::from_str(&content)
-          .with_context(|| format!("Failed to parse YAML config: {}", path))
+          .with_context(|| format!("Failed to parse YAML config: {path}"))
       }
     }
   }
-}
-
-async fn load_js_config(path: &str) -> Result<PactConfig> {
-  // For JavaScript configs, we need to evaluate them
-  // This is a simplified approach - in production, we'd use a proper JS engine
-  let content =
-    fs::read_to_string(path).with_context(|| format!("Failed to read JS config file: {}", path))?;
-
-  // For now, we'll just try to extract JSON from the JS file
-  // This is a placeholder - real implementation would use quickjs or similar
-  if let Some(start) = content.find("export default") {
-    if let Some(json_start) = content[start..].find('{') {
-      let json_part = &content[start + json_start..];
-      if let Some(json_end) = find_matching_brace(json_part) {
-        let json_str = &json_part[..=json_end];
-        return serde_json::from_str(json_str)
-          .with_context(|| format!("Failed to parse JS config as JSON: {}", path));
-      }
-    }
-  }
-
-  Err(anyhow::anyhow!(
-    "JavaScript config files require the Pact CLI tool for evaluation"
-  ))
 }
 
 fn load_json_config(path: &str) -> Result<PactConfig> {
-  let content = fs::read_to_string(path)
-    .with_context(|| format!("Failed to read JSON config file: {}", path))?;
+  let content =
+    fs::read_to_string(path).with_context(|| format!("Failed to read JSON config file: {path}"))?;
 
-  serde_json::from_str(&content).with_context(|| format!("Failed to parse JSON config: {}", path))
+  serde_json::from_str(&content).with_context(|| format!("Failed to parse JSON config: {path}"))
 }
 
 fn load_toml_config(path: &str) -> Result<PactConfig> {
-  let content = fs::read_to_string(path)
-    .with_context(|| format!("Failed to read TOML config file: {}", path))?;
+  let content =
+    fs::read_to_string(path).with_context(|| format!("Failed to read TOML config file: {path}"))?;
 
-  toml::from_str(&content).with_context(|| format!("Failed to parse TOML config: {}", path))
+  toml::from_str(&content).with_context(|| format!("Failed to parse TOML config: {path}"))
 }
 
 fn load_yaml_config(path: &str) -> Result<PactConfig> {
-  let content = fs::read_to_string(path)
-    .with_context(|| format!("Failed to read YAML config file: {}", path))?;
+  let content =
+    fs::read_to_string(path).with_context(|| format!("Failed to read YAML config file: {path}"))?;
 
-  serde_yaml::from_str(&content).with_context(|| format!("Failed to parse YAML config: {}", path))
+  serde_yaml::from_str(&content).with_context(|| format!("Failed to parse YAML config: {path}"))
 }
 
-async fn load_from_package_json() -> Result<PactConfig> {
+fn load_from_package_json() -> Result<PactConfig> {
   let content =
     fs::read_to_string("package.json").with_context(|| "Failed to read package.json")?;
 
@@ -359,36 +335,9 @@ fn apply_env_overrides(config: &PactConfig, env_config: &EnvironmentConfig) -> P
   }
 }
 
-fn find_matching_brace(s: &str) -> Option<usize> {
-  let mut depth = 0;
-  let mut in_string = false;
-  let mut escape_next = false;
-
-  for (i, ch) in s.chars().enumerate() {
-    if escape_next {
-      escape_next = false;
-      continue;
-    }
-
-    match ch {
-      '\\' if in_string => escape_next = true,
-      '"' => in_string = !in_string,
-      '{' if !in_string => depth += 1,
-      '}' if !in_string => {
-        depth -= 1;
-        if depth == 0 {
-          return Some(i);
-        }
-      }
-      _ => {}
-    }
-  }
-
-  None
-}
-
 /// Apply a preset to the current configuration
 #[napi]
+#[allow(clippy::needless_pass_by_value)]
 pub fn apply_preset(config: PactConfig, preset_name: String) -> Result<PactConfig, napi::Error> {
   let presets = config
     .presets
@@ -397,7 +346,7 @@ pub fn apply_preset(config: PactConfig, preset_name: String) -> Result<PactConfi
 
   let preset = presets
     .get(&preset_name)
-    .ok_or_else(|| napi::Error::from_reason(format!("Preset '{}' not found", preset_name)))?;
+    .ok_or_else(|| napi::Error::from_reason(format!("Preset '{preset_name}' not found")))?;
 
   Ok(PactConfig {
     transform: preset
@@ -418,6 +367,7 @@ pub fn apply_preset(config: PactConfig, preset_name: String) -> Result<PactConfi
 
 /// Validate configuration
 #[napi]
+#[allow(clippy::needless_pass_by_value)]
 pub fn validate_config(config: PactConfig) -> Result<bool, napi::Error> {
   // Validate file output directory exists or can be created
   if let Some(file_output) = &config.file_output {
@@ -437,7 +387,12 @@ pub fn validate_config(config: PactConfig) -> Result<bool, napi::Error> {
 
   // Validate watch patterns
   if let Some(watch) = &config.watch {
-    if watch.patterns.is_empty() && watch.directories.as_ref().map_or(true, |d| d.is_empty()) {
+    if watch.patterns.is_empty()
+      && watch
+        .directories
+        .as_ref()
+        .is_none_or(std::vec::Vec::is_empty)
+    {
       return Err(napi::Error::from_reason(
         "Watch configuration must specify patterns or directories",
       ));
@@ -463,8 +418,8 @@ mod tests {
   use std::fs;
   use tempfile::TempDir;
 
-  #[tokio::test]
-  async fn test_load_json_config() {
+  #[test]
+  fn test_load_json_config() {
     let temp_dir = TempDir::new().unwrap();
     let config_path = temp_dir.path().join("pact.config.json");
 
@@ -480,9 +435,7 @@ mod tests {
 
     fs::write(&config_path, config_content).unwrap();
 
-    let result = load_config(Some(config_path.to_string_lossy().to_string()), None)
-      .await
-      .unwrap();
+    let result = load_config(Some(config_path.to_string_lossy().to_string()), None).unwrap();
 
     assert!(!result.is_default);
     assert_eq!(
@@ -495,8 +448,8 @@ mod tests {
     );
   }
 
-  #[tokio::test]
-  async fn test_load_toml_config() {
+  #[test]
+  fn test_load_toml_config() {
     let temp_dir = TempDir::new().unwrap();
     let config_path = temp_dir.path().join("pact.config.toml");
 
@@ -511,16 +464,14 @@ format = "ts"
 
     fs::write(&config_path, config_content).unwrap();
 
-    let result = load_config(Some(config_path.to_string_lossy().to_string()), None)
-      .await
-      .unwrap();
+    let result = load_config(Some(config_path.to_string_lossy().to_string()), None).unwrap();
 
     assert!(!result.is_default);
     assert_eq!(result.config.file_output.as_ref().unwrap().format, "ts");
   }
 
-  #[tokio::test]
-  async fn test_environment_overrides() {
+  #[test]
+  fn test_environment_overrides() {
     let temp_dir = TempDir::new().unwrap();
     let config_path = temp_dir.path().join("pact.config.json");
 
@@ -548,7 +499,6 @@ format = "ts"
       Some(config_path.to_string_lossy().to_string()),
       Some("production".to_string()),
     )
-    .await
     .unwrap();
 
     assert_eq!(
@@ -572,6 +522,9 @@ format = "ts"
         transform: Some(TransformOptions {
           generate_types: Some(true),
           module_name: None,
+          source_maps: None,
+          source_file_path: None,
+          declaration_maps: None,
         }),
         file_output: Some(FileOutputOptions {
           output_dir: "./src/generated".to_string(),
@@ -647,6 +600,9 @@ format = "ts"
       transform: Some(TransformOptions {
         generate_types: Some(true),
         module_name: None,
+        source_maps: None,
+        source_file_path: None,
+        declaration_maps: None,
       }),
       file_output: Some(FileOutputOptions {
         output_dir: "./dist".to_string(),

@@ -14,14 +14,11 @@ use napi_derive::napi;
 mod ast;
 mod code_generator;
 mod config;
-mod docs;
 mod error;
 mod file_ops;
-mod frameworks;
 mod parser;
 mod plugin;
 mod source_map;
-mod testing;
 mod transformer;
 mod types;
 mod utils;
@@ -31,17 +28,12 @@ mod watch;
 mod api;
 
 // Only export the consolidated API
-pub use api::{
-  ConfigManager, DocsGenerator, FileOps, PactTransformer, PluginManager, TestGenerator, Utils,
-  WatchSession,
-};
+pub use api::{ConfigManager, FileOps, PactTransformer, PluginManager, Utils, WatchSession};
 
 // Internal re-exports for the API module
 pub(crate) use config::*;
-pub(crate) use docs::*;
 pub(crate) use file_ops::{batch_file_transform, file_transform, FileOutputOptions};
 pub(crate) use plugin::*;
-pub(crate) use testing::*;
 pub(crate) use transformer::{
   core_transform, reset_parser_pool, run_parser_benchmark, warm_up_parsers, CoreTransformer,
   TransformOptions,
@@ -58,6 +50,9 @@ pub struct ErrorDetail {
   pub line: u32,
   pub column: u32,
 }
+
+#[cfg(test)]
+mod test_generation;
 
 #[cfg(test)]
 mod integration_tests {
@@ -85,14 +80,9 @@ mod integration_tests {
 
   #[test]
   fn test_pact_transformer_integration() {
-    let mut transformer = CoreTransformer::new();
-    let (modules, errors) = transformer.parse(SIMPLE_MODULE);
+    let (modules, errors) = CoreTransformer::parse(SIMPLE_MODULE);
 
-    assert!(
-      errors.is_empty(),
-      "Should parse without errors: {:?}",
-      errors
-    );
+    assert!(errors.is_empty(), "Should parse without errors: {errors:?}");
     assert_eq!(modules.len(), 1, "Should parse exactly one module");
 
     let module = &modules[0];
@@ -132,8 +122,7 @@ mod integration_tests {
 
   #[test]
   fn test_empty_module_parsing() {
-    let mut transformer = CoreTransformer::new();
-    let (modules, errors) = transformer.parse("(module empty GOVERNANCE)");
+    let (modules, errors) = CoreTransformer::parse("(module empty GOVERNANCE)");
 
     assert!(
       errors.is_empty(),
@@ -152,16 +141,15 @@ mod integration_tests {
 
   #[test]
   fn test_multiple_modules() {
-    let mut transformer = CoreTransformer::new();
-    let multi_module = r#"
+    let multi_module = r"
         (module first GOVERNANCE
           (defcap GOVERNANCE () true))
         
         (module second OTHER-GOV
           (defcap OTHER-GOV () true))
-        "#;
+        ";
 
-    let (modules, errors) = transformer.parse(multi_module);
+    let (modules, errors) = CoreTransformer::parse(multi_module);
     assert!(
       errors.is_empty(),
       "Multi-module should parse without errors"

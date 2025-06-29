@@ -116,6 +116,7 @@ pub async fn create_watch_session(
 #[napi]
 pub struct WatchHandle {
   state: Arc<RwLock<WatchState>>,
+  #[allow(dead_code)]
   event_sender: mpsc::UnboundedSender<WatchEvent>,
   _watcher: RecommendedWatcher,
   _task_handle: tokio::task::JoinHandle<()>,
@@ -141,7 +142,7 @@ impl WatchHandle {
     let (file_tx, file_rx) = mpsc::channel(1000);
 
     // Find initial files
-    let initial_files = find_matching_files(&watch_opts).await?;
+    let initial_files = find_matching_files(&watch_opts);
 
     // Update watched files
     {
@@ -167,7 +168,7 @@ impl WatchHandle {
       .extensions
       .clone()
       .unwrap_or_else(|| vec!["pact".to_string()]);
-    let debounce_duration = Duration::from_millis(watch_opts.debounce_ms.unwrap_or(100) as u64);
+    let debounce_duration = Duration::from_millis(u64::from(watch_opts.debounce_ms.unwrap_or(100)));
 
     let mut watcher =
       notify::recommended_watcher(move |res: Result<Event, notify::Error>| match res {
@@ -176,11 +177,11 @@ impl WatchHandle {
             let _ = file_tx_clone.try_send(file_event);
           }
         }
-        Err(e) => log::error!("Watch error: {:?}", e),
+        Err(e) => log::error!("Watch error: {e:?}"),
       })?;
 
     // Setup watches for directories and patterns
-    setup_watchers(&mut watcher, &watch_opts).await?;
+    setup_watchers(&mut watcher, &watch_opts)?;
 
     // Start file processing task
     let state_clone = state.clone();
@@ -210,7 +211,7 @@ impl WatchHandle {
 
   /// Get the next watch event
   #[napi]
-  pub async fn next_event(&self) -> Option<WatchEvent> {
+  pub fn next_event() -> Option<WatchEvent> {
     // This would need a receiver to be stored in the handle
     // For now, returning None as a placeholder
     None
@@ -221,7 +222,7 @@ impl WatchHandle {
   pub async fn get_stats(&self) -> WatchStats {
     let state = self.state.read().await;
     let avg_time = if state.total_transforms > 0 {
-      state.total_transform_time_ms / state.total_transforms as f64
+      state.total_transform_time_ms / f64::from(state.total_transforms)
     } else {
       0.0
     };
@@ -238,10 +239,9 @@ impl WatchHandle {
 
   /// Stop watching and cleanup
   #[napi]
-  pub async fn stop(&self) -> Result<(), napi::Error> {
+  pub fn stop() {
     // The watcher will be dropped automatically
     // Task will be cancelled when the handle is dropped
-    Ok(())
   }
 }
 
@@ -280,7 +280,7 @@ fn process_notify_event(event: Event, extensions: &[String]) -> Option<FileEvent
   None
 }
 
-async fn setup_watchers(watcher: &mut RecommendedWatcher, watch_opts: &WatchOptions) -> Result<()> {
+fn setup_watchers(watcher: &mut RecommendedWatcher, watch_opts: &WatchOptions) -> Result<()> {
   // Watch directories
   if let Some(directories) = &watch_opts.directories {
     for dir in directories {
@@ -288,7 +288,7 @@ async fn setup_watchers(watcher: &mut RecommendedWatcher, watch_opts: &WatchOpti
       if path.exists() {
         watcher
           .watch(path, RecursiveMode::Recursive)
-          .with_context(|| format!("Failed to watch directory: {}", dir))?;
+          .with_context(|| format!("Failed to watch directory: {dir}"))?;
       }
     }
   }
@@ -300,7 +300,7 @@ async fn setup_watchers(watcher: &mut RecommendedWatcher, watch_opts: &WatchOpti
       if path.exists() {
         watcher
           .watch(path, RecursiveMode::Recursive)
-          .with_context(|| format!("Failed to watch pattern base: {}", base_dir))?;
+          .with_context(|| format!("Failed to watch pattern base: {base_dir}"))?;
       }
     }
   }
@@ -336,17 +336,15 @@ fn extract_base_dir_from_pattern(pattern: &str) -> Option<String> {
   }
 }
 
-async fn find_matching_files(watch_opts: &WatchOptions) -> Result<Vec<PathBuf>> {
+fn find_matching_files(watch_opts: &WatchOptions) -> Vec<PathBuf> {
   let mut files = HashSet::new();
 
   // Find files matching patterns
   for pattern in &watch_opts.patterns {
     if let Ok(paths) = glob(pattern) {
-      for path_result in paths {
-        if let Ok(path) = path_result {
-          if path.is_file() {
-            files.insert(path);
-          }
+      for path in paths.flatten() {
+        if path.is_file() {
+          files.insert(path);
         }
       }
     }
@@ -361,7 +359,9 @@ async fn find_matching_files(watch_opts: &WatchOptions) -> Result<Vec<PathBuf>> 
       .unwrap_or(&default_extensions);
 
     for dir in directories {
-      let walker = WalkDir::new(dir).into_iter().filter_map(|e| e.ok());
+      let walker = WalkDir::new(dir)
+        .into_iter()
+        .filter_map(std::result::Result::ok);
       for entry in walker {
         if entry.file_type().is_file() {
           if let Some(ext) = entry.path().extension().and_then(|s| s.to_str()) {
@@ -374,7 +374,7 @@ async fn find_matching_files(watch_opts: &WatchOptions) -> Result<Vec<PathBuf>> 
     }
   }
 
-  Ok(files.into_iter().collect())
+  files.into_iter().collect()
 }
 
 async fn process_file_events(
@@ -501,11 +501,11 @@ async fn process_file_events(
 }
 
 /// Find all Pact files matching the given patterns
-pub async fn find_pact_files(
+pub fn find_pact_files(
   patterns: Vec<String>,
   directories: Option<Vec<String>>,
   extensions: Option<Vec<String>>,
-) -> Result<Vec<String>, napi::Error> {
+) -> Vec<String> {
   let watch_opts = WatchOptions {
     patterns,
     directories,
@@ -517,14 +517,9 @@ pub async fn find_pact_files(
   };
 
   find_matching_files(&watch_opts)
-    .await
-    .map(|paths| {
-      paths
-        .into_iter()
-        .map(|p| p.to_string_lossy().to_string())
-        .collect()
-    })
-    .map_err(|e| napi::Error::from_reason(e.to_string()))
+    .into_iter()
+    .map(|p| p.to_string_lossy().to_string())
+    .collect()
 }
 
 #[cfg(test)]
@@ -554,12 +549,14 @@ mod tests {
 
     let patterns = vec![format!("{}/**/*.pact", temp_dir.path().display())];
 
-    let found_files = find_pact_files(patterns, None, None).await.unwrap();
+    let found_files = find_pact_files(patterns, None, None);
 
     assert_eq!(found_files.len(), 3); // Only .pact files
 
     for found_file in &found_files {
-      assert!(found_file.ends_with(".pact"));
+      assert!(std::path::Path::new(found_file)
+        .extension()
+        .is_some_and(|ext| ext.eq_ignore_ascii_case("pact")));
     }
   }
 

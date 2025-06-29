@@ -77,6 +77,7 @@ pub struct PactParameter {
 }
 
 impl PactModule {
+  #[cfg(test)]
   pub fn new(name: String, governance: String) -> Self {
     Self {
       name,
@@ -107,26 +108,32 @@ impl PactModule {
     }
   }
 
+  #[cfg(test)]
   pub fn add_function(&mut self, function: PactFunction) {
     self.functions.push(function);
   }
 
+  #[cfg(test)]
   pub fn add_capability(&mut self, capability: PactCapability) {
     self.capabilities.push(capability);
   }
 
+  #[cfg(test)]
   pub fn add_schema(&mut self, schema: PactSchema) {
     self.schemas.push(schema);
   }
 
+  #[cfg(test)]
   pub fn add_constant(&mut self, constant: PactConstant) {
     self.constants.push(constant);
   }
 
+  #[cfg(test)]
   pub fn add_use(&mut self, module: String) {
     self.uses.push(module);
   }
 
+  #[cfg(test)]
   pub fn add_implements(&mut self, interface: String) {
     self.implements.push(interface);
   }

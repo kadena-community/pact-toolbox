@@ -233,7 +233,7 @@
     "@pact-toolbox/prettier-config": "workspace:*",
     "@pact-toolbox/tsconfig": "workspace:*",
     "@pact-toolbox/vitest-config": "workspace:*",
-    "@rsbuild/core": "^1.4.1",
+    "@rsbuild/core": "^1.4.2",
     "@rspack/core": "^1.4.1",
     "@types/jest": "^30.0.0",
     "@types/node": "^24.0.7",

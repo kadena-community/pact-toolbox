@@ -163,7 +163,9 @@ export const PLUGIN_NAME = "pact-toolbox";
 // };
 
 export function isAggregateError(e: unknown): e is AggregateError {
-  return e instanceof AggregateError;
+  return typeof globalThis !== 'undefined' && 
+         'AggregateError' in globalThis && 
+         e instanceof globalThis.AggregateError;
 }
 
 export function prettyPrintError(label: string, error: unknown): void {

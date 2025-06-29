@@ -3,6 +3,7 @@ use anyhow::Result;
 use napi_derive::napi;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::fmt::Write;
 use std::sync::{Arc, Mutex};
 
 /// Plugin trait for extending the transformer
@@ -11,11 +12,12 @@ pub trait TransformPlugin: Send + Sync {
   fn name(&self) -> &str;
 
   /// Get plugin description
-  fn description(&self) -> &str {
+  fn description(&self) -> &'static str {
     "No description provided"
   }
 
   /// Initialize the plugin with options
+  #[allow(dead_code)]
   fn initialize(&mut self, _options: &HashMap<String, serde_json::Value>) -> Result<()> {
     Ok(())
   }
@@ -39,19 +41,6 @@ pub trait TransformPlugin: Send + Sync {
   fn post_generate_types(&self, _types: &mut String, _modules: &[PactModule]) -> Result<()> {
     Ok(())
   }
-
-  /// Generate additional files
-  fn generate_additional_files(&self, _modules: &[PactModule]) -> Result<Vec<GeneratedFile>> {
-    Ok(Vec::new())
-  }
-}
-
-/// A generated file from a plugin
-#[derive(Debug, Clone)]
-pub struct GeneratedFile {
-  pub path: String,
-  pub content: String,
-  pub description: Option<String>,
 }
 
 /// Plugin manager for managing and executing plugins
@@ -86,6 +75,7 @@ impl PluginManager {
   }
 
   /// Initialize all enabled plugins
+  #[allow(dead_code)]
   pub fn initialize_all(
     &mut self,
     options: &HashMap<String, HashMap<String, serde_json::Value>>,
@@ -142,20 +132,6 @@ impl PluginManager {
     }
     Ok(())
   }
-
-  /// Generate additional files from all plugins
-  pub fn generate_additional_files(&self, modules: &[PactModule]) -> Result<Vec<GeneratedFile>> {
-    let mut all_files = Vec::new();
-
-    for plugin in &self.plugins {
-      if self.is_enabled(plugin.name()) {
-        let files = plugin.generate_additional_files(modules)?;
-        all_files.extend(files);
-      }
-    }
-
-    Ok(all_files)
-  }
 }
 
 impl Default for PluginManager {
@@ -164,7 +140,7 @@ impl Default for PluginManager {
   }
 }
 
-/// Built-in plugin: JSDoc Enhancer
+/// Built-in plugin: `JSDoc` Enhancer
 pub struct JSDocEnhancerPlugin {
   add_examples: bool,
   add_param_descriptions: bool,
@@ -182,27 +158,30 @@ impl JSDocEnhancerPlugin {
 }
 
 impl TransformPlugin for JSDocEnhancerPlugin {
-  fn name(&self) -> &str {
+  fn name(&self) -> &'static str {
     "jsdoc-enhancer"
   }
 
-  fn description(&self) -> &str {
+  fn description(&self) -> &'static str {
     "Enhances JSDoc comments with examples and detailed parameter descriptions"
   }
 
   fn initialize(&mut self, options: &HashMap<String, serde_json::Value>) -> Result<()> {
-    if let Some(add_examples) = options.get("addExamples").and_then(|v| v.as_bool()) {
+    if let Some(add_examples) = options
+      .get("addExamples")
+      .and_then(serde_json::Value::as_bool)
+    {
       self.add_examples = add_examples;
     }
     if let Some(add_params) = options
       .get("addParamDescriptions")
-      .and_then(|v| v.as_bool())
+      .and_then(serde_json::Value::as_bool)
     {
       self.add_param_descriptions = add_params;
     }
     if let Some(add_returns) = options
       .get("addReturnsDescription")
-      .and_then(|v| v.as_bool())
+      .and_then(serde_json::Value::as_bool)
     {
       self.add_returns_description = add_returns;
     }
@@ -217,32 +196,38 @@ impl TransformPlugin for JSDocEnhancerPlugin {
       if self.add_param_descriptions && !function.parameters.is_empty() {
         enhanced_doc.push_str("\n *");
         for param in &function.parameters {
-          enhanced_doc.push_str(&format!(
-            "\n * @param {{{}}} {} - {}",
+          write!(
+            enhanced_doc,
+            "\n * @param {{{}}} {} - The {} parameter",
             param.parameter_type.as_deref().unwrap_or("any"),
             param.name,
-            format!("The {} parameter", param.name)
-          ));
+            param.name
+          )
+          .unwrap();
         }
       }
 
       // Add returns description
       if self.add_returns_description {
         if let Some(return_type) = &function.return_type {
-          enhanced_doc.push_str(&format!(
+          write!(
+            enhanced_doc,
             "\n * @returns {{{}}} The result of the {} operation",
             return_type, function.name
-          ));
+          )
+          .unwrap();
         }
       }
 
       // Add example
       if self.add_examples {
         enhanced_doc.push_str("\n * @example");
-        enhanced_doc.push_str(&format!(
+        write!(
+          enhanced_doc,
           "\n * // Using {} from {}",
           function.name, module_name
-        ));
+        )
+        .unwrap();
 
         let params = function
           .parameters
@@ -251,10 +236,12 @@ impl TransformPlugin for JSDocEnhancerPlugin {
           .collect::<Vec<_>>()
           .join(", ");
 
-        enhanced_doc.push_str(&format!(
+        write!(
+          enhanced_doc,
           "\n * const result = await {}({});",
           function.name, params
-        ));
+        )
+        .unwrap();
       }
 
       *doc = enhanced_doc;
@@ -263,415 +250,14 @@ impl TransformPlugin for JSDocEnhancerPlugin {
   }
 }
 
-/// Built-in plugin: React Hooks Generator
-pub struct ReactHooksGeneratorPlugin {
-  use_suspense: bool,
-  use_error_boundary: bool,
-  typescript: bool,
-}
-
-impl ReactHooksGeneratorPlugin {
-  pub fn new() -> Self {
-    Self {
-      use_suspense: true,
-      use_error_boundary: true,
-      typescript: true,
-    }
-  }
-}
-
-impl TransformPlugin for ReactHooksGeneratorPlugin {
-  fn name(&self) -> &str {
-    "react-hooks-generator"
-  }
-
-  fn description(&self) -> &str {
-    "Generates React hooks for Pact functions with suspense and error boundary support"
-  }
-
-  fn initialize(&mut self, options: &HashMap<String, serde_json::Value>) -> Result<()> {
-    if let Some(use_suspense) = options.get("useSuspense").and_then(|v| v.as_bool()) {
-      self.use_suspense = use_suspense;
-    }
-    if let Some(use_error) = options.get("useErrorBoundary").and_then(|v| v.as_bool()) {
-      self.use_error_boundary = use_error;
-    }
-    if let Some(typescript) = options.get("typescript").and_then(|v| v.as_bool()) {
-      self.typescript = typescript;
-    }
-    Ok(())
-  }
-
-  fn generate_additional_files(&self, modules: &[PactModule]) -> Result<Vec<GeneratedFile>> {
-    let mut files = Vec::new();
-
-    for module in modules {
-      let mut hooks_content = String::new();
-
-      // Add imports
-      hooks_content.push_str("import { useState, useEffect, useCallback } from 'react';\n");
-      if self.use_suspense {
-        hooks_content.push_str("import { useQuery, useMutation } from '@tanstack/react-query';\n");
-      }
-      hooks_content.push_str(&format!(
-        "import * as {} from './{}';\n\n",
-        module.name, module.name
-      ));
-
-      // Generate hooks for each function
-      for function in &module.functions {
-        let hook_name = format!("use{}", to_pascal_case(&function.name));
-
-        if function.is_defun {
-          // For read operations, generate a query hook
-          let params_str = if function.parameters.is_empty() {
-            String::new()
-          } else {
-            function
-              .parameters
-              .iter()
-              .map(|p| {
-                format!(
-                  "{}: {}",
-                  p.name,
-                  p.parameter_type.as_deref().unwrap_or("any")
-                )
-              })
-              .collect::<Vec<_>>()
-              .join(", ")
-          };
-
-          hooks_content.push_str(&format!(
-            "export function {}({}) {{\n",
-            hook_name, params_str
-          ));
-
-          if self.use_suspense {
-            hooks_content.push_str(&format!(
-                            "  return useQuery({{\n    queryKey: ['{}', {}],\n    queryFn: () => {}.{}({}),\n  }});\n",
-                            function.name,
-                            function.parameters.iter().map(|p| &p.name).cloned().collect::<Vec<_>>().join(", "),
-                            module.name,
-                            function.name,
-                            function.parameters.iter().map(|p| &p.name).cloned().collect::<Vec<_>>().join(", ")
-                        ));
-          } else {
-            hooks_content.push_str("  const [data, setData] = useState(null);\n");
-            hooks_content.push_str("  const [loading, setLoading] = useState(false);\n");
-            hooks_content.push_str("  const [error, setError] = useState(null);\n\n");
-
-            hooks_content.push_str("  useEffect(() => {\n");
-            hooks_content.push_str("    const fetchData = async () => {\n");
-            hooks_content.push_str("      setLoading(true);\n");
-            hooks_content.push_str("      try {\n");
-            hooks_content.push_str(&format!(
-              "        const result = await {}.{}({});\n",
-              module.name,
-              function.name,
-              function
-                .parameters
-                .iter()
-                .map(|p| &p.name)
-                .cloned()
-                .collect::<Vec<_>>()
-                .join(", ")
-            ));
-            hooks_content.push_str("        setData(result);\n");
-            hooks_content.push_str("      } catch (err) {\n");
-            hooks_content.push_str("        setError(err);\n");
-            hooks_content.push_str("      } finally {\n");
-            hooks_content.push_str("        setLoading(false);\n");
-            hooks_content.push_str("      }\n");
-            hooks_content.push_str("    };\n");
-            hooks_content.push_str("    fetchData();\n");
-            hooks_content.push_str("  }, [");
-            hooks_content.push_str(
-              &function
-                .parameters
-                .iter()
-                .map(|p| &p.name)
-                .cloned()
-                .collect::<Vec<_>>()
-                .join(", "),
-            );
-            hooks_content.push_str("]);\n\n");
-
-            hooks_content.push_str("  return { data, loading, error };\n");
-          }
-
-          hooks_content.push_str("}\n\n");
-        } else {
-          // For write operations, generate a mutation hook
-          hooks_content.push_str(&format!("export function {}() {{\n", hook_name));
-
-          if self.use_suspense {
-            hooks_content.push_str(&format!(
-              "  return useMutation({{\n    mutationFn: ({{{}}}) => {}.{}({}),\n  }});\n",
-              function
-                .parameters
-                .iter()
-                .map(|p| &p.name)
-                .cloned()
-                .collect::<Vec<_>>()
-                .join(", "),
-              module.name,
-              function.name,
-              function
-                .parameters
-                .iter()
-                .map(|p| &p.name)
-                .cloned()
-                .collect::<Vec<_>>()
-                .join(", ")
-            ));
-          } else {
-            hooks_content.push_str("  const [loading, setLoading] = useState(false);\n");
-            hooks_content.push_str("  const [error, setError] = useState(null);\n\n");
-
-            hooks_content.push_str(&format!(
-              "  const {} = useCallback(async ({}) => {{\n",
-              function.name,
-              function
-                .parameters
-                .iter()
-                .map(|p| format!(
-                  "{}: {}",
-                  p.name,
-                  p.parameter_type.as_deref().unwrap_or("any")
-                ))
-                .collect::<Vec<_>>()
-                .join(", ")
-            ));
-            hooks_content.push_str("    setLoading(true);\n");
-            hooks_content.push_str("    setError(null);\n");
-            hooks_content.push_str("    try {\n");
-            hooks_content.push_str(&format!(
-              "      const result = await {}.{}({});\n",
-              module.name,
-              function.name,
-              function
-                .parameters
-                .iter()
-                .map(|p| &p.name)
-                .cloned()
-                .collect::<Vec<_>>()
-                .join(", ")
-            ));
-            hooks_content.push_str("      return result;\n");
-            hooks_content.push_str("    } catch (err) {\n");
-            hooks_content.push_str("      setError(err);\n");
-            hooks_content.push_str("      throw err;\n");
-            hooks_content.push_str("    } finally {\n");
-            hooks_content.push_str("      setLoading(false);\n");
-            hooks_content.push_str("    }\n");
-            hooks_content.push_str("  }, []);\n\n");
-
-            hooks_content.push_str(&format!(
-              "  return {{ {}, loading, error }};\n",
-              function.name
-            ));
-          }
-
-          hooks_content.push_str("}\n\n");
-        }
-      }
-
-      let file_extension = if self.typescript { "ts" } else { "js" };
-      files.push(GeneratedFile {
-        path: format!("{}.hooks.{}", module.name, file_extension),
-        content: hooks_content,
-        description: Some(format!("React hooks for {} module", module.name)),
-      });
-    }
-
-    Ok(files)
-  }
-}
-
-/// Built-in plugin: Mock Generator
-pub struct MockGeneratorPlugin {
-  use_faker: bool,
-  generate_fixtures: bool,
-}
-
-impl MockGeneratorPlugin {
-  pub fn new() -> Self {
-    Self {
-      use_faker: true,
-      generate_fixtures: true,
-    }
-  }
-}
-
-impl TransformPlugin for MockGeneratorPlugin {
-  fn name(&self) -> &str {
-    "mock-generator"
-  }
-
-  fn description(&self) -> &str {
-    "Generates mock data and fixtures for testing Pact contracts"
-  }
-
-  fn generate_additional_files(&self, modules: &[PactModule]) -> Result<Vec<GeneratedFile>> {
-    let mut files = Vec::new();
-
-    for module in modules {
-      let mut mock_content = String::new();
-
-      // Add imports
-      if self.use_faker {
-        mock_content.push_str("import { faker } from '@faker-js/faker';\n\n");
-      }
-
-      // Generate mock factories for schemas
-      for schema in &module.schemas {
-        mock_content.push_str(&format!(
-          "export function mock{}(overrides = {{}}) {{\n",
-          to_pascal_case(&schema.name)
-        ));
-        mock_content.push_str("  return {\n");
-
-        for field in &schema.fields {
-          let mock_value = match field.field_type.as_str() {
-            "string" => {
-              if self.use_faker {
-                match field.name.as_str() {
-                  "name" => "faker.person.fullName()".to_string(),
-                  "email" => "faker.internet.email()".to_string(),
-                  "address" => "faker.location.streetAddress()".to_string(),
-                  "phone" => "faker.phone.number()".to_string(),
-                  "url" => "faker.internet.url()".to_string(),
-                  _ => format!("faker.lorem.word()"),
-                }
-              } else {
-                format!("'mock-{}'", field.name)
-              }
-            }
-            "integer" => {
-              if self.use_faker {
-                "faker.number.int({ min: 1, max: 100 })".to_string()
-              } else {
-                "42".to_string()
-              }
-            }
-            "decimal" => {
-              if self.use_faker {
-                "faker.number.float({ min: 0, max: 100, fractionDigits: 2 })".to_string()
-              } else {
-                "3.14".to_string()
-              }
-            }
-            "bool" => {
-              if self.use_faker {
-                "faker.datatype.boolean()".to_string()
-              } else {
-                "true".to_string()
-              }
-            }
-            "time" => {
-              if self.use_faker {
-                "faker.date.recent().toISOString()".to_string()
-              } else {
-                "new Date().toISOString()".to_string()
-              }
-            }
-            _ => "'mock-value'".to_string(),
-          };
-
-          mock_content.push_str(&format!("    {}: {},\n", field.name, mock_value));
-        }
-
-        mock_content.push_str("    ...overrides,\n");
-        mock_content.push_str("  };\n");
-        mock_content.push_str("}\n\n");
-      }
-
-      // Generate mock responses for functions
-      for function in &module.functions {
-        if let Some(return_type) = &function.return_type {
-          mock_content.push_str(&format!(
-            "export function mock{}Response() {{\n",
-            to_pascal_case(&function.name)
-          ));
-
-          let mock_value = match return_type.as_str() {
-            "string" => "'mock-response'".to_string(),
-            "integer" => "42".to_string(),
-            "decimal" => "3.14".to_string(),
-            "bool" => "true".to_string(),
-            _ => {
-              // Check if it's a schema type
-              if return_type.starts_with("object{") && return_type.ends_with('}') {
-                let schema_name = &return_type[7..return_type.len() - 1];
-                format!("mock{}()", to_pascal_case(schema_name))
-              } else {
-                "null".to_string()
-              }
-            }
-          };
-
-          mock_content.push_str(&format!("  return {};\n", mock_value));
-          mock_content.push_str("}\n\n");
-        }
-      }
-
-      files.push(GeneratedFile {
-        path: format!("{}.mocks.js", module.name),
-        content: mock_content,
-        description: Some(format!("Mock data generators for {} module", module.name)),
-      });
-
-      // Generate fixtures if requested
-      if self.generate_fixtures {
-        let mut fixtures_content = String::new();
-        fixtures_content.push_str(&format!(
-          "import * as mocks from './{}.mocks';\n\n",
-          module.name
-        ));
-
-        fixtures_content.push_str("export const fixtures = {\n");
-
-        for schema in &module.schemas {
-          let pascal_name = to_pascal_case(&schema.name);
-          fixtures_content.push_str(&format!(
-            "  {}s: [\n    mocks.mock{}(),\n    mocks.mock{}(),\n    mocks.mock{}(),\n  ],\n",
-            schema.name, pascal_name, pascal_name, pascal_name
-          ));
-        }
-
-        fixtures_content.push_str("};\n");
-
-        files.push(GeneratedFile {
-          path: format!("{}.fixtures.js", module.name),
-          content: fixtures_content,
-          description: Some(format!("Test fixtures for {} module", module.name)),
-        });
-      }
-    }
-
-    Ok(files)
-  }
-}
-
 /// Plugin registry for built-in plugins
 pub struct BuiltinPlugins;
 
 impl BuiltinPlugins {
-  /// Get all available built-in plugins
-  pub fn all() -> Vec<Box<dyn TransformPlugin>> {
-    vec![
-      Box::new(JSDocEnhancerPlugin::new()),
-      Box::new(ReactHooksGeneratorPlugin::new()),
-      Box::new(MockGeneratorPlugin::new()),
-    ]
-  }
-
   /// Get a built-in plugin by name
   pub fn get(name: &str) -> Option<Box<dyn TransformPlugin>> {
     match name {
       "jsdoc-enhancer" => Some(Box::new(JSDocEnhancerPlugin::new())),
-      "react-hooks-generator" => Some(Box::new(ReactHooksGeneratorPlugin::new())),
-      "mock-generator" => Some(Box::new(MockGeneratorPlugin::new())),
       _ => None,
     }
   }
@@ -711,6 +297,7 @@ pub struct PluginInfo {
 
 /// Register a built-in plugin
 #[napi]
+#[allow(clippy::needless_pass_by_value)]
 pub fn register_builtin_plugin(name: String) -> Result<bool, napi::Error> {
   if let Some(plugin) = BuiltinPlugins::get(&name) {
     let manager = get_plugin_manager();
@@ -719,8 +306,7 @@ pub fn register_builtin_plugin(name: String) -> Result<bool, napi::Error> {
     Ok(true)
   } else {
     Err(napi::Error::from_reason(format!(
-      "Unknown built-in plugin: {}",
-      name
+      "Unknown built-in plugin: {name}"
     )))
   }
 }
@@ -746,15 +332,17 @@ pub fn get_registered_plugins() -> Vec<PluginInfo> {
 
 /// Enable or disable a plugin
 #[napi]
-pub fn set_plugin_enabled(name: String, enabled: bool) -> Result<(), napi::Error> {
+#[allow(clippy::needless_pass_by_value)]
+pub fn set_plugin_enabled(name: String, enabled: bool) {
   let manager = get_plugin_manager();
   let mut manager_lock = manager.lock().unwrap();
   manager_lock.set_enabled(&name, enabled);
-  Ok(())
 }
 
 /// Initialize plugins with options
 #[napi]
+#[allow(dead_code)]
+#[allow(clippy::needless_pass_by_value)]
 pub fn initialize_plugins(
   options: HashMap<String, HashMap<String, serde_json::Value>>,
 ) -> Result<(), napi::Error> {
@@ -765,29 +353,10 @@ pub fn initialize_plugins(
     .map_err(|e| napi::Error::from_reason(e.to_string()))
 }
 
-// Helper function for case conversion
-fn to_pascal_case(s: &str) -> String {
-  let mut result = String::new();
-  let mut capitalize_next = true;
-
-  for c in s.chars() {
-    if c == '-' || c == '_' {
-      capitalize_next = true;
-    } else if capitalize_next {
-      result.push(c.to_uppercase().next().unwrap_or(c));
-      capitalize_next = false;
-    } else {
-      result.push(c);
-    }
-  }
-
-  result
-}
-
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::ast::{PactParameter, SchemaField};
+  use crate::ast::PactParameter;
 
   #[test]
   fn test_plugin_manager() {
@@ -814,7 +383,7 @@ mod tests {
         parameter_type: Some("decimal".to_string()),
       }],
       return_type: Some("string".to_string()),
-      body: "".to_string(),
+      body: String::new(),
       is_defun: true,
     };
 
@@ -829,85 +398,7 @@ mod tests {
   }
 
   #[test]
-  fn test_react_hooks_generator() {
-    let plugin = ReactHooksGeneratorPlugin::new();
-
-    let module = PactModule {
-      name: "test".to_string(),
-      namespace: None,
-      governance: "".to_string(),
-      doc: None,
-      functions: vec![PactFunction {
-        name: "get-user".to_string(),
-        doc: None,
-        parameters: vec![PactParameter {
-          name: "id".to_string(),
-          parameter_type: Some("string".to_string()),
-        }],
-        return_type: Some("object{user}".to_string()),
-        body: "".to_string(),
-        is_defun: true,
-      }],
-      capabilities: vec![],
-      schemas: vec![],
-      constants: vec![],
-      uses: vec![],
-      implements: vec![],
-    };
-
-    let files = plugin.generate_additional_files(&[module]).unwrap();
-    assert_eq!(files.len(), 1);
-
-    let hook_file = &files[0];
-    assert_eq!(hook_file.path, "test.hooks.ts");
-    assert!(hook_file.content.contains("useGetUser"));
-    assert!(hook_file.content.contains("useQuery"));
-  }
-
-  #[test]
-  fn test_mock_generator() {
-    let plugin = MockGeneratorPlugin::new();
-
-    let module = PactModule {
-      name: "test".to_string(),
-      namespace: None,
-      governance: "".to_string(),
-      doc: None,
-      functions: vec![],
-      capabilities: vec![],
-      schemas: vec![crate::ast::PactSchema {
-        name: "user".to_string(),
-        doc: None,
-        fields: vec![
-          SchemaField {
-            name: "name".to_string(),
-            field_type: "string".to_string(),
-          },
-          SchemaField {
-            name: "age".to_string(),
-            field_type: "integer".to_string(),
-          },
-        ],
-      }],
-      constants: vec![],
-      uses: vec![],
-      implements: vec![],
-    };
-
-    let files = plugin.generate_additional_files(&[module]).unwrap();
-    assert_eq!(files.len(), 2); // mocks and fixtures
-
-    let mock_file = &files[0];
-    assert_eq!(mock_file.path, "test.mocks.js");
-    assert!(mock_file.content.contains("mockUser"));
-    assert!(mock_file.content.contains("faker.person.fullName()"));
-  }
-
-  #[test]
   fn test_builtin_plugins() {
-    let plugins = BuiltinPlugins::all();
-    assert_eq!(plugins.len(), 3);
-
     let jsdoc = BuiltinPlugins::get("jsdoc-enhancer");
     assert!(jsdoc.is_some());
 

@@ -103,8 +103,7 @@ const result = await todos
 ### Applications
 
 - **`pact-toolbox` CLI** - Command-line interface with commands for init, start, test, run, generate, and more
-- **`admin-dashboard`** - Web-based monitoring and management dashboard
-- **`docs`** - Comprehensive documentation site built with Next.js
+- **`docs`** - Comprehensive documentation site built with Rspress
 
 ### Development Workflow
 
@@ -146,7 +145,7 @@ pact-toolbox/
 ### Technology Stack
 
 - **TypeScript** - Primary language for all packages and tools
-- **Rust** - Performance-critical components (parser, playground server)
+- **Rust** - Performance-critical components (parser, mining trigger)
 - **Tree-sitter** - Advanced parsing for Pact contracts
 - **NAPI-RS** - Rust-TypeScript bridge for native performance
 - **Vitest** - Modern testing framework

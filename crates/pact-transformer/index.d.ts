@@ -110,68 +110,11 @@ export interface ConfigLoadResult {
   isDefault: boolean
 }
 /** Load configuration from various sources */
-export declare function loadConfig(configPath?: string | undefined | null, environment?: string | undefined | null): Promise<ConfigLoadResult>
+export declare function loadConfig(configPath?: string | undefined | null, environment?: string | undefined | null): ConfigLoadResult
 /** Apply a preset to the current configuration */
 export declare function applyPreset(config: PactConfig, presetName: string): PactConfig
 /** Validate configuration */
 export declare function validateConfig(config: PactConfig): boolean
-/** Documentation generation options */
-export interface DocsOptions {
-  /** Output format: "html", "markdown", "json", "gitbook" */
-  format: string
-  /** Theme for HTML output */
-  theme?: string
-  /** Include code examples */
-  includeExamples?: boolean
-  /** Enable interactive examples */
-  interactiveExamples?: boolean
-  /** Enable API playground */
-  apiPlayground?: boolean
-  /** Custom CSS for HTML output */
-  customCss?: string
-  /** Custom JavaScript for HTML output */
-  customJs?: string
-  /** Base URL for links */
-  baseUrl?: string
-  /** Include search functionality */
-  searchEnabled?: boolean
-  /** Include table of contents */
-  tocEnabled?: boolean
-  /** Group functions by category */
-  groupByCategory?: boolean
-  /** Include source code snippets */
-  includeSource?: boolean
-  /** Syntax highlighting theme */
-  syntaxTheme?: string
-}
-/** NAPI-exposed function to generate documentation */
-export declare function generateDocumentation(modules: Array<PactModule>, options: DocsOptions): Promise<DocumentationResult>
-/** Documentation result for NAPI */
-export interface DocumentationResult {
-  content: string
-  assets: Array<DocumentationAsset>
-  toc?: string
-  searchIndex?: string
-  metadata: DocumentationMetadataResult
-}
-/** Documentation asset for NAPI */
-export interface DocumentationAsset {
-  path: string
-  content: Array<number>
-}
-/** Documentation metadata for NAPI */
-export interface DocumentationMetadataResult {
-  title: string
-  description?: string
-  version?: string
-  generatedAt: string
-  generator: string
-  totalModules: number
-  totalFunctions: number
-  totalCapabilities: number
-  totalSchemas: number
-  totalConstants: number
-}
 export interface FileOutputOptions {
   /** Output directory for generated files */
   outputDir: string
@@ -199,23 +142,6 @@ export interface FileTransformResult {
   error?: string
   /** Processing time in milliseconds */
   processingTimeMs: number
-}
-/** Framework-specific code generation options */
-export interface CodeGenOptions {
-  /** Target framework: "vanilla", "react", "vue", "angular", "svelte" */
-  target: string
-  /** Generation patterns: "hooks", "composables", "services", "stores" */
-  patterns: Array<string>
-  /** Framework version for compatibility */
-  frameworkVersion?: string
-  /** Enable tree-shaking optimizations */
-  treeShaking?: boolean
-  /** Enable bundle splitting */
-  bundleSplitting?: boolean
-  /** TypeScript generation */
-  typescript?: boolean
-  /** Use modern syntax features */
-  modernSyntax?: boolean
 }
 /** NAPI-exposed plugin configuration */
 export interface PluginInfo {
@@ -249,84 +175,24 @@ export interface SourceMapOptions {
   sourceRoot?: string
   /** Whether to include names mapping for better debugging */
   includeNames?: boolean
-}
-/** Test generation options */
-export interface TestGenOptions {
-  /** Test framework: "jest", "vitest", "mocha", "ava" */
-  framework: string
-  /** Generate mock data */
-  generateMocks?: boolean
-  /** Generate test fixtures */
-  generateFixtures?: boolean
-  /** Coverage targets (function names or patterns) */
-  coverageTargets?: Array<string>
-  /** Generate integration tests */
-  integrationTests?: boolean
-  /** Use TypeScript */
-  typescript?: boolean
-  /** Test timeout in milliseconds */
-  timeout?: number
-  /** Generate property-based tests */
-  propertyTests?: boolean
-  /** Number of property test cases */
-  propertyTestRuns?: number
-  /** Generate snapshot tests */
-  snapshotTests?: boolean
-  /** Mock provider (faker, chance, casual) */
-  mockProvider?: string
-}
-/** NAPI-exposed function to generate tests */
-export declare function generateTestsForModules(modules: Array<PactModule>, options: TestGenOptions): Promise<TestGenerationResult>
-/** Test generation result for NAPI */
-export interface TestGenerationResult {
-  tests: string
-  mocks?: string
-  fixtures?: string
-  helpers?: string
-  integrationTests: Array<IntegrationTestResult>
-  propertyTests?: string
-  setupConfig: string
-  setupConfigFile: string
-  setupScript?: string
-  envFile?: string
-  dependencies: Array<DependencyInfo>
-}
-/** Integration test result for NAPI */
-export interface IntegrationTestResult {
-  name: string
-  content: string
-  description?: string
-}
-/** Dependency information for NAPI */
-export interface DependencyInfo {
-  name: string
-  version: string
-  dev: boolean
-  optional: boolean
+  /** Whether to generate declaration maps for TypeScript files */
+  declarationMap?: boolean
 }
 /** Transformation result */
 export interface TransformationResult {
   modules: Array<PactModule>
   code: string
   types: string
-}
-/** Framework transformation result */
-export interface FrameworkTransformResult {
-  modules: Array<PactModule>
-  code: string
-  types: string
-  additionalFiles: Array<FrameworkFile>
-}
-/** Additional file generated by framework */
-export interface FrameworkFile {
-  name: string
-  content: string
-  description?: string
+  sourceMap?: string
+  declarationMap?: string
 }
 /** Transform options */
 export interface TransformOptions {
   generateTypes?: boolean
   moduleName?: string
+  sourceMaps?: boolean
+  sourceFilePath?: string
+  declarationMaps?: boolean
 }
 export interface WatchOptions {
   /** Glob patterns to watch - examples: all pact files, src folder pact files */
@@ -373,6 +239,7 @@ export interface TransformResult {
   javascript: string
   typescript?: string
   sourceMap?: string
+  declarationMap?: string
 }
 /** File operation result */
 export interface FileResult {
@@ -415,29 +282,13 @@ export interface WatchStatsResult {
   avgTransformTimeMs: number
   uptimeMs: number
 }
-/** Documentation result */
-export interface DocsResult {
-  content: string
-  format: string
-  assets: Record<string, Array<number>>
-}
-/** Test generation result */
-export interface TestResult {
-  testFiles: Array<TestFile>
-  coverageReport?: string
-}
-/** Test file */
-export interface TestFile {
-  path: string
-  content: string
-}
 export declare class WatchHandle {
   /** Get the next watch event */
-  nextEvent(): Promise<WatchEvent | null>
+  static nextEvent(): WatchEvent | null
   /** Get current watch statistics */
   getStats(): Promise<WatchStats>
   /** Stop watching and cleanup */
-  stop(): Promise<void>
+  static stop(): void
 }
 /**
  * Main Pact Transformer API
@@ -458,6 +309,16 @@ export declare class PactTransformer {
    * ```
    */
   transform(source: string, options?: TransformOptions | undefined | null): Promise<TransformResult>
+  /**
+   * Transform Pact source from a file with source maps enabled
+   *
+   * ```javascript
+   * const pact = new PactTransformer();
+   * const result = await pact.transformFile(source, 'path/to/file.pact', { generateTypes: true });
+   * console.log(result.javascript, result.typescript, result.sourceMap);
+   * ```
+   */
+  transformFile(source: string, filePath: string, options?: TransformOptions | undefined | null): Promise<TransformResult>
   /**
    * Get parsing errors for source code
    *
@@ -484,31 +345,21 @@ export declare class FileOps {
   /** Transform multiple files to disk */
   static transformFiles(patterns: Array<string>, options?: TransformOptions | undefined | null, fileOptions?: FileOutputOptions | undefined | null): Promise<BatchResult>
   /** Find Pact files matching patterns */
-  static findFiles(patterns: Array<string>): Promise<Array<string>>
+  static findFiles(patterns: Array<string>): Array<string>
 }
 /** Watch API for file monitoring */
 export declare class WatchSession {
   /** Start watching files */
   static start(patterns: Array<string>, watchOptions?: WatchOptions | undefined | null, transformOptions?: TransformOptions | undefined | null, fileOptions?: FileOutputOptions | undefined | null): Promise<WatchSession>
   /** Stop watching */
-  stop(): Promise<void>
+  stop(): void
   /** Get watch statistics */
   stats(): Promise<WatchStatsResult>
-}
-/** Documentation generation API */
-export declare class DocsGenerator {
-  /** Generate documentation from Pact source */
-  static generate(source: string, options?: DocsOptions | undefined | null): Promise<DocsResult>
-}
-/** Test generation API */
-export declare class TestGenerator {
-  /** Generate tests from Pact modules */
-  static generate(source: string, options?: TestGenOptions | undefined | null): Promise<TestResult>
 }
 /** Configuration management */
 export declare class ConfigManager {
   /** Load configuration from file */
-  static load(path?: string | undefined | null, environment?: string | undefined | null): Promise<PactConfig>
+  static load(path?: string | undefined | null, environment?: string | undefined | null): PactConfig
   /** Validate configuration */
   static validate(config: PactConfig): boolean
 }

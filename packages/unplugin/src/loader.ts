@@ -24,7 +24,7 @@ async function transformAndDeploy(id: string, src: string) {
     cache.client = new PactToolboxClient(cache.resolvedConfig);
   }
 
-  const { code, types, modules } = await transformPactToJS(src, id);
+  const { code, types, modules, sourceMap } = await transformPactToJS(src, id);
   try {
     const client = cache.client;
     const isDeployed =
@@ -44,10 +44,10 @@ async function transformAndDeploy(id: string, src: string) {
       });
       logger.success(`[pactLoader] Successfully deployed contract ${id} to ${networkConfig.name}`);
     }
-    return code;
+    return { code, sourceMap };
   } catch (error) {
     prettyPrintError(`[pactLoader] Failed to deploy contract ${id}`, error);
-    return code;
+    return { code, sourceMap };
   }
 }
 
@@ -56,8 +56,9 @@ export function pactLoader(this: any, contents: string): void {
   const callback = this.async();
   const id = this.resourcePath.replace(this.rootContext, "");
   transformAndDeploy(id, contents)
-    .then((code) => {
-      callback(null, code);
+    .then((result) => {
+      // Webpack loader callback: callback(error, source, sourceMap, meta)
+      callback(null, result.code, result.sourceMap ? JSON.parse(result.sourceMap) : null);
     })
     .catch(callback);
 }

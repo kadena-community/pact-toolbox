@@ -19,8 +19,6 @@ pub enum TransformError {
   Unknown(String),
 }
 
-pub type TransformResult<T> = Result<T, TransformError>;
-
 impl From<TransformError> for NapiError {
   fn from(err: TransformError) -> Self {
     NapiError::from_reason(err.to_string())
