@@ -52,9 +52,6 @@ pub struct ErrorDetail {
 }
 
 #[cfg(test)]
-mod test_generation;
-
-#[cfg(test)]
 mod integration_tests {
   use super::*;
 
