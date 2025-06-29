@@ -147,3 +147,8 @@ export default defineConfig({
   },
 });
 ```
+
+## Commit Guidelines
+
+- **Commit Signatures**:
+  - Do not add Anthropic/Claude signatures to the commit messages
