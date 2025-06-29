@@ -106,7 +106,7 @@ jobs:
             build: |-
               set -e &&
               corepack disable || true &&
-              apt-get update && apt-get install -y wget &&
+              apt-get update && apt-get install -y wget build-essential &&
               wget https://ziglang.org/download/0.13.0/zig-linux-aarch64-0.13.0.tar.xz &&
               tar -xf zig-linux-aarch64-0.13.0.tar.xz &&
               export PATH=$PATH:$(pwd)/zig-linux-aarch64-0.13.0 &&
