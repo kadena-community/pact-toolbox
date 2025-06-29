@@ -1,5 +1,4 @@
 use crate::ast::*;
-use crate::frameworks::{CodeGenOptions, FrameworkGeneratorFactory};
 use crate::parser::Parser;
 use napi_derive::napi;
 use serde::{Deserialize, Serialize};
@@ -48,21 +47,71 @@ pub async fn core_transform(
       return Err(napi::Error::from_reason(error_messages.join("\n")));
     }
 
-    // Generate code and types in parallel using simple approach
-    let (code, types) = rayon::join(
-      || generate_js(&modules),
-      || {
-        if options
-          .as_ref()
-          .and_then(|o| o.generate_types)
-          .unwrap_or(true)
-        {
-          generate_types(&modules)
-        } else {
-          String::new()
-        }
-      },
-    );
+    // Check if source maps are requested
+    let generate_source_maps = options
+      .as_ref()
+      .and_then(|o| o.source_maps)
+      .unwrap_or(false);
+
+    let source_file_path = options
+      .as_ref()
+      .and_then(|o| o.source_file_path.as_deref())
+      .unwrap_or("input.pact");
+
+    let generate_types_flag = options
+      .as_ref()
+      .and_then(|o| o.generate_types)
+      .unwrap_or(true);
+
+    // Check if declaration maps are requested
+    let generate_declaration_maps = options
+      .as_ref()
+      .and_then(|o| o.declaration_maps)
+      .unwrap_or(false);
+
+    // Generate code and types with or without source maps
+    let (code, types, source_map, declaration_map) =
+      if generate_source_maps || generate_declaration_maps {
+        use crate::code_generator::CodeGenerator;
+        use crate::source_map::SourceMapOptions;
+
+        let source_map_options = SourceMapOptions {
+          generate: Some(generate_source_maps),
+          declaration_map: Some(generate_declaration_maps),
+          ..SourceMapOptions::default()
+        };
+
+        let mut generator = CodeGenerator::new_with_source_maps(
+          generate_types_flag,
+          source_map_options,
+          &source,
+          source_file_path,
+          &modules,
+        );
+
+        // Generate filenames based on source path
+        let stem = std::path::Path::new(source_file_path)
+          .file_stem()
+          .and_then(|s| s.to_str())
+          .unwrap_or("generated");
+        let js_filename = Some(format!("{stem}.js"));
+        let ts_filename = Some(format!("{stem}.pact.d.ts"));
+
+        generator.generate_with_filenames(&modules, js_filename.as_deref(), ts_filename.as_deref())
+      } else {
+        // Use the simple parallel generation for better performance when no source maps needed
+        let (code, types) = rayon::join(
+          || generate_js(&modules),
+          || {
+            if generate_types_flag {
+              generate_types(&modules)
+            } else {
+              String::new()
+            }
+          },
+        );
+        (code, types, None, None)
+      };
 
     // Return parser to pool
     return_parser(parser);
@@ -71,6 +120,8 @@ pub async fn core_transform(
       modules,
       code,
       types,
+      source_map,
+      declaration_map,
     })
   })
   .await
@@ -98,6 +149,9 @@ impl CoreTransformer {
   }
 
   /// Transform Pact code with performance optimizations
+  #[cfg(test)]
+  #[allow(clippy::needless_pass_by_value)]
+  #[allow(clippy::unused_self)]
   pub fn transform(&self, source: String) -> Result<Vec<PactModule>, napi::Error> {
     let mut parser = get_parser();
 
@@ -117,16 +171,16 @@ impl CoreTransformer {
   }
 
   /// Parse method for testing - returns both modules and errors
-  pub fn parse(&mut self, source: &str) -> (Vec<PactModule>, Vec<crate::error::ParseError>) {
+  pub fn parse(source: &str) -> (Vec<PactModule>, Vec<crate::error::ParseError>) {
     let mut parser = get_parser();
     let result = parser.parse(source);
     return_parser(parser);
     result
   }
 
-  pub fn get_errors(&mut self, source: String) -> Vec<crate::ErrorDetail> {
+  pub fn get_errors(source: &str) -> Vec<crate::ErrorDetail> {
     let mut parser = get_parser();
-    let (_, errors) = parser.parse(&source);
+    let (_, errors) = parser.parse(source);
     return_parser(parser);
     errors
       .into_iter()
@@ -139,97 +193,14 @@ impl CoreTransformer {
   }
 }
 
-/// Transform Pact source to framework-specific code
-pub async fn transform_to_framework(
-  source: String,
-  framework_options: CodeGenOptions,
-) -> Result<FrameworkTransformResult, napi::Error> {
-  tokio::task::spawn_blocking(move || {
-    // Get parser from pool
-    let mut parser = get_parser();
-
-    // Parse modules
-    let (modules, errors) = parser.parse(&source);
-
-    if !errors.is_empty() {
-      let error_messages: Vec<String> = errors
-        .iter()
-        .map(|e| format!("{}:{}: {}", e.line, e.column, e.message))
-        .collect();
-      return_parser(parser);
-      return Err(napi::Error::from_reason(error_messages.join("\n")));
-    }
-
-    return_parser(parser);
-
-    // Generate framework-specific code
-    if framework_options.target == "vanilla" {
-      // Use default code generator for vanilla JS
-      let code = generate_js(&modules);
-      let types = if framework_options.typescript.unwrap_or(true) {
-        generate_types(&modules)
-      } else {
-        String::new()
-      };
-
-      Ok(FrameworkTransformResult {
-        modules,
-        code,
-        types,
-        additional_files: vec![],
-      })
-    } else {
-      // Use framework-specific generator
-      let generator = FrameworkGeneratorFactory::create(&framework_options.target)
-        .map_err(|e| napi::Error::from_reason(e.to_string()))?;
-
-      let result = generator
-        .generate(&modules, &framework_options)
-        .map_err(|e| napi::Error::from_reason(e.to_string()))?;
-
-      Ok(FrameworkTransformResult {
-        modules,
-        code: result.code,
-        types: result.types.unwrap_or_default(),
-        additional_files: result
-          .additional_files
-          .into_iter()
-          .map(|f| FrameworkFile {
-            name: f.name,
-            content: f.content,
-            description: f.description,
-          })
-          .collect(),
-      })
-    }
-  })
-  .await
-  .map_err(|e| napi::Error::from_reason(e.to_string()))?
-}
-
 /// Transformation result
 #[napi(object)]
 pub struct TransformationResult {
   pub modules: Vec<PactModule>,
   pub code: String,
   pub types: String,
-}
-
-/// Framework transformation result
-#[napi(object)]
-pub struct FrameworkTransformResult {
-  pub modules: Vec<PactModule>,
-  pub code: String,
-  pub types: String,
-  pub additional_files: Vec<FrameworkFile>,
-}
-
-/// Additional file generated by framework
-#[napi(object)]
-pub struct FrameworkFile {
-  pub name: String,
-  pub content: String,
-  pub description: Option<String>,
+  pub source_map: Option<String>,
+  pub declaration_map: Option<String>,
 }
 
 /// Transform options
@@ -238,15 +209,18 @@ pub struct FrameworkFile {
 pub struct TransformOptions {
   pub generate_types: Option<bool>,
   pub module_name: Option<String>,
+  pub source_maps: Option<bool>,
+  pub source_file_path: Option<String>,
+  pub declaration_maps: Option<bool>,
 }
 
 /// Benchmark function to measure parser performance
-pub fn run_parser_benchmark(source: String, iterations: u32) -> Result<f64, napi::Error> {
+pub fn run_parser_benchmark(source: &str, iterations: u32) -> Result<f64, napi::Error> {
   let start = std::time::Instant::now();
 
   for _ in 0..iterations {
     let mut parser = get_parser();
-    let (modules, errors) = parser.parse(&source);
+    let (modules, errors) = parser.parse(source);
 
     if !errors.is_empty() {
       return_parser(parser);
@@ -260,17 +234,16 @@ pub fn run_parser_benchmark(source: String, iterations: u32) -> Result<f64, napi
   }
 
   let elapsed = start.elapsed();
-  Ok(elapsed.as_secs_f64() / iterations as f64 * 1000.0) // Return average time in milliseconds
+  Ok(elapsed.as_secs_f64() / f64::from(iterations) * 1000.0) // Return average time in milliseconds
 }
 
 /// Warm up the parser pool for better initial performance
-pub fn warm_up_parsers() -> Result<(), napi::Error> {
+pub fn warm_up_parsers() {
   let pool_size = num_cpus::get();
   for _ in 0..pool_size {
     let parser = Parser::new();
     return_parser(parser);
   }
-  Ok(())
 }
 
 /// Reset the parser pool
@@ -327,6 +300,9 @@ mod tests {
       Some(TransformOptions {
         generate_types: Some(true),
         module_name: None,
+        source_maps: None,
+        source_file_path: None,
+        declaration_maps: None,
       }),
     )
     .await

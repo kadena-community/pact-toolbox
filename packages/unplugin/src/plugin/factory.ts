@@ -138,7 +138,7 @@ export const unpluginFactory: UnpluginFactory<PluginOptions | undefined> = (opti
       // Transform with file path for better error messages
       const result = await transformPactToJS(src, id);
 
-      const { code, types, modules, sourceMap } = result;
+      const { code, types, modules, sourceMap, declarationMap } = result;
 
       // Check if contracts are deployed
       const isDeployed =
@@ -161,9 +161,16 @@ export const unpluginFactory: UnpluginFactory<PluginOptions | undefined> = (opti
       // Update cache with new transformation data
       cache.set(id, sourceHash, { javascript: code, typescript: types }, moduleInfos, isDeployed);
 
+      // Write TypeScript declaration files immediately
+      if (types) {
+        writeTypeScriptFiles(id, types, declarationMap).catch((error) => {
+          prettyPrintError(`Failed to write TypeScript files for ${cleanName}`, error);
+        });
+      }
+
       // Handle deployment if required
       if (isLocalNetwork(networkConfig) && (await network?.isHealthy())) {
-        deployContract(id, src, isDeployed, types).catch((error) => {
+        deployContract(id, src, isDeployed).catch((error) => {
           prettyPrintError(`Failed to deploy contract ${cleanName}`, error);
         });
       }
@@ -185,13 +192,35 @@ export const unpluginFactory: UnpluginFactory<PluginOptions | undefined> = (opti
   };
 
   /**
+   * Asynchronous function to write TypeScript declaration files.
+   * @param id File identifier (path).
+   * @param types TypeScript definitions to write.
+   * @param declarationMap Declaration map to write.
+   */
+  const writeTypeScriptFiles = async (id: string, types: string, declarationMap?: string) => {
+    // Add declaration map comment to TypeScript file if available
+    const typesWithComment = declarationMap ? `${types}\n//# sourceMappingURL=${path.basename(id)}.d.ts.map` : types;
+
+    const tasks = [
+      // Write TypeScript declaration file
+      writeFile(`${id}.d.ts`, typesWithComment),
+    ];
+
+    // Write declaration map file if available
+    if (declarationMap) {
+      tasks.push(writeFile(`${id}.d.ts.map`, declarationMap));
+    }
+
+    return Promise.all(tasks);
+  };
+
+  /**
    * Asynchronous function to handle contract deployment.
    * @param id File identifier (path).
    * @param src Source code of the `.pact` file.
    * @param isDeployed Flag indicating if the contract is already deployed.
-   * @param types TypeScript definitions to write.
    */
-  const deployContract = async (id: string, src: string, isDeployed: boolean, types: string) => {
+  const deployContract = async (id: string, src: string, isDeployed: boolean) => {
     if (!client) {
       logger.error("PactToolboxClient is not initialized.");
       return;
@@ -200,23 +229,19 @@ export const unpluginFactory: UnpluginFactory<PluginOptions | undefined> = (opti
     const contractName = path.basename(id);
     logger.info(`Deploying contract ${contractName}...`);
 
-    return Promise.all([
-      // Write TypeScript declaration file
-      writeFile(`${id}.d.ts`, types),
-      // Deploy the contract
-      client
-        .deployCode(src, {
-          builder: {
-            upgrade: isDeployed,
-            init: !isDeployed,
-          },
-        })
-        .then(() => {
-          // Update deployment status in cache
-          cache.setDeploymentStatus(id, true);
-          logger.info(`Contract ${contractName} deployed successfully.`);
-        }),
-    ]);
+    // Deploy the contract
+    return client
+      .deployCode(src, {
+        builder: {
+          upgrade: isDeployed,
+          init: !isDeployed,
+        },
+      })
+      .then(() => {
+        // Update deployment status in cache
+        cache.setDeploymentStatus(id, true);
+        logger.info(`Contract ${contractName} deployed successfully.`);
+      });
   };
 
   /**

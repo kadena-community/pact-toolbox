@@ -1,24 +1,27 @@
+use crate::watch;
 use napi::Result;
 use napi_derive::napi;
-use std::collections::HashMap;
 
 /// Main Pact Transformer API
 ///
 /// This is the primary interface for all Pact transformation operations.
 /// It provides a unified API for parsing, transforming, and generating code.
 #[napi]
-pub struct PactTransformer {
-  transformer: crate::CoreTransformer,
+pub struct PactTransformer {}
+
+impl Default for PactTransformer {
+  fn default() -> Self {
+    Self::new()
+  }
 }
 
 #[napi]
 impl PactTransformer {
   /// Create a new PactTransformer instance
   #[napi(constructor)]
+  #[must_use]
   pub fn new() -> Self {
-    Self {
-      transformer: crate::CoreTransformer::new(),
-    }
+    Self {}
   }
 
   /// Transform Pact source to JavaScript/TypeScript
@@ -39,7 +42,38 @@ impl PactTransformer {
     Ok(TransformResult {
       javascript: result.code,
       typescript: Some(result.types).filter(|t| !t.is_empty()),
-      source_map: None, // TODO: implement source maps
+      source_map: result.source_map,
+      declaration_map: result.declaration_map,
+    })
+  }
+
+  /// Transform Pact source from a file with source maps enabled
+  ///
+  /// ```javascript
+  /// const pact = new PactTransformer();
+  /// const result = await pact.transformFile(source, 'path/to/file.pact', { generateTypes: true });
+  /// console.log(result.javascript, result.typescript, result.sourceMap);
+  /// ```
+  #[napi]
+  pub async fn transform_file(
+    &self,
+    source: String,
+    file_path: String,
+    options: Option<crate::TransformOptions>,
+  ) -> Result<TransformResult> {
+    let mut opts = options.unwrap_or_default();
+    // Enable source maps and declaration maps for file-based transformations
+    opts.source_maps = Some(true);
+    opts.declaration_maps = Some(true);
+    opts.source_file_path = Some(file_path);
+
+    let result = crate::core_transform(source, Some(opts)).await?;
+
+    Ok(TransformResult {
+      javascript: result.code,
+      typescript: Some(result.types).filter(|t| !t.is_empty()),
+      source_map: result.source_map,
+      declaration_map: result.declaration_map,
     })
   }
 
@@ -50,10 +84,9 @@ impl PactTransformer {
   /// errors.forEach(err => console.log(`${err.line}:${err.column} ${err.message}`));
   /// ```
   #[napi]
+  #[allow(clippy::needless_pass_by_value)]
   pub fn get_errors(&mut self, source: String) -> Vec<ErrorInfo> {
-    self
-      .transformer
-      .get_errors(source)
+    crate::CoreTransformer::get_errors(&source)
       .into_iter()
       .map(|e| ErrorInfo {
         message: e.message,
@@ -70,8 +103,9 @@ impl PactTransformer {
   /// modules.forEach(m => console.log(`Module: ${m.name}`));
   /// ```
   #[napi]
+  #[allow(clippy::needless_pass_by_value)]
   pub fn parse(&mut self, source: String) -> Result<Vec<ModuleInfo>> {
-    let (modules, _errors) = self.transformer.parse(&source);
+    let (modules, _errors) = crate::CoreTransformer::parse(&source);
     Ok(
       modules
         .into_iter()
@@ -107,7 +141,7 @@ impl FileOps {
 
     Ok(FileResult {
       source_path: result.input_path,
-      output_path: result.output_paths.get(0).cloned(),
+      output_path: result.output_paths.first().cloned(),
       success: result.success,
       error: result.error,
       time_ms: result.processing_time_ms,
@@ -131,7 +165,7 @@ impl FileOps {
         .into_iter()
         .map(|r| FileResult {
           source_path: r.input_path,
-          output_path: r.output_paths.get(0).cloned(),
+          output_path: r.output_paths.first().cloned(),
           success: r.success,
           error: r.error,
           time_ms: r.processing_time_ms,
@@ -142,8 +176,8 @@ impl FileOps {
 
   /// Find Pact files matching patterns
   #[napi]
-  pub async fn find_files(patterns: Vec<String>) -> Result<Vec<String>> {
-    crate::find_pact_files(patterns, None, None).await
+  pub fn find_files(patterns: Vec<String>) -> Result<Vec<String>> {
+    Ok(crate::find_pact_files(patterns, None, None))
   }
 }
 
@@ -174,8 +208,9 @@ impl WatchSession {
 
   /// Stop watching
   #[napi]
-  pub async fn stop(&self) -> Result<()> {
-    self.handle.stop().await
+  pub fn stop(&self) -> Result<()> {
+    watch::WatchHandle::stop();
+    Ok(())
   }
 
   /// Get watch statistics
@@ -193,88 +228,6 @@ impl WatchSession {
   }
 }
 
-/// Documentation generation API
-#[napi]
-pub struct DocsGenerator;
-
-#[napi]
-impl DocsGenerator {
-  /// Generate documentation from Pact source
-  #[napi]
-  pub async fn generate(source: String, options: Option<crate::DocsOptions>) -> Result<DocsResult> {
-    let opts = options.unwrap_or_default();
-
-    // Parse modules first
-    let mut transformer = crate::CoreTransformer::new();
-    let (modules, _errors) = transformer.parse(&source);
-
-    let format = opts.format.clone();
-    let result = crate::generate_documentation(modules, opts).await?;
-    Ok(DocsResult {
-      content: result.content,
-      format,
-      assets: result
-        .assets
-        .into_iter()
-        .map(|asset| (asset.path, asset.content))
-        .collect(),
-    })
-  }
-}
-
-/// Test generation API
-#[napi]
-pub struct TestGenerator;
-
-#[napi]
-impl TestGenerator {
-  /// Generate tests from Pact modules
-  #[napi]
-  pub async fn generate(
-    source: String,
-    options: Option<crate::TestGenOptions>,
-  ) -> Result<TestResult> {
-    let opts = options.unwrap_or_default();
-    let typescript = opts.typescript.unwrap_or(false);
-    let framework = opts.framework.clone();
-
-    // Parse modules first
-    let mut transformer = crate::CoreTransformer::new();
-    let (modules, _errors) = transformer.parse(&source);
-
-    let result = crate::generate_tests_for_modules(modules, opts).await?;
-
-    let mut test_files = Vec::new();
-    let extension = if typescript { "ts" } else { "js" };
-
-    // Add main test file
-    test_files.push(TestFile {
-      path: format!("tests/{}.test.{}", framework, extension),
-      content: result.tests,
-    });
-
-    // Add optional files
-    if let Some(mocks) = result.mocks {
-      test_files.push(TestFile {
-        path: format!("tests/__mocks__/index.{}", extension),
-        content: mocks,
-      });
-    }
-
-    if let Some(fixtures) = result.fixtures {
-      test_files.push(TestFile {
-        path: format!("tests/__fixtures__/index.{}", extension),
-        content: fixtures,
-      });
-    }
-
-    Ok(TestResult {
-      test_files,
-      coverage_report: Some(result.setup_config),
-    })
-  }
-}
-
 /// Configuration management
 #[napi]
 pub struct ConfigManager;
@@ -283,11 +236,8 @@ pub struct ConfigManager;
 impl ConfigManager {
   /// Load configuration from file
   #[napi]
-  pub async fn load(
-    path: Option<String>,
-    environment: Option<String>,
-  ) -> Result<crate::PactConfig> {
-    let result = crate::load_config(path, environment).await?;
+  pub fn load(path: Option<String>, environment: Option<String>) -> Result<crate::PactConfig> {
+    let result = crate::load_config(path, environment)?;
     Ok(result.config)
   }
 
@@ -306,6 +256,7 @@ pub struct PluginManager;
 impl PluginManager {
   /// Get list of available plugins
   #[napi]
+  #[must_use]
   pub fn list() -> Vec<crate::PluginInfo> {
     crate::get_registered_plugins()
   }
@@ -319,7 +270,8 @@ impl PluginManager {
   /// Enable or disable a plugin
   #[napi]
   pub fn set_enabled(name: String, enabled: bool) -> Result<()> {
-    crate::set_plugin_enabled(name, enabled)
+    crate::set_plugin_enabled(name, enabled);
+    Ok(())
   }
 }
 
@@ -332,19 +284,21 @@ impl Utils {
   /// Warm up the parser for better performance
   #[napi]
   pub fn warm_up() -> Result<()> {
-    crate::warm_up_parsers()
+    crate::warm_up_parsers();
+    Ok(())
   }
 
   /// Benchmark parser performance
   #[napi]
+  #[allow(clippy::needless_pass_by_value)]
   pub fn benchmark(source: String, iterations: u32) -> Result<f64> {
-    crate::run_parser_benchmark(source, iterations)
+    crate::run_parser_benchmark(&source, iterations)
   }
 
   /// Reset optimization state
   #[napi]
   pub fn reset_optimizations() {
-    crate::reset_parser_pool()
+    crate::reset_parser_pool();
   }
 }
 
@@ -356,6 +310,7 @@ pub struct TransformResult {
   pub javascript: String,
   pub typescript: Option<String>,
   pub source_map: Option<String>,
+  pub declaration_map: Option<String>,
 }
 
 /// File operation result
@@ -407,28 +362,6 @@ pub struct WatchStatsResult {
   pub failed_transforms: u32,
   pub avg_transform_time_ms: f64,
   pub uptime_ms: f64,
-}
-
-/// Documentation result
-#[napi(object)]
-pub struct DocsResult {
-  pub content: String,
-  pub format: String,
-  pub assets: HashMap<String, Vec<u8>>,
-}
-
-/// Test generation result
-#[napi(object)]
-pub struct TestResult {
-  pub test_files: Vec<TestFile>,
-  pub coverage_report: Option<String>,
-}
-
-/// Test file
-#[napi(object)]
-pub struct TestFile {
-  pub path: String,
-  pub content: String,
 }
 
 mod test;
