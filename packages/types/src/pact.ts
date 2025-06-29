@@ -285,7 +285,6 @@ export interface WalletApiLike {
   }>;
 }
 
-export type WalletLike = WalletApiLike | SignFunction | QuickSignFunction;
 export type PactSignerLike = string | PactSigner;
 export type PactCapabilityLike = (
   withCapability: (name: string, ...args: PactValue[]) => PactCapability,

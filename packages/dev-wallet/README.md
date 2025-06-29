@@ -28,29 +28,29 @@ yarn add @pact-toolbox/dev-wallet
 ### Basic Usage
 
 ```typescript
-import { DevWallet } from '@pact-toolbox/dev-wallet';
+import { DevWallet } from "@pact-toolbox/dev-wallet";
 
 // Create wallet instance
 const wallet = new DevWallet({
-  networkId: 'testnet04',
-  networkName: 'Testnet',
-  rpcUrl: 'https://api.testnet.chainweb.com',
+  networkId: "testnet04",
+  networkName: "Testnet",
+  rpcUrl: "https://api.testnet.chainweb.com",
   showUI: true, // Enable browser UI
 });
 
 // Connect wallet (creates/retrieves account)
 const account = await wallet.connect();
-console.log('Connected:', account.address);
+console.log("Connected:", account.address);
 
 // Sign a transaction
 const signedTx = await wallet.signTransaction({
   cmd: JSON.stringify({
     payload: { exec: { code: '(coin.transfer "alice" "bob" 1.0)', data: {} } },
     signers: [{ pubKey: account.publicKey }],
-    meta: { chainId: '0', sender: 'alice' },
-    networkId: 'testnet04',
+    meta: { chainId: "0", sender: "alice" },
+    networkId: "testnet04",
     nonce: Date.now().toString(),
-  })
+  }),
 });
 ```
 
@@ -59,15 +59,15 @@ const signedTx = await wallet.signTransaction({
 ```html
 <!DOCTYPE html>
 <html>
-<head>
-  <script type="module">
-    import '@pact-toolbox/dev-wallet';
-  </script>
-</head>
-<body>
-  <!-- Wallet UI component -->
-  <toolbox-wallet-container></toolbox-wallet-container>
-</body>
+  <head>
+    <script type="module">
+      import "@pact-toolbox/dev-wallet";
+    </script>
+  </head>
+  <body>
+    <!-- Wallet UI component -->
+    <toolbox-wallet-container></toolbox-wallet-container>
+  </body>
 </html>
 ```
 
@@ -103,11 +103,11 @@ The wallet is built with a clean architecture approach:
 
 ```typescript
 interface DevWalletConfig {
-  networkId: string;          // Kadena network ID (e.g., 'testnet04', 'mainnet01')
-  networkName: string;        // Display name for the network
-  rpcUrl: string;             // RPC endpoint URL
-  showUI?: boolean;           // Show browser UI (default: true)
-  autoConnect?: boolean;      // Auto-connect on init (default: false)
+  networkId: string; // Kadena network ID (e.g., 'testnet04', 'mainnet01')
+  networkName: string; // Display name for the network
+  rpcUrl: string; // RPC endpoint URL
+  showUI?: boolean; // Show browser UI (default: true)
+  autoConnect?: boolean; // Auto-connect on init (default: false)
   storage?: DevWalletStorage; // Custom storage implementation
 }
 ```
@@ -115,6 +115,7 @@ interface DevWalletConfig {
 #### Methods
 
 ##### connect()
+
 Connects the wallet and returns the primary account.
 
 ```typescript
@@ -123,6 +124,7 @@ const account = await wallet.connect();
 ```
 
 ##### disconnect()
+
 Disconnects the wallet and clears the session.
 
 ```typescript
@@ -130,6 +132,7 @@ await wallet.disconnect();
 ```
 
 ##### getAccount()
+
 Gets the current connected account.
 
 ```typescript
@@ -137,6 +140,7 @@ const account = await wallet.getAccount();
 ```
 
 ##### getAccounts()
+
 Gets all accounts in the wallet.
 
 ```typescript
@@ -144,21 +148,23 @@ const accounts = await wallet.getAccounts();
 ```
 
 ##### signTransaction(transaction)
+
 Signs a Kadena transaction.
 
 ```typescript
 const signedTx = await wallet.signTransaction({
-  cmd: '...', // Stringified Kadena command
-  hash: '...', // Optional: pre-computed hash
-  sigs: []     // Existing signatures
+  cmd: "...", // Stringified Kadena command
+  hash: "...", // Optional: pre-computed hash
+  sigs: [], // Existing signatures
 });
 ```
 
 ##### signMessage(message)
+
 Signs an arbitrary message.
 
 ```typescript
-const signature = await wallet.signMessage('Hello, Kadena!');
+const signature = await wallet.signMessage("Hello, Kadena!");
 ```
 
 ### Using Services Directly
@@ -166,13 +172,13 @@ const signature = await wallet.signMessage('Hello, Kadena!');
 For advanced use cases, you can use the refactored services directly:
 
 ```typescript
-import { 
-  AccountService, 
-  SettingsService, 
+import {
+  AccountService,
+  SettingsService,
   TransactionService,
   WalletStateManager,
-  DevWalletStorage 
-} from '@pact-toolbox/dev-wallet';
+  DevWalletStorage,
+} from "@pact-toolbox/dev-wallet";
 
 // Initialize storage
 const storage = new DevWalletStorage();
@@ -187,7 +193,7 @@ const stateManager = new WalletStateManager(storage);
 await stateManager.initialize();
 
 // Use services
-const account = await accountService.generateAccount('My Account');
+const account = await accountService.generateAccount("My Account");
 await stateManager.addAccount(account);
 ```
 
@@ -228,20 +234,20 @@ pnpm dev:test
 The package exports test utilities for use in your own tests:
 
 ```typescript
-import { 
+import {
   setupBrowserMocks,
   createMockAccount,
   createMockTransaction,
   createMockSettings,
-  waitFor 
-} from '@pact-toolbox/dev-wallet/test-utils';
+  waitFor,
+} from "@pact-toolbox/dev-wallet/test-utils";
 
 // Setup browser environment mocks
 setupBrowserMocks();
 
 // Create mock data
-const account = createMockAccount({ name: 'Test Account' });
-const transaction = createMockTransaction({ status: 'pending' });
+const account = createMockAccount({ name: "Test Account" });
+const transaction = createMockTransaction({ status: "pending" });
 
 // Async utilities
 await waitFor(() => condition === true);
@@ -262,9 +268,9 @@ The wallet supports extensive configuration through the settings service:
 
 ```typescript
 interface Settings {
-  theme: 'light' | 'dark';
+  theme: "light" | "dark";
   autoLockEnabled: boolean;
-  autoLockTimeout: number;    // milliseconds
+  autoLockTimeout: number; // milliseconds
   defaultNetwork: string;
   defaultChain: string;
   gasLimit: number;
@@ -280,17 +286,17 @@ Configure multiple networks:
 ```typescript
 const networks = [
   {
-    id: 'testnet04',
-    name: 'Testnet',
-    host: 'https://api.testnet.chainweb.com',
-    explorerUrl: 'https://explorer.testnet.chainweb.com'
+    id: "testnet04",
+    name: "Testnet",
+    host: "https://api.testnet.chainweb.com",
+    explorerUrl: "https://explorer.testnet.chainweb.com",
   },
   {
-    id: 'mainnet01',
-    name: 'Mainnet',
-    host: 'https://api.chainweb.com',
-    explorerUrl: 'https://explorer.chainweb.com'
-  }
+    id: "mainnet01",
+    name: "Mainnet",
+    host: "https://api.chainweb.com",
+    explorerUrl: "https://explorer.chainweb.com",
+  },
 ];
 ```
 
@@ -299,22 +305,22 @@ const networks = [
 The wallet uses a comprehensive error handling system:
 
 ```typescript
-import { WalletError, ErrorHandler } from '@pact-toolbox/dev-wallet';
+import { WalletError, ErrorHandler } from "@pact-toolbox/dev-wallet";
 
 try {
   await wallet.signTransaction(tx);
 } catch (error) {
   if (error instanceof WalletError) {
-    console.log('Error code:', error.code);
-    console.log('Severity:', error.severity);
-    console.log('Recoverable:', error.recoverable);
-    
+    console.log("Error code:", error.code);
+    console.log("Severity:", error.severity);
+    console.log("Recoverable:", error.recoverable);
+
     // Handle specific error codes
     switch (error.code) {
-      case 'ACCOUNT_NOT_FOUND':
+      case "ACCOUNT_NOT_FOUND":
         // Handle missing account
         break;
-      case 'INVALID_TRANSACTION':
+      case "INVALID_TRANSACTION":
         // Handle invalid transaction
         break;
     }
@@ -330,11 +336,11 @@ The refactored components provide better separation of concerns and error handli
 
 ```typescript
 // Original
-import { DevWallet } from '@pact-toolbox/dev-wallet';
+import { DevWallet } from "@pact-toolbox/dev-wallet";
 const wallet = new DevWallet(config);
 
 // Refactored (direct service usage)
-import { WalletStateManager } from '@pact-toolbox/dev-wallet';
+import { WalletStateManager } from "@pact-toolbox/dev-wallet";
 const stateManager = new WalletStateManager(storage);
 await stateManager.initialize();
 ```
@@ -350,28 +356,27 @@ await stateManager.initialize();
 ### React Integration
 
 ```tsx
-import { useEffect, useState } from 'react';
-import { DevWallet } from '@pact-toolbox/dev-wallet';
+import { useEffect, useState } from "react";
+import { DevWallet } from "@pact-toolbox/dev-wallet";
 
 function WalletButton() {
-  const [wallet] = useState(() => new DevWallet({
-    networkId: 'testnet04',
-    networkName: 'Testnet',
-    rpcUrl: 'https://api.testnet.chainweb.com',
-  }));
-  
+  const [wallet] = useState(
+    () =>
+      new DevWallet({
+        networkId: "testnet04",
+        networkName: "Testnet",
+        rpcUrl: "https://api.testnet.chainweb.com",
+      }),
+  );
+
   const [account, setAccount] = useState(null);
-  
+
   const handleConnect = async () => {
     const acc = await wallet.connect();
     setAccount(acc);
   };
-  
-  return (
-    <button onClick={handleConnect}>
-      {account ? `Connected: ${account.address}` : 'Connect Wallet'}
-    </button>
-  );
+
+  return <button onClick={handleConnect}>{account ? `Connected: ${account.address}` : "Connect Wallet"}</button>;
 }
 ```
 
@@ -386,16 +391,16 @@ function WalletButton() {
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
-import { DevWallet } from '@pact-toolbox/dev-wallet';
+import { ref, onMounted } from "vue";
+import { DevWallet } from "@pact-toolbox/dev-wallet";
 
 const wallet = ref(null);
 
 onMounted(() => {
   wallet.value = new DevWallet({
-    networkId: 'testnet04',
-    networkName: 'Testnet',
-    rpcUrl: 'https://api.testnet.chainweb.com',
+    networkId: "testnet04",
+    networkName: "Testnet",
+    rpcUrl: "https://api.testnet.chainweb.com",
   });
 });
 
@@ -403,7 +408,7 @@ const signTransaction = async () => {
   const signed = await wallet.value.signTransaction({
     // transaction details
   });
-  console.log('Signed:', signed);
+  console.log("Signed:", signed);
 };
 </script>
 ```

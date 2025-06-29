@@ -19,20 +19,20 @@ pnpm add @pact-toolbox/config
 ### Basic Configuration
 
 ```typescript
-import { resolveConfig, defineConfig } from '@pact-toolbox/config';
+import { resolveConfig, defineConfig } from "@pact-toolbox/config";
 
 // Define configuration with TypeScript support
 export default defineConfig({
-  contractsDir: './contracts',
+  contractsDir: "./contracts",
   network: {
-    type: 'devnet',
+    type: "devnet",
     devnet: {
       containerConfig: {
         port: 8080,
-        onDemandMining: true
-      }
-    }
-  }
+        onDemandMining: true,
+      },
+    },
+  },
 });
 
 // Resolve configuration (loads from all sources)
@@ -55,50 +55,50 @@ The package supports three types of networks:
 #### 1. Pact Server (Local Development)
 
 ```typescript
-import { createPactServerNetworkConfig } from '@pact-toolbox/config';
+import { createPactServerNetworkConfig } from "@pact-toolbox/config";
 
 const pactServerConfig = createPactServerNetworkConfig({
   execConfig: {
     gasLimit: 100000,
     gasPrice: 0.000001,
     ttl: 600,
-    senderAccount: 'sender00'
-  }
+    senderAccount: "sender00",
+  },
 });
 ```
 
 #### 2. Chainweb DevNet (Containerized)
 
 ```typescript
-import { createDevNetNetworkConfig } from '@pact-toolbox/config';
+import { createDevNetNetworkConfig } from "@pact-toolbox/config";
 
 const devnetConfig = createDevNetNetworkConfig({
   containerConfig: {
     port: 8080,
     onDemandMining: true,
-    image: 'kadena/devnet:latest',
+    image: "kadena/devnet:latest",
     servicePorts: {
       stratum: 1917,
-      servicePort: 1848
-    }
+      servicePort: 1848,
+    },
   },
   miningConfig: {
     onDemandMining: true,
     interval: 30,
-    batchSize: 2
-  }
+    batchSize: 2,
+  },
 });
 ```
 
 #### 3. Chainweb (Production/Testnet)
 
 ```typescript
-import { createChainwebNetworkConfig } from '@pact-toolbox/config';
+import { createChainwebNetworkConfig } from "@pact-toolbox/config";
 
 const chainwebConfig = createChainwebNetworkConfig({
-  apiUrl: 'https://api.testnet.chainweb.com',
-  networkId: 'testnet04',
-  chainIds: ['0', '1']
+  apiUrl: "https://api.testnet.chainweb.com",
+  networkId: "testnet04",
+  chainIds: ["0", "1"],
 });
 ```
 
@@ -107,7 +107,7 @@ const chainwebConfig = createChainwebNetworkConfig({
 The package provides default accounts for development:
 
 ```typescript
-import { defaultKeyPairs, defaultKeysets, defaultMeta } from '@pact-toolbox/config';
+import { defaultKeyPairs, defaultKeysets, defaultMeta } from "@pact-toolbox/config";
 
 // Access default key pairs
 const senderKeys = defaultKeyPairs.sender00;
@@ -128,16 +128,16 @@ const meta = defaultMeta;
 interface PactToolboxConfig {
   // Directory containing Pact contracts
   contractsDir?: string;
-  
+
   // Prelude configuration
   preludes?: Array<string | PactPrelude>;
-  
+
   // Active network configuration
   network?: NetworkConfig;
-  
+
   // Multiple network configurations
   networks?: Record<string, NetworkConfig>;
-  
+
   // Development settings
   enableDevAccountFunding?: boolean;
   enableGasStation?: boolean;
@@ -156,22 +156,22 @@ Networks can be selected via:
 ### Helper Functions
 
 ```typescript
-import { 
+import {
   getDefaultNetworkConfig,
   getNetworkPort,
   getNetworkRpcUrl,
   createRpcUrlGetter,
   createChainwebRpcUrl,
   getSerializableNetworkConfig,
-  getSerializableMultiNetworkConfig
-} from '@pact-toolbox/config';
+  getSerializableMultiNetworkConfig,
+} from "@pact-toolbox/config";
 
 const config = await resolveConfig();
 const network = getDefaultNetworkConfig(config);
 
 // Check network type
 if (isLocalNetwork(network)) {
-  console.log('Running on local network');
+  console.log("Running on local network");
 }
 
 // Get the port for a network
@@ -182,7 +182,7 @@ const rpcUrl = getNetworkRpcUrl(network);
 
 // Create a function to generate RPC URLs
 const getRpcUrl = createRpcUrlGetter(network);
-const url = getRpcUrl({ chainId: '1', networkId: 'testnet04' });
+const url = getRpcUrl({ chainId: "1", networkId: "testnet04" });
 
 // Get serializable config (for passing to workers)
 const serializable = getSerializableNetworkConfig(config);
@@ -190,7 +190,7 @@ const serializable = getSerializableNetworkConfig(config);
 // Get all networks in serializable format
 const multiNetwork = getSerializableMultiNetworkConfig(config, {
   isDev: true,
-  defaultNetwork: 'testnet'
+  defaultNetwork: "testnet",
 });
 ```
 
@@ -199,29 +199,37 @@ const multiNetwork = getSerializableMultiNetworkConfig(config, {
 ### Core Functions
 
 #### `resolveConfig(options?): Promise<PactToolboxConfig>`
+
 Loads and resolves configuration from all sources.
 
 #### `defineConfig(config): PactToolboxConfig`
+
 Helper for defining configuration with TypeScript support.
 
 ### Network Functions
 
 #### `getDefaultNetworkConfig(config, network?): NetworkConfig`
+
 Extracts the active network configuration. Uses environment variable or default if network not specified.
 
 #### `createPactServerNetworkConfig(options): PactServerNetworkConfig`
+
 Creates a Pact Server network configuration.
 
 #### `createDevNetNetworkConfig(options): DevNetworkConfig`
+
 Creates a Chainweb DevNet configuration.
 
 #### `createChainwebNetworkConfig(options): ChainwebNetworkConfig`
+
 Creates a Chainweb network configuration.
 
 #### `createTestNetNetworkConfig(options): ChainwebNetworkConfig`
+
 Creates a TestNet network configuration with sensible defaults.
 
 #### `createMainNetNetworkConfig(options): ChainwebNetworkConfig`
+
 Creates a MainNet network configuration with sensible defaults.
 
 ### Type Guards
@@ -254,43 +262,43 @@ Creates a MainNet network configuration with sensible defaults.
 
 ```typescript
 // pact-toolbox.config.ts
-import { defineConfig } from '@pact-toolbox/config';
+import { defineConfig } from "@pact-toolbox/config";
 
 export default defineConfig({
-  contractsDir: './pact',
+  contractsDir: "./pact",
   networks: {
     local: {
-      type: 'devnet',
+      type: "devnet",
       devnet: {
         containerConfig: {
-          port: 8080
-        }
-      }
+          port: 8080,
+        },
+      },
     },
     testnet: {
-      type: 'chainweb',
+      type: "chainweb",
       chainweb: {
-        apiUrl: 'https://api.testnet.chainweb.com',
-        networkId: 'testnet04'
-      }
-    }
+        apiUrl: "https://api.testnet.chainweb.com",
+        networkId: "testnet04",
+      },
+    },
   },
-  preludes: ['kadena/chainweb', 'kadena/marmalade']
+  preludes: ["kadena/chainweb", "kadena/marmalade"],
 });
 ```
 
 ### Programmatic Usage
 
 ```typescript
-import { resolveConfig, getDefaultNetworkConfig, isDevNetworkConfig } from '@pact-toolbox/config';
+import { resolveConfig, getDefaultNetworkConfig, isDevNetworkConfig } from "@pact-toolbox/config";
 
 async function setupNetwork() {
   const config = await resolveConfig();
   const network = getDefaultNetworkConfig(config);
-  
+
   console.log(`Using ${network.type} network`);
   console.log(`Network name: ${network.name}`);
-  
+
   if (isDevNetworkConfig(network)) {
     console.log(`DevNet port: ${network.containerConfig?.port}`);
   }
@@ -304,6 +312,7 @@ async function setupNetwork() {
 **WARNING**: The default key pairs included in this package are publicly known and should **NEVER** be used in production environments. They are intended for local development and testing only.
 
 When using `getSerializableNetworkConfig` or `getSerializableMultiNetworkConfig`:
+
 - In development mode (`isDev: true`), private keys are included for convenience with local development tools
 - In production mode (`isDev: false`), all private keys are excluded from the serialized output
 - Local networks (Pact Server, DevNet) are automatically excluded in production mode

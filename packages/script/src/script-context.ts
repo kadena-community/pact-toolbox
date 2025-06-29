@@ -2,14 +2,11 @@ import type { PactToolboxConfigObj } from "@pact-toolbox/config";
 import type { PactToolboxClient } from "@pact-toolbox/runtime";
 import type { Wallet } from "@pact-toolbox/wallet-adapters";
 import { logger } from "@pact-toolbox/node-utils";
+import { CoinService, MarmaladeService, NamespaceService } from "@pact-toolbox/kda";
 import type { WalletManager, SignerInfo } from "./wallet-manager";
 import type { NamespaceHandler } from "./namespace-handler";
 import { DeploymentHelper } from "./deployment";
-
-// Use type-only imports for now to avoid dependency issues
-type CoinService = any;
-type MarmaladeService = any;
-type NamespaceService = any;
+import type { ChainId } from "@pact-toolbox/types";
 
 export interface ScriptContext<Args = Record<string, unknown>> {
   // Core components
@@ -38,7 +35,7 @@ export class ScriptContextBuilder<Args = Record<string, unknown>> {
   private client: PactToolboxClient;
   private config: PactToolboxConfigObj;
   private network: string;
-  private chainId: string;
+  private chainId: ChainId;
   private args: Args;
   private walletManager: WalletManager;
   private namespaceHandler: NamespaceHandler;
@@ -47,10 +44,10 @@ export class ScriptContextBuilder<Args = Record<string, unknown>> {
     client: PactToolboxClient,
     config: PactToolboxConfigObj,
     network: string,
-    chainId: string,
+    chainId: ChainId,
     args: Args,
     walletManager: WalletManager,
-    namespaceHandler: NamespaceHandler
+    namespaceHandler: NamespaceHandler,
   ) {
     this.client = client;
     this.config = config;
@@ -68,10 +65,31 @@ export class ScriptContextBuilder<Args = Record<string, unknown>> {
     const wallet = this.walletManager.getWallet();
     const currentSigner = this.walletManager.getCurrentSigner();
 
-    // Initialize KDA services (create placeholder implementations for now)
-    const coinService: CoinService = {} as any;
-    const marmaladeService: MarmaladeService = {} as any;
-    const namespaceService: NamespaceService = {} as any;
+    // Get network context from the client
+    const networkContext = this.client.getContext();
+
+    // Set wallet if available
+    if (wallet) {
+      networkContext.setWallet(wallet as any);
+    }
+
+    // Initialize KDA services with proper configuration
+    const coinService = new CoinService({
+      context: networkContext,
+      defaultChainId: this.chainId,
+      wallet: wallet as any,
+    });
+
+    const marmaladeService = new MarmaladeService({
+      context: networkContext,
+      defaultChainId: this.chainId,
+      wallet: wallet as any,
+    });
+
+    const namespaceService = new NamespaceService({
+      context: networkContext,
+      defaultChainId: this.chainId,
+    });
 
     // Initialize deployment helper
     const deployments = new DeploymentHelper(
@@ -79,7 +97,7 @@ export class ScriptContextBuilder<Args = Record<string, unknown>> {
       this.config,
       this.network,
       this.walletManager,
-      this.namespaceHandler
+      this.namespaceHandler,
     );
 
     // Deployment helper is ready to use
@@ -119,18 +137,10 @@ export function createScriptContextBuilder<Args = Record<string, unknown>>(
   client: PactToolboxClient,
   config: PactToolboxConfigObj,
   network: string,
-  chainId: string,
+  chainId: ChainId,
   args: Args,
   walletManager: WalletManager,
-  namespaceHandler: NamespaceHandler
+  namespaceHandler: NamespaceHandler,
 ): ScriptContextBuilder<Args> {
-  return new ScriptContextBuilder(
-    client,
-    config,
-    network,
-    chainId,
-    args,
-    walletManager,
-    namespaceHandler
-  );
+  return new ScriptContextBuilder(client, config, network, chainId, args, walletManager, namespaceHandler);
 }

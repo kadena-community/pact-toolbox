@@ -27,38 +27,34 @@ pnpm add @pact-toolbox/crypto
 ## Quick Start
 
 ```typescript
-import { 
+import {
   generateKeyPair,
   genKeyPair,
   signBytes,
   verifySignature,
   blake2b,
   toHex,
-  fromUtf8
-} from '@pact-toolbox/crypto';
+  fromUtf8,
+} from "@pact-toolbox/crypto";
 
 // Generate a new key pair
 const keyPair = await generateKeyPair();
 
 // Generate key pair with hex export
 const { publicKey, privateKey } = await genKeyPair();
-console.log('Public Key:', publicKey);   // 64 hex characters
-console.log('Private Key:', privateKey); // 64 hex characters
+console.log("Public Key:", publicKey); // 64 hex characters
+console.log("Private Key:", privateKey); // 64 hex characters
 
 // Sign a message
-const message = fromUtf8('Hello, Kadena!');
+const message = fromUtf8("Hello, Kadena!");
 const signature = await signBytes(keyPair.privateKey, message);
 
 // Verify signature
-const isValid = await verifySignature(
-  keyPair.publicKey,
-  signature,
-  message
-);
+const isValid = await verifySignature(keyPair.publicKey, signature, message);
 
 // Hash data
-const hash = blake2b('data to hash', undefined, 32);
-console.log('Blake2b hash:', toHex(hash));
+const hash = blake2b("data to hash", undefined, 32);
+console.log("Blake2b hash:", toHex(hash));
 ```
 
 ## Key Management
@@ -66,11 +62,7 @@ console.log('Blake2b hash:', toHex(hash));
 ### Key Generation
 
 ```typescript
-import { 
-  generateKeyPair,
-  generateExtractableKeyPair,
-  genKeyPair 
-} from '@pact-toolbox/crypto';
+import { generateKeyPair, generateExtractableKeyPair, genKeyPair } from "@pact-toolbox/crypto";
 
 // Generate non-extractable key pair (secure, can't export private key)
 const secureKeyPair = await generateKeyPair();
@@ -91,8 +83,8 @@ import {
   createKeyPairFromBytes,
   createKeyPairFromPrivateKeyBytes,
   getPublicKeyFromPrivateKey,
-  exportBase16Key
-} from '@pact-toolbox/crypto';
+  exportBase16Key,
+} from "@pact-toolbox/crypto";
 
 // From 64-byte array (32 private + 32 public)
 const keyPairBytes = new Uint8Array(64);
@@ -112,13 +104,10 @@ const publicKeyHex = await exportBase16Key(keyPair1.publicKey);
 ### Key Validation
 
 ```typescript
-import { 
-  createPrivateKeyFromBytes,
-  fromHex 
-} from '@pact-toolbox/crypto';
+import { createPrivateKeyFromBytes, fromHex } from "@pact-toolbox/crypto";
 
 // Create private key from bytes
-const keyBytes = fromHex('368820f80c324bbc7c2b0610688a7da43e39f91d118732671cd9c7500ff43cca');
+const keyBytes = fromHex("368820f80c324bbc7c2b0610688a7da43e39f91d118732671cd9c7500ff43cca");
 const privateKey = await createPrivateKeyFromBytes(keyBytes);
 
 // Keys are validated during creation - invalid keys will throw
@@ -129,7 +118,7 @@ const privateKey = await createPrivateKeyFromBytes(keyBytes);
 ### Message Signing
 
 ```typescript
-import { signBytes, signature, fromUtf8, toHex } from '@pact-toolbox/crypto';
+import { signBytes, signature, fromUtf8, toHex } from "@pact-toolbox/crypto";
 
 // Sign bytes
 const messageBytes = new Uint8Array([1, 2, 3, 4]);
@@ -148,24 +137,24 @@ const brandedSig = signature(sigHex);
 ### Signature Verification
 
 ```typescript
-import { verifySignature, isSignature } from '@pact-toolbox/crypto';
+import { verifySignature, isSignature } from "@pact-toolbox/crypto";
 
 const isValid = await verifySignature(
-  publicKey,     // CryptoKey
+  publicKey, // CryptoKey
   signatureBytes, // SignatureBytes (Uint8Array)
-  messageBytes   // Uint8Array
+  messageBytes, // Uint8Array
 );
 
 if (isValid) {
-  console.log('Signature is valid');
+  console.log("Signature is valid");
 } else {
-  console.log('Signature is invalid');
+  console.log("Signature is invalid");
 }
 
 // Validate signature format
 const hexSig = "a1b2c3..."; // 128 hex characters
 if (isSignature(hexSig)) {
-  console.log('Valid signature format');
+  console.log("Valid signature format");
 }
 ```
 
@@ -174,26 +163,21 @@ if (isSignature(hexSig)) {
 ### Blake2b Hashing
 
 ```typescript
-import { 
-  blake2b,
-  blake2bBase64Url,
-  toHex,
-  toBase64Url
-} from '@pact-toolbox/crypto';
+import { blake2b, blake2bBase64Url, toHex, toBase64Url } from "@pact-toolbox/crypto";
 
 // Basic Blake2b hash (returns Uint8Array)
-const hash1 = blake2b('data to hash', undefined, 32);
+const hash1 = blake2b("data to hash", undefined, 32);
 
 // Blake2b with base64url encoding (returns string)
-const hash2 = blake2bBase64Url('data to hash');
+const hash2 = blake2bBase64Url("data to hash");
 
 // Hash bytes directly
 const inputBytes = new Uint8Array([1, 2, 3, 4]);
 const hash3 = blake2b(inputBytes, undefined, 32);
 
 // All produce 32-byte (256-bit) hashes
-console.log('Hex:', toHex(hash1));
-console.log('Base64URL:', toBase64Url(hash1));
+console.log("Hex:", toHex(hash1));
+console.log("Base64URL:", toBase64Url(hash1));
 ```
 
 ## Encoding/Decoding
@@ -203,7 +187,7 @@ console.log('Base64URL:', toBase64Url(hash1));
 The package provides intuitive encoding utilities with clear naming:
 
 ```typescript
-import { 
+import {
   toHex,
   fromHex,
   toBase64,
@@ -211,57 +195,54 @@ import {
   toBase64Url,
   fromBase64Url,
   toUtf8,
-  fromUtf8
-} from '@pact-toolbox/crypto';
+  fromUtf8,
+} from "@pact-toolbox/crypto";
 
 // Hex (Hexadecimal)
 const bytes = new Uint8Array([255, 0, 128]);
-const hex = toHex(bytes);           // Convert bytes TO hex string
-const decoded1 = fromHex(hex);      // Convert FROM hex string to bytes
+const hex = toHex(bytes); // Convert bytes TO hex string
+const decoded1 = fromHex(hex); // Convert FROM hex string to bytes
 
 // Base64
-const b64 = toBase64(bytes);        // Convert bytes TO base64 string
-const decoded2 = fromBase64(b64);   // Convert FROM base64 string to bytes
+const b64 = toBase64(bytes); // Convert bytes TO base64 string
+const decoded2 = fromBase64(b64); // Convert FROM base64 string to bytes
 
 // Base64 URL-safe
-const b64url = toBase64Url(bytes);  // Convert bytes TO base64url string
+const b64url = toBase64Url(bytes); // Convert bytes TO base64url string
 const decoded3 = fromBase64Url(b64url); // Convert FROM base64url string to bytes
 
 // UTF-8
-const text = toUtf8(bytes);         // Convert bytes TO UTF-8 string
-const textBytes = fromUtf8('Hello, 世界!'); // Convert FROM UTF-8 string to bytes
+const text = toUtf8(bytes); // Convert bytes TO UTF-8 string
+const textBytes = fromUtf8("Hello, 世界!"); // Convert FROM UTF-8 string to bytes
 
 // All encoding functions are deterministic and reversible
-console.log('Original:', bytes);
-console.log('Hex:', hex);          // "ff0080"
-console.log('Base64:', b64);       // "/wCA"
-console.log('Base64URL:', b64url); // "_wCA"
+console.log("Original:", bytes);
+console.log("Hex:", hex); // "ff0080"
+console.log("Base64:", b64); // "/wCA"
+console.log("Base64URL:", b64url); // "_wCA"
 ```
 
 ### Validation and Type Safety
 
 ```typescript
-import { 
-  assertUint8Array,
-  assertString
-} from '@pact-toolbox/crypto';
+import { assertUint8Array, assertString } from "@pact-toolbox/crypto";
 
 // Input validation for encoding functions
 function safeEncode(data: unknown): string {
-  assertUint8Array(data, 'safeEncode');
+  assertUint8Array(data, "safeEncode");
   return toHex(data);
 }
 
 function safeDecode(hex: unknown): Uint8Array {
-  assertString(hex, 'safeDecode');
+  assertString(hex, "safeDecode");
   return fromHex(hex);
 }
 
 // All encoding functions include built-in validation
 try {
-  const result = fromHex('invalid-hex');
+  const result = fromHex("invalid-hex");
 } catch (error) {
-  console.error('Invalid hex:', error.message);
+  console.error("Invalid hex:", error.message);
 }
 ```
 
@@ -270,15 +251,15 @@ try {
 ### Addresses and K-Accounts
 
 ```typescript
-import { 
+import {
   address,
   kAccount,
   isAddress,
   isKAccount,
   getKAccountFromPublicKey,
   Address,
-  KAccount
-} from '@pact-toolbox/crypto';
+  KAccount,
+} from "@pact-toolbox/crypto";
 
 // Create address from hex string
 const hexAddr = "368820f80c324bbc7c2b0610688a7da43e39f91d118732671cd9c7500ff43cca";
@@ -290,11 +271,11 @@ const kAcct: KAccount = kAccount(`k:${hexAddr}`);
 
 // Validation
 if (isAddress(hexAddr)) {
-  console.log('Valid address');
+  console.log("Valid address");
 }
 
 if (isKAccount(kAcct)) {
-  console.log('Valid k-account');
+  console.log("Valid k-account");
 }
 
 // Get k-account from public key
@@ -305,16 +286,12 @@ const derivedKAccount = await getKAccountFromPublicKey(publicKey);
 ### Address Utilities
 
 ```typescript
-import { 
-  addressToBytes,
-  bytesToAddress,
-  getAddressComparator
-} from '@pact-toolbox/crypto';
+import { addressToBytes, bytesToAddress, getAddressComparator } from "@pact-toolbox/crypto";
 
 // Convert between address and bytes
 const addr = address("368820f80c324bbc7c2b0610688a7da43e39f91d118732671cd9c7500ff43cca");
-const bytes = addressToBytes(addr);      // Convert to 32-byte array
-const restored = bytesToAddress(bytes);  // Convert back to address
+const bytes = addressToBytes(addr); // Convert to 32-byte array
+const restored = bytesToAddress(bytes); // Convert back to address
 
 // Address comparison
 const comparator = getAddressComparator();
@@ -326,7 +303,7 @@ const result = comparator(addr1, addr2); // -1, 0, or 1
 ### Fast Stable Stringify
 
 ```typescript
-import { fastStableStringify } from '@pact-toolbox/crypto';
+import { fastStableStringify } from "@pact-toolbox/crypto";
 
 // Deterministic JSON stringification for signing
 const obj = { b: 2, a: 1, c: { d: 3 } };
@@ -340,10 +317,7 @@ const result = fastStableStringify(undefined); // undefined
 ### Input Validation
 
 ```typescript
-import { 
-  assertUint8Array,
-  assertString
-} from '@pact-toolbox/crypto';
+import { assertUint8Array, assertString } from "@pact-toolbox/crypto";
 
 // Built-in validation for all encoding functions
 function safeDecode(input: string): Uint8Array {
@@ -353,12 +327,12 @@ function safeDecode(input: string): Uint8Array {
 
 // Manual validation when needed
 function processBytes(data: unknown): string {
-  assertUint8Array(data, 'processBytes');
+  assertUint8Array(data, "processBytes");
   return toHex(data);
 }
 
 function processString(data: unknown): Uint8Array {
-  assertString(data, 'processString');
+  assertString(data, "processString");
   return fromUtf8(data);
 }
 ```
@@ -371,8 +345,8 @@ import {
   assertKeyGenerationIsAvailable,
   assertSigningCapabilityIsAvailable,
   assertVerificationCapabilityIsAvailable,
-  assertPRNGIsAvailable
-} from '@pact-toolbox/crypto';
+  assertPRNGIsAvailable,
+} from "@pact-toolbox/crypto";
 
 // Check capabilities before use
 try {
@@ -381,10 +355,10 @@ try {
   assertSigningCapabilityIsAvailable();
   assertVerificationCapabilityIsAvailable();
   assertPRNGIsAvailable();
-  
-  console.log('All crypto capabilities available');
+
+  console.log("All crypto capabilities available");
 } catch (error) {
-  console.error('Missing crypto capability:', error.message);
+  console.error("Missing crypto capability:", error.message);
 }
 ```
 
@@ -394,7 +368,7 @@ try {
 
 ```typescript
 // Polyfills are automatically applied
-import { generateKeyPair } from '@pact-toolbox/crypto';
+import { generateKeyPair } from "@pact-toolbox/crypto";
 
 const keyPair = await generateKeyPair();
 // Works seamlessly in Node.js
@@ -404,7 +378,7 @@ const keyPair = await generateKeyPair();
 
 ```typescript
 // Ensure HTTPS for Web Crypto API
-import { generateKeyPair } from '@pact-toolbox/crypto';
+import { generateKeyPair } from "@pact-toolbox/crypto";
 
 if (window.crypto && window.crypto.subtle) {
   const keyPair = await generateKeyPair();
@@ -416,8 +390,8 @@ if (window.crypto && window.crypto.subtle) {
 
 ```typescript
 // Install react-native-get-random-values first
-import 'react-native-get-random-values';
-import { generateKeyPair } from '@pact-toolbox/crypto';
+import "react-native-get-random-values";
+import { generateKeyPair } from "@pact-toolbox/crypto";
 
 const keyPair = await generateKeyPair();
 // Works in React Native
@@ -432,12 +406,12 @@ const keyPair = await generateKeyPair();
 // Use secure storage mechanisms
 
 // Bad
-localStorage.setItem('privateKey', privateKey);
+localStorage.setItem("privateKey", privateKey);
 
 // Good
-import { encrypt } from 'your-encryption-lib';
+import { encrypt } from "your-encryption-lib";
 const encrypted = await encrypt(privateKey, password);
-await secureStorage.setItem('privateKey', encrypted);
+await secureStorage.setItem("privateKey", encrypted);
 ```
 
 ### 2. Key Generation
@@ -457,14 +431,10 @@ const keyPair2 = await generateKeyPair();
 ```typescript
 // Always verify signatures before trusting data
 const data = await fetchSignedData();
-const isValid = await verifySignature(
-  trustedPublicKey,
-  data.signature,
-  data.message
-);
+const isValid = await verifySignature(trustedPublicKey, data.signature, data.message);
 
 if (!isValid) {
-  throw new Error('Invalid signature - data may be tampered');
+  throw new Error("Invalid signature - data may be tampered");
 }
 ```
 
@@ -474,21 +444,13 @@ if (!isValid) {
 
 ```typescript
 // Process multiple operations efficiently
-const messages = Array.from({ length: 100 }, (_, i) => 
-  new TextEncoder().encode(`Message ${i}`)
-);
+const messages = Array.from({ length: 100 }, (_, i) => new TextEncoder().encode(`Message ${i}`));
 
 // Sign in parallel
-const signatures = await Promise.all(
-  messages.map(msg => signBytes(privateKey, msg))
-);
+const signatures = await Promise.all(messages.map((msg) => signBytes(privateKey, msg)));
 
 // Verify in parallel
-const validations = await Promise.all(
-  signatures.map((sig, i) => 
-    verifySignature(publicKey, sig, messages[i])
-  )
-);
+const validations = await Promise.all(signatures.map((sig, i) => verifySignature(publicKey, sig, messages[i])));
 ```
 
 ### Caching Keys
@@ -512,19 +474,15 @@ async function getCachedKey(hexKey: string): Promise<CryptoKey> {
 ### Complete Account Creation
 
 ```typescript
-import { 
-  genKeyPair,
-  kAccount,
-  getKAccountFromPublicKey
-} from '@pact-toolbox/crypto';
+import { genKeyPair, kAccount, getKAccountFromPublicKey } from "@pact-toolbox/crypto";
 
 async function createNewAccount() {
   // Generate keys
   const { publicKey, privateKey } = await genKeyPair();
-  
+
   // Create k-account
   const account = kAccount(`k:${publicKey}`);
-  
+
   return {
     account,
     publicKey,
@@ -534,7 +492,7 @@ async function createNewAccount() {
 
 // Usage
 const newAccount = await createNewAccount();
-console.log('Account:', newAccount.account);
+console.log("Account:", newAccount.account);
 ```
 
 ### Message Authentication
@@ -542,27 +500,23 @@ console.log('Account:', newAccount.account);
 ```typescript
 async function authenticateMessage(
   message: string,
-  senderPublicKeyHex: string
+  senderPublicKeyHex: string,
 ): Promise<{ verified: boolean; data?: any }> {
   try {
     // Parse message format: <data>|<signature>
-    const [dataStr, signatureHex] = message.split('|');
-    
+    const [dataStr, signatureHex] = message.split("|");
+
     // Decode components
     const data = JSON.parse(dataStr);
     const signatureBytes = fromHex(signatureHex);
     const messageBytes = fromUtf8(dataStr);
-    
+
     // Verify signature
     const publicKeyBytes = fromHex(senderPublicKeyHex);
     const publicKey = await createPrivateKeyFromBytes(publicKeyBytes);
-    
-    const verified = await verifySignature(
-      publicKey,
-      signatureBytes,
-      messageBytes
-    );
-    
+
+    const verified = await verifySignature(publicKey, signatureBytes, messageBytes);
+
     return { verified, data: verified ? data : undefined };
   } catch (error) {
     return { verified: false };
@@ -573,21 +527,21 @@ async function authenticateMessage(
 ### Custom Hashing
 
 ```typescript
-import { blake2b, toBase64Url, fromUtf8, fastStableStringify } from '@pact-toolbox/crypto';
+import { blake2b, toBase64Url, fromUtf8, fastStableStringify } from "@pact-toolbox/crypto";
 
 function createContentHash(content: any): string {
   // Deterministic serialization
   const json = fastStableStringify(content);
-  
+
   // Hash with Blake2b
   const hash = blake2b(fromUtf8(json), undefined, 32);
-  
+
   // Encode for URL-safe transmission
   return toBase64Url(hash);
 }
 
 // Usage
-const doc = { title: 'Document', version: 1 };
+const doc = { title: "Document", version: 1 };
 const contentHash = createContentHash(doc);
 // Can be used as unique identifier
 ```

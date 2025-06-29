@@ -1,5 +1,6 @@
 import type { PactToolboxConfigObj } from "@pact-toolbox/config";
 import type { NetworkOptions } from "@pact-toolbox/network";
+import type { ChainId } from "@pact-toolbox/types";
 import { createJiti } from "jiti";
 import { fileURLToPath } from "mlly";
 import { resolve } from "pathe";
@@ -244,7 +245,7 @@ export async function runScript(
       options.client,
       options.config,
       options.network,
-      options.network, // chainId same as network for now
+      chainId as ChainId,
       options.args || {},
       walletManager,
       namespaceHandler

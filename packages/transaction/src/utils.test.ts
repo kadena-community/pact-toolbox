@@ -4,7 +4,6 @@ import {
   generateKAccount,
   generateKAccounts,
   getKAccountKey,
-  isWalletLike,
   pactDecimal,
   createPactCommandWithDefaults,
   createTransaction,
@@ -81,7 +80,7 @@ describe("Utils", () => {
   describe("generateKAccount", () => {
     it("should generate a valid K-account", async () => {
       const account = await generateKAccount();
-      
+
       expect(account.publicKey).toBeDefined();
       expect(account.secretKey).toBeDefined();
       expect(account.account).toBe(`k:${account.publicKey}`);
@@ -96,7 +95,7 @@ describe("Utils", () => {
     it("should generate specified number of K-accounts", async () => {
       const count = 5;
       const accounts = await generateKAccounts(count);
-      
+
       expect(accounts).toHaveLength(count);
       accounts.forEach((account) => {
         expect(account.publicKey).toBeDefined();
@@ -129,30 +128,6 @@ describe("Utils", () => {
     });
   });
 
-  describe("isWalletLike", () => {
-    it("should return true for objects with sign method", () => {
-      const wallet = { sign: () => {} };
-      expect(isWalletLike(wallet)).toBe(true);
-    });
-
-    it("should return true for objects with quickSign method", () => {
-      const wallet = { quickSign: async () => {} };
-      expect(isWalletLike(wallet)).toBe(true);
-    });
-
-    it("should return true for functions", () => {
-      expect(isWalletLike(function () {})).toBe(true);
-    });
-
-    it("should return false for non-wallet objects", () => {
-      expect(isWalletLike({ invalid: "property" })).toBe(false);
-      expect(isWalletLike(null)).toBe(false);
-      expect(isWalletLike(undefined)).toBe(false);
-      expect(isWalletLike(123)).toBe(false);
-      expect(isWalletLike("wallet")).toBe(false);
-    });
-  });
-
   describe("isPactExecPayload", () => {
     it("should return true for exec payload", () => {
       const payload = { exec: { code: "test", data: {} } };
@@ -181,9 +156,9 @@ describe("Utils", () => {
     it("should create command with network defaults", () => {
       const payload: PactExecPayload = { exec: { code: "test", data: {} } };
       const networkConfig = mockMultiNetworkConfig.configs["pactServer"]!;
-      
+
       const command = createPactCommandWithDefaults(payload, networkConfig);
-      
+
       expect(command.payload).toEqual(payload);
       expect(command.meta).toEqual(networkConfig.meta);
       expect(command.signers).toEqual([]);
@@ -201,14 +176,14 @@ describe("Utils", () => {
         networkId: "development",
         nonce: "",
       };
-      
+
       const tx = createTransaction(command);
-      
+
       expect(tx.cmd).toBeDefined();
       expect(tx.hash).toBeDefined();
       expect(tx.sigs).toBeDefined();
       expect(Array.isArray(tx.sigs)).toBe(true);
-      
+
       // Parse the command to check defaults
       const parsedCmd = JSON.parse(tx.cmd);
       expect(parsedCmd.meta.gasLimit).toBe(150000);
@@ -220,7 +195,7 @@ describe("Utils", () => {
 
     it("should set creation time with clock skew offset", () => {
       const beforeTime = Math.floor(Date.now() / 1000) - CLOCK_SKEW_OFFSET_SECONDS;
-      
+
       const command: PactCommand<PactExecPayload> = {
         payload: { exec: { code: "test", data: {} } },
         meta: { chainId: "0" },
@@ -228,10 +203,10 @@ describe("Utils", () => {
         networkId: "development",
         nonce: "",
       };
-      
+
       const tx = createTransaction(command);
       const parsedCmd = JSON.parse(tx.cmd);
-      
+
       expect(parsedCmd.meta.creationTime).toBeGreaterThanOrEqual(beforeTime - 1);
       expect(parsedCmd.meta.creationTime).toBeLessThanOrEqual(beforeTime + 1);
     });
@@ -246,9 +221,9 @@ describe("Utils", () => {
         networkId: "development",
         nonce: "",
       };
-      
+
       const updated = updatePactCommandSigners(command, "alice-key");
-      
+
       expect(updated.signers).toHaveLength(1);
       expect(updated.signers[0]).toEqual({
         pubKey: "alice-key",
@@ -265,9 +240,9 @@ describe("Utils", () => {
         networkId: "development",
         nonce: "",
       };
-      
+
       const updated = updatePactCommandSigners(command, ["alice-key", "bob-key"]);
-      
+
       expect(updated.signers).toHaveLength(2);
       expect(updated.signers[0]?.pubKey).toBe("alice-key");
       expect(updated.signers[1]?.pubKey).toBe("bob-key");
@@ -281,15 +256,13 @@ describe("Utils", () => {
         networkId: "development",
         nonce: "",
       };
-      
+
       const updated = updatePactCommandSigners(command, "alice-key", (signFor) => [
         signFor("coin.TRANSFER", "alice", "bob", 10.0),
       ]);
-      
+
       expect(updated.signers).toHaveLength(1);
-      expect(updated.signers[0]?.clist).toEqual([
-        { name: "coin.TRANSFER", args: ["alice", "bob", 10.0] },
-      ]);
+      expect(updated.signers[0]?.clist).toEqual([{ name: "coin.TRANSFER", args: ["alice", "bob", 10.0] }]);
     });
 
     it("should update existing signer capabilities", () => {
@@ -300,15 +273,11 @@ describe("Utils", () => {
         networkId: "development",
         nonce: "",
       };
-      
-      const updated = updatePactCommandSigners(command, "alice-key", (signFor) => [
-        signFor("coin.GAS"),
-      ]);
-      
+
+      const updated = updatePactCommandSigners(command, "alice-key", (signFor) => [signFor("coin.GAS")]);
+
       expect(updated.signers).toHaveLength(1);
-      expect(updated.signers[0]?.clist).toEqual([
-        { name: "coin.GAS", args: [] },
-      ]);
+      expect(updated.signers[0]?.clist).toEqual([{ name: "coin.GAS", args: [] }]);
     });
   });
 
@@ -321,7 +290,7 @@ describe("Utils", () => {
         networkId: "development",
         nonce: "",
       };
-      
+
       const mockWallet = {
         getAccount: vi.fn().mockResolvedValue({
           address: "alice",
@@ -333,9 +302,9 @@ describe("Utils", () => {
           sigs: [{ sig: "signature" }],
         }),
       };
-      
+
       const result = await signPactCommandWithWallet(command, mockWallet as any);
-      
+
       expect(mockWallet.sign).toHaveBeenCalled();
       expect(result).toEqual({
         cmd: "signed-cmd",
@@ -352,7 +321,7 @@ describe("Utils", () => {
         networkId: "development",
         nonce: "",
       };
-      
+
       const mockWallet = {
         getAccount: vi.fn().mockResolvedValue({
           address: "alice",
@@ -364,9 +333,9 @@ describe("Utils", () => {
           sigs: [{ sig: "signature" }],
         }),
       };
-      
+
       await signPactCommandWithWallet(command, mockWallet as any);
-      
+
       expect(command.signers).toHaveLength(1);
       expect(command.signers[0]?.pubKey).toBe("alice-key");
       expect(command.meta.sender).toBe("alice");
@@ -381,14 +350,14 @@ describe("Utils", () => {
 
     it("should return config from __PACT_TOOLBOX_NETWORKS__", () => {
       (globalThis as any).__PACT_TOOLBOX_NETWORKS__ = mockMultiNetworkConfig;
-      
+
       const config = getToolboxGlobalMultiNetworkConfig();
       expect(config).toEqual(mockMultiNetworkConfig);
     });
 
     it("should parse string config", () => {
       (globalThis as any).__PACT_TOOLBOX_NETWORKS__ = JSON.stringify(mockMultiNetworkConfig);
-      
+
       const config = getToolboxGlobalMultiNetworkConfig();
       expect(config).toEqual(mockMultiNetworkConfig);
     });
@@ -398,7 +367,7 @@ describe("Utils", () => {
         getNetworkConfig: () => mockMultiNetworkConfig.configs["pactServer"],
       };
       (globalThis as any).__PACT_TOOLBOX_CONTEXT__ = mockContext;
-      
+
       const config = getToolboxGlobalMultiNetworkConfig();
       expect(config.configs["development"]).toEqual(mockMultiNetworkConfig.configs["pactServer"]);
     });
@@ -414,7 +383,7 @@ describe("Utils", () => {
 
     it("should throw error in strict mode when not installed", () => {
       expect(() => getToolboxGlobalMultiNetworkConfig(true)).toThrow(
-        "Make sure you are using the pact-toolbox bundler plugin"
+        "Make sure you are using the pact-toolbox bundler plugin",
       );
     });
   });
@@ -434,7 +403,7 @@ describe("Utils", () => {
         ...mockMultiNetworkConfig,
         environment: "production",
       };
-      
+
       expect(validateNetworkForEnvironment("pactServer")).toBe(false);
     });
 
@@ -449,7 +418,7 @@ describe("Utils", () => {
           },
         },
       };
-      
+
       expect(validateNetworkForEnvironment("testnet")).toBe(false);
     });
 
@@ -467,7 +436,7 @@ describe("Utils", () => {
     it("should create client with correct configuration", () => {
       const networkConfig = mockMultiNetworkConfig.configs["testnet"]!;
       const client = createChainwebClient(networkConfig);
-      
+
       expect(client).toBeDefined();
       // We can't easily test the internal configuration without exposing it
       // But we can verify the client is created without errors
@@ -478,7 +447,7 @@ describe("Utils", () => {
         ...mockMultiNetworkConfig.configs["testnet"]!,
         rpcUrl: "https://api.testnet.chainweb.com/chainweb/0.0/{networkId}/chain/{chainId}/pact",
       };
-      
+
       const client = createChainwebClient(networkConfig);
       expect(client).toBeDefined();
     });

@@ -35,18 +35,18 @@ The main interface that all wallets must implement:
 interface Wallet {
   // Check if wallet is installed/available
   isInstalled(): boolean;
-  
+
   // Connection management
   connect(networkId?: string): Promise<WalletAccount>;
   disconnect(networkId?: string): Promise<void>;
   isConnected(networkId?: string): Promise<boolean>;
-  
+
   // Account information
   getAccount(networkId?: string): Promise<WalletAccount>;
-  
+
   // Network information
   getNetwork(): Promise<WalletNetwork>;
-  
+
   // Transaction signing (with overloads)
   sign(tx: PartiallySignedTransaction): Promise<SignedTransaction>;
   sign(txs: PartiallySignedTransaction[]): Promise<SignedTransaction[]>;
@@ -71,11 +71,11 @@ Account information structure:
 
 ```typescript
 interface WalletAccount {
-  address: string;              // Public key address (k:publicKey format)
-  publicKey: string;            // Public key
-  balance?: number;             // Account balance (optional)
-  connectedSites?: string[];    // Connected sites/dApps (optional)
-  connectedAt?: Date;           // Connection timestamp (optional)
+  address: string; // Public key address (k:publicKey format)
+  publicKey: string; // Public key
+  balance?: number; // Account balance (optional)
+  connectedSites?: string[]; // Connected sites/dApps (optional)
+  connectedAt?: Date; // Connection timestamp (optional)
 }
 ```
 
@@ -85,12 +85,12 @@ Network configuration with enhanced details:
 
 ```typescript
 interface WalletNetwork {
-  id: string;               // Network unique identifier
-  networkId: string;        // Kadena network ID (mainnet01, testnet04, etc.)
-  name: string;             // Human-readable network name
-  url: string;              // RPC endpoint URL
-  explorer?: string;        // Network explorer URL (optional)
-  isDefault?: boolean;      // Whether this is the default network (optional)
+  id: string; // Network unique identifier
+  networkId: string; // Kadena network ID (mainnet01, testnet04, etc.)
+  name: string; // Human-readable network name
+  url: string; // RPC endpoint URL
+  explorer?: string; // Network explorer URL (optional)
+  isDefault?: boolean; // Whether this is the default network (optional)
 }
 ```
 
@@ -99,8 +99,8 @@ interface WalletNetwork {
 The package provides `BaseWallet`, an abstract class that implements common functionality:
 
 ```typescript
-import { BaseWallet } from '@pact-toolbox/wallet-core';
-import type { PartiallySignedTransaction, SignedTransaction } from '@pact-toolbox/types';
+import { BaseWallet } from "@pact-toolbox/wallet-core";
+import type { PartiallySignedTransaction, SignedTransaction } from "@pact-toolbox/types";
 
 class MyCustomWallet extends BaseWallet {
   isInstalled(): boolean {
@@ -111,36 +111,39 @@ class MyCustomWallet extends BaseWallet {
   async connect(networkId?: string): Promise<WalletAccount> {
     // Implement connection logic
     this.connected = true;
-    this.account = { 
-      address: 'k:public-key-here',
-      publicKey: 'public-key-here'
+    this.account = {
+      address: "k:public-key-here",
+      publicKey: "public-key-here",
     };
     this.network = {
-      id: networkId || 'development',
-      networkId: networkId || 'development',
-      name: 'Development',
-      url: 'http://localhost:8080'
+      id: networkId || "development",
+      networkId: networkId || "development",
+      name: "Development",
+      url: "http://localhost:8080",
     };
     return this.account;
   }
-  
+
   // Method overloads for TypeScript
   sign(tx: PartiallySignedTransaction): Promise<SignedTransaction>;
   sign(txs: PartiallySignedTransaction[]): Promise<SignedTransaction[]>;
-  async sign(txOrTxs: PartiallySignedTransaction | PartiallySignedTransaction[]): Promise<SignedTransaction | SignedTransaction[]> {
+  async sign(
+    txOrTxs: PartiallySignedTransaction | PartiallySignedTransaction[],
+  ): Promise<SignedTransaction | SignedTransaction[]> {
     // Implement signing logic for both single and batch
     if (Array.isArray(txOrTxs)) {
       // Batch signing
-      return txOrTxs.map(tx => ({ ...tx, sigs: [{ sig: 'signature' }] }));
+      return txOrTxs.map((tx) => ({ ...tx, sigs: [{ sig: "signature" }] }));
     } else {
       // Single signing
-      return { ...txOrTxs, sigs: [{ sig: 'signature' }] };
+      return { ...txOrTxs, sigs: [{ sig: "signature" }] };
     }
   }
 }
 ```
 
 The base class provides:
+
 - Connection state management (`connected`, `account`, `network` properties)
 - Default implementations for `getAccount()` and `getNetwork()` that auto-connect if needed
 - Default implementations for `isConnected()` and `disconnect()`
@@ -156,7 +159,7 @@ import { WalletError } from '@pact-toolbox/wallet-core';
 throw new WalletError('CONNECTION_FAILED', 'Failed to connect to wallet');
 
 // Available error types:
-type WalletErrorType = 
+type WalletErrorType =
   | "NOT_FOUND"          // Wallet not found or not installed
   | "NOT_CONNECTED"      // Wallet is not connected
   | "CONNECTION_FAILED"  // Connection attempt failed
@@ -190,13 +193,13 @@ WalletError.unknown(message: string, cause?: unknown)
 Detect if a browser extension wallet is available:
 
 ```typescript
-import { detectBrowserExtension } from '@pact-toolbox/wallet-core';
+import { detectBrowserExtension } from "@pact-toolbox/wallet-core";
 
 // Check if Ecko wallet is installed
-const isEckoAvailable = await detectBrowserExtension('kadena', 3000);
+const isEckoAvailable = await detectBrowserExtension("kadena", 3000);
 
-// Check if Chainweaver is installed  
-const isChainweaverAvailable = await detectBrowserExtension('kadenaSpireKey', 3000);
+// Check if Chainweaver is installed
+const isChainweaverAvailable = await detectBrowserExtension("kadenaSpireKey", 3000);
 ```
 
 ## Events
@@ -219,14 +222,14 @@ Configure wallet connections:
 
 ```typescript
 interface ConnectOptions {
-  networkId?: string;     // Target network ID
-  force?: boolean;        // Force reconnection even if already connected
-  timeout?: number;       // Connection timeout in milliseconds
+  networkId?: string; // Target network ID
+  force?: boolean; // Force reconnection even if already connected
+  timeout?: number; // Connection timeout in milliseconds
 }
 
 interface AutoConnectOptions extends ConnectOptions {
-  preferredWallets?: string[];  // Wallet IDs in order of preference
-  skipUnavailable?: boolean;    // Skip wallets that aren't available (default: true)
+  preferredWallets?: string[]; // Wallet IDs in order of preference
+  skipUnavailable?: boolean; // Skip wallets that aren't available (default: true)
 }
 ```
 
@@ -235,16 +238,14 @@ interface AutoConnectOptions extends ConnectOptions {
 The package works with Pact transaction types from `@pact-toolbox/types`:
 
 ```typescript
-import type {
-  PartiallySignedTransaction,
-  SignedTransaction
-} from '@pact-toolbox/wallet-core';
+import type { PartiallySignedTransaction, SignedTransaction } from "@pact-toolbox/wallet-core";
 
 // PartiallySignedTransaction structure:
 interface PartiallySignedTransaction {
-  cmd: string;           // Stringified Pact command
-  hash: string;          // Transaction hash
-  sigs: Array<{          // Existing signatures (if any)
+  cmd: string; // Stringified Pact command
+  hash: string; // Transaction hash
+  sigs: Array<{
+    // Existing signatures (if any)
     sig: string;
   }>;
 }
@@ -252,7 +253,7 @@ interface PartiallySignedTransaction {
 // SignedTransaction adds signatures:
 interface SignedTransaction extends PartiallySignedTransaction {
   sigs: Array<{
-    sig: string;         // Cryptographic signature
+    sig: string; // Cryptographic signature
   }>;
 }
 ```
@@ -262,34 +263,36 @@ interface SignedTransaction extends PartiallySignedTransaction {
 ### Creating a Custom Wallet Provider
 
 ```typescript
-import { BaseWallet, WalletProvider, WalletMetadata, detectBrowserExtension } from '@pact-toolbox/wallet-core';
-import type { Wallet } from '@pact-toolbox/wallet-core';
+import { BaseWallet, WalletProvider, WalletMetadata, detectBrowserExtension } from "@pact-toolbox/wallet-core";
+import type { Wallet } from "@pact-toolbox/wallet-core";
 
 class MyWallet extends BaseWallet {
   isInstalled(): boolean {
-    return typeof window !== 'undefined' && !!(window as any).myWallet;
+    return typeof window !== "undefined" && !!(window as any).myWallet;
   }
-  
+
   async connect(networkId?: string): Promise<WalletAccount> {
     // Implementation details...
     const account = await (window as any).myWallet.connect();
     this.connected = true;
     this.account = {
       address: `k:${account.publicKey}`,
-      publicKey: account.publicKey
+      publicKey: account.publicKey,
     };
     this.network = {
-      id: networkId || 'mainnet01',
-      networkId: networkId || 'mainnet01',
-      name: 'Mainnet',
-      url: 'https://api.chainweb.com'
+      id: networkId || "mainnet01",
+      networkId: networkId || "mainnet01",
+      name: "Mainnet",
+      url: "https://api.chainweb.com",
     };
     return this.account;
   }
-  
+
   sign(tx: PartiallySignedTransaction): Promise<SignedTransaction>;
   sign(txs: PartiallySignedTransaction[]): Promise<SignedTransaction[]>;
-  async sign(txOrTxs: PartiallySignedTransaction | PartiallySignedTransaction[]): Promise<SignedTransaction | SignedTransaction[]> {
+  async sign(
+    txOrTxs: PartiallySignedTransaction | PartiallySignedTransaction[],
+  ): Promise<SignedTransaction | SignedTransaction[]> {
     // Delegate to wallet extension
     return (window as any).myWallet.sign(txOrTxs);
   }
@@ -297,18 +300,18 @@ class MyWallet extends BaseWallet {
 
 class MyWalletProvider implements WalletProvider {
   readonly metadata: WalletMetadata = {
-    id: 'my-wallet',
-    name: 'My Custom Wallet',
-    description: 'A custom Kadena wallet',
-    icon: 'https://example.com/icon.png',
-    type: 'browser-extension',
-    features: ['sign', 'batch-sign']
+    id: "my-wallet",
+    name: "My Custom Wallet",
+    description: "A custom Kadena wallet",
+    icon: "https://example.com/icon.png",
+    type: "browser-extension",
+    features: ["sign", "batch-sign"],
   };
-  
+
   async isAvailable(): Promise<boolean> {
-    return detectBrowserExtension('myWallet', 3000);
+    return detectBrowserExtension("myWallet", 3000);
   }
-  
+
   async createWallet(): Promise<Wallet> {
     return new MyWallet();
   }
@@ -323,20 +326,20 @@ try {
 } catch (error) {
   if (error instanceof WalletError) {
     switch (error.type) {
-      case 'USER_REJECTED':
-        console.log('User rejected connection');
+      case "USER_REJECTED":
+        console.log("User rejected connection");
         break;
-      case 'NETWORK_MISMATCH':
-        console.log('Wrong network');
+      case "NETWORK_MISMATCH":
+        console.log("Wrong network");
         break;
-      case 'NOT_FOUND':
-        console.log('Wallet not installed');
+      case "NOT_FOUND":
+        console.log("Wallet not installed");
         break;
-      case 'CONNECTION_FAILED':
-        console.log('Failed to connect:', error.message);
+      case "CONNECTION_FAILED":
+        console.log("Failed to connect:", error.message);
         break;
       default:
-        console.error('Wallet error:', error.message);
+        console.error("Wallet error:", error.message);
     }
   }
 }
@@ -345,7 +348,7 @@ try {
 try {
   await wallet.sign(transaction);
 } catch (error) {
-  throw WalletError.signingFailed('User declined transaction');
+  throw WalletError.signingFailed("User declined transaction");
 }
 ```
 

@@ -36,8 +36,8 @@ pnpm add @pact-toolbox/kda
 ### Using Services
 
 ```typescript
-import { CoinService, MarmaladeService, NamespaceService } from '@pact-toolbox/kda';
-import { ToolboxNetworkContext } from '@pact-toolbox/transaction';
+import { CoinService, MarmaladeService, NamespaceService } from "@pact-toolbox/kda";
+import { ToolboxNetworkContext } from "@pact-toolbox/transaction";
 
 // Create network context
 const context = new ToolboxNetworkContext(/* network config */);
@@ -50,8 +50,8 @@ const namespaceService = new NamespaceService({ context, defaultChainId: "0" });
 // Transfer coins
 const result = await coinService.transfer({
   from: "k:sender-public-key",
-  to: "k:receiver-public-key", 
-  amount: "10.0"
+  to: "k:receiver-public-key",
+  amount: "10.0",
 });
 
 // Create NFT token
@@ -60,19 +60,19 @@ const tokenResult = await marmaladeService.createToken({
   precision: 0,
   uri: "https://example.com/metadata.json",
   policies: [],
-  creator: "creator-public-key"
+  creator: "creator-public-key",
 });
 
 // Create principal namespace
 const namespaceResult = await namespaceService.createPrincipalNamespace({
-  adminKeyset: { keys: ["admin-key"], pred: "keys-all" }
+  adminKeyset: { keys: ["admin-key"], pred: "keys-all" },
 });
 ```
 
 ### Using Standalone Utilities
 
 ```typescript
-import { pact } from '@pact-toolbox/kda';
+import { pact } from "@pact-toolbox/kda";
 
 // Create keyset guard
 const guard = pact.createKeysetGuard("my-keyset", ["key1", "key2"], "keys-all");
@@ -89,7 +89,7 @@ const isValid = pact.validateNamespaceName("n_abc123...");
 // Validate keyset for principal namespace
 const keysetValid = pact.validatePrincipalKeyset({
   keys: ["my-key"],
-  pred: "keys-all"
+  pred: "keys-all",
 });
 
 // Check if namespace is a principal namespace
@@ -207,14 +207,13 @@ pact.coinCapabilities.transfer(from: string, to: string, amount: string): Capabi
 pact.coinCapabilities.transferXchain(from: string, to: string, amount: string, targetChainId: string): Capability
 ```
 
-
 ## Examples
 
 ### Complete Coin Transfer Workflow
 
 ```typescript
-import { CoinService } from '@pact-toolbox/kda';
-import { ToolboxNetworkContext } from '@pact-toolbox/transaction';
+import { CoinService } from "@pact-toolbox/kda";
+import { ToolboxNetworkContext } from "@pact-toolbox/transaction";
 
 // Setup
 const context = new ToolboxNetworkContext(networkConfig);
@@ -227,7 +226,7 @@ if (!exists) {
   // Create account if it doesn't exist
   await coinService.createAccount({
     account: "k:receiver-key",
-    guard: { keys: ["receiver-key"], pred: "keys-all" }
+    guard: { keys: ["receiver-key"], pred: "keys-all" },
   });
 }
 
@@ -236,7 +235,7 @@ const result = await coinService.transfer({
   from: "k:sender-key",
   to: "k:receiver-key",
   amount: "10.0",
-  chainId: "0"
+  chainId: "0",
 });
 
 console.log(`Transfer completed: ${result.reqKey}`);
@@ -245,7 +244,7 @@ console.log(`Transfer completed: ${result.reqKey}`);
 ### NFT Creation and Minting
 
 ```typescript
-import { MarmaladeService } from '@pact-toolbox/kda';
+import { MarmaladeService } from "@pact-toolbox/kda";
 
 const marmaladeService = new MarmaladeService({ context });
 
@@ -255,7 +254,7 @@ const tokenResult = await marmaladeService.createToken({
   precision: 0,
   uri: "https://example.com/metadata/001.json",
   policies: ["marmalade.policy.non-fungible"],
-  creator: "creator-public-key"
+  creator: "creator-public-key",
 });
 
 // Mint NFT to owner
@@ -263,29 +262,29 @@ const mintResult = await marmaladeService.mintToken({
   tokenId: "my-collection.nft-001",
   account: "k:owner-key",
   guard: { keys: ["owner-key"], pred: "keys-all" },
-  amount: "1.0"
+  amount: "1.0",
 });
 ```
 
 ### Principal Namespace Creation
 
 ```typescript
-import { NamespaceService } from '@pact-toolbox/kda';
+import { NamespaceService } from "@pact-toolbox/kda";
 
 const namespaceService = new NamespaceService({ context });
 
 // Create principal namespace
 const result = await namespaceService.createPrincipalNamespace({
   adminKeyset: { keys: ["admin-key"], pred: "keys-all" },
-  userKeyset: { keys: ["user-key"], pred: "keys-all" }
+  userKeyset: { keys: ["user-key"], pred: "keys-all" },
 });
 
 console.log(`Namespace created: ${result.namespace}`);
 
 // Generate namespace name without blockchain interaction
 const namespaceName = namespaceService.generatePrincipalNamespace({
-  keys: ["admin-key"], 
-  pred: "keys-all"
+  keys: ["admin-key"],
+  pred: "keys-all",
 });
 ```
 
@@ -315,14 +314,14 @@ if (result.status === "error") {
 This package provides full TypeScript support with comprehensive type definitions for all operations, ensuring type safety and excellent developer experience.
 
 ```typescript
-import type { 
+import type {
   CoinServiceConfig,
   TransferOptions,
   MarmaladeServiceConfig,
   CreateTokenOptions,
   NamespaceServiceConfig,
-  CreatePrincipalNamespaceOptions
-} from '@pact-toolbox/kda';
+  CreatePrincipalNamespaceOptions,
+} from "@pact-toolbox/kda";
 ```
 
 ## Contributing

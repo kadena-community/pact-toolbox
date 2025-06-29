@@ -16,13 +16,13 @@ pnpm add @pact-toolbox/fabricator
 
 ## Features
 
-- =Ý **Template-Based Generation** - Create contracts from well-tested templates
-- <× **Common Patterns** - Built-in support for modules, gas stations, and tokens
+- =ï¿½ **Template-Based Generation** - Create contracts from well-tested templates
+- <ï¿½ **Common Patterns** - Built-in support for modules, gas stations, and tokens
 - =' **Customizable** - Configure generated code through context parameters
-- =á **Best Practices** - Templates include governance, upgrade patterns, and security
-- <¯ **Type Safety** - Full TypeScript support with typed context objects
-- ¡ **CLI Integration** - Generate contracts directly from the command line
-- >é **Extensible** - Easy to add custom templates and generators
+- =ï¿½ **Best Practices** - Templates include governance, upgrade patterns, and security
+- <ï¿½ **Type Safety** - Full TypeScript support with typed context objects
+- ï¿½ **CLI Integration** - Generate contracts directly from the command line
+- > ï¿½ **Extensible** - Easy to add custom templates and generators
 
 ## Quick Start
 
@@ -42,30 +42,26 @@ pact-toolbox generate module my-token --namespace free --admin-keyset admin-ks
 ### Programmatic Usage
 
 ```typescript
-import { 
-  generateModule, 
-  generateGasStation,
-  generateFungible 
-} from '@pact-toolbox/fabricator';
+import { generateModule, generateGasStation, generateFungible } from "@pact-toolbox/fabricator";
 
 // Generate a basic module
 const moduleCode = generateModule({
-  name: 'my-token',
-  namespace: 'free',
-  adminKeyset: 'token-admin'
+  name: "my-token",
+  namespace: "free",
+  adminKeyset: "token-admin",
 });
 
 // Generate a gas station
 const gasStationCode = generateGasStation({
-  name: 'token-gas-station',
-  namespace: 'free',
-  adminKeyset: 'admin-keyset',
-  account: 'k:1234567890abcdef...',
-  module: 'my-token'
+  name: "token-gas-station",
+  namespace: "free",
+  adminKeyset: "admin-keyset",
+  account: "k:1234567890abcdef...",
+  module: "my-token",
 });
 
 // Write to file
-await fs.writeFile('./contracts/my-token.pact', moduleCode);
+await fs.writeFile("./contracts/my-token.pact", moduleCode);
 ```
 
 ## Available Generators
@@ -85,6 +81,7 @@ interface ModuleContext {
 ```
 
 **Generated Features:**
+
 - Namespace declaration
 - Module definition with admin keyset
 - Governance capability
@@ -92,18 +89,19 @@ interface ModuleContext {
 - Sample function template
 
 **Example Output:**
+
 ```pact
 (namespace "free")
 
 (module my-token admin-keyset
   (defcap GOVERNANCE ()
     (enforce-keyset admin-keyset))
-  
+
   (defun upgrade ()
     (if (read-msg "upgrade")
       (capabilities.install)
       []))
-  
+
   (defun my-function ()
     "A sample function"
     true)
@@ -127,6 +125,7 @@ interface GasStationContext {
 ```
 
 **Generated Features:**
+
 - Implements `gas-payer-v1` interface
 - Enforces maximum gas price
 - Restricts gas payment to specific modules
@@ -134,13 +133,14 @@ interface GasStationContext {
 - Admin governance
 
 **Example Usage:**
+
 ```typescript
 const gasStation = generateGasStation({
-  name: 'dex-gas-station',
-  namespace: 'free',
-  adminKeyset: 'dex-admin',
-  account: 'k:abc123...',
-  module: 'dex'
+  name: "dex-gas-station",
+  namespace: "free",
+  adminKeyset: "dex-admin",
+  account: "k:abc123...",
+  module: "dex",
 });
 ```
 
@@ -175,7 +175,7 @@ The fabricator uses a simple yet powerful template system:
 You can create custom generators using the template utilities:
 
 ```typescript
-import { fillTemplatePlaceholders } from '@pact-toolbox/fabricator';
+import { fillTemplatePlaceholders } from "@pact-toolbox/fabricator";
 
 const nftTemplate = `
 (namespace "{{namespace}}")
@@ -210,10 +210,10 @@ function generateNFT(context: NFTContext): string {
 
 // Usage
 const nftCode = generateNFT({
-  name: 'my-nft-collection',
-  namespace: 'free',
-  adminKeyset: 'nft-admin',
-  marketplace: true
+  name: "my-nft-collection",
+  namespace: "free",
+  adminKeyset: "nft-admin",
+  marketplace: true,
 });
 ```
 
@@ -222,21 +222,21 @@ const nftCode = generateNFT({
 ### Composing Generators
 
 ```typescript
-import { generateModule, generateGasStation } from '@pact-toolbox/fabricator';
+import { generateModule, generateGasStation } from "@pact-toolbox/fabricator";
 
 async function generateDeFiProtocol(config: DeFiConfig) {
   const contracts = [];
-  
+
   // Generate core module
   contracts.push({
-    name: 'defi-core.pact',
+    name: "defi-core.pact",
     code: generateModule({
       name: `${config.prefix}-core`,
       namespace: config.namespace,
-      adminKeyset: config.adminKeyset
-    })
+      adminKeyset: config.adminKeyset,
+    }),
   });
-  
+
   // Generate token modules
   for (const token of config.tokens) {
     contracts.push({
@@ -244,23 +244,23 @@ async function generateDeFiProtocol(config: DeFiConfig) {
       code: generateModule({
         name: `${config.prefix}-${token.symbol}`,
         namespace: config.namespace,
-        adminKeyset: config.adminKeyset
-      })
+        adminKeyset: config.adminKeyset,
+      }),
     });
   }
-  
+
   // Generate gas station
   contracts.push({
-    name: 'gas-station.pact',
+    name: "gas-station.pact",
     code: generateGasStation({
       name: `${config.prefix}-gas`,
       namespace: config.namespace,
       adminKeyset: config.adminKeyset,
       account: config.gasPayerAccount,
-      module: `${config.prefix}-core`
-    })
+      module: `${config.prefix}-core`,
+    }),
   });
-  
+
   return contracts;
 }
 ```
@@ -269,31 +269,31 @@ async function generateDeFiProtocol(config: DeFiConfig) {
 
 ```typescript
 // vite.config.ts
-import { defineConfig } from 'vite';
-import { generateModule } from '@pact-toolbox/fabricator';
+import { defineConfig } from "vite";
+import { generateModule } from "@pact-toolbox/fabricator";
 
 export default defineConfig({
   plugins: [
     {
-      name: 'pact-generator',
+      name: "pact-generator",
       buildStart() {
         // Generate contracts at build time
         const contracts = [
-          { name: 'token', namespace: 'free' },
-          { name: 'exchange', namespace: 'free' }
+          { name: "token", namespace: "free" },
+          { name: "exchange", namespace: "free" },
         ];
-        
-        contracts.forEach(config => {
+
+        contracts.forEach((config) => {
           const code = generateModule(config);
           this.emitFile({
-            type: 'asset',
+            type: "asset",
             fileName: `contracts/${config.name}.pact`,
-            source: code
+            source: code,
           });
         });
-      }
-    }
-  ]
+      },
+    },
+  ],
 });
 ```
 
@@ -338,7 +338,7 @@ function generateMultiSigModule(signers: string[]): string {
 
   return fillTemplatePlaceholders(template, {
     signers,
-    threshold: Math.ceil(signers.length * 0.6)
+    threshold: Math.ceil(signers.length * 0.6),
   });
 }
 ```
@@ -393,12 +393,12 @@ pact-toolbox generate module simple-module
 
 ```typescript
 // Group related contracts in the same namespace
-const contracts = ['dex-core', 'dex-token', 'dex-pool'].map(name =>
+const contracts = ["dex-core", "dex-token", "dex-pool"].map((name) =>
   generateModule({
     name,
-    namespace: 'dex',  // Common namespace
-    adminKeyset: 'dex-governance'
-  })
+    namespace: "dex", // Common namespace
+    adminKeyset: "dex-governance",
+  }),
 );
 ```
 
@@ -406,13 +406,13 @@ const contracts = ['dex-core', 'dex-token', 'dex-pool'].map(name =>
 
 ```typescript
 // Use prefixes for related modules
-const projectPrefix = 'myapp';
+const projectPrefix = "myapp";
 
 function generateProjectModule(name: string) {
   return generateModule({
     name: `${projectPrefix}-${name}`,
     namespace: projectPrefix,
-    adminKeyset: `${projectPrefix}-admin`
+    adminKeyset: `${projectPrefix}-admin`,
   });
 }
 ```
@@ -424,14 +424,14 @@ function generateProjectModule(name: string) {
 function validateAndGenerate(context: ModuleContext): string {
   // Validate module name
   if (!/^[a-z][a-z0-9-]*$/.test(context.name)) {
-    throw new Error('Invalid module name format');
+    throw new Error("Invalid module name format");
   }
-  
+
   // Validate namespace
   if (context.namespace && !/^[a-z][a-z0-9-]*$/.test(context.namespace)) {
-    throw new Error('Invalid namespace format');
+    throw new Error("Invalid namespace format");
   }
-  
+
   return generateModule(context);
 }
 ```
@@ -439,12 +439,12 @@ function validateAndGenerate(context: ModuleContext): string {
 ### 4. Post-Generation Processing
 
 ```typescript
-import { format } from '@pact-toolbox/utils';
+import { format } from "@pact-toolbox/utils";
 
 async function generateAndFormat(context: ModuleContext): Promise<string> {
   // Generate code
   let code = generateModule(context);
-  
+
   // Add custom headers
   code = `;;
 ;; ${context.name} - Generated by pact-toolbox
@@ -452,10 +452,10 @@ async function generateAndFormat(context: ModuleContext): Promise<string> {
 ;;
 
 ${code}`;
-  
+
   // Format code
   code = await format(code);
-  
+
   return code;
 }
 ```
@@ -515,11 +515,11 @@ export function generateCustomModule(context: CustomModuleContext): string {
 // generator-registry.ts
 export class GeneratorRegistry {
   private generators = new Map<string, GeneratorFunction>();
-  
+
   register(name: string, generator: GeneratorFunction) {
     this.generators.set(name, generator);
   }
-  
+
   generate(name: string, context: any): string {
     const generator = this.generators.get(name);
     if (!generator) {
@@ -527,7 +527,7 @@ export class GeneratorRegistry {
     }
     return generator(context);
   }
-  
+
   list(): string[] {
     return Array.from(this.generators.keys());
   }
@@ -535,13 +535,13 @@ export class GeneratorRegistry {
 
 // Usage
 const registry = new GeneratorRegistry();
-registry.register('module', generateModule);
-registry.register('gas-station', generateGasStation);
-registry.register('custom', generateCustomModule);
+registry.register("module", generateModule);
+registry.register("gas-station", generateGasStation);
+registry.register("custom", generateCustomModule);
 
-const code = registry.generate('custom', { 
-  name: 'my-module',
-  features: { pausable: true }
+const code = registry.generate("custom", {
+  name: "my-module",
+  features: { pausable: true },
 });
 ```
 

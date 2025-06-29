@@ -28,6 +28,7 @@ pnpm dev
 ```
 
 That's it! You now have a fully configured Pact development environment with:
+
 - ✅ TypeScript types auto-generated from your Pact contracts
 - ✅ Hot module replacement for instant feedback
 - ✅ Local blockchain running in the background
@@ -43,13 +44,14 @@ That's it! You now have a fully configured Pact development environment with:
 import { todos } from "./pact/todos.pact";
 
 // Enjoy full type safety and IntelliSense
-const result = await todos.createTodo({
-  id: "todo-1",
-  title: "Build amazing dApps",
-  completed: false
-})
-.sign()
-.submitAndListen();
+const result = await todos
+  .createTodo({
+    id: "todo-1",
+    title: "Build amazing dApps",
+    completed: false,
+  })
+  .sign()
+  .submitAndListen();
 ```
 
 ### Key Features
@@ -70,12 +72,14 @@ const result = await todos.createTodo({
 ### Core Libraries
 
 #### **Development Tools**
+
 - **`@pact-toolbox/unplugin`** - Universal bundler plugin supporting 10+ build tools
 - **`@pact-toolbox/runtime`** - Runtime execution environment for Pact code
 - **`@pact-toolbox/test`** - Testing framework with REPL support and Vitest integration
 - **`@pact-toolbox/script`** - Script execution and deployment utilities
 
 #### **Blockchain Integration**
+
 - **`@pact-toolbox/chainweb-client`** - Fast, zero-dependency Chainweb API client
 - **`@pact-toolbox/transaction`** - High-level transaction builder with fluent API
 - **`@pact-toolbox/network`** - Network configuration and management
@@ -83,6 +87,7 @@ const result = await todos.createTodo({
 - **`@pact-toolbox/kda`** - Kadena-specific services (coin, marmalade, namespace)
 
 #### **Wallet & Security**
+
 - **`@pact-toolbox/crypto`** - Ed25519, Blake2b, and cryptographic utilities
 - **`@pact-toolbox/signers`** - Transaction signing abstractions
 - **`@pact-toolbox/wallet-core`** - Base wallet functionality
@@ -90,6 +95,7 @@ const result = await todos.createTodo({
 - **`@pact-toolbox/dev-wallet`** - Built-in development wallet with UI
 
 #### **Code Generation & Utilities**
+
 - **`@pact-toolbox/fabricator`** - Smart contract and module generators
 - **`@pact-toolbox/prelude`** - Prelude management and deployment
 - **`pact-transformer`** - Rust-powered parser with TypeScript type generation
@@ -150,17 +156,21 @@ pact-toolbox/
 ## 🎯 Use Cases
 
 ### For dApp Developers
+
 Build production-ready decentralized applications with the same tools and workflows you already know and love.
 
 ### For Smart Contract Engineers
+
 Test and deploy Pact contracts with confidence using modern testing practices and deployment automation.
 
 ### For Teams
+
 Standardize on a single toolchain that works across your entire stack, from smart contracts to frontend.
 
 ## 📚 Documentation
 
 ### View Online
+
 Visit our documentation at [https://kadena-community.github.io/pact-toolbox/](https://kadena-community.github.io/pact-toolbox/)
 
 - **[Introduction](https://kadena-community.github.io/pact-toolbox/intro)** - Learn what makes Pact Toolbox special
@@ -169,6 +179,7 @@ Visit our documentation at [https://kadena-community.github.io/pact-toolbox/](ht
 - **[Examples](./examples)** - Full example applications
 
 ### Run Locally
+
 ```bash
 # Start documentation dev server
 pnpm docs:dev
@@ -221,42 +232,6 @@ pnpm format:fix
 - **Examples** demonstrate real-world usage patterns
 - **Tooling** contains shared development configurations
 
-## 🛣️ Roadmap
-
-### Near Term
-- [ ] Production deployment guides and best practices
-- [ ] VS Code extension with Pact language support
-- [ ] Contract templates and starter kits library
-- [ ] Enhanced debugging tools and error messages
-- [ ] Performance profiling and optimization tools
-
-### Long Term
-- [ ] Contract verification and security auditing tools
-- [ ] Advanced testing utilities with property-based testing
-- [ ] GraphQL API generation from contracts
-- [ ] Mobile SDK for React Native and Flutter
-- [ ] Contract upgrade and migration tools
-- [ ] Integration with popular Web3 frameworks
-
-## 🔒 Security
-
-- **Cryptography**: Built-in Ed25519 and Blake2b implementations
-- **Key Management**: Secure key generation and storage utilities
-- **Wallet Security**: Multiple wallet adapters with secure signing
-- **Audit Trail**: Comprehensive logging and monitoring capabilities
-
-For security issues, please email security@kadena.io instead of using the issue tracker.
-
-## 🌍 Platform Support
-
-Pact Toolbox supports multiple platforms and environments:
-
-- **Operating Systems**: Windows, macOS, Linux, FreeBSD
-- **Architectures**: x64, ARM64, WASM
-- **Node.js**: Version 22.0.0 or higher
-- **Browsers**: Modern browsers via WASM
-- **Mobile**: Android via Termux (experimental)
-
 ## 📄 License
 
 MIT - see [LICENSE](./LICENSE) for details
@@ -266,6 +241,7 @@ MIT - see [LICENSE](./LICENSE) for details
 Made with ❤️ by [@salamaashoush](https://github.com/salamaashoush) and the Kadena community
 
 Special thanks to:
+
 - The Kadena team for creating Pact and Chainweb
 - The Rust community for excellent tooling
 - All contributors who have helped shape this project

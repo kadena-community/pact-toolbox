@@ -47,18 +47,16 @@ import { execution } from "@pact-toolbox/transaction";
 // Setup wallets with auto-connect
 const wallet = await setupWallets({
   autoConnect: true,
-  wallets: ['keypair', 'ecko', 'chainweaver'],
-  preferredWallets: ['ecko', 'chainweaver']
+  wallets: ["keypair", "ecko", "chainweaver"],
+  preferredWallets: ["ecko", "chainweaver"],
 });
 
 // Or manually connect
-const wallet = await connectWallet('ecko');
+const wallet = await connectWallet("ecko");
 console.log(`Connected to ${wallet.metadata.name}`);
 
 // Execute a transaction (wallet UI appears automatically in browser)
-const result = await execution('(+ 1 2)')
-  .sign()
-  .submitAndListen();
+const result = await execution("(+ 1 2)").sign().submitAndListen();
 ```
 
 ### Setup with WalletConnect and Magic
@@ -69,28 +67,28 @@ Some wallets require additional configuration:
 import { setupWallets } from "@pact-toolbox/wallet-adapters";
 
 await setupWallets({
-  wallets: ['keypair', 'walletconnect', 'magic'],
+  wallets: ["keypair", "walletconnect", "magic"],
   walletConfigs: {
     // WalletConnect requires a project ID from https://cloud.walletconnect.com
     walletconnect: {
-      projectId: 'your-walletconnect-project-id',
+      projectId: "your-walletconnect-project-id",
       metadata: {
-        name: 'My Kadena App',
-        description: 'My awesome Kadena DApp',
-        url: 'https://myapp.com',
-        icons: ['https://myapp.com/icon.png']
-      }
+        name: "My Kadena App",
+        description: "My awesome Kadena DApp",
+        url: "https://myapp.com",
+        icons: ["https://myapp.com/icon.png"],
+      },
     },
     // Magic requires an API key from https://magic.link
     magic: {
-      magicApiKey: 'your-magic-publishable-key',
-      networkId: 'mainnet01', // or 'testnet04'
-      chainId: '0',
-      createAccountsOnChain: true
-    }
+      magicApiKey: "your-magic-publishable-key",
+      networkId: "mainnet01", // or 'testnet04'
+      chainId: "0",
+      createAccountsOnChain: true,
+    },
   },
   autoConnect: true,
-  preferredWallets: ['magic', 'walletconnect']
+  preferredWallets: ["magic", "walletconnect"],
 });
 ```
 
@@ -104,8 +102,8 @@ import { execution } from "@pact-toolbox/transaction";
 const wallet = getPrimaryWallet();
 
 // Build and sign transaction
-const result = await execution('(+ 1 2)')
-  .withChainId('0')
+const result = await execution("(+ 1 2)")
+  .withChainId("0")
   .sign() // Automatically uses connected wallet
   .submitAndListen();
 
@@ -120,8 +118,7 @@ console.log("Transaction result:", result);
 import { execution } from "@pact-toolbox/transaction";
 
 // Local queries don't require signing
-const balance = await execution('(coin.get-balance "alice")')
-  .local();
+const balance = await execution('(coin.get-balance "alice")').local();
 
 console.log("Alice's balance:", balance);
 ```
@@ -133,9 +130,7 @@ import { execution } from "@pact-toolbox/transaction";
 
 // Transfer with capability
 const result = await execution('(coin.transfer "alice" "bob" 10.0)')
-  .withSigner('alice-public-key', (signFor) => [
-    signFor('coin.TRANSFER', 'alice', 'bob', 10.0)
-  ])
+  .withSigner("alice-public-key", (signFor) => [signFor("coin.TRANSFER", "alice", "bob", 10.0)])
   .sign() // Shows wallet UI
   .submitAndListen();
 ```
@@ -146,16 +141,14 @@ const result = await execution('(coin.transfer "alice" "bob" 10.0)')
 import { execution, continuation } from "@pact-toolbox/transaction";
 
 // Step 1: Start a multi-step pact
-const step1 = await execution('(my-pact.start-process)')
-  .sign()
-  .submitAndListen();
+const step1 = await execution("(my-pact.start-process)").sign().submitAndListen();
 
 // Step 2: Continue the pact
 const step2 = await continuation({
-    pactId: step1.pactId,
-    step: 1,
-    rollback: false
-  })
+  pactId: step1.pactId,
+  step: 1,
+  rollback: false,
+})
   .sign()
   .submitAndListen();
 ```
@@ -171,8 +164,8 @@ import { setupWallets } from "@pact-toolbox/wallet-adapters";
 
 // Setup with keypair wallet
 const wallet = await setupWallets({
-  wallets: ['keypair'],
-  autoConnect: true
+  wallets: ["keypair"],
+  autoConnect: true,
 });
 
 // The keypair wallet uses keys from your pact-toolbox configuration
@@ -185,11 +178,11 @@ const wallet = await setupWallets({
 import { connectWallet } from "@pact-toolbox/wallet-adapters";
 
 // Connect to Ecko wallet
-const wallet = await connectWallet('ecko');
+const wallet = await connectWallet("ecko");
 
 // Get accounts
 const accounts = await wallet.getAccounts();
-console.log('Connected accounts:', accounts);
+console.log("Connected accounts:", accounts);
 
 // Sign transaction (usually done through transaction builder)
 const signedTx = await wallet.signTransaction({
@@ -208,20 +201,18 @@ import { execution } from "@pact-toolbox/transaction";
 
 // Setup wallets first
 await setupWallets({
-  wallets: ['keypair', 'ecko', 'chainweaver'],
+  wallets: ["keypair", "ecko", "chainweaver"],
   autoConnect: true,
-  preferredWallets: ['ecko']
+  preferredWallets: ["ecko"],
 });
 
 // Transaction builder will automatically use connected wallet
 const result = await execution('(coin.transfer "alice" "bob" 1.0)')
-  .withSigner('alice-public-key', (signFor) => [
-    signFor('coin.TRANSFER', 'alice', 'bob', 1.0)
-  ])
+  .withSigner("alice-public-key", (signFor) => [signFor("coin.TRANSFER", "alice", "bob", 1.0)])
   .sign() // Automatically shows wallet UI
   .submitAndListen();
 
-console.log('Transaction result:', result);
+console.log("Transaction result:", result);
 ```
 
 ## Testing Setup
@@ -238,16 +229,14 @@ describe("My Contract Tests", () => {
   beforeAll(async () => {
     // Setup test wallet
     await setupWallets({
-      wallets: ['keypair'],
-      autoConnect: true
+      wallets: ["keypair"],
+      autoConnect: true,
     });
   });
 
   test("should deploy contract", async () => {
-    const result = await send(
-      "(module my-contract GOVERNANCE (defcap GOVERNANCE () true))"
-    );
-    
+    const result = await send("(module my-contract GOVERNANCE (defcap GOVERNANCE () true))");
+
     expect(result.status).toBe("success");
   });
 });
@@ -266,8 +255,8 @@ async function testWithFallback() {
   } catch {
     // Fall back to keypair wallet
     await setupWallets({
-      wallets: ['keypair'],
-      autoConnect: true
+      wallets: ["keypair"],
+      autoConnect: true,
     });
   }
 
@@ -293,7 +282,10 @@ walletService.setPrimaryWallet(eckoWallet);
 
 // Get all connected wallets
 const connectedWallets = walletService.getConnectedWallets();
-console.log(`Connected wallets:`, connectedWallets.map(w => w.metadata.name));
+console.log(
+  `Connected wallets:`,
+  connectedWallets.map((w) => w.metadata.name),
+);
 
 // Disconnect specific wallet
 await walletService.disconnect("chainweaver");
@@ -312,7 +304,7 @@ class MyCustomWalletProvider implements WalletProvider {
     description: "Custom wallet implementation",
     icon: "data:image/svg+xml;base64,...",
     platforms: ["browser" as const],
-    downloadUrl: "https://mywallet.com"
+    downloadUrl: "https://mywallet.com",
   };
 
   async isAvailable(): Promise<boolean> {
@@ -336,20 +328,16 @@ import { execution } from "@pact-toolbox/transaction";
 import { createNetwork } from "@pact-toolbox/network";
 
 // Connect wallet
-const wallet = await connectWallet('ecko');
+const wallet = await connectWallet("ecko");
 
 // Create network contexts
-const mainnet = createNetwork({ networkId: 'mainnet01' });
-const testnet = createNetwork({ networkId: 'testnet04' });
+const mainnet = createNetwork({ networkId: "mainnet01" });
+const testnet = createNetwork({ networkId: "testnet04" });
 
 // Use different networks
-const mainnetResult = await execution('(coin.details "alice")', mainnet)
-  .withChainId('0')
-  .local();
+const mainnetResult = await execution('(coin.details "alice")', mainnet).withChainId("0").local();
 
-const testnetResult = await execution('(coin.details "alice")', testnet)
-  .withChainId('0')
-  .local();
+const testnetResult = await execution('(coin.details "alice")', testnet).withChainId("0").local();
 ```
 
 ## API Reference
@@ -399,9 +387,7 @@ await submitTransaction(signedTx);
 // New way (integrated with transaction builder)
 import { execution } from "@pact-toolbox/transaction";
 const result = await execution('(coin.transfer "alice" "bob" 1.0)')
-  .withSigner('alice-public-key', (signFor) => [
-    signFor('coin.TRANSFER', 'alice', 'bob', 1.0)
-  ])
+  .withSigner("alice-public-key", (signFor) => [signFor("coin.TRANSFER", "alice", "bob", 1.0)])
   .sign() // Automatically signs with connected wallet
   .submitAndListen();
 ```

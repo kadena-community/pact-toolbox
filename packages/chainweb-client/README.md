@@ -24,7 +24,7 @@ yarn add @pact-toolbox/chainweb-client
 ## Quick Start
 
 ```typescript
-import { ChainwebClient, createMainnetClient, createTestnetClient } from '@pact-toolbox/chainweb-client';
+import { ChainwebClient, createMainnetClient, createTestnetClient } from "@pact-toolbox/chainweb-client";
 
 // Use built-in network clients
 const mainnetClient = createMainnetClient();
@@ -32,10 +32,9 @@ const testnetClient = createTestnetClient();
 
 // Or create custom client
 const client = new ChainwebClient({
-  networkId: 'mainnet01',
-  chainId: '0',
-  rpcUrl: (networkId, chainId) => 
-    `https://api.chainweb.com/chainweb/0.0/${networkId}/chain/${chainId}/pact/api/v1`
+  networkId: "mainnet01",
+  chainId: "0",
+  rpcUrl: (networkId, chainId) => `https://api.chainweb.com/chainweb/0.0/${networkId}/chain/${chainId}/pact/api/v1`,
 });
 ```
 
@@ -46,11 +45,11 @@ const client = new ChainwebClient({
 ```typescript
 // Send signed transactions
 const result = await client.send([signedTransaction]);
-console.log('Request keys:', result.requestKeys);
+console.log("Request keys:", result.requestKeys);
 
 // Submit and wait for result
 const txResult = await client.submitAndWait(signedTransaction);
-console.log('Transaction result:', txResult);
+console.log("Transaction result:", txResult);
 ```
 
 ### Query Blockchain
@@ -61,15 +60,15 @@ const localResult = await client.local({
   cmd: JSON.stringify({
     code: '(coin.get-balance "alice")',
     data: {},
-    meta: { chainId: '0', sender: '', gasLimit: 1000, gasPrice: 0.000001, ttl: 28800 }
-  })
+    meta: { chainId: "0", sender: "", gasLimit: 1000, gasPrice: 0.000001, ttl: 28800 },
+  }),
 });
 
 // Poll for transaction status
-const pollResult = await client.poll(['request-key-123']);
+const pollResult = await client.poll(["request-key-123"]);
 
 // Listen for single transaction
-const listenResult = await client.listen('request-key-123');
+const listenResult = await client.listen("request-key-123");
 ```
 
 ### Batch Operations
@@ -78,7 +77,7 @@ const listenResult = await client.listen('request-key-123');
 // Process multiple transactions in batches
 const batchResult = await client.submitBatch(signedTransactions, {
   batchSize: 10,
-  pollInterval: 5000
+  pollInterval: 5000,
 });
 
 console.log(`${batchResult.successCount} succeeded, ${batchResult.failureCount} failed`);
@@ -89,28 +88,28 @@ console.log(`${batchResult.successCount} succeeded, ${batchResult.failureCount} 
 ```typescript
 // Check network health
 const health = await client.healthCheck();
-console.log('Network healthy:', health.healthy);
+console.log("Network healthy:", health.healthy);
 
 // Get network info
 const networkInfo = await client.getNetworkInfo();
-console.log('Chains:', networkInfo.chains);
+console.log("Chains:", networkInfo.chains);
 
 // Get current cut info
 const cut = await client.getCut();
-console.log('Current height:', cut.height);
+console.log("Current height:", cut.height);
 ```
 
 ### Client Configuration
 
 ```typescript
 // Create clients for different chains/networks
-const chain5Client = client.forChain('5');
-const devnetClient = client.forNetwork('development');
+const chain5Client = client.forChain("5");
+const devnetClient = client.forNetwork("development");
 
 // Custom configuration
 const customClient = client.withConfig({
   timeout: 60000,
-  headers: { 'Authorization': 'Bearer token' }
+  headers: { Authorization: "Bearer token" },
 });
 ```
 
@@ -140,14 +139,15 @@ try {
   await client.send([transaction]);
 } catch (error) {
   if (error instanceof ChainwebClientError) {
-    console.log('Error code:', error.code);
-    console.log('HTTP status:', error.status);
-    console.log('Response:', error.response);
+    console.log("Error code:", error.code);
+    console.log("HTTP status:", error.status);
+    console.log("Response:", error.response);
   }
 }
 ```
 
 Error codes:
+
 - `NETWORK_ERROR` - Network connectivity issues
 - `TIMEOUT` - Request timeout
 - `HTTP_ERROR` - HTTP status errors (4xx, 5xx)
@@ -158,27 +158,30 @@ Error codes:
 ## Built-in Network Clients
 
 ### Mainnet
+
 ```typescript
-import { createMainnetClient } from '@pact-toolbox/chainweb-client';
+import { createMainnetClient } from "@pact-toolbox/chainweb-client";
 
 const client = createMainnetClient({
-  chainId: '1', // Optional: defaults to '0'
-  timeout: 60000 // Optional: custom timeout
+  chainId: "1", // Optional: defaults to '0'
+  timeout: 60000, // Optional: custom timeout
 });
 ```
 
 ### Testnet
+
 ```typescript
-import { createTestnetClient } from '@pact-toolbox/chainweb-client';
+import { createTestnetClient } from "@pact-toolbox/chainweb-client";
 
 const client = createTestnetClient({
-  chainId: '0' // Optional: defaults to '0'
+  chainId: "0", // Optional: defaults to '0'
 });
 ```
 
 ### Development/Local
+
 ```typescript
-import { createDevnetClient, createPactServerClient } from '@pact-toolbox/chainweb-client';
+import { createDevnetClient, createPactServerClient } from "@pact-toolbox/chainweb-client";
 
 // For local chainweb node
 const devClient = createDevnetClient(8080);
@@ -192,9 +195,9 @@ const pactClient = createPactServerClient(8080);
 The client integrates seamlessly with other pact-toolbox packages:
 
 ```typescript
-import { ChainwebClient } from '@pact-toolbox/chainweb-client';
-import { finalizeTransaction } from '@pact-toolbox/signers';
-import type { Transaction } from '@pact-toolbox/types';
+import { ChainwebClient } from "@pact-toolbox/chainweb-client";
+import { finalizeTransaction } from "@pact-toolbox/signers";
+import type { Transaction } from "@pact-toolbox/types";
 
 const client = new ChainwebClient(config);
 

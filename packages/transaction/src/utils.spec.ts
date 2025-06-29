@@ -22,13 +22,7 @@ import {
   submit,
   submitAndListen,
 } from "@pact-toolbox/chainweb-client";
-import {
-  generateKAccount,
-  generateKAccounts,
-  getKAccountKey,
-  isWalletLike,
-  pactDecimal,
-} from "./utils";
+import { generateKAccount, generateKAccounts, getKAccountKey, pactDecimal } from "./utils";
 
 describe("Chainweb Client Helpers", () => {
   let client: ChainwebClient;
@@ -185,7 +179,7 @@ describe("Chainweb Client Helpers", () => {
       assert.deepStrictEqual(descriptor, {
         requestKey: "requestKey0",
         chainId: "0",
-        networkId: "development"
+        networkId: "development",
       });
     });
 
@@ -197,13 +191,13 @@ describe("Chainweb Client Helpers", () => {
         {
           requestKey: "requestKey0",
           chainId: "0",
-          networkId: "development"
+          networkId: "development",
         },
         {
           requestKey: "requestKey1",
           chainId: "0",
-          networkId: "development"
-        }
+          networkId: "development",
+        },
       ]);
     });
 
@@ -229,7 +223,7 @@ describe("Chainweb Client Helpers", () => {
       mock.method(client, "listen", () => {
         return {
           requestKey: descriptor.requestKey,
-          result: createPactTransactionResult("success", { value: "listenSuccess" })
+          result: createPactTransactionResult("success", { value: "listenSuccess" }),
         };
       });
       const data = await listen(client, descriptor);
@@ -241,7 +235,7 @@ describe("Chainweb Client Helpers", () => {
       mock.method(client, "listen", () => {
         return {
           requestKey: "requestKey",
-          result: createPactTransactionResult("success", { value: "listenSuccess" })
+          result: createPactTransactionResult("success", { value: "listenSuccess" }),
         };
       });
       const data = await listen(client, descriptors);
@@ -253,7 +247,7 @@ describe("Chainweb Client Helpers", () => {
       mock.method(client, "listen", () => {
         return {
           requestKey: descriptor.requestKey,
-          result: createPactTransactionResult("failure")
+          result: createPactTransactionResult("failure"),
         };
       });
       await assert.rejects(listen(client, descriptor), /Transaction failed with error/);
@@ -266,7 +260,7 @@ describe("Chainweb Client Helpers", () => {
       mock.method(client, "listen", () => {
         return {
           requestKey: "requestKey0",
-          result: createPactTransactionResult("success", { value: "listenSuccess" })
+          result: createPactTransactionResult("success", { value: "listenSuccess" }),
         };
       });
       mock.method(client, "send", () => ({ requestKeys: ["requestKey0"], response: {} }));
@@ -279,7 +273,7 @@ describe("Chainweb Client Helpers", () => {
       mock.method(client, "listen", () => {
         return {
           requestKey: "requestKey0",
-          result: createPactTransactionResult("success", { value: "listenSuccess" })
+          result: createPactTransactionResult("success", { value: "listenSuccess" }),
         };
       });
       mock.method(client, "send", () => ({ requestKeys: ["requestKey0", "requestKey1"], response: {} }));
@@ -315,7 +309,7 @@ describe("Chainweb Client Helpers", () => {
       mock.method(client, "listen", () => {
         return {
           requestKey: "requestKey0",
-          result: createPactTransactionResult("success", { value: "listenSuccess" })
+          result: createPactTransactionResult("success", { value: "listenSuccess" }),
         };
       });
 
@@ -388,41 +382,6 @@ describe("Chainweb Client Helpers", () => {
       const amount = "789.012345678901";
       const decimal = pactDecimal(amount);
       assert.strictEqual(decimal.decimal, "789.012345678901");
-    });
-  });
-
-  describe("isWalletLike", () => {
-    it("should return true for objects with 'sign' method", () => {
-      const wallet: unknown = {
-        sign: () => {},
-      };
-      assert.strictEqual(isWalletLike(wallet), true);
-    });
-
-    it("should return true for objects with 'quickSign' method", () => {
-      const wallet: unknown = {
-        quickSign: async () => {},
-      };
-      assert.strictEqual(isWalletLike(wallet), true);
-    });
-
-    it("should return true for functions", () => {
-      assert.strictEqual(
-        isWalletLike(function () {}),
-        true,
-      );
-    });
-
-    it("should return false for non-wallet objects", () => {
-      const wallet = { invalid: "property" };
-      assert.strictEqual(isWalletLike(wallet), false);
-    });
-
-    it("should return false for non-objects", () => {
-      assert.strictEqual(isWalletLike(undefined), false);
-      assert.strictEqual(isWalletLike(null), false);
-      assert.strictEqual(isWalletLike(123), false);
-      assert.strictEqual(isWalletLike("wallet"), false);
     });
   });
 });

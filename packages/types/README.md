@@ -14,78 +14,21 @@ npm install @pact-toolbox/types
 pnpm add @pact-toolbox/types
 ```
 
-## Features
+## What's Included
 
-- = **Type Safety** - Comprehensive TypeScript definitions for all Pact concepts
-- < **Network Types** - Configuration types for all Kadena network variants
-- =� **Transaction Types** - Complete typing for transaction building and signing
-- = **Key Management** - Types for key pairs, keysets, and capabilities
-- =� **Result Types** - Detailed types for execution results and events
-- = **Wallet Integration** - Standardized interfaces for wallet providers
-- { **Ecosystem Compatible** - Extends and integrates with @kadena/types
-- <� **IntelliSense Support** - Rich IDE autocomplete and type hints
+This package exports TypeScript type definitions used across the pact-toolbox ecosystem:
 
-## Quick Start
-
-```typescript
-import type {
-  PactCommand,
-  PactTransactionResult,
-  SerializableNetworkConfig,
-  PactKeyset,
-  PactCapability,
-} from "@pact-toolbox/types";
-
-// Define network configuration
-const config: SerializableNetworkConfig = {
-  type: "chainweb",
-  networkId: "mainnet01",
-  rpcUrl: "https://api.chainweb.com",
-  keyPairs: [
-    {
-      publicKey: "your-public-key",
-      secretKey: "your-secret-key",
-      account: "k:your-public-key",
-    },
-  ],
-  meta: {
-    chainId: "0",
-    gasLimit: 150000,
-    gasPrice: 0.00000001,
-    ttl: 600,
-  },
-};
-
-// Build a typed command
-const command: PactCommand<PactExecPayload> = {
-  payload: {
-    exec: {
-      code: '(coin.transfer "alice" "bob" 1.0)',
-      data: {},
-    },
-  },
-  meta: {
-    chainId: "0",
-    gasLimit: 1000,
-    gasPrice: 0.00000001,
-    ttl: 600,
-    creationTime: Date.now() / 1000,
-    sender: "alice",
-  },
-  signers: [
-    {
-      pubKey: "alice-public-key",
-      clist: [{ name: "coin.TRANSFER", args: ["alice", "bob", 1.0] }],
-    },
-  ],
-  networkId: "mainnet01",
-  nonce: Date.now().toString(),
-};
-```
+- Configuration types for network setup
+- Transaction and signing types
+- Pact command and result types
+- Wallet interface definitions
+- Re-exports of essential types from @kadena/types
 
 ## Type Reference
 
-### Configuration Types
+The package exports types from two main categories:
+
+### Configuration Types (from `config.ts`)
 
 #### `SerializableNetworkConfig`
 
@@ -94,16 +37,23 @@ Complete network configuration including key pairs and metadata.
 ```typescript
 interface SerializableNetworkConfig extends CommonNetworkConfig {
   type: "chainweb-local" | "chainweb" | "pact-server" | "chainweb-devnet";
+  serverConfig?: {
+    port?: number;
+  };
+  containerConfig?: {
+    port?: number;
+  };
+  autoStart?: boolean;
 }
 
 interface CommonNetworkConfig {
   networkId: string;
   rpcUrl: string;
   name?: string;
-  senderAccount?: string;
-  keyPairs?: KeyPair[];
-  keysets?: Record<string, PactKeyset>;
-  meta?: NetworkMeta;
+  senderAccount: string; // Required
+  keyPairs: KeyPair[]; // Required
+  keysets: Record<string, PactKeyset>; // Required
+  meta: NetworkMeta; // Required
 }
 ```
 
@@ -112,10 +62,8 @@ interface CommonNetworkConfig {
 Extended key pair with account information.
 
 ```typescript
-interface KeyPair {
-  publicKey: string;
-  secretKey: string;
-  account?: string; // Optional account identifier
+interface KeyPair extends IKeyPair {
+  account: string | `k:${string}`; // Required account identifier
 }
 ```
 
@@ -125,14 +73,45 @@ Default transaction metadata for a network.
 
 ```typescript
 interface NetworkMeta {
-  chainId?: ChainId;
+  chainId: ChainId; // Required
   gasLimit?: number;
   gasPrice?: number;
   ttl?: number;
 }
 ```
 
-### Core Pact Types
+#### `MultiNetworkConfig`
+
+Configuration for multiple networks.
+
+```typescript
+interface MultiNetworkConfig {
+  default: string;
+  configs: Record<string, SerializableNetworkConfig>;
+  environment: "development" | "production" | "test";
+}
+```
+
+#### `GetRpcUrlParams`
+
+Parameters for constructing RPC URLs.
+
+```typescript
+interface GetRpcUrlParams {
+  chainId?: string;
+  networkId?: string;
+}
+```
+
+#### `StandardPrelude`
+
+Standard prelude types available.
+
+```typescript
+type StandardPrelude = "kadena/chainweb" | "kadena/marmalade";
+```
+
+### Pact Types (from `pact.ts`)
 
 #### `ChainId`
 
@@ -162,6 +141,25 @@ type ChainId =
   | "19";
 ```
 
+#### `Serializable`
+
+JSON-serializable value type.
+
+```typescript
+type Serializable = string | number | boolean | null | PactKeyset | Serializable[] | { [key: string]: Serializable };
+```
+
+#### `PactKeyPair`
+
+Basic key pair for Pact operations.
+
+```typescript
+interface PactKeyPair {
+  publicKey: string;
+  secretKey: string;
+}
+```
+
 #### `PactKeyset`
 
 Authorization keyset definition.
@@ -169,8 +167,10 @@ Authorization keyset definition.
 ```typescript
 interface PactKeyset {
   keys: string[]; // List of public keys
-  pred: "keys-all" | "keys-any" | "keys-2" | string; // Predicate function
+  pred: PactBuiltInPredicate | (string & {}); // Predicate function
 }
+
+type PactBuiltInPredicate = "keys-all" | "keys-any" | "keys-2";
 ```
 
 #### `PactCapability`
@@ -184,14 +184,12 @@ interface PactCapability {
 }
 ```
 
-### Transaction Types
-
 #### `PactCommand`
 
 Core command structure for transactions.
 
 ```typescript
-interface PactCommand<Payload = PactExecPayload | PactContPayload> {
+interface PactCommand<Payload extends PactCmdPayload = PactExecPayload> {
   payload: Payload;
   meta: PactMetadata;
   signers: PactSigner[];
@@ -207,11 +205,15 @@ Direct code execution payload.
 
 ```typescript
 interface PactExecPayload {
-  exec: {
-    code: string; // Pact code to execute
-    data: Record<string, unknown>; // Environment data
-  };
+  exec: PactExec;
 }
+
+interface PactExec {
+  code: string; // Pact code to execute
+  data: PactEnvData; // Environment data
+}
+
+type PactEnvData = Record<string, Serializable>;
 ```
 
 #### `PactContPayload`
@@ -220,13 +222,30 @@ Continuation/defpact payload.
 
 ```typescript
 interface PactContPayload {
-  cont: {
-    pactId: string; // Pact execution ID
-    step: number; // Step number
-    rollback: boolean; // Rollback flag
-    data?: Record<string, unknown>;
-    proof?: string; // SPV proof
-  };
+  cont: PactCont;
+}
+
+interface PactCont {
+  pactId: string; // Pact execution ID
+  step: number; // Step number
+  rollback: boolean; // Rollback flag
+  data: PactEnvData;
+  proof?: string | null; // SPV proof
+}
+```
+
+#### `PactMetadata`
+
+Transaction metadata.
+
+```typescript
+interface PactMetadata {
+  chainId: ChainId;
+  sender?: string;
+  gasLimit?: number;
+  gasPrice?: number;
+  ttl?: number;
+  creationTime?: number;
 }
 ```
 
@@ -238,14 +257,26 @@ Transaction signer specification.
 interface PactSigner {
   pubKey: string; // Public key
   address?: string; // Optional address
-  scheme?: "ED25519" | "ETH" | "WebAuthn"; // Signature scheme
+  scheme?: SignerScheme; // Signature scheme
   clist?: PactCapability[]; // Capability list
+}
+
+type SignerScheme = "ED25519" | "ETH" | "WebAuthn";
+```
+
+#### `PactVerifier`
+
+Transaction verifier specification.
+
+```typescript
+interface PactVerifier {
+  name: string;
+  proof: PactValue;
+  clist?: PactCapability[];
 }
 ```
 
-#### `Transaction`
-
-Union type for transaction states.
+#### Transaction Types
 
 ```typescript
 type Transaction = PartiallySignedTransaction | SignedTransaction;
@@ -253,55 +284,85 @@ type Transaction = PartiallySignedTransaction | SignedTransaction;
 interface PartiallySignedTransaction {
   cmd: string; // Command JSON string
   hash: Uint8Array | string; // Transaction hash
-  sigs: Array<{ sig: string | null } | null>; // Partial signatures
+  sigs: TransactionSig[]; // Array of partial or full signatures
 }
 
 interface SignedTransaction {
   cmd: string; // Command JSON string
-  hash: string; // Transaction hash
-  sigs: Array<{ sig: string }>; // Complete signatures
+  hash: string; // Transaction hash (always string)
+  sigs: TransactionFullSig[]; // Array of complete signatures
 }
+
+interface TransactionFullSig {
+  sig: string;
+  pubKey?: string;
+}
+
+interface TransactionPartialSig {
+  pubKey: string;
+  sig?: string;
+}
+
+type TransactionSig = TransactionFullSig | TransactionPartialSig;
 ```
 
-### Result Types
-
-#### `PactTransactionResult`
-
-Complete transaction execution result.
+#### Result Types
 
 ```typescript
 interface PactTransactionResult {
   reqKey: string; // Request key
   txId: number | null; // Transaction ID
-  result: {
-    status: "success" | "failure";
-    data?: PactValue; // Success data
-    error?: {
-      message: string;
-      type: string;
-      info?: string;
-    };
-  };
+  result: PactTransactionResultSuccess | PactTransactionResultError;
   gas: number; // Gas consumed
   logs: string | null; // Log output
   continuation: PactContinuationResult | null;
-  metaData: {
-    blockHeight: number;
-    blockTime: number;
-    blockHash: string;
-    prevBlockHash: string;
-  } | null;
-  events: PactEvent[] | null;
+  metaData: ChainwebResponseMetaData | null;
+  events?: PactEvent[]; // Optional events array
+}
+
+interface PactTransactionResultSuccess {
+  status: "success";
+  data: PactValue;
+}
+
+interface PactTransactionResultError {
+  status: "failure";
+  error: object; // Generic error object
+}
+
+interface LocalPactTransactionResult extends PactTransactionResult {
+  preflightWarnings?: string[];
+}
+
+interface PactTransactionDescriptor {
+  requestKey: string;
+  chainId: ChainId;
+  networkId: string;
 }
 ```
 
-#### `LocalPactTransactionResult`
+#### `PactContinuationResult`
 
-Extended result for local execution.
+Defpact execution result.
 
 ```typescript
-interface LocalPactTransactionResult extends PactTransactionResult {
-  preflightWarnings?: string[]; // Optional warnings
+interface PactContinuationResult {
+  pactId: string; // Pact ID
+  step: number; // Current step
+  stepCount: number; // Total steps
+  executed: boolean | null; // Execution status
+  stepHasRollback: boolean; // Rollback availability
+  continuation: {
+    def: string; // Fully-qualified defpact name
+    args: PactValue; // Arguments (single value, not array)
+  };
+  yield: {
+    data: Array<[string, PactValue]>; // Array of key-value tuples
+    provenance: {
+      targetChainId: ChainId;
+      moduleHash: string;
+    } | null;
+  } | null;
 }
 ```
 
@@ -316,102 +377,42 @@ interface PactEvent {
     name: string; // Module name
     namespace: string | null; // Module namespace
   };
-  params: PactValue[]; // Event parameters
+  params: Array<PactValue>; // Event parameters
   moduleHash: string; // Module hash
 }
 ```
 
-#### `PactContinuationResult`
-
-Defpact execution result.
-
-```typescript
-interface PactContinuationResult {
-  pactId: string; // Pact ID
-  step: number; // Current step
-  stepCount: number; // Total steps
-  executed: boolean; // Execution status
-  stepHasRollback: boolean; // Rollback availability
-  continuation: {
-    def: string; // Defpact name
-    args: PactValue[]; // Arguments
-  };
-  yield: {
-    data: Record<string, PactValue>;
-    provenance?: {
-      targetChainId: string;
-      moduleHash: string;
-    };
-  } | null;
-}
-```
-
-### Wallet Types
-
-#### `WalletApiLike`
-
-Standard wallet interface.
+#### Wallet Types
 
 ```typescript
 interface WalletApiLike {
-  sign(tx: UnsignedTransaction): Promise<SignedTransaction>;
-  quickSign?(txs: UnsignedTransaction[]): Promise<SignedTransaction[]>;
-  getSigner?(): PactSigner;
+  sign: SignFunction;
+  quickSign?: QuickSignFunction;
+  getSigner: (networkId?: string) => Promise<{
+    publicKey: string;
+    address: string;
+  }>;
+}
+
+interface SignFunction {
+  (tx: PartiallySignedTransaction): Promise<Transaction>;
+}
+
+interface QuickSignFunction {
+  (tx: PartiallySignedTransaction): Promise<Transaction>;
+  (txs: PartiallySignedTransaction[]): Promise<Transaction[]>;
 }
 ```
 
-#### `SignFunction`
-
-Single transaction signing function.
-
-```typescript
-type SignFunction = (tx: UnsignedTransaction) => Promise<SignedTransaction>;
-```
-
-#### `QuickSignFunction`
-
-Batch transaction signing function.
-
-```typescript
-type QuickSignFunction = (txs: UnsignedTransaction[]) => Promise<SignedTransaction[]>;
-```
-
-#### `WalletLike`
-
-Union of all wallet types.
-
-```typescript
-type WalletLike = WalletApiLike | SignFunction | [SignFunction, QuickSignFunction];
-```
-
-### Utility Types
-
-#### `Serializable`
-
-JSON-serializable value type.
-
-```typescript
-type Serializable = string | number | boolean | null | { [key: string]: Serializable } | Serializable[];
-```
-
-#### `PactValue`
-
-Any valid Pact value (re-exported from @kadena/types).
-
-#### `PactSignerLike`
-
-Flexible signer input type.
+#### Additional Types
 
 ```typescript
 type PactSignerLike = string | PactSigner;
-```
 
-#### `PactCapabilityLike`
+type PactCapabilityLike = (withCapability: (name: string, ...args: PactValue[]) => PactCapability) => PactCapability[];
 
-Capability provider function.
-
-```typescript
-type PactCapabilityLike = () => PactCapability[];
+// Re-exported from @kadena/types
+export type { PactValue } from "@kadena/types";
 ```
 
 ## Usage Examples
@@ -426,6 +427,9 @@ const mainnet: SerializableNetworkConfig = {
   type: "chainweb",
   networkId: "mainnet01",
   rpcUrl: "https://api.chainweb.com",
+  senderAccount: "k:sender-public-key",
+  keyPairs: [],
+  keysets: {},
   meta: {
     chainId: "0",
     gasLimit: 150000,
@@ -439,6 +443,7 @@ const local: SerializableNetworkConfig = {
   type: "chainweb-local",
   networkId: "development",
   rpcUrl: "http://localhost:8080",
+  senderAccount: "sender00",
   keyPairs: [
     {
       publicKey: "dev-public-key",
@@ -451,6 +456,11 @@ const local: SerializableNetworkConfig = {
       keys: ["dev-public-key"],
       pred: "keys-all",
     },
+  },
+  meta: {
+    chainId: "0",
+    gasLimit: 150000,
+    gasPrice: 0.00001,
   },
 };
 ```
@@ -518,10 +528,16 @@ function handleResult(result: PactTransactionResult): void {
 ### Type Guards
 
 ```typescript
-import type { Transaction, SignedTransaction } from "@pact-toolbox/types";
+import type { Transaction, SignedTransaction, TransactionFullSig } from "@pact-toolbox/types";
 
 function isSignedTransaction(tx: Transaction): tx is SignedTransaction {
-  return tx.sigs.every((sig) => sig !== null && sig.sig !== null);
+  return (
+    typeof tx.hash === "string" &&
+    tx.sigs.every(
+      (sig): sig is TransactionFullSig =>
+        typeof sig === "object" && sig !== null && "sig" in sig && typeof sig.sig === "string",
+    )
+  );
 }
 
 function processTransaction(tx: Transaction) {
@@ -537,35 +553,13 @@ function processTransaction(tx: Transaction) {
 ### Wallet Integration
 
 ```typescript
-import type { WalletLike, UnsignedTransaction, SignedTransaction } from "@pact-toolbox/types";
+import type { PartiallySignedTransaction, Transaction } from "@pact-toolbox/types";
+import type { Wallet } from "@pact-toolbox/wallet-core";
 
 class TransactionManager {
-  constructor(private wallet: WalletLike) {}
-
-  async signTransaction(tx: UnsignedTransaction): Promise<SignedTransaction> {
-    if (typeof this.wallet === "function") {
-      // Single sign function
-      return this.wallet(tx);
-    } else if (Array.isArray(this.wallet)) {
-      // Sign and quickSign functions
-      const [sign] = this.wallet;
-      return sign(tx);
-    } else {
-      // WalletApiLike
-      return this.wallet.sign(tx);
-    }
-  }
-
-  async signBatch(txs: UnsignedTransaction[]): Promise<SignedTransaction[]> {
-    if (Array.isArray(this.wallet)) {
-      const [, quickSign] = this.wallet;
-      return quickSign(txs);
-    } else if (typeof this.wallet === "object" && this.wallet.quickSign) {
-      return this.wallet.quickSign(txs);
-    } else {
-      // Fallback to signing one by one
-      return Promise.all(txs.map((tx) => this.signTransaction(tx)));
-    }
+  constructor(private wallet: Wallet) {}
+  async sign(tx: PartiallySignedTransaction): Promise<Transaction> {
+    return this.wallet.sign(tx);
   }
 }
 ```
@@ -575,10 +569,10 @@ class TransactionManager {
 ### 1. Import Types Properly
 
 ```typescript
-//  Good - Import only types
+// ✅ Good - Import only types
 import type { PactCommand, PactTransactionResult } from "@pact-toolbox/types";
 
-// L Bad - Runtime import of type-only package
+// ❌ Bad - Runtime import of type-only package
 import { PactCommand } from "@pact-toolbox/types";
 ```
 
@@ -601,11 +595,11 @@ function processPayload(payload: PactExecPayload | PactContPayload) {
 
 ```typescript
 // Let TypeScript catch errors at compile time
-const chainId: ChainId = "0"; //  Valid
-const chainId: ChainId = "20"; // L Type error
+const chainId: ChainId = "0"; // ✅ Valid
+// const chainId: ChainId = "20"; // ❌ Type error
 
 // Use literal types for better IntelliSense
-const pred: "keys-all" | "keys-any" = "keys-all"; //  Autocomplete works
+const pred: PactBuiltInPredicate = "keys-all"; // ✅ Autocomplete works
 ```
 
 ### 4. Create Type-Safe Builders
@@ -641,35 +635,9 @@ The types package is used throughout the pact-toolbox ecosystem:
 - **@pact-toolbox/transaction** - Uses transaction and result types
 - **@pact-toolbox/config** - Uses network configuration types
 - **@pact-toolbox/runtime** - Uses execution and result types
-- **@pact-toolbox/signer** - Uses signing and wallet types
+- **@pact-toolbox/signers** - Uses signing and wallet types
 - **@pact-toolbox/network** - Uses network and configuration types
-
-## Migration Guide
-
-### From @kadena/types
-
-```typescript
-// Before
-import type { ICommand } from "@kadena/types";
-
-// After
-import type { PactCommand } from "@pact-toolbox/types";
-// Note: PactCommand extends and enhances ICommand
-```
-
-### From Custom Types
-
-```typescript
-// Replace custom interfaces with standard types
-interface MyTransactionResult {
-  // Before
-  requestKey: string;
-  result: any;
-}
-
-// After
-import type { PactTransactionResult } from "@pact-toolbox/types";
-```
+- **@pact-toolbox/kda** - Uses all core types
 
 ## Contributing
 
@@ -678,5 +646,9 @@ When adding new types:
 1. Ensure backward compatibility
 2. Add comprehensive JSDoc comments
 3. Include usage examples in documentation
-4. Export from the main index.ts
+4. Export from the appropriate file (config.ts or pact.ts)
 5. Consider ecosystem-wide impact
+
+## License
+
+MIT

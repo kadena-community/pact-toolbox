@@ -2,6 +2,7 @@
 
 > Powerful, flexible deployment and automation script runner for Pact smart contracts
 
+
 ## Overview
 
 The `@pact-toolbox/script` package provides a comprehensive framework for creating, deploying, and managing Pact smart contracts with advanced features like:
@@ -27,35 +28,35 @@ pnpm add @pact-toolbox/script
 
 ```typescript
 // scripts/deploy-token.ts
-import { createScript } from '@pact-toolbox/script';
+import { createScript } from "@pact-toolbox/script";
 
 export default createScript({
   metadata: {
-    name: 'Deploy Token',
-    description: 'Deploy a token contract with namespace handling',
-    version: '1.0.0'
+    name: "Deploy Token",
+    description: "Deploy a token contract with namespace handling",
+    version: "1.0.0",
   },
 
   autoStartNetwork: true,
-  network: 'development',
-  
+  network: "development",
+
   namespaceHandling: {
     autoCreate: true,
-    interactive: false
+    interactive: false,
   },
 
   signing: {
-    privateKeyEnv: 'DEPLOY_PRIVATE_KEY',
-    accountEnv: 'DEPLOY_ACCOUNT'
+    privateKeyEnv: "DEPLOY_PRIVATE_KEY",
+    accountEnv: "DEPLOY_ACCOUNT",
   },
 
   async run({ deploy, logger, currentSigner, generateNamespace, pact }) {
-    logger.info('🚀 Starting token deployment');
+    logger.info("🚀 Starting token deployment");
 
     // Generate namespace for current signer
     const signerKeyset = pact.createSingleKeyKeyset(currentSigner.publicKey);
     const namespaceName = generateNamespace(signerKeyset);
-    
+
     logger.info(`🏷️ Generated namespace: ${namespaceName}`);
 
     // Deploy token contract
@@ -64,18 +65,18 @@ export default createScript({
       validate: true,
       namespaceHandling: {
         autoCreate: true,
-        adminKeyset: signerKeyset
+        adminKeyset: signerKeyset,
       },
       initData: {
-        'admin-keyset': signerKeyset,
-        'token-name': 'MyToken',
-        'token-symbol': 'MTK'
-      }
+        "admin-keyset": signerKeyset,
+        "token-name": "MyToken",
+        "token-symbol": "MTK",
+      },
     });
 
     logger.success(`✅ Token deployed: ${result.contractName}`);
     return result;
-  }
+  },
 });
 ```
 
@@ -102,27 +103,27 @@ The script package supports multiple signing methods:
 export default createScript({
   signing: {
     // From environment variables
-    privateKeyEnv: 'DEPLOY_PRIVATE_KEY',
-    accountEnv: 'DEPLOY_ACCOUNT',
-    
+    privateKeyEnv: "DEPLOY_PRIVATE_KEY",
+    accountEnv: "DEPLOY_ACCOUNT",
+
     // Direct private key (not recommended for production)
-    privateKey: 'your-private-key',
-    account: 'your-account',
-    
+    privateKey: "your-private-key",
+    account: "your-account",
+
     // Interactive TUI
     interactive: true,
-    
+
     // Desktop wallet integration (future)
-    walletType: 'ecko' // 'zelcore', 'chainweaver', 'walletconnect'
+    walletType: "ecko", // 'zelcore', 'chainweaver', 'walletconnect'
   },
-  
+
   async run({ currentSigner, switchAccount }) {
     // Current signer is automatically available
     console.log(`Deploying as: ${currentSigner.account}`);
-    
+
     // Switch to different account if needed
-    await switchAccount('other-account');
-  }
+    await switchAccount("other-account");
+  },
 });
 ```
 
@@ -133,27 +134,27 @@ Automatically detect and create principal namespaces:
 ```typescript
 export default createScript({
   namespaceHandling: {
-    autoCreate: true,          // Auto-create namespaces if needed
-    interactive: false,        // Don't prompt user
-    chainId: "0"              // Target chain
+    autoCreate: true, // Auto-create namespaces if needed
+    interactive: false, // Don't prompt user
+    chainId: "0", // Target chain
   },
 
   async run({ namespaceHandler, generateNamespace, pact }) {
     // Generate namespace for any keyset
-    const keyset = pact.createSingleKeyKeyset('your-public-key');
+    const keyset = pact.createSingleKeyKeyset("your-public-key");
     const namespace = generateNamespace(keyset);
-    
+
     // Analyze contract for namespace requirements
     const analysis = await namespaceHandler.analyzeContract(`
       (module ${namespace}.token GOVERNANCE
         ; Contract code here
       )
     `);
-    
+
     if (analysis.hasNamespace) {
       console.log(`Contract uses namespace: ${analysis.namespaceName}`);
     }
-  }
+  },
 });
 ```
 
@@ -165,44 +166,51 @@ Access pre-configured services and utilities:
 export default createScript({
   async run({
     // Core components
-    client, config, network, chainId, currentSigner,
-    
+    client, // PactToolboxClient instance
+    config, // PactToolboxConfigObj
+    network, // Current network (e.g., "development")
+    chainId, // Current chain ID (e.g., "0")
+    logger, // Logger utility
+    args, // Script arguments
+
+    // Wallet and signing
+    wallet, // Current wallet instance (if connected)
+    walletManager, // WalletManager for account operations
+    currentSigner, // Current signer info (account, publicKey, capabilities)
+
     // KDA Services (pre-configured)
-    coinService, marmaladeService, namespaceService,
-    
-    // Enhanced utilities
-    deployments, interactions,
-    
-    // Pact utilities
-    pact,
-    
-    // Convenience methods
-    deploy, call, send,
-    getBalance, transfer, createAccount,
-    createToken, mintToken, transferToken,
-    createNamespace, generateNamespace,
-    
-    // Wallet operations
-    switchAccount, addCapability, clearCapabilities,
-    
-    // Utility methods
-    sleep, retry, formatTime, parseTime,
-    validateAccount, validatePublicKey,
-    
-    // Transaction helpers
-    withSigner, withCapabilities, waitForTransaction, estimateGas
+    coinService, // Service for coin operations
+    marmaladeService, // Service for Marmalade NFT operations
+    namespaceService, // Service for namespace operations
+
+    // Deployment utilities
+    deployments, // DeploymentHelper instance
   }) {
-    // Use any of these directly without setup
-    const balance = await getBalance('sender00');
-    await transfer('sender00', 'k:receiver', '10.0');
-    
-    // Or use services directly
-    const coinBalance = await coinService.getBalance('sender00');
-    
-    // Utility functions
-    await sleep(1000);
-    const result = await retry(() => someOperation(), 3, 2000);
-  }
+    // Use deployment helper
+    await deployments.deploy("my-contract", { gasLimit: 100000 });
+    const result = await deployments.call("my-contract", "get-info", []);
+
+    // Use coin service for transfers and account management
+    const balance = await coinService.getBalance("sender00");
+    await coinService.transfer({
+      from: "sender00",
+      to: "k:receiver",
+      amount: "10.0"
+    });
+
+    // Create accounts
+    await coinService.createAccount({
+      account: "k:new-account",
+      guard: { keys: ["public-key"], pred: "keys-all" }
+    });
+
+    // Use wallet manager for account switching
+    await walletManager.switchAccount("other-account");
+
+    // Logging
+    logger.info("Transaction submitted");
+    logger.success("Contract deployed successfully");
+  },
 });
 ```
 
@@ -214,36 +222,36 @@ Built-in validation and error handling:
 export default createScript({
   async run({ send, interactions }) {
     // Enhanced send with validation
-    const result = await send('my-contract', 'my-function', ['arg1', 'arg2'], {
+    const result = await send("my-contract", "my-function", ["arg1", "arg2"], {
       gasLimit: 50000,
       gasPrice: 0.00001,
-      
+
       // Validation options
-      dryRun: true,           // Simulate before sending
-      autoRetry: true,        // Retry on failure
+      dryRun: true, // Simulate before sending
+      autoRetry: true, // Retry on failure
       maxRetries: 3,
-      
+
       // Gas optimization
-      gasPriceStrategy: 'auto',
-      
+      gasPriceStrategy: "auto",
+
       // Transaction metadata
       metadata: {
-        purpose: 'Contract interaction'
-      }
+        purpose: "Contract interaction",
+      },
     });
-    
+
     // Enhanced interactions with caching
-    const cachedResult = await interactions.call('contract', 'function', [], {
+    const cachedResult = await interactions.call("contract", "function", [], {
       cache: true,
       cacheTtl: 300000, // 5 minutes
-      
+
       // Result formatting
       formatter: (result) => parseFloat(result),
-      
+
       // Result validation
-      validator: (result) => result > 0
+      validator: (result) => result > 0,
     });
-  }
+  },
 });
 ```
 
@@ -253,51 +261,51 @@ Comprehensive testing utilities:
 
 ```typescript
 // scripts/test-token.ts
-import { createScript } from '@pact-toolbox/script';
+import { createScript } from "@pact-toolbox/script";
 
 export default createScript({
   async run({ testing }) {
     const testSuite = createTestSuite({
-      name: 'Token Contract Tests',
-      
+      name: "Token Contract Tests",
+
       scenarios: [
         createTestScenario({
-          name: 'Deploy and mint token',
+          name: "Deploy and mint token",
           async test(context, expect) {
             // Deploy contract
-            const deployment = await context.deploy('my-token');
-            expect.contractToBeDeployed('my-token');
-            
+            const deployment = await context.deploy("my-token");
+            expect.contractToBeDeployed("my-token");
+
             // Test minting
-            const result = await context.send('my-token', 'mint', ['recipient', 100]);
+            const result = await context.send("my-token", "mint", ["recipient", 100]);
             expect.transactionToSucceed(result);
-            
+
             // Check balance
-            const balance = await context.call('my-token', 'get-balance', ['recipient']);
+            const balance = await context.call("my-token", "get-balance", ["recipient"]);
             expect.toEqual(balance, 100);
-          }
+          },
         }),
-        
+
         createTestScenario({
-          name: 'Transfer tokens',
+          name: "Transfer tokens",
           async test(context, expect) {
             // Test transfer
-            const result = await context.send('my-token', 'transfer', ['sender', 'receiver', 50]);
+            const result = await context.send("my-token", "transfer", ["sender", "receiver", 50]);
             expect.transactionToSucceed(result);
-            
+
             // Verify balances
-            await expect.toHaveBalance('receiver', '50');
-          }
-        })
-      ]
+            await expect.toHaveBalance("receiver", "50");
+          },
+        }),
+      ],
     });
-    
+
     // Run tests
     const report = await testing.runSuite(testSuite);
-    
+
     console.log(`Tests: ${report.summary.passed}/${report.summary.totalTests} passed`);
     return report;
-  }
+  },
 });
 ```
 
@@ -307,28 +315,28 @@ export default createScript({
 
 ```typescript
 // scripts/deploy.ts
-import { createScript } from '@pact-toolbox/script';
+import { createScript } from "@pact-toolbox/script";
 
 export default createScript({
   metadata: {
-    name: 'deploy-contract',
-    description: 'Deploy a simple contract',
+    name: "deploy-contract",
+    description: "Deploy a simple contract",
   },
 
   async run(ctx) {
     const { logger, deployments } = ctx;
-    
-    logger.info('🚀 Deploying contract...');
-    
-    const result = await deployments.deploy('my-contract', {
+
+    logger.info("🚀 Deploying contract...");
+
+    const result = await deployments.deploy("my-contract", {
       gasLimit: 10000,
       gasPrice: 0.00001,
       skipIfAlreadyDeployed: true,
     });
-    
+
     logger.success(`✅ Contract deployed: ${result.transactionHash}`);
     return result;
-  }
+  },
 });
 ```
 
@@ -355,20 +363,20 @@ export default createScript({
     // Deploy multiple contracts with dependency resolution
     const results = await deployments.deployMany([
       {
-        name: 'base-contract',
-        options: { gasLimit: 150000 }
+        name: "base-contract",
+        options: { gasLimit: 150000 },
       },
       {
-        name: 'dependent-contract',
+        name: "dependent-contract",
         options: {
-          dependencies: ['base-contract'],
-          gasLimit: 200000
-        }
-      }
+          dependencies: ["base-contract"],
+          gasLimit: 200000,
+        },
+      },
     ]);
-    
+
     return results;
-  }
+  },
 });
 ```
 
@@ -377,18 +385,18 @@ export default createScript({
 ```typescript
 export default createScript({
   async run({ coinService, logger }) {
-    // Transfer across chains
+    // Use coinService for cross-chain transfers
     const result = await coinService.transferCrosschain({
-      from: 'sender00',
-      to: 'k:receiver',
-      amount: '10.0',
-      sourceChainId: '0',
-      targetChainId: '1'
+      from: "sender00",
+      to: "k:receiver",
+      amount: "10.0",
+      targetChainId: "1",
+      targetGasLimit: 100000,
     });
-    
+
     logger.success(`Cross-chain transfer initiated: ${result.requestKey}`);
     return result;
-  }
+  },
 });
 ```
 
@@ -397,28 +405,28 @@ export default createScript({
 ```typescript
 export default createScript({
   environment: {
-    MIGRATION_STRATEGY: 'upgrade' // 'replace', 'upgrade', 'migrate'
+    MIGRATION_STRATEGY: "upgrade", // 'replace', 'upgrade', 'migrate'
   },
 
   async run({ deploy, deployments, logger }) {
     const strategy = process.env.MIGRATION_STRATEGY;
-    
+
     switch (strategy) {
-      case 'upgrade':
-        const result = await deployments.upgrade('my-contract', '2.0.0', {
+      case "upgrade":
+        const result = await deployments.upgrade("my-contract", "2.0.0", {
           gasLimit: 300000,
-          migrationStrategy: 'upgrade'
+          migrationStrategy: "upgrade",
         });
         break;
-        
-      case 'replace':
-        await deploy('my-contract', {
+
+      case "replace":
+        await deploy("my-contract", {
           skipIfAlreadyDeployed: false,
-          migrationStrategy: 'replace'
+          migrationStrategy: "replace",
         });
         break;
     }
-  }
+  },
 });
 ```
 
@@ -429,76 +437,76 @@ export default createScript({
 ```typescript
 export default createScript({
   // Basic options
-  autoStartNetwork: true,    // Auto-start devnet/testnet
-  persist: false,           // Keep network running after script
-  network: 'development',   // Target network
-  timeout: 300000,          // Script timeout (5 minutes)
-  profile: true,            // Enable performance profiling
-  
+  autoStartNetwork: true, // Auto-start devnet/testnet
+  persist: false, // Keep network running after script
+  network: "development", // Target network
+  timeout: 300000, // Script timeout (5 minutes)
+  profile: true, // Enable performance profiling
+
   // Signing configuration
   signing: {
-    privateKeyEnv: 'PRIVATE_KEY',
-    accountEnv: 'ACCOUNT',
-    interactive: false
+    privateKeyEnv: "PRIVATE_KEY",
+    accountEnv: "ACCOUNT",
+    interactive: false,
   },
-  
+
   // Namespace handling
   namespaceHandling: {
     autoCreate: true,
     interactive: false,
-    chainId: "0"
+    chainId: "0",
   },
-  
+
   // Environment variables
   environment: {
-    TOKEN_NAME: 'MyToken',
-    INITIAL_SUPPLY: '1000000'
+    TOKEN_NAME: "MyToken",
+    INITIAL_SUPPLY: "1000000",
   },
-  
+
   // Hooks
   hooks: {
     async preRun(context) {
       // Pre-execution setup
     },
-    
+
     async postRun(context, result) {
       // Post-execution cleanup
     },
-    
+
     async onError(context, error) {
       // Error handling
-    }
-  }
+    },
+  },
 });
 ```
 
 ### Validation Configuration
 
 ```typescript
-import { createTransactionValidator, CommonValidationRules } from '@pact-toolbox/script';
+import { createTransactionValidator, CommonValidationRules } from "@pact-toolbox/script";
 
 const validator = createTransactionValidator(client, {
   maxGasLimit: 1000000,
   minGasPrice: 0.000001,
   strict: true,
-  
+
   customRules: [
     CommonValidationRules.deployment(),
     CommonValidationRules.tokenTransfer(1, 1000000),
     CommonValidationRules.namespace(),
-    
+
     // Custom rule
     {
-      name: 'custom-validation',
-      description: 'Custom validation logic',
+      name: "custom-validation",
+      description: "Custom validation logic",
       validate: (tx) => ({
         valid: true,
         errors: [],
         warnings: [],
-        suggestions: []
-      })
-    }
-  ]
+        suggestions: [],
+      }),
+    },
+  ],
 });
 ```
 
@@ -536,28 +544,28 @@ pact-toolbox run deploy-token --profile
 // Use environment-specific configurations
 const config = {
   development: {
-    network: 'development',
+    network: "development",
     gasPrice: 0.00001,
-    autoStartNetwork: true
+    autoStartNetwork: true,
   },
   testnet: {
-    network: 'testnet',
+    network: "testnet",
     gasPrice: 0.00001,
-    autoStartNetwork: false
+    autoStartNetwork: false,
   },
   mainnet: {
-    network: 'mainnet',
+    network: "mainnet",
     gasPrice: 0.00005,
-    verify: true
-  }
+    verify: true,
+  },
 };
 
 export default createScript({
-  ...config[process.env.NODE_ENV || 'development'],
-  
+  ...config[process.env.NODE_ENV || "development"],
+
   async run(context) {
     // Script logic
-  }
+  },
 });
 ```
 
@@ -568,29 +576,38 @@ export default createScript({
   hooks: {
     async onError(context, error) {
       // Log error details
-      context.logger.error('Script failed:', error);
-      
+      context.logger.error("Script failed:", error);
+
       // Send notifications (if configured)
       // await sendAlert(error);
-      
+
       // Cleanup resources
       // await cleanup();
-    }
+    },
   },
 
   async run({ retry, logger }) {
     try {
-      // Use retry for flaky operations
-      const result = await retry(async () => {
-        return await someUnreliableOperation();
-      }, 3, 5000);
-      
+      // Implement retry logic manually or use a utility library
+      let retries = 3;
+      let result;
+      while (retries > 0) {
+        try {
+          result = await someUnreliableOperation();
+          break;
+        } catch (error) {
+          retries--;
+          if (retries === 0) throw error;
+          await new Promise((resolve) => setTimeout(resolve, 5000));
+        }
+      }
+
       return result;
     } catch (error) {
-      logger.error('Operation failed after retries:', error);
+      logger.error("Operation failed after retries:", error);
       throw error;
     }
-  }
+  },
 });
 ```
 
@@ -601,24 +618,24 @@ export default createScript({
 export default createScript({
   async run({ testing, deploy, call }) {
     // Deploy contract
-    await deploy('my-contract');
-    
+    await deploy("my-contract");
+
     // Test deployment
     const testSuite = createTestSuite({
-      name: 'Deployment Verification',
+      name: "Deployment Verification",
       scenarios: [
         createTestScenario({
-          name: 'Contract is callable',
+          name: "Contract is callable",
           async test(context, expect) {
-            const result = await context.call('my-contract', 'get-info', []);
+            const result = await context.call("my-contract", "get-info", []);
             expect.toBeTruthy(result);
-          }
-        })
-      ]
+          },
+        }),
+      ],
     });
-    
+
     await testing.runSuite(testSuite);
-  }
+  },
 });
 ```
 
@@ -627,31 +644,39 @@ export default createScript({
 ### Common Issues
 
 1. **Private Key Not Found**
+
    ```bash
    Error: No signing method configured
    ```
+
    - Set `PRIVATE_KEY` environment variable
    - Use `--private-key` CLI argument
    - Enable `--interactive` mode
 
 2. **Namespace Already Exists**
+
    ```bash
    Error: Namespace already exists
    ```
+
    - Use `forceCreate: true` in namespace options
    - Check if namespace is owned by different keyset
 
 3. **Gas Limit Too Low**
+
    ```bash
    Error: Transaction failed: gas limit exceeded
    ```
+
    - Increase `gasLimit` in deployment options
    - Use `estimateGas` to get accurate estimates
 
 4. **Network Connection Issues**
+
    ```bash
    Error: Network timeout
    ```
+
    - Check network configuration
    - Ensure Docker is running for local networks
    - Verify internet connection for public networks
@@ -670,9 +695,9 @@ Or in script:
 export default createScript({
   hooks: {
     async preRun(context) {
-      context.logger.level = 'debug';
-    }
-  }
+      context.logger.level = "debug";
+    },
+  },
 });
 ```
 

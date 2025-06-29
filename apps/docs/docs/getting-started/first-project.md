@@ -21,10 +21,7 @@ cd my-todo-app
 # Install dependencies
 pnpm install
 
-# Start the local blockchain
-pnpm pact:start
-
-# In another terminal, start the dev server
+# start the dev server
 pnpm dev
 ```
 

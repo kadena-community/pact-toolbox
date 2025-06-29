@@ -37,16 +37,18 @@ const orchestrator = new ContainerOrchestrator({
 });
 
 // Define services
-const services = [{
-  containerName: "pact-server",
-  image: "kadena/pact:latest",
-  ports: [{ target: 9001, published: 9001 }],
-  healthCheck: {
-    Test: ["CMD", "curl", "-f", "http://localhost:9001/health"],
-    Interval: 10000000000, // 10s in nanoseconds
-    Retries: 3,
+const services = [
+  {
+    containerName: "pact-server",
+    image: "kadena/pact:latest",
+    ports: [{ target: 9001, published: 9001 }],
+    healthCheck: {
+      Test: ["CMD", "curl", "-f", "http://localhost:9001/health"],
+      Interval: 10000000000, // 10s in nanoseconds
+      Retries: 3,
+    },
   },
-}];
+];
 
 // Start services
 await orchestrator.startServices(services);
@@ -71,7 +73,7 @@ const composeService = {
   image: "postgres:15",
   environment: {
     POSTGRES_PASSWORD: "secret",
-    POSTGRES_DB: "myapp"
+    POSTGRES_DB: "myapp",
   },
   ports: ["5432:5432"],
   volumes: ["postgres_data:/var/lib/postgresql/data"],
@@ -79,8 +81,8 @@ const composeService = {
     test: ["CMD-SHELL", "pg_isready -U postgres"],
     interval: "10s",
     timeout: "5s",
-    retries: 5
-  }
+    retries: 5,
+  },
 };
 
 // Convert to our format
@@ -98,7 +100,7 @@ import { ContainerOrchestrator, convertComposeService } from "@pact-toolbox/dock
 
 const orchestrator = new ContainerOrchestrator({
   networkName: "myapp-network",
-  volumes: ["postgres_data", "redis_data"]
+  volumes: ["postgres_data", "redis_data"],
 });
 
 // Database service
@@ -106,21 +108,21 @@ const database = convertComposeService("database", {
   image: "postgres:15-alpine",
   environment: {
     POSTGRES_PASSWORD: "secret",
-    POSTGRES_DB: "myapp"
+    POSTGRES_DB: "myapp",
   },
   volumes: ["postgres_data:/var/lib/postgresql/data"],
   healthcheck: {
     test: ["CMD-SHELL", "pg_isready -U postgres"],
     interval: "10s",
-    retries: 5
-  }
+    retries: 5,
+  },
 });
 
 // Cache service
 const cache = convertComposeService("cache", {
   image: "redis:7-alpine",
   volumes: ["redis_data:/data"],
-  command: ["redis-server", "--appendonly", "yes"]
+  command: ["redis-server", "--appendonly", "yes"],
 });
 
 // Application service
@@ -129,15 +131,15 @@ const app = convertComposeService("app", {
   ports: ["3000:3000"],
   environment: {
     DATABASE_URL: "postgresql://postgres:secret@database:5432/myapp",
-    REDIS_URL: "redis://cache:6379"
+    REDIS_URL: "redis://cache:6379",
   },
   depends_on: {
     database: { condition: "service_healthy" },
-    cache: { condition: "service_started" }
+    cache: { condition: "service_started" },
   },
   working_dir: "/app",
   volumes: ["./app:/app"],
-  command: ["npm", "start"]
+  command: ["npm", "start"],
 });
 
 // Start all services in dependency order
@@ -152,22 +154,22 @@ Main class for managing Docker containers and services.
 
 ```typescript
 class ContainerOrchestrator {
-  constructor(config: OrchestratorConfig)
-  
+  constructor(config: OrchestratorConfig);
+
   // Start multiple services with dependency resolution
-  async startServices(services: DockerServiceConfig[]): Promise<void>
-  
+  async startServices(services: DockerServiceConfig[]): Promise<void>;
+
   // Stop all running services
-  async stopAllServices(): Promise<void>
-  
+  async stopAllServices(): Promise<void>;
+
   // Stream logs from all services
-  async streamAllLogs(): Promise<void>
-  
+  async streamAllLogs(): Promise<void>;
+
   // Stop all log streams
-  stopAllLogStreams(): void
-  
+  stopAllLogStreams(): void;
+
   // Setup graceful shutdown handlers
-  setupGracefulShutdown(): void
+  setupGracefulShutdown(): void;
 }
 ```
 
@@ -175,13 +177,13 @@ class ContainerOrchestrator {
 
 ```typescript
 interface OrchestratorConfig {
-  networkName: string;           // Docker network name
-  volumes?: string[];           // Named volumes to create
-  networks?: NetworkConfig[];   // Additional networks
+  networkName: string; // Docker network name
+  volumes?: string[]; // Named volumes to create
+  networks?: NetworkConfig[]; // Additional networks
   secrets?: SecretDefinition[]; // Docker secrets
   configs?: ConfigDefinition[]; // Docker configs
   defaultRestartPolicy?: string; // Default restart policy
-  logger?: Logger;              // Custom logger instance
+  logger?: Logger; // Custom logger instance
 }
 ```
 
@@ -190,66 +192,69 @@ interface OrchestratorConfig {
 ```typescript
 interface DockerServiceConfig {
   // Basic configuration
-  containerName: string;        // Container name
-  image?: string;              // Docker image
-  platform?: string;          // Platform (e.g., "linux/amd64")
-  
+  containerName: string; // Container name
+  image?: string; // Docker image
+  platform?: string; // Platform (e.g., "linux/amd64")
+
   // Build configuration
   build?: {
-    context: string;           // Build context path
-    dockerfile?: string;       // Dockerfile path
+    context: string; // Build context path
+    dockerfile?: string; // Dockerfile path
     args?: Record<string, string>; // Build arguments
-    target?: string;           // Build target
+    target?: string; // Build target
     // ... more build options
   };
-  
+
   // Runtime configuration
-  command?: string[];          // Command to run
+  command?: string[]; // Command to run
   entrypoint?: string | string[]; // Entry point
   environment?: string[] | Record<string, string>; // Environment variables
   envFile?: string | string[]; // Environment files
-  workingDir?: string;         // Working directory
-  user?: string;              // User to run as
-  
+  workingDir?: string; // Working directory
+  user?: string; // User to run as
+
   // Networking
   ports?: Array<{
-    target: number;            // Container port
+    target: number; // Container port
     published: string | number; // Host port
-    protocol?: string;         // Protocol (tcp/udp)
+    protocol?: string; // Protocol (tcp/udp)
     mode?: "host" | "ingress"; // Port mode
   }>;
   networks?: string[] | Record<string, NetworkAttachConfig>;
   hostname?: string;
-  expose?: string[];          // Exposed ports
-  
+  expose?: string[]; // Exposed ports
+
   // Storage
   volumes?: string[] | VolumeConfig[];
   tmpfs?: string | string[];
-  
+
   // Health checks
   healthCheck?: {
-    Test: string[];            // Health check command
-    Interval?: number;         // Interval in nanoseconds
-    Timeout?: number;          // Timeout in nanoseconds
-    Retries?: number;          // Number of retries
-    StartPeriod?: number;      // Start period in nanoseconds
+    Test: string[]; // Health check command
+    Interval?: number; // Interval in nanoseconds
+    Timeout?: number; // Timeout in nanoseconds
+    Retries?: number; // Number of retries
+    StartPeriod?: number; // Start period in nanoseconds
   };
-  
+
   // Dependencies
-  dependsOn?: Record<string, {
-    condition: "service_started" | "service_healthy" | "service_completed_successfully";
-    required?: boolean;
-  }>;
-  
+  dependsOn?: Record<
+    string,
+    {
+      condition: "service_started" | "service_healthy" | "service_completed_successfully";
+      required?: boolean;
+    }
+  >;
+
   // Resource limits
-  memLimit?: string;           // Memory limit (e.g., "512m")
-  cpuShares?: number;         // CPU shares
+  memLimit?: string; // Memory limit (e.g., "512m")
+  cpuShares?: number; // CPU shares
   deploy?: {
-    replicas?: number;         // Number of replicas
+    replicas?: number; // Number of replicas
     resources?: {
       limits?: {
-        cpus?: string;         // CPU limit
-        memory?: string;       // Memory limit
+        cpus?: string; // CPU limit
+        memory?: string; // Memory limit
       };
     };
     restartPolicy?: {
@@ -257,16 +262,16 @@ interface DockerServiceConfig {
       maxAttempts?: number;
     };
   };
-  
+
   // Security
-  privileged?: boolean;        // Privileged mode
-  capAdd?: string[];          // Capabilities to add
-  capDrop?: string[];         // Capabilities to drop
-  
+  privileged?: boolean; // Privileged mode
+  capAdd?: string[]; // Capabilities to add
+  capDrop?: string[]; // Capabilities to drop
+
   // Other options
-  restart?: string;           // Restart policy
+  restart?: string; // Restart policy
   labels?: Record<string, string>; // Labels
-  profiles?: string[];        // Compose profiles
+  profiles?: string[]; // Compose profiles
 }
 ```
 
@@ -274,19 +279,16 @@ interface DockerServiceConfig {
 
 ```typescript
 // Convert Docker Compose service to our format
-function convertComposeService(
-  serviceName: string,
-  composeService: any
-): DockerServiceConfig
+function convertComposeService(serviceName: string, composeService: any): DockerServiceConfig;
 
 // Parse time strings (e.g., "30s", "1m30s") to seconds
-function parseTime(timeStr: string): number
+function parseTime(timeStr: string): number;
 
 // Validate service configuration
-function validateServiceConfig(config: DockerServiceConfig): string[]
+function validateServiceConfig(config: DockerServiceConfig): string[];
 
 // Get color function for service logs
-function getServiceColor(serviceName: string): ColorFunction
+function getServiceColor(serviceName: string): ColorFunction;
 ```
 
 ## Examples
@@ -298,7 +300,7 @@ import { ContainerOrchestrator, convertComposeService } from "@pact-toolbox/dock
 
 const orchestrator = new ContainerOrchestrator({
   networkName: "pact-devnet",
-  volumes: ["chainweb_db", "pact_data"]
+  volumes: ["chainweb_db", "pact_data"],
 });
 
 // Chainweb node
@@ -306,16 +308,12 @@ const chainweb = convertComposeService("chainweb", {
   image: "ghcr.io/kadena-io/chainweb-node:latest",
   volumes: ["chainweb_db:/chainweb/db"],
   ports: ["1848:1848", "1789:1789"],
-  command: [
-    "--p2p-hostname=chainweb",
-    "--enable-mining-coordination",
-    "--disable-pow"
-  ],
+  command: ["--p2p-hostname=chainweb", "--enable-mining-coordination", "--disable-pow"],
   healthcheck: {
     test: ["CMD", "curl", "-f", "http://localhost:1848/health-check"],
     interval: "30s",
-    retries: 3
-  }
+    retries: 3,
+  },
 });
 
 // Pact server
@@ -324,11 +322,11 @@ const pact = convertComposeService("pact", {
   ports: ["9001:9001"],
   volumes: ["pact_data:/pact/data"],
   depends_on: {
-    chainweb: { condition: "service_healthy" }
+    chainweb: { condition: "service_healthy" },
   },
   environment: {
-    CHAINWEB_NODE: "http://chainweb:1848"
-  }
+    CHAINWEB_NODE: "http://chainweb:1848",
+  },
 });
 
 // Start development environment
@@ -342,7 +340,7 @@ console.log("Pact development environment is ready!");
 import { ContainerOrchestrator } from "@pact-toolbox/docker";
 
 const testOrchestrator = new ContainerOrchestrator({
-  networkName: "test-network"
+  networkName: "test-network",
 });
 
 // Test database
@@ -351,14 +349,14 @@ const testDb = {
   image: "postgres:15-alpine",
   environment: {
     POSTGRES_PASSWORD: "test",
-    POSTGRES_DB: "testdb"
+    POSTGRES_DB: "testdb",
   },
   tmpfs: ["/var/lib/postgresql/data"], // Use tmpfs for faster tests
   healthCheck: {
     Test: ["CMD-SHELL", "pg_isready -U postgres"],
     Interval: 5000000000, // 5s
-    Retries: 3
-  }
+    Retries: 3,
+  },
 };
 
 // Start test database
@@ -385,10 +383,10 @@ const service = {
   healthCheck: {
     Test: ["CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"],
     Interval: 30000000000, // 30s in nanoseconds
-    Timeout: 10000000000,  // 10s in nanoseconds
+    Timeout: 10000000000, // 10s in nanoseconds
     Retries: 3,
-    StartPeriod: 60000000000 // 60s for startup
-  }
+    StartPeriod: 60000000000, // 60s for startup
+  },
 };
 ```
 
@@ -399,15 +397,17 @@ const services = [
   {
     containerName: "database",
     image: "postgres:15",
-    healthCheck: { /* ... */ }
+    healthCheck: {
+      /* ... */
+    },
   },
   {
     containerName: "app",
     image: "my-app:latest",
     dependsOn: {
-      database: { condition: "service_healthy" }
-    }
-  }
+      database: { condition: "service_healthy" },
+    },
+  },
 ];
 ```
 
@@ -438,10 +438,10 @@ const service = {
     resources: {
       limits: {
         cpus: "0.5",
-        memory: "512m"
-      }
-    }
-  }
+        memory: "512m",
+      },
+    },
+  },
 };
 ```
 
@@ -479,7 +479,7 @@ import { logger } from "@pact-toolbox/node-utils";
 // Set debug level
 const orchestrator = new ContainerOrchestrator({
   networkName: "myapp",
-  logger: logger.create({ level: "debug" })
+  logger: logger.create({ level: "debug" }),
 });
 ```
 

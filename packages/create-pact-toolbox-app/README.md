@@ -26,6 +26,7 @@ pnpm create pact-toolbox-app
 ```
 
 You'll be asked to:
+
 - Choose a project name
 - Select a template
 
@@ -62,11 +63,13 @@ pnpm create pact-toolbox-app
 The generated project includes:
 
 ### Frontend Framework
+
 - **React 19** with TypeScript
 - **Vite** for fast development and building
 - **Vitest** for testing with React Testing Library
 
 ### Pact Development Tools
+
 - **Pact Toolbox CLI** for contract development
 - **Sample Pact contracts** (hello-world, todos)
 - **TypeScript type generation** from Pact contracts
@@ -74,6 +77,7 @@ The generated project includes:
 - **Transaction builder** for easy blockchain interactions
 
 ### Development Experience
+
 - **Hot reload** for Pact contracts during development
 - **REPL-based testing** for Pact contracts
 - **TypeScript** with strict configuration
@@ -93,17 +97,20 @@ The generated project includes:
 After creating your project:
 
 1. **Install dependencies:**
+
    ```bash
    cd my-app
    pnpm install
    ```
 
 2. **Start development server:**
+
    ```bash
    pnpm dev
    ```
 
 3. **Start Pact development environment:**
+
    ```bash
    pnpm pact:start
    ```
@@ -131,6 +138,7 @@ The generated project includes these scripts:
 ### Default Template
 
 The `default` template includes:
+
 - React + TypeScript frontend
 - Todo MVC example application
 - Sample Pact contracts for learning

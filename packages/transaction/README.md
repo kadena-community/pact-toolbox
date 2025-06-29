@@ -29,10 +29,7 @@ pnpm add @pact-toolbox/transaction
 import { execution } from "@pact-toolbox/transaction";
 
 // Build and execute a simple read operation
-const result = await execution('(coin.details "alice")')
-  .withChainId("0")
-  .build()
-  .dirtyRead();
+const result = await execution('(coin.details "alice")').withChainId("0").build().dirtyRead();
 
 console.log(result);
 ```
@@ -46,9 +43,7 @@ import { execution } from "@pact-toolbox/transaction";
 
 // Build and execute a transaction
 const result = await execution('(coin.transfer "alice" "bob" 10.0)')
-  .withSigner("alice-public-key", (signFor) => [
-    signFor("coin.TRANSFER", "alice", "bob", 10.0)
-  ])
+  .withSigner("alice-public-key", (signFor) => [signFor("coin.TRANSFER", "alice", "bob", 10.0)])
   .withChainId("0")
   .withMeta({
     gasLimit: 1000,
@@ -150,17 +145,14 @@ const customConfig = {
       rpcUrl: "https://api.testnet.chainweb.com/chainweb/0.0/testnet04/chain/{chainId}/pact",
       meta: { chainId: "0" },
       // ... other config
-    }
-  }
+    },
+  },
 };
 
 const context = createToolboxNetworkContext(customConfig);
 
 // Use with transactions
-const result = await execution('(coin.details "alice")', context)
-  .withChainId("0")
-  .build()
-  .dirtyRead();
+const result = await execution('(coin.details "alice")', context).withChainId("0").build().dirtyRead();
 ```
 
 ## Transaction Execution Methods
@@ -169,10 +161,7 @@ const result = await execution('(coin.details "alice")', context)
 
 ```typescript
 // dirtyRead - Fast read without going through consensus
-const balance = await execution('(coin.get-balance "alice")')
-  .withChainId("0")
-  .build()
-  .dirtyRead();
+const balance = await execution('(coin.get-balance "alice")').withChainId("0").build().dirtyRead();
 
 // local - Full local execution with gas estimation
 const result = await execution('(coin.transfer "alice" "bob" 10.0)')
@@ -206,14 +195,10 @@ const result = await execution('(coin.transfer "alice" "bob" 10.0)')
 
 ```typescript
 // Execute on multiple chains
-const multiChainResult = await execution('(coin.get-balance "alice")')
-  .build()
-  .dirtyRead(["0", "1", "2"]); // Execute on chains 0, 1, and 2
+const multiChainResult = await execution('(coin.get-balance "alice")').build().dirtyRead(["0", "1", "2"]); // Execute on chains 0, 1, and 2
 
 // Execute on all chains (0-19)
-const allChainResult = await execution('(coin.get-balance "alice")')
-  .build()
-  .dirtyReadAll();
+const allChainResult = await execution('(coin.get-balance "alice")').build().dirtyReadAll();
 ```
 
 ## Utility Functions
@@ -310,10 +295,7 @@ The dispatcher provides execution methods for different transaction types:
 
 ```typescript
 try {
-  const result = await execution('(coin.transfer "alice" "bob" 10.0)')
-    .withChainId("0")
-    .sign(wallet)
-    .submitAndListen();
+  const result = await execution('(coin.transfer "alice" "bob" 10.0)').withChainId("0").sign(wallet).submitAndListen();
 
   console.log("Success:", result);
 } catch (error) {
@@ -333,17 +315,14 @@ try {
 
 ```typescript
 // Always set chain ID explicitly
-const tx = execution("...")
-  .withChainId("0"); // Explicit chain ID
+const tx = execution("...").withChainId("0"); // Explicit chain ID
 ```
 
 ### 2. Use Appropriate Execution Method
 
 ```typescript
 // Use dirtyRead for simple queries
-const balance = await execution('(coin.get-balance "alice")')
-  .build()
-  .dirtyRead();
+const balance = await execution('(coin.get-balance "alice")').build().dirtyRead();
 
 // Use local for complex queries or validation
 const estimate = await execution('(coin.transfer "alice" "bob" 10.0)')
@@ -352,9 +331,7 @@ const estimate = await execution('(coin.transfer "alice" "bob" 10.0)')
   .local();
 
 // Use submitAndListen for write operations
-const result = await execution('(coin.transfer "alice" "bob" 10.0)')
-  .sign(wallet)
-  .submitAndListen();
+const result = await execution('(coin.transfer "alice" "bob" 10.0)').sign(wallet).submitAndListen();
 ```
 
 ### 3. Handle Network Context Properly
@@ -372,11 +349,10 @@ if (!validateNetworkForEnvironment(config.default)) {
 ### 4. Provide Appropriate Capabilities
 
 ```typescript
-const tx = execution('(coin.transfer "alice" "bob" 10.0)')
-  .withSigner("alice-key", (signFor) => [
-    signFor("coin.TRANSFER", "alice", "bob", 10.0), // Specific transfer capability
-    signFor("coin.GAS") // Gas capability
-  ]);
+const tx = execution('(coin.transfer "alice" "bob" 10.0)').withSigner("alice-key", (signFor) => [
+  signFor("coin.TRANSFER", "alice", "bob", 10.0), // Specific transfer capability
+  signFor("coin.GAS"), // Gas capability
+]);
 ```
 
 ## Examples
@@ -391,7 +367,7 @@ async function transferTokens(fromAccount: string, toAccount: string, amount: nu
     const result = await execution(`(coin.transfer "${fromAccount}" "${toAccount}" ${amount})`)
       .withSigner(wallet.publicKey, (signFor) => [
         signFor("coin.TRANSFER", fromAccount, toAccount, amount),
-        signFor("coin.GAS")
+        signFor("coin.GAS"),
       ])
       .withChainId("0")
       .withMeta({
@@ -417,10 +393,7 @@ async function transferTokens(fromAccount: string, toAccount: string, amount: nu
 import { execution } from "@pact-toolbox/transaction";
 
 async function getBalance(account: string, chainId: string = "0") {
-  const result = await execution(`(coin.get-balance "${account}")`)
-    .withChainId(chainId)
-    .build()
-    .dirtyRead();
+  const result = await execution(`(coin.get-balance "${account}")`).withChainId(chainId).build().dirtyRead();
 
   return result;
 }
@@ -434,9 +407,7 @@ import { execution } from "@pact-toolbox/transaction";
 async function deployModule(moduleCode: string, adminKeyset: any, wallet: any) {
   const result = await execution(moduleCode)
     .withKeyset("module-admin", adminKeyset)
-    .withSigner(wallet.publicKey, (signFor) => [
-      signFor("coin.GAS")
-    ])
+    .withSigner(wallet.publicKey, (signFor) => [signFor("coin.GAS")])
     .withChainId("0")
     .withMeta({
       gasLimit: 100000,

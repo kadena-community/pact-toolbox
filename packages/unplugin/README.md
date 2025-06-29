@@ -544,4 +544,3 @@ await myContract.transfer("alice", "bob", 1.0);
 ---
 
 Made with ❤️ by [@salamaashoush](https://github.com/salamaashoush)
-

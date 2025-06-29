@@ -12,7 +12,6 @@ import type {
   PartiallySignedTransaction,
   SerializableNetworkConfig,
   Transaction,
-  WalletLike,
 } from "@pact-toolbox/types";
 
 import { ChainwebClient } from "@pact-toolbox/chainweb-client";
@@ -84,18 +83,6 @@ export function pactDecimal(amount: string | number): {
   return {
     decimal: "string" === typeof amount ? amount : amount.toFixed(12),
   };
-}
-
-/**
- * Checks if an object is WalletLike.
- * @param wallet - The object to check.
- * @returns True if the object is WalletLike, false otherwise.
- */
-export function isWalletLike(wallet: unknown): wallet is WalletLike {
-  if ("object" === typeof wallet && null !== wallet) {
-    return "sign" in wallet || "quickSign" in wallet;
-  }
-  return "function" === typeof wallet;
 }
 
 export function isToolboxInstalled(): boolean {
@@ -183,7 +170,6 @@ export function validateNetworkForEnvironment(networkName: string): boolean {
     return false;
   }
 }
-
 
 export function createChainwebClient(netWorkConfig: SerializableNetworkConfig): ChainwebClient {
   // Create a function that generates the RPC URL based on networkId and chainId

@@ -13,5 +13,4 @@ export type {
   PartiallySignedTransaction,
   Serializable,
   Transaction,
-  WalletLike,
 } from "@pact-toolbox/types";

@@ -424,11 +424,7 @@ describe("Transaction Builder", () => {
 
   describe("transaction building", () => {
     it("should create valid transaction with builder pattern", async () => {
-      const tx = await client
-        .code("(coin.transfer 'alice' 'bob' 1.0)")
-        .data({ amount: 1.0 })
-        .gasLimit(1000)
-        .build();
+      const tx = await client.code("(coin.transfer 'alice' 'bob' 1.0)").data({ amount: 1.0 }).gasLimit(1000).build();
 
       expect(tx.cmd).toBeDefined();
       expect(tx.hash).toBeDefined();
@@ -440,7 +436,7 @@ describe("Transaction Builder", () => {
         .createTodo({
           id: "test-1",
           title: "Test todo",
-          completed: false
+          completed: false,
         })
         .sign()
         .submitAndListen();

@@ -11,8 +11,8 @@ npm install @pact-toolbox/network
 ## Quick Start
 
 ```typescript
-import { createNetwork } from '@pact-toolbox/network';
-import { resolveConfig } from '@pact-toolbox/config';
+import { createNetwork } from "@pact-toolbox/network";
+import { resolveConfig } from "@pact-toolbox/config";
 
 // Load your configuration
 const config = await resolveConfig();
@@ -21,12 +21,12 @@ const config = await resolveConfig();
 const network = await createNetwork(config);
 
 // Get network information
-console.log('RPC URL:', network.getRpcUrl());
-console.log('Port:', network.getPort());
+console.log("RPC URL:", network.getRpcUrl());
+console.log("Port:", network.getPort());
 
 // Check if network supports on-demand mining
 if (network.hasOnDemandMining()) {
-  console.log('Mining URL:', network.getMiningUrl());
+  console.log("Mining URL:", network.getMiningUrl());
 }
 
 // Stop the network when done
@@ -48,6 +48,7 @@ await network.stop();
 Creates and optionally starts a Pact network.
 
 **Parameters:**
+
 - `config`: PactToolboxConfigObj - The toolbox configuration
 - `options`: NetworkOptions (optional)
   - `network`: string - Network name from config (default: first network)
@@ -130,18 +131,18 @@ Full Kadena blockchain development network with Docker.
 ### Basic Usage
 
 ```typescript
-import { createNetwork } from '@pact-toolbox/network';
-import { resolveConfig } from '@pact-toolbox/config';
+import { createNetwork } from "@pact-toolbox/network";
+import { resolveConfig } from "@pact-toolbox/config";
 
 async function main() {
   const config = await resolveConfig();
-  
+
   // Start the default network
   const network = await createNetwork(config);
-  
+
   // Use the network...
-  console.log('Network started at:', network.getRpcUrl());
-  
+  console.log("Network started at:", network.getRpcUrl());
+
   // Stop when done
   await network.stop();
 }
@@ -150,29 +151,29 @@ async function main() {
 ### Manual Network Control
 
 ```typescript
-import { createNetwork } from '@pact-toolbox/network';
+import { createNetwork } from "@pact-toolbox/network";
 
 async function main() {
   const config = await resolveConfig();
-  
+
   // Create network without auto-starting
   const network = await createNetwork(config, {
     autoStart: false,
-    network: 'devnet' // Specify which network to use
+    network: "devnet", // Specify which network to use
   });
-  
+
   // Start manually
   await network.start({
     detached: false, // Show logs in console
-    logAccounts: true // Display test accounts
+    logAccounts: true, // Display test accounts
   });
-  
+
   // Restart the network
   await network.restart();
-  
+
   // Check health
   const healthy = await network.isHealthy();
-  console.log('Network healthy:', healthy);
+  console.log("Network healthy:", healthy);
 }
 ```
 
@@ -182,7 +183,7 @@ async function main() {
 // Run network without persisting data
 const network = await createNetwork(config, {
   stateless: true, // No data persistence
-  autoStart: true
+  autoStart: true,
 });
 
 // Each restart gives you a clean state
@@ -194,36 +195,36 @@ await network.restart({ stateless: true });
 When using networks in CLI applications or scripts, you should handle cleanup properly:
 
 ```typescript
-import { createNetwork } from '@pact-toolbox/network';
+import { createNetwork } from "@pact-toolbox/network";
 
 async function runScript() {
   const network = await createNetwork(config);
-  
+
   // Setup cleanup handlers
   const cleanup = async () => {
-    console.log('Shutting down network...');
+    console.log("Shutting down network...");
     try {
       await network.stop();
-      console.log('Network stopped successfully');
+      console.log("Network stopped successfully");
     } catch (error) {
-      console.error('Error stopping network:', error);
+      console.error("Error stopping network:", error);
     }
     process.exit(0);
   };
 
   // Register cleanup for different exit scenarios
-  process.on('SIGINT', cleanup);  // Ctrl+C
-  process.on('SIGTERM', cleanup); // Termination signal
-  process.on('beforeExit', cleanup);
+  process.on("SIGINT", cleanup); // Ctrl+C
+  process.on("SIGTERM", cleanup); // Termination signal
+  process.on("beforeExit", cleanup);
 
   try {
     // Your application logic here
-    console.log('Network running at:', network.getRpcUrl());
-    
+    console.log("Network running at:", network.getRpcUrl());
+
     // Keep the process alive
     await new Promise(() => {});
   } catch (error) {
-    console.error('Script error:', error);
+    console.error("Script error:", error);
     await cleanup();
   }
 }

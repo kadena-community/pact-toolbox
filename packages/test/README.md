@@ -138,7 +138,7 @@ const config: PactToolboxConfigObj = {
   contractsDir: "./pact",
   networks: {
     testnet: {
-      networkId: "testnet", 
+      networkId: "testnet",
       rpcUrl: "http://localhost:8080",
       type: "pact-server",
       chainId: "0",
@@ -156,6 +156,7 @@ await runReplTests(config);
 ```
 
 **Behavior:**
+
 - Searches for all `*.repl` files in the contracts directory
 - Ignores files in `prelude/` directories by default
 - Executes tests using the `pact` command with `-t` flag
@@ -172,13 +173,13 @@ import { createPactTestEnv } from "@pact-toolbox/test";
 interface CreatePactTestEnvOptions {
   /** Private key for test wallet (generates random if not provided) */
   privateKey?: string;
-  
+
   /** Account name for test wallet */
   accountName?: string;
-  
+
   /** Network type to use ("devnet" | "pact-server") */
   network?: string;
-  
+
   /** Configuration overrides */
   configOverrides?: Partial<PactToolboxConfigObj>;
 }
@@ -186,7 +187,7 @@ interface CreatePactTestEnvOptions {
 const testEnv = await createPactTestEnv({
   privateKey: "251a920c403ae8c8f65f59142316af3c82b631fba46ddea92ee8c95035bd2898",
   accountName: "sender00",
-  network: "devnet", // or "pact-server" 
+  network: "devnet", // or "pact-server"
   configOverrides: {
     defaultNetwork: "devnet",
     networks: {
@@ -201,16 +202,17 @@ const testEnv = await createPactTestEnv({
 });
 
 // Available properties and methods
-testEnv.client;     // PactToolboxClient instance
-testEnv.config;     // Resolved configuration
-testEnv.network;    // Network instance  
-testEnv.wallet;     // Test wallet (KeypairWallet)
-testEnv.start();    // Start the network
-testEnv.stop();     // Stop the network
-testEnv.restart();  // Restart the network
+testEnv.client; // PactToolboxClient instance
+testEnv.config; // Resolved configuration
+testEnv.network; // Network instance
+testEnv.wallet; // Test wallet (KeypairWallet)
+testEnv.start(); // Start the network
+testEnv.stop(); // Stop the network
+testEnv.restart(); // Restart the network
 ```
 
 **Key Features:**
+
 - **Automatic Port Management** - Finds free ports to avoid conflicts
 - **Test Mode Flag** - Sets `globalThis.__PACT_TOOLBOX_TEST_MODE__ = true`
 - **Wallet Injection** - Automatically configures wallet for test transactions
@@ -260,7 +262,7 @@ const coinService = new CoinService({
 
 // Transactions are automatically signed with test wallet
 await coinService.transfer({
-  from: "sender00", 
+  from: "sender00",
   to: "k:target-account",
   amount: "10.0",
 });
@@ -269,6 +271,7 @@ await coinService.transfer({
 ### Network Configurations
 
 #### DevNet (Recommended for most tests)
+
 ```typescript
 import { createDevNetNetworkConfig } from "@pact-toolbox/config";
 
@@ -278,8 +281,8 @@ const testEnv = await createPactTestEnv({
     networks: {
       devnet: createDevNetNetworkConfig({
         containerConfig: {
-          persistDb: false,        // Clean state for each test
-          onDemandMining: true,    // Mine blocks on demand
+          persistDb: false, // Clean state for each test
+          onDemandMining: true, // Mine blocks on demand
         },
       }),
     },
@@ -288,6 +291,7 @@ const testEnv = await createPactTestEnv({
 ```
 
 #### Pact Server (For simpler scenarios)
+
 ```typescript
 import { createPactServerNetworkConfig } from "@pact-toolbox/config";
 
@@ -424,7 +428,7 @@ test("should handle expected errors gracefully", async () => {
       to: "non-existent-account",
       amount: "999999999.0", // More than available
     });
-    
+
     // Should not reach here
     expect(true).toBe(false);
   } catch (error) {
@@ -451,7 +455,7 @@ test("should handle expected errors gracefully", async () => {
    - Ensure sufficient disk space
    - Try restarting Docker
 
-4. **Test Timeouts** 
+4. **Test Timeouts**
    - DevNet takes time to start (10-15 seconds)
    - Increase test timeouts if needed
    - Use smaller test datasets
@@ -482,6 +486,7 @@ Check the integration tests in this package for complete examples:
 - `examples/` - Sample REPL test files
 
 These examples demonstrate:
+
 - Test environment setup and teardown
 - Service integration patterns
 - Error handling strategies
