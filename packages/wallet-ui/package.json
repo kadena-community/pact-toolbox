@@ -90,5 +90,9 @@
     "type": "git",
     "url": "https://github.com/salamaashoush/pact-toolbox.git",
     "directory": "packages/wallet-ui"
+  },
+  "private": false,
+  "publishConfig": {
+    "access": "public"
   }
 }

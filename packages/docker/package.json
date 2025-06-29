@@ -56,5 +56,9 @@
     "devops",
     "pact",
     "kadena"
-  ]
+  ],
+  "private": false,
+  "publishConfig": {
+    "access": "public"
+  }
 }

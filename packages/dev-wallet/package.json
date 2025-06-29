@@ -71,5 +71,9 @@
     "development",
     "kadena",
     "blockchain"
-  ]
+  ],
+  "private": false,
+  "publishConfig": {
+    "access": "public"
+  }
 }
