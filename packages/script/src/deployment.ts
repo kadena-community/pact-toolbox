@@ -373,22 +373,24 @@ export class DeploymentHelper {
     try {
       // Load contract source
       const contractInfo = await this.loadContract(contractName);
-      
+
       // Debug: Log the client's network configuration
       const clientNetworkConfig = this.client.getNetworkConfig();
       logger.debug(`Deployment network config:`, {
         networkId: clientNetworkConfig?.networkId,
         chainId,
         rpcUrl: clientNetworkConfig?.rpcUrl,
-        type: clientNetworkConfig?.type
+        type: clientNetworkConfig?.type,
       });
-      
+
       if (clientNetworkConfig?.rpcUrl) {
         logger.debug(`Deployment RPC URL:`, clientNetworkConfig.rpcUrl);
       }
-      
+
       // Log the actual transaction being built
-      logger.debug(`Building transaction for chain ${chainId} with sender ${options.from || clientNetworkConfig.senderAccount}`);
+      logger.debug(
+        `Building transaction for chain ${chainId} with sender ${options.from || clientNetworkConfig.senderAccount}`,
+      );
 
       // Get network configuration
       const networkConfig = this.config.networks?.[this.network];
@@ -399,7 +401,7 @@ export class DeploymentHelper {
       // Get the sender account - use current signer if available
       const signer = this.walletManager.getCurrentSigner();
       const senderAccount = options.from || signer?.account || networkConfig.senderAccount || "sender00";
-      
+
       logger.debug(`Using sender account: ${senderAccount}`);
 
       // Prepare deployment transaction
@@ -416,13 +418,11 @@ export class DeploymentHelper {
       // Add signer and sign the transaction
       const wallet = this.walletManager.getWallet();
       let result: any;
-      
+
       if (wallet && signer) {
         // Add signer with GAS capability
-        const signedTx = deployTx
-          .withSigner(signer.publicKey, (signFor) => [signFor("coin.GAS")])
-          .sign(wallet);
-        
+        const signedTx = deployTx.withSigner(signer.publicKey, (signFor) => [signFor("coin.GAS")]).sign(wallet);
+
         // Execute deployment
         result = await signedTx.submitAndListen(chainId as any);
       } else {
@@ -486,13 +486,11 @@ export class DeploymentHelper {
       // Add signer and sign the transaction
       const wallet = this.walletManager.getWallet();
       let multiResults: any;
-      
+
       if (wallet && signer) {
         // Add signer with GAS capability
-        const signedTx = deployTx
-          .withSigner(signer.publicKey, (signFor) => [signFor("coin.GAS")])
-          .sign(wallet);
-        
+        const signedTx = deployTx.withSigner(signer.publicKey, (signFor) => [signFor("coin.GAS")]).sign(wallet);
+
         multiResults = await signedTx.submitAndListen(chainIds as any);
       } else {
         // Fallback to unsigned transaction (will fail on mainnet/testnet)
@@ -502,7 +500,6 @@ export class DeploymentHelper {
 
       // Deploy to all chains simultaneously using the client's multi-chain support
       try {
-
         // Process results - this will be an array of results matching chainIds order
         if (Array.isArray(multiResults)) {
           for (let i = 0; i < chainIds.length; i++) {

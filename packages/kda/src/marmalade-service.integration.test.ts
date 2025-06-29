@@ -77,7 +77,7 @@ describe.skip("MarmaladeService Integration Tests", () => {
     it("should create a new token", async () => {
       // Generate unique token ID
       const tokenId = `test-token-${Date.now()}`;
-      
+
       try {
         const result = await marmaladeService.createToken({
           id: tokenId,
@@ -88,7 +88,7 @@ describe.skip("MarmaladeService Integration Tests", () => {
         });
 
         expect(result).toBe("Write succeeded");
-        
+
         // Verify token was created
         const tokenInfo = await marmaladeService.getTokenInfo(tokenId);
         expect(tokenInfo.id).toBe(tokenId);
@@ -118,7 +118,7 @@ describe.skip("MarmaladeService Integration Tests", () => {
           uri: "https://example.com/nft.json",
           policies: [],
         });
-        
+
         // Fund test accounts
         await coinService.transferCreate({
           from: "sender00",
@@ -126,16 +126,16 @@ describe.skip("MarmaladeService Integration Tests", () => {
           amount: "100.0",
           toGuard: aliceKeyset,
         });
-        
+
         await coinService.transferCreate({
           from: "sender00",
           to: bobAccount,
           amount: "100.0",
           toGuard: bobKeyset,
         });
-        
+
         // Wait for transactions to settle
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        await new Promise((resolve) => setTimeout(resolve, 2000));
       } catch (error) {
         console.log("Test setup failed:", error);
       }
@@ -183,7 +183,7 @@ describe.skip("MarmaladeService Integration Tests", () => {
         // Verify balances
         const aliceBalance = await marmaladeService.getBalance(testTokenId, aliceAccount);
         const bobBalance = await marmaladeService.getBalance(testTokenId, bobAccount);
-        
+
         expect(parseFloat(aliceBalance)).toBe(0.0);
         expect(parseFloat(bobBalance)).toBe(1.0);
       } catch (error) {

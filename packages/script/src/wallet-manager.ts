@@ -212,12 +212,10 @@ export class WalletManager {
 
     // Use the first available keypair or the configured account
     let selectedKeyPair = networkConfig.keyPairs[0];
-    
+
     // If a specific account is configured, try to find it in the network keypairs
     if (this.signingConfig.account) {
-      const foundKeyPair = networkConfig.keyPairs.find(
-        kp => kp.account === this.signingConfig.account
-      );
+      const foundKeyPair = networkConfig.keyPairs.find((kp) => kp.account === this.signingConfig.account);
       if (foundKeyPair) {
         selectedKeyPair = foundKeyPair;
       } else {
@@ -226,7 +224,8 @@ export class WalletManager {
     }
 
     const networkId = networkConfig.networkId;
-    const rpcUrlTemplate = networkConfig.rpcUrl || "https://testnet.chainweb.com/chainweb/0.0/{networkId}/chain/{chainId}/pact";
+    const rpcUrlTemplate =
+      networkConfig.rpcUrl || "https://testnet.chainweb.com/chainweb/0.0/{networkId}/chain/{chainId}/pact";
     const rpcUrl = (rpcUrlTemplate as string)
       .replace("{networkId}", networkId)
       .replace("{chainId}", networkConfig?.meta?.chainId || "0");
@@ -352,7 +351,7 @@ export class WalletManager {
     }
 
     const { select, isCancel } = await import("@pact-toolbox/node-utils");
-    
+
     const selectedAccount = await select({
       message: "Select account to use:",
       options: availableAccounts.map((account) => ({
@@ -430,7 +429,11 @@ export class WalletManager {
 /**
  * Create a wallet manager instance with configuration
  */
-export function createWalletManager(config: PactToolboxConfigObj, signingConfig: SigningConfig = {}, network?: string): WalletManager {
+export function createWalletManager(
+  config: PactToolboxConfigObj,
+  signingConfig: SigningConfig = {},
+  network?: string,
+): WalletManager {
   return new WalletManager(config, signingConfig, network);
 }
 

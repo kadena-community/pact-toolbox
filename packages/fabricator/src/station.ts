@@ -77,8 +77,8 @@ export function generateGasStation(context: GasStationContext): string {
     namespace: context.namespace ?? "free",
     adminKeyset: context.adminKeyset ?? "admin-keyset",
     account: context.account,
-    module: context.module
+    module: context.module,
   };
-  
+
   return fillTemplatePlaceholders(TEMPLATE.trim(), fullContext);
 }

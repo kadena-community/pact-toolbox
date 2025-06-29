@@ -92,11 +92,7 @@ export class PactTransactionDispatcher<Payload extends PactCmdPayload, Result = 
 
   submitAndListen(chainId?: ChainId, preflight?: boolean, client?: Client): Promise<Result>;
   submitAndListen(chainId?: ChainId[], preflight?: boolean, client?: Client): Promise<Result[]>;
-  submitAndListen(
-    chainId?: ChainId | ChainId[],
-    preflight?: boolean,
-    client?: Client,
-  ): Promise<Result | Result[]> {
+  submitAndListen(chainId?: ChainId | ChainId[], preflight?: boolean, client?: Client): Promise<Result | Result[]> {
     client = client || this.#context.getClient();
     if (!client) {
       throw new Error("No client provided");

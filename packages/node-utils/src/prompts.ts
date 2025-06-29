@@ -7,18 +7,18 @@ export type Spinner = ReturnType<typeof spinner>;
 
 /**
  * Re-exports from @clack/prompts for interactive CLI prompts.
- * 
+ *
  * @example
  * ```typescript
  * import { select, text, multiselect, intro, outro } from '@pact-toolbox/node-utils';
- * 
+ *
  * intro('Welcome to the setup wizard!');
- * 
+ *
  * const name = await text({
  *   message: 'What is your project name?',
  *   defaultValue: 'my-project'
  * });
- * 
+ *
  * const framework = await select({
  *   message: 'Pick a framework',
  *   options: [
@@ -27,7 +27,7 @@ export type Spinner = ReturnType<typeof spinner>;
  *     { value: 'svelte', label: 'Svelte' }
  *   ]
  * });
- * 
+ *
  * const features = await multiselect({
  *   message: 'Select features',
  *   options: [
@@ -36,7 +36,7 @@ export type Spinner = ReturnType<typeof spinner>;
  *     { value: 'testing', label: 'Testing' }
  *   ]
  * });
- * 
+ *
  * outro('Setup complete!');
  * ```
  */

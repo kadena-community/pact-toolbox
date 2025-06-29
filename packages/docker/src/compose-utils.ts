@@ -20,10 +20,7 @@ export interface ComposeFile {
 /**
  * Convert Docker Compose service definition to our DockerServiceConfig format
  */
-export function convertComposeService(
-  serviceName: string,
-  composeService: any,
-): DockerServiceConfig {
+export function convertComposeService(serviceName: string, composeService: any): DockerServiceConfig {
   const config: DockerServiceConfig = {
     containerName: composeService.container_name || serviceName,
     image: composeService.image,

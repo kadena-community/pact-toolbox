@@ -28,7 +28,11 @@ async function runDevNet() {
         { host: "devnet_db", container: "/chainweb/db", mode: "rw" },
         { host: "./configs/cert.pem", container: "/chainweb/cert.pem", mode: "ro" },
         { host: "./configs/key.pem", container: "/chainweb/key.pem", mode: "ro" },
-        { host: "./configs/chainweb-node.common.yaml", container: "/chainweb/config/chainweb-node.common.yaml", mode: "ro" },
+        {
+          host: "./configs/chainweb-node.common.yaml",
+          container: "/chainweb/config/chainweb-node.common.yaml",
+          mode: "ro",
+        },
       ],
       entrypoint: ["/chainweb/chainweb-node"],
       command: [
@@ -89,9 +93,7 @@ async function runDevNet() {
       tag: "alpine",
       restart: "unless-stopped",
       dependencies: ["bootstrap-node", "mining-client"],
-      volumes: [
-        { host: "./configs/nginx.conf", container: "/etc/nginx/conf.d/default.conf", mode: "ro" },
-      ],
+      volumes: [{ host: "./configs/nginx.conf", container: "/etc/nginx/conf.d/default.conf", mode: "ro" }],
       ports: [{ host: 8081, container: 80 }],
       labels: {
         "com.chainweb.devnet.description": "Devnet API Proxy",
@@ -124,20 +126,20 @@ async function runDevNet() {
 
   try {
     console.log("🚀 Starting DevNet services...");
-    
+
     // Start all services
     await orchestrator.startServices(devnetServices, "devnet-network");
-    
+
     console.log("✨ All services started successfully!");
-    
+
     // Wait for bootstrap node to be healthy
     console.log("⏳ Waiting for bootstrap node to be healthy...");
     await orchestrator.waitForHealthy("bootstrap-node", 180000); // 3 minutes timeout
-    
+
     console.log("🎉 DevNet is ready!");
     console.log("📡 API endpoint: http://localhost:8081");
     console.log("⛏️  Mining endpoint: http://localhost:8080");
-    
+
     // Keep running until interrupted
     process.on("SIGINT", async () => {
       console.log("\n🛑 Stopping DevNet services...");
@@ -145,7 +147,6 @@ async function runDevNet() {
       console.log("👋 DevNet stopped. Goodbye!");
       process.exit(0);
     });
-    
   } catch (error) {
     console.error("Failed to start DevNet:", error);
     await orchestrator.stopAll(true); // Force stop on error

@@ -1,14 +1,14 @@
 import { describe, it, expect } from "vitest";
-import { 
-  convertComposeService, 
-  parseTime, 
+import {
+  convertComposeService,
+  parseTime,
   validateServiceConfig,
   getServiceColor,
   createServiceTag,
   resetServiceColors,
   DockerErrorHandler,
   DockerErrorType,
-  ValidationRules
+  ValidationRules,
 } from "./index";
 
 describe("Docker Package", () => {
@@ -33,7 +33,7 @@ describe("Docker Package", () => {
 
       expect(validateServiceConfig(validConfig)).toEqual([]);
       expect(validateServiceConfig(invalidConfig)).toContain(
-        "Service must have either an image or build configuration"
+        "Service must have either an image or build configuration",
       );
     });
 
@@ -42,10 +42,10 @@ describe("Docker Package", () => {
         image: "nginx:latest",
         ports: ["80:8080"],
         environment: {
-          NODE_ENV: "production"
+          NODE_ENV: "production",
         },
         depends_on: ["db"],
-        restart: "unless-stopped"
+        restart: "unless-stopped",
       };
 
       const result = convertComposeService("web", composeService);
@@ -53,13 +53,15 @@ describe("Docker Package", () => {
       expect(result.containerName).toBe("web");
       expect(result.image).toBe("nginx:latest");
       expect(result.restart).toBe("unless-stopped");
-      expect(result.ports).toEqual([{
-        published: 80,
-        target: 8080,
-        protocol: "tcp"
-      }]);
+      expect(result.ports).toEqual([
+        {
+          published: 80,
+          target: 8080,
+          protocol: "tcp",
+        },
+      ]);
       expect(result.dependsOn).toEqual({
-        db: { condition: "service_started" }
+        db: { condition: "service_started" },
       });
     });
   });
@@ -67,7 +69,7 @@ describe("Docker Package", () => {
   describe("Service Colors", () => {
     it("should assign consistent colors to services", () => {
       resetServiceColors();
-      
+
       const color1 = getServiceColor("service1");
       const color2 = getServiceColor("service1"); // Same service
 
@@ -95,7 +97,7 @@ describe("Docker Package", () => {
 
       const dockerError = {
         statusCode: 404,
-        message: "No such image: nonexistent:latest"
+        message: "No such image: nonexistent:latest",
       };
 
       const parsed = errorHandler.parseDockerError(dockerError);
@@ -115,7 +117,7 @@ describe("Docker Package", () => {
       const errorHandler = new DockerErrorHandler(mockLogger);
 
       const portError = {
-        message: "port is already allocated"
+        message: "port is already allocated",
       };
 
       const parsed = errorHandler.parseDockerError(portError);
@@ -168,17 +170,14 @@ describe("Docker Package", () => {
       const complexService = {
         image: "postgres:15",
         container_name: "my-postgres",
-        ports: [
-          { published: 5432, target: 5432, protocol: "tcp" },
-          "8080:80"
-        ],
+        ports: [{ published: 5432, target: 5432, protocol: "tcp" }, "8080:80"],
         environment: {
           POSTGRES_PASSWORD: "secret",
-          POSTGRES_DB: "myapp"
+          POSTGRES_DB: "myapp",
         },
         volumes: [
           "postgres_data:/var/lib/postgresql/data",
-          { type: "bind", source: "./config", target: "/config", read_only: true }
+          { type: "bind", source: "./config", target: "/config", read_only: true },
         ],
         networks: ["backend", "frontend"],
         healthcheck: {
@@ -186,27 +185,27 @@ describe("Docker Package", () => {
           interval: "30s",
           timeout: "10s",
           retries: 3,
-          start_period: "40s"
+          start_period: "40s",
         },
         depends_on: {
-          redis: { condition: "service_healthy" }
+          redis: { condition: "service_healthy" },
         },
         deploy: {
           replicas: 2,
           restart_policy: {
             condition: "on-failure",
-            max_attempts: 3
+            max_attempts: 3,
           },
           resources: {
             limits: { cpus: "0.5", memory: "512m" },
-            reservations: { memory: "256m" }
-          }
+            reservations: { memory: "256m" },
+          },
         },
         mem_limit: "1g",
         cpu_shares: 512,
         privileged: true,
         cap_add: ["SYS_ADMIN"],
-        cap_drop: ["NET_RAW"]
+        cap_drop: ["NET_RAW"],
       };
 
       const result = convertComposeService("postgres", complexService);
@@ -217,21 +216,21 @@ describe("Docker Package", () => {
       expect(result.ports![0]).toEqual({
         published: 5432,
         target: 5432,
-        protocol: "tcp"
+        protocol: "tcp",
       });
       expect(result.ports![1]).toEqual({
         published: 8080,
         target: 80,
-        protocol: "tcp"
+        protocol: "tcp",
       });
       expect(result.environment).toEqual({
         POSTGRES_PASSWORD: "secret",
-        POSTGRES_DB: "myapp"
+        POSTGRES_DB: "myapp",
       });
       expect(result.networks).toEqual(["backend", "frontend"]);
       expect(result.healthCheck?.Test).toEqual(["CMD-SHELL", "pg_isready -U postgres"]);
       expect(result.dependsOn).toEqual({
-        redis: { condition: "service_healthy" }
+        redis: { condition: "service_healthy" },
       });
       expect(result.deploy?.replicas).toBe(2);
       expect(result.memLimit).toBe("1g");
@@ -242,10 +241,10 @@ describe("Docker Package", () => {
 
     it("should parse complex time strings", () => {
       expect(parseTime("1h30m45s")).toBe(5445); // 1*3600 + 30*60 + 45
-      expect(parseTime("2h15m")).toBe(8100);   // 2*3600 + 15*60
-      expect(parseTime("45m30s")).toBe(2730);  // 45*60 + 30
-      expect(parseTime("1d2h")).toBe(93600);   // 1*86400 + 2*3600
-      expect(parseTime("123")).toBe(123);      // Pass through number strings
+      expect(parseTime("2h15m")).toBe(8100); // 2*3600 + 15*60
+      expect(parseTime("45m30s")).toBe(2730); // 45*60 + 30
+      expect(parseTime("1d2h")).toBe(93600); // 1*86400 + 2*3600
+      expect(parseTime("123")).toBe(123); // Pass through number strings
     });
   });
 });

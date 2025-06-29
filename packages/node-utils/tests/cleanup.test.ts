@@ -8,10 +8,10 @@ describe("cleanup", () => {
   beforeEach(() => {
     // Reset modules to clear any cached imports
     vi.resetModules();
-    
+
     // Reset event handlers map
     eventHandlers = new Map();
-    
+
     // Mock process.exit
     processExitSpy = vi.spyOn(process, "exit").mockImplementation(() => {
       throw new Error("process.exit called");
@@ -37,7 +37,7 @@ describe("cleanup", () => {
     // Check that signal handlers were registered
     expect(processOnSpy).toHaveBeenCalled();
     const registeredSignals = processOnSpy.mock.calls.map((call: any[]) => call[0]);
-    
+
     expect(registeredSignals).toContain("SIGINT");
     expect(registeredSignals).toContain("SIGTERM");
     expect(registeredSignals).toContain("exit");

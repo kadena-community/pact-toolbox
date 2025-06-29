@@ -72,7 +72,7 @@ export class DevNetNetwork implements NetworkApi {
       const randomOffset = Math.floor(Math.random() * 1000);
       const uniquePort = basePort + randomOffset;
       this._statelessPort = uniquePort;
-      
+
       this.definition = createMinimalDevNet({
         clusterId: `devnet-${this.id}`,
         networkName: `devnet-${this.id}-network`,
@@ -80,7 +80,7 @@ export class DevNetNetwork implements NetworkApi {
         persistDb: false,
         miningConfig: this.config.miningConfig,
       });
-      
+
       // Update orchestrator with new network name
       this.orchestrator = new ContainerOrchestrator({
         networkName: this.definition.networkName,
@@ -117,7 +117,7 @@ export class DevNetNetwork implements NetworkApi {
     } catch {
       // Ignore cleanup errors
     }
-    
+
     // Reset stateless port
     this._statelessPort = undefined;
   }

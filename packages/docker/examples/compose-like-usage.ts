@@ -24,9 +24,7 @@ async function runMultiServiceApp() {
         POSTGRES_PASSWORD: "secretpassword",
         POSTGRES_DB: "myapp_db",
       },
-      volumes: [
-        { host: "postgres_data", container: "/var/lib/postgresql/data", mode: "rw" },
-      ],
+      volumes: [{ host: "postgres_data", container: "/var/lib/postgresql/data", mode: "rw" }],
       ports: [{ host: 5432, container: 5432 }],
       healthCheck: {
         test: ["CMD-SHELL", "pg_isready -U myapp"],
@@ -44,9 +42,7 @@ async function runMultiServiceApp() {
       tag: "7-alpine",
       restart: "unless-stopped",
       command: ["redis-server", "--appendonly", "yes"],
-      volumes: [
-        { host: "redis_data", container: "/data", mode: "rw" },
-      ],
+      volumes: [{ host: "redis_data", container: "/data", mode: "rw" }],
       ports: [{ host: 6379, container: 6379 }],
       healthCheck: {
         test: ["CMD", "redis-cli", "ping"],
@@ -65,9 +61,7 @@ async function runMultiServiceApp() {
       restart: "unless-stopped",
       dependencies: ["postgres", "redis"], // Wait for database and cache
       workingDir: "/app",
-      volumes: [
-        { host: "./backend", container: "/app", mode: "rw" },
-      ],
+      volumes: [{ host: "./backend", container: "/app", mode: "rw" }],
       env: {
         NODE_ENV: "production",
         DATABASE_URL: "postgresql://myapp:secretpassword@postgres:5432/myapp_db",
@@ -113,9 +107,7 @@ async function runMultiServiceApp() {
       restart: "unless-stopped",
       dependencies: ["postgres", "redis"], // Same dependencies as backend
       workingDir: "/app",
-      volumes: [
-        { host: "./backend", container: "/app", mode: "rw" },
-      ],
+      volumes: [{ host: "./backend", container: "/app", mode: "rw" }],
       env: {
         NODE_ENV: "production",
         DATABASE_URL: "postgresql://myapp:secretpassword@postgres:5432/myapp_db",
@@ -145,25 +137,25 @@ async function runMultiServiceApp() {
 
   try {
     console.log("🚀 Starting multi-service application...\n");
-    
+
     // Start all services
     await orchestrator.startServices(services);
-    
+
     console.log("\n✨ All services started!");
     console.log("📊 Service status:");
-    
+
     // Show running containers
     const containers = orchestrator.getAllContainers();
     for (const [id, state] of containers.entries()) {
       console.log(`  - ${id}: ${state.status} (ports: ${state.ports.join(", ") || "none"})`);
     }
-    
+
     console.log("\n🌐 Application URLs:");
     console.log("  - Frontend: http://localhost");
     console.log("  - Backend API: http://localhost:3000");
     console.log("  - PostgreSQL: localhost:5432");
     console.log("  - Redis: localhost:6379");
-    
+
     // Handle graceful shutdown
     process.on("SIGINT", async () => {
       console.log("\n\n🛑 Shutting down services...");
@@ -171,10 +163,9 @@ async function runMultiServiceApp() {
       console.log("👋 All services stopped. Goodbye!");
       process.exit(0);
     });
-    
+
     // Keep process alive
     console.log("\n💡 Press Ctrl+C to stop all services\n");
-    
   } catch (error) {
     console.error("\n❌ Failed to start application:", error);
     console.log("🧹 Cleaning up...");

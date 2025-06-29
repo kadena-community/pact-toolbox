@@ -3,11 +3,11 @@ import { defu } from "defu";
 import type { ChainwebNetworkConfig, DevNetworkConfig, PactServerConfig, PactServerNetworkConfig } from "./config";
 import { defaultKeyPairs, defaultKeysets, defaultMeta } from "./defaults";
 import { createChainwebRpcUrl } from "./utils";
-import { 
-  validatePactServerConfig, 
+import {
+  validatePactServerConfig,
   validateDevNetContainerConfig,
   validateDevNetMiningConfig,
-  validateNetworkConfig
+  validateNetworkConfig,
 } from "./validation";
 
 /**
@@ -35,12 +35,12 @@ export function createPactServerConfig(overrides?: Partial<PactServerConfig>): R
     gasRate: 0.01,
     entity: "entity",
   };
-  
+
   // Validate overrides if provided
   if (overrides) {
     validatePactServerConfig(overrides);
   }
-  
+
   return {
     ...defaults,
     ...overrides,
@@ -73,16 +73,16 @@ export function createPactServerNetworkConfig(overrides?: Partial<PactServerNetw
     meta: defaultMeta,
     name: "pactServer",
   } satisfies PactServerNetworkConfig;
-  
+
   // Merge with overrides
   const config = defu(overrides ?? {}, defaults) as PactServerNetworkConfig;
-  
+
   // Skip validation during build/test to avoid circular dependencies
   // Validation will be done when the config is actually used
-  if (process.env["NODE_ENV"] !== 'test' && typeof globalThis !== 'undefined' && !(globalThis as any).__vitest__) {
+  if (process.env["NODE_ENV"] !== "test" && typeof globalThis !== "undefined" && !(globalThis as any).__vitest__) {
     validateNetworkConfig(config);
   }
-  
+
   return config;
 }
 
@@ -127,7 +127,7 @@ export function createDevNetNetworkConfig(overrides?: Partial<DevNetworkConfig>)
     meta: defaultMeta,
     name: "devnet",
   } satisfies DevNetworkConfig;
-  
+
   // Validate container and mining configs if provided
   if (overrides?.containerConfig) {
     validateDevNetContainerConfig(overrides.containerConfig);
@@ -135,16 +135,16 @@ export function createDevNetNetworkConfig(overrides?: Partial<DevNetworkConfig>)
   if (overrides?.miningConfig) {
     validateDevNetMiningConfig(overrides.miningConfig);
   }
-  
+
   // Merge with overrides
   const config = defu(overrides ?? {}, defaults) as DevNetworkConfig;
-  
+
   // Skip validation during build/test to avoid circular dependencies
   // Validation will be done when the config is actually used
-  if (process.env["NODE_ENV"] !== 'test' && typeof globalThis !== 'undefined' && !(globalThis as any).__vitest__) {
+  if (process.env["NODE_ENV"] !== "test" && typeof globalThis !== "undefined" && !(globalThis as any).__vitest__) {
     validateNetworkConfig(config);
   }
-  
+
   return config;
 }
 
@@ -163,9 +163,11 @@ export function createDevNetNetworkConfig(overrides?: Partial<DevNetworkConfig>)
  */
 export function createChainwebNetworkConfig(overrides?: Partial<ChainwebNetworkConfig>): ChainwebNetworkConfig {
   if (!overrides?.networkId) {
-    throw new Error("networkId is required for Chainweb networks. Use createTestNetNetworkConfig() or createMainNetNetworkConfig() for pre-configured networks.");
+    throw new Error(
+      "networkId is required for Chainweb networks. Use createTestNetNetworkConfig() or createMainNetNetworkConfig() for pre-configured networks.",
+    );
   }
-  
+
   const defaults = {
     type: "chainweb" as const,
     rpcUrl: createChainwebRpcUrl({
@@ -181,13 +183,13 @@ export function createChainwebNetworkConfig(overrides?: Partial<ChainwebNetworkC
 
   // Merge with overrides
   const config = defu(overrides, defaults) as ChainwebNetworkConfig;
-  
+
   // Skip validation during build/test to avoid circular dependencies
   // Validation will be done when the config is actually used
-  if (process.env["NODE_ENV"] !== 'test' && typeof globalThis !== 'undefined' && !(globalThis as any).__vitest__) {
+  if (process.env["NODE_ENV"] !== "test" && typeof globalThis !== "undefined" && !(globalThis as any).__vitest__) {
     validateNetworkConfig(config);
   }
-  
+
   return config;
 }
 /**
@@ -210,13 +212,13 @@ export function createTestNetNetworkConfig(overrides?: Partial<ChainwebNetworkCo
 
   // Merge with overrides
   const config = defu(overrides ?? {}, defaults) as ChainwebNetworkConfig;
-  
+
   // Skip validation during build/test to avoid circular dependencies
   // Validation will be done when the config is actually used
-  if (process.env["NODE_ENV"] !== 'test' && typeof globalThis !== 'undefined' && !(globalThis as any).__vitest__) {
+  if (process.env["NODE_ENV"] !== "test" && typeof globalThis !== "undefined" && !(globalThis as any).__vitest__) {
     validateNetworkConfig(config);
   }
-  
+
   return config;
 }
 
@@ -242,12 +244,12 @@ export function createMainNetNetworkConfig(overrides?: Partial<ChainwebNetworkCo
 
   // Merge with overrides
   const config = defu(overrides ?? {}, defaults) as ChainwebNetworkConfig;
-  
+
   // Skip validation during build/test to avoid circular dependencies
   // Validation will be done when the config is actually used
-  if (process.env["NODE_ENV"] !== 'test' && typeof globalThis !== 'undefined' && !(globalThis as any).__vitest__) {
+  if (process.env["NODE_ENV"] !== "test" && typeof globalThis !== "undefined" && !(globalThis as any).__vitest__) {
     validateNetworkConfig(config);
   }
-  
+
   return config;
 }

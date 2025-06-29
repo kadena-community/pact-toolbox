@@ -35,13 +35,13 @@ describe("uuid utilities", () => {
         }
         return arr;
       });
-      
-      vi.stubGlobal('crypto', {
+
+      vi.stubGlobal("crypto", {
         getRandomValues: mockGetRandomValues,
       });
 
       nanoid(10);
-      
+
       expect(mockGetRandomValues).toHaveBeenCalledWith(expect.any(Uint8Array));
       expect(mockGetRandomValues).toHaveBeenCalledWith(expect.objectContaining({ length: 10 }));
 
@@ -58,14 +58,14 @@ describe("uuid utilities", () => {
 
     it("should use crypto.randomUUID when available", () => {
       const mockRandomUUID = vi.fn().mockReturnValue("550e8400-e29b-41d4-a716-446655440000");
-      
-      vi.stubGlobal('crypto', {
+
+      vi.stubGlobal("crypto", {
         randomUUID: mockRandomUUID,
         getRandomValues: crypto.getRandomValues, // Keep original for fallback
       });
 
       const uuid = getUuid();
-      
+
       expect(mockRandomUUID).toHaveBeenCalled();
       expect(uuid).toBe("550e8400-e29b-41d4-a716-446655440000");
 
@@ -80,13 +80,13 @@ describe("uuid utilities", () => {
         return arr;
       });
 
-      vi.stubGlobal('crypto', {
+      vi.stubGlobal("crypto", {
         getRandomValues: mockGetRandomValues,
         // randomUUID is intentionally omitted
       });
 
       const uuid = getUuid();
-      
+
       expect(mockGetRandomValues).toHaveBeenCalled();
       expect(uuid).toHaveLength(21); // nanoid default length
 
@@ -99,7 +99,7 @@ describe("uuid utilities", () => {
       delete global.crypto;
 
       const uuid = getUuid();
-      
+
       // Fallback should generate UUID-like format
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
       expect(uuid).toMatch(uuidRegex);
@@ -127,10 +127,10 @@ describe("uuid utilities", () => {
         const uuid = getUuid();
         const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
         expect(uuid).toMatch(uuidRegex);
-        
+
         // Check version bits (should be 4xxx)
         expect(uuid[14]).toBe("4");
-        
+
         // Check variant bits (should be 8, 9, a, or b)
         expect(["8", "9", "a", "b"]).toContain(uuid[19].toLowerCase());
       }

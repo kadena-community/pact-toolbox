@@ -25,7 +25,7 @@ describe("CLI", () => {
   it("should define main command with correct metadata", async () => {
     // Import the CLI to trigger command definition
     await import("./cli");
-    
+
     expect(mockDefineCommand).toHaveBeenCalledWith(
       expect.objectContaining({
         meta: expect.objectContaining({
@@ -42,7 +42,7 @@ describe("CLI", () => {
           test: expect.any(Function),
           generate: expect.any(Function),
         }),
-      })
+      }),
     );
   });
 

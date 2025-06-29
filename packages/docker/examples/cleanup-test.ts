@@ -7,7 +7,7 @@ import { ContainerOrchestrator } from "../src/orchestrator";
  */
 async function testCleanup() {
   console.log("🧹 Testing container cleanup functionality...");
-  
+
   const orchestrator = new ContainerOrchestrator({
     defaultNetwork: "test-network",
     enableMetrics: false,
@@ -17,21 +17,9 @@ async function testCleanup() {
     // Test cleanup of DevNet resources
     console.log("Cleaning up any existing DevNet containers...");
     await orchestrator.cleanupResources({
-      containerPatterns: [
-        "devnet",
-        "chainweb", 
-        "mining",
-        "bootstrap",
-        "com.chainweb.devnet.description",
-      ],
-      networkPatterns: [
-        "devnet",
-        "chainweb",
-      ],
-      volumePatterns: [
-        "devnet",
-        "chainweb",
-      ],
+      containerPatterns: ["devnet", "chainweb", "mining", "bootstrap", "com.chainweb.devnet.description"],
+      networkPatterns: ["devnet", "chainweb"],
+      volumePatterns: ["devnet", "chainweb"],
       cleanupContainers: true,
       cleanupNetworks: true,
       cleanupVolumes: true,
@@ -39,7 +27,7 @@ async function testCleanup() {
     });
 
     console.log("✅ Cleanup completed successfully!");
-    
+
     // Test cleanup of specific container patterns
     console.log("Testing cleanup with custom patterns...");
     await orchestrator.cleanupResources({
@@ -53,7 +41,6 @@ async function testCleanup() {
     });
 
     console.log("✅ Custom cleanup completed successfully!");
-
   } catch (error) {
     console.error("❌ Cleanup test failed:", error);
     process.exit(1);

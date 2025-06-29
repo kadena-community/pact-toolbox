@@ -106,9 +106,7 @@ export interface ScriptExecutionResult {
 /**
  * Create an enhanced script definition
  */
-export function createScript<Args = Record<string, unknown>>(
-  options: Script<Args>
-): Script<Args> {
+export function createScript<Args = Record<string, unknown>>(options: Script<Args>): Script<Args> {
   return options;
 }
 
@@ -118,10 +116,7 @@ const NPM_PACKAGE_RE = /^(@[\da-z~-][\d._a-z~-]*\/)?[\da-z~-][\d._a-z~-]*($|\/.*
 /**
  * Run an enhanced script with full feature support
  */
-export async function runScript(
-  source: string,
-  options: RunScriptOptions = {}
-): Promise<ScriptExecutionResult> {
+export async function runScript(source: string, options: RunScriptOptions = {}): Promise<ScriptExecutionResult> {
   const startTime = new Date();
   let network: any = null;
   let walletManager: any = null;
@@ -154,12 +149,12 @@ export async function runScript(
 
   // Load script definition
   let scriptObject = await jiti.import(scriptPath);
-  
+
   // Handle ES module default export
   if (scriptObject && typeof scriptObject === "object" && "default" in scriptObject) {
     scriptObject = scriptObject.default;
   }
-  
+
   if (typeof scriptObject !== "object" || !scriptObject || typeof (scriptObject as any).run !== "function") {
     throw new Error(`Script ${source} should export an object with a run method`);
   }
@@ -208,14 +203,11 @@ export async function runScript(
   try {
     // Start profiling if enabled
     const profiler = scriptInstance.profile ? createProfiler() : null;
-    
-    profiler?.start('initialization');
+
+    profiler?.start("initialization");
 
     // Resolve signing configuration
-    const signingConfig = resolveSigningConfig(
-      { ...options.args, ...options.signing },
-      options.environment
-    );
+    const signingConfig = resolveSigningConfig({ ...options.args, ...options.signing }, options.environment);
 
     // Initialize wallet manager
     walletManager = createWalletManager(options.config, signingConfig, options.network);
@@ -224,8 +216,8 @@ export async function runScript(
     // Initialize namespace handler
     namespaceHandler = createNamespaceHandler(options.client, walletManager, chainId);
 
-    profiler?.end('initialization');
-    profiler?.start('network');
+    profiler?.end("initialization");
+    profiler?.start("network");
 
     // Start network if requested
     if (scriptInstance.autoStartNetwork) {
@@ -237,8 +229,8 @@ export async function runScript(
       });
     }
 
-    profiler?.end('network');
-    profiler?.start('context');
+    profiler?.end("network");
+    profiler?.start("context");
 
     // Build script context
     const contextBuilder = createScriptContextBuilder(
@@ -248,7 +240,7 @@ export async function runScript(
       chainId as ChainId,
       options.args || {},
       walletManager,
-      namespaceHandler
+      namespaceHandler,
     );
 
     context = await contextBuilder.build();
@@ -258,7 +250,7 @@ export async function runScript(
       Object.assign(process.env, scriptInstance.environment, options.environment);
     }
 
-    profiler?.end('context');
+    profiler?.end("context");
 
     // Log script execution start
     logger.info(`🚀 Starting enhanced script: ${scriptInstance.metadata?.name || source}`);
@@ -267,32 +259,32 @@ export async function runScript(
 
     // Run pre-execution hook
     if (scriptInstance.hooks?.preRun) {
-      profiler?.start('preRun');
+      profiler?.start("preRun");
       await scriptInstance.hooks.preRun(context);
-      profiler?.end('preRun');
+      profiler?.end("preRun");
     }
 
-    profiler?.start('execution');
+    profiler?.start("execution");
 
     // Execute script with timeout
     if (scriptInstance.timeout) {
       executionResult = await Promise.race([
         scriptInstance.run(context),
-        new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Script execution timeout')), scriptInstance.timeout)
-        )
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("Script execution timeout")), scriptInstance.timeout),
+        ),
       ]);
     } else {
       executionResult = await scriptInstance.run(context);
     }
 
-    profiler?.end('execution');
+    profiler?.end("execution");
 
     // Run post-execution hook
     if (scriptInstance.hooks?.postRun) {
-      profiler?.start('postRun');
+      profiler?.start("postRun");
       await scriptInstance.hooks.postRun(context, executionResult);
-      profiler?.end('postRun');
+      profiler?.end("postRun");
     }
 
     // Generate profile data
@@ -314,16 +306,15 @@ export async function runScript(
         endTime,
         duration: endTime.getTime() - startTime.getTime(),
       },
-      profile
+      profile,
     };
 
     logger.success(`✅ Script completed successfully in ${result.metadata.duration}ms`);
-    
+
     // Cleanup
     await cleanup();
-    
-    return result;
 
+    return result;
   } catch (error) {
     logger.error(`❌ Script execution failed:`, error);
 
@@ -338,7 +329,7 @@ export async function runScript(
 
     // Cleanup
     await cleanup();
-    
+
     throw error;
   }
 }
@@ -346,12 +337,7 @@ export async function runScript(
 /**
  * Resolve script path with multiple fallback strategies
  */
-async function resolveScriptPath(
-  source: string,
-  cwd: string,
-  scriptsDir: string,
-  jiti: any
-): Promise<string | null> {
+async function resolveScriptPath(source: string, cwd: string, scriptsDir: string, jiti: any): Promise<string | null> {
   const tryResolve = (id: string) => {
     const resolved = jiti.esmResolve(id, { try: true });
     return resolved ? fileURLToPath(resolved) : undefined;
@@ -368,7 +354,7 @@ async function resolveScriptPath(
     resolve(cwd, scriptsDir, source),
     resolve(cwd, source),
     resolve(cwd, ".scripts", source),
-    resolve(cwd, "scripts", source)
+    resolve(cwd, "scripts", source),
   ];
 
   for (const path of paths) {
@@ -396,7 +382,7 @@ function createProfiler() {
     },
 
     end(name: string) {
-      const phase = phases.find(p => p.name === name && !p.end);
+      const phase = phases.find((p) => p.name === name && !p.end);
       if (phase) {
         phase.end = performance.now();
         phase.duration = phase.end - phase.start;
@@ -413,54 +399,56 @@ function createProfiler() {
       }
 
       return {
-        phases: phases.map(p => ({
+        phases: phases.map((p) => ({
           name: p.name,
           duration: p.duration || 0,
-          memoryUsage: process.memoryUsage().heapUsed
+          memoryUsage: process.memoryUsage().heapUsed,
         })),
         totalGasUsed: 0, // Gas tracking would require integration with actual transactions
-        averageTransactionTime: phases.reduce((sum, p) => sum + (p.duration || 0), 0) / phases.length
+        averageTransactionTime: phases.reduce((sum, p) => sum + (p.duration || 0), 0) / phases.length,
       };
-    }
+    },
   };
 }
 
 /**
  * List available scripts in the scripts directory
  */
-export async function listScripts(cwd: string = process.cwd()): Promise<Array<{
-  name: string;
-  path: string;
-  metadata?: any;
-}>> {
+export async function listScripts(cwd: string = process.cwd()): Promise<
+  Array<{
+    name: string;
+    path: string;
+    metadata?: any;
+  }>
+> {
   const { glob } = await import("@pact-toolbox/node-utils");
-  
+
   const scriptsDir = resolve(cwd, "scripts");
   const result = await glob("**/*.{js,mjs,cjs,ts,mts,cts}", {
     cwd: scriptsDir,
-    ignore: ["node_modules/**", "dist/**", "*.d.ts"]
+    ignore: ["node_modules/**", "dist/**", "*.d.ts"],
   });
 
   const scripts = [];
-  
+
   for (const scriptPath of result.files) {
     const fullPath = resolve(scriptsDir, scriptPath);
-    const name = scriptPath.replace(/\.[^.]+$/, '');
-    
+    const name = scriptPath.replace(/\.[^.]+$/, "");
+
     try {
       // Try to load script metadata without executing
       const jiti = createJiti(scriptsDir, { interopDefault: true });
       const scriptObject = await jiti.import(fullPath);
-      
+
       scripts.push({
         name,
         path: fullPath,
-        metadata: (scriptObject as any)?.metadata
+        metadata: (scriptObject as any)?.metadata,
       });
     } catch {
       scripts.push({
         name,
-        path: fullPath
+        path: fullPath,
       });
     }
   }
@@ -499,9 +487,7 @@ export function validateScript(script: any): string[] {
 /**
  * Create default enhanced script options
  */
-export function createDefaultScriptOptions(
-  overrides: Partial<ScriptOptions> = {}
-): ScriptOptions {
+export function createDefaultScriptOptions(overrides: Partial<ScriptOptions> = {}): ScriptOptions {
   return {
     autoStartNetwork: true,
     persist: false,
@@ -509,8 +495,8 @@ export function createDefaultScriptOptions(
     timeout: 300000, // 5 minutes
     namespaceHandling: {
       autoCreate: true,
-      interactive: false
+      interactive: false,
     },
-    ...overrides
+    ...overrides,
   };
 }

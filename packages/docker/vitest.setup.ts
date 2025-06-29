@@ -1,4 +1,4 @@
-import { vi } from 'vitest';
+import { vi } from "vitest";
 
 // Mock global fetch for health checks
 global.fetch = vi.fn();

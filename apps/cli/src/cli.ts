@@ -2,11 +2,11 @@
 
 /**
  * @fileoverview Main CLI entry point for Pact Toolbox
- * 
+ *
  * This file defines the primary command structure for the Pact Toolbox CLI,
  * providing a comprehensive set of tools for Pact smart contract development,
  * testing, and deployment on the Kadena blockchain.
- * 
+ *
  * @author Pact Toolbox Team
  * @version 0.3.0
  */
@@ -16,7 +16,7 @@ import packageJson from "../package.json" with { type: "json" };
 
 /**
  * Main CLI command definition with all subcommands
- * 
+ *
  * The CLI provides the following commands:
  * - doctor: System health check and dependency verification
  * - init: Initialize a new Pact project

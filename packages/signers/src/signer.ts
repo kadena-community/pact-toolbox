@@ -47,17 +47,23 @@ export class KeyPairSigner implements Signer {
     return KeyPairSigner.fromPrivateKeyBytes(fromHex(privateKey), extractable);
   }
 
-  async signPactCommands(commands: Parameters<Signer["signPactCommands"]>[0], config?: SignerConfig): Promise<PartiallySignedTransaction[]> {
+  async signPactCommands(
+    commands: Parameters<Signer["signPactCommands"]>[0],
+    config?: SignerConfig,
+  ): Promise<PartiallySignedTransaction[]> {
     return Promise.all(commands.map((cmd) => partiallySignPactCommand([this.keyPair], cmd, config)));
   }
 
-  async signMessages(messages: readonly SignableMessage[], config?: SignerConfig): Promise<readonly SignatureDictionary[]> {
+  async signMessages(
+    messages: readonly SignableMessage[],
+    config?: SignerConfig,
+  ): Promise<readonly SignatureDictionary[]> {
     return Promise.all(
       messages.map(async (message) => {
         if (config?.abortSignal?.aborted) {
           throw new Error("Operation aborted");
         }
-        
+
         return Object.freeze({
           [this.address]: await signBytes(this.keyPair.privateKey, message.content),
         } as SignatureDictionary);

@@ -104,7 +104,7 @@ describe("ToolboxNetworkContext", () => {
 
       const testnetContext = createToolboxNetworkContext({
         ...mockMultiNetworkConfig,
-        default: "testnet"
+        default: "testnet",
       });
       expect(testnetContext.isLocalNetwork()).toBe(false);
     });
@@ -114,7 +114,7 @@ describe("ToolboxNetworkContext", () => {
 
       const mainnetContext = createToolboxNetworkContext({
         ...mockMultiNetworkConfig,
-        default: "mainnet"
+        default: "mainnet",
       });
       expect(mainnetContext.isProductionNetwork()).toBe(true);
     });

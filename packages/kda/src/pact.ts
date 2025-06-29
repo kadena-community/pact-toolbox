@@ -247,10 +247,10 @@ export function createMultiSigKeyset(publicKeys: string[], threshold: number = p
 
 /**
  * Validate a namespace name format
- * 
+ *
  * @param namespaceName - The namespace name to validate
  * @returns True if the namespace name is valid
- * 
+ *
  * @example
  * ```typescript
  * console.log(validateNamespaceName("n_abc123")); // true
@@ -280,9 +280,9 @@ export function validateNamespaceName(namespaceName: string): boolean {
 
 /**
  * Validate if a keyset is suitable for principal namespace creation
- * 
+ *
  * Principal namespaces only work with keysets (not other guard types)
- * 
+ *
  * @param keyset - The keyset to validate
  * @returns True if the keyset is valid for principal namespace creation
  */
@@ -319,10 +319,10 @@ export function validatePrincipalKeyset(keyset: PactKeyset): boolean {
 
 /**
  * Utility to check if a namespace is a principal namespace
- * 
+ *
  * @param namespaceName - The namespace name to check
  * @returns True if the namespace is a principal namespace
- * 
+ *
  * @example
  * ```typescript
  * console.log(isPrincipalNamespace("n_abc123...")); // true

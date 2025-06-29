@@ -10,7 +10,12 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 # NAPI bindings
-napi = { version = "2", default-features = false, features = ["napi8", "async", "serde-json", "tokio_rt"] }
+napi = { version = "2", default-features = false, features = [
+  "napi8",
+  "async",
+  "serde-json",
+  "tokio_rt",
+] }
 napi-derive = "2"
 
 # Async runtime
@@ -74,4 +79,3 @@ tempfile = "3"
 
 [build-dependencies]
 napi-build = "2"
-

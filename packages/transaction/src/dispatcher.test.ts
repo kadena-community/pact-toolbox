@@ -5,7 +5,7 @@ import { createToolboxNetworkContext } from "./network";
 
 // Mock the chainweb-client functions
 vi.mock("@pact-toolbox/chainweb-client", async (importOriginal) => {
-  const actual = await importOriginal() as Record<string, any>;
+  const actual = (await importOriginal()) as Record<string, any>;
   return {
     ...actual,
     dirtyReadOrFail: vi.fn(),
@@ -45,7 +45,7 @@ describe("PactTransactionDispatcher", () => {
     // Clear any existing global context
     (globalThis as any).__PACT_TOOLBOX_CONTEXT__ = null;
     (globalThis as any).__PACT_TOOLBOX_NETWORK_CONTEXT__ = null;
-    
+
     // Reset all mocks
     vi.clearAllMocks();
   });
@@ -63,7 +63,7 @@ describe("PactTransactionDispatcher", () => {
       const mockResult = { balance: "100.0" };
       vi.mocked(dirtyReadOrFail).mockResolvedValue(mockResult);
 
-      const builder = execution("(coin.get-balance \"alice\")");
+      const builder = execution('(coin.get-balance "alice")');
       const dispatcher = builder.build();
 
       const result = await dispatcher.dirtyRead("1");
@@ -77,7 +77,7 @@ describe("PactTransactionDispatcher", () => {
       const mockResult = [{ balance: "100.0" }, { balance: "200.0" }];
       vi.mocked(dirtyReadOrFail).mockResolvedValue(mockResult);
 
-      const builder = execution("(coin.get-balance \"alice\")");
+      const builder = execution('(coin.get-balance "alice")');
       const dispatcher = builder.build();
 
       const result = await dispatcher.dirtyRead(["1", "2"]);
@@ -91,7 +91,7 @@ describe("PactTransactionDispatcher", () => {
       const mockResult = Array(20).fill({ balance: "100.0" });
       vi.mocked(dirtyReadOrFail).mockResolvedValue(mockResult);
 
-      const builder = execution("(coin.get-balance \"alice\")");
+      const builder = execution('(coin.get-balance "alice")');
       const dispatcher = builder.build();
 
       const result = await dispatcher.dirtyReadAll();
@@ -107,7 +107,7 @@ describe("PactTransactionDispatcher", () => {
       const mockResult = { balance: "100.0" };
       vi.mocked(localOrFail).mockResolvedValue(mockResult);
 
-      const builder = execution("(coin.get-balance \"alice\")");
+      const builder = execution('(coin.get-balance "alice")');
       const dispatcher = builder.build();
 
       const result = await dispatcher.local("1");
@@ -121,7 +121,7 @@ describe("PactTransactionDispatcher", () => {
       const mockResult = [{ balance: "100.0" }, { balance: "200.0" }];
       vi.mocked(localOrFail).mockResolvedValue(mockResult);
 
-      const builder = execution("(coin.get-balance \"alice\")");
+      const builder = execution('(coin.get-balance "alice")');
       const dispatcher = builder.build();
 
       const result = await dispatcher.local(["1", "2"]);
@@ -135,7 +135,7 @@ describe("PactTransactionDispatcher", () => {
       const mockResult = Array(20).fill({ balance: "100.0" });
       vi.mocked(localOrFail).mockResolvedValue(mockResult);
 
-      const builder = execution("(coin.get-balance \"alice\")");
+      const builder = execution('(coin.get-balance "alice")');
       const dispatcher = builder.build();
 
       const result = await dispatcher.localAll();
@@ -151,7 +151,7 @@ describe("PactTransactionDispatcher", () => {
       const mockResult = { requestKey: "test-key", chainId: "1" as ChainId, networkId: "development" };
       vi.mocked(submit).mockResolvedValue(mockResult);
 
-      const builder = execution("(coin.transfer \"alice\" \"bob\" 10.0)");
+      const builder = execution('(coin.transfer "alice" "bob" 10.0)');
       const dispatcher = builder.build();
 
       const result = await dispatcher.submit("1");
@@ -168,7 +168,7 @@ describe("PactTransactionDispatcher", () => {
       ];
       vi.mocked(submit).mockResolvedValue(mockResult);
 
-      const builder = execution("(coin.transfer \"alice\" \"bob\" 10.0)");
+      const builder = execution('(coin.transfer "alice" "bob" 10.0)');
       const dispatcher = builder.build();
 
       const result = await dispatcher.submit(["1", "2"]);
@@ -182,7 +182,7 @@ describe("PactTransactionDispatcher", () => {
       const mockResult = { requestKey: "test-key", chainId: "1" as ChainId, networkId: "development" };
       vi.mocked(submit).mockResolvedValue(mockResult);
 
-      const builder = execution("(coin.transfer \"alice\" \"bob\" 10.0)");
+      const builder = execution('(coin.transfer "alice" "bob" 10.0)');
       const dispatcher = builder.build();
 
       const result = await dispatcher.submit("1", true);
@@ -190,21 +190,23 @@ describe("PactTransactionDispatcher", () => {
       expect(submit).toHaveBeenCalledWith(
         expect.any(Object), // client
         expect.any(Object), // transaction
-        true // preflight
+        true, // preflight
       );
       expect(result).toEqual(mockResult);
     });
 
     it("should call submitAll for all chains", async () => {
       const { submit } = await import("@pact-toolbox/chainweb-client");
-      const mockResult = Array(20).fill(null).map((_, i) => ({
-        requestKey: `test-key-${i}`,
-        chainId: i.toString() as ChainId,
-        networkId: "development",
-      }));
+      const mockResult = Array(20)
+        .fill(null)
+        .map((_, i) => ({
+          requestKey: `test-key-${i}`,
+          chainId: i.toString() as ChainId,
+          networkId: "development",
+        }));
       vi.mocked(submit).mockResolvedValue(mockResult);
 
-      const builder = execution("(coin.transfer \"alice\" \"bob\" 10.0)");
+      const builder = execution('(coin.transfer "alice" "bob" 10.0)');
       const dispatcher = builder.build();
 
       const result = await dispatcher.submitAll();
@@ -220,7 +222,7 @@ describe("PactTransactionDispatcher", () => {
       const mockResult = { status: "success", data: "Transfer completed" };
       vi.mocked(submitAndListen).mockResolvedValue(mockResult);
 
-      const builder = execution("(coin.transfer \"alice\" \"bob\" 10.0)");
+      const builder = execution('(coin.transfer "alice" "bob" 10.0)');
       const dispatcher = builder.build();
 
       const result = await dispatcher.submitAndListen("1");
@@ -237,7 +239,7 @@ describe("PactTransactionDispatcher", () => {
       ];
       vi.mocked(submitAndListen).mockResolvedValue(mockResult);
 
-      const builder = execution("(coin.transfer \"alice\" \"bob\" 10.0)");
+      const builder = execution('(coin.transfer "alice" "bob" 10.0)');
       const dispatcher = builder.build();
 
       const result = await dispatcher.submitAndListen(["1", "2"]);
@@ -251,7 +253,7 @@ describe("PactTransactionDispatcher", () => {
       const mockResult = { status: "success", data: "Transfer completed" };
       vi.mocked(submitAndListen).mockResolvedValue(mockResult);
 
-      const builder = execution("(coin.transfer \"alice\" \"bob\" 10.0)");
+      const builder = execution('(coin.transfer "alice" "bob" 10.0)');
       const dispatcher = builder.build();
 
       const result = await dispatcher.submitAndListen("1", true);
@@ -259,7 +261,7 @@ describe("PactTransactionDispatcher", () => {
       expect(submitAndListen).toHaveBeenCalledWith(
         expect.any(Object), // client
         expect.any(Object), // transaction
-        true // preflight
+        true, // preflight
       );
       expect(result).toEqual(mockResult);
     });
@@ -269,7 +271,7 @@ describe("PactTransactionDispatcher", () => {
       const mockResult = Array(20).fill({ status: "success", data: "Transfer completed" });
       vi.mocked(submitAndListen).mockResolvedValue(mockResult);
 
-      const builder = execution("(coin.transfer \"alice\" \"bob\" 10.0)");
+      const builder = execution('(coin.transfer "alice" "bob" 10.0)');
       const dispatcher = builder.build();
 
       const result = await dispatcher.submitAndListenAll();
@@ -287,10 +289,10 @@ describe("PactTransactionDispatcher", () => {
         sigs: [{ sig: "test-sig" }],
       };
 
-      const builder = execution("(coin.get-balance \"alice\")");
+      const builder = execution('(coin.get-balance "alice")');
       // Mock the internal builder method
       vi.spyOn(builder, "getPartialTransaction").mockResolvedValue(mockTransaction);
-      
+
       const dispatcher = builder.build();
       const result = await dispatcher.getSignedTransaction();
 
@@ -323,7 +325,7 @@ describe("PactTransactionDispatcher", () => {
         listen: vi.fn(),
       } as any;
 
-      const builder = execution("(coin.get-balance \"alice\")");
+      const builder = execution('(coin.get-balance "alice")');
       const dispatcher = builder.build();
 
       await dispatcher.dirtyRead("1", customClient);

@@ -44,7 +44,7 @@ describe("pact", () => {
       } as any);
 
       const version = await getCurrentPactVersion();
-      
+
       expect(version).toBe("4.11.0");
       expect(helpers.execAsync).toHaveBeenCalledWith("pact --version");
     });
@@ -53,7 +53,7 @@ describe("pact", () => {
       vi.mocked(helpers.execAsync).mockRejectedValue(new Error("Command not found"));
 
       const version = await getCurrentPactVersion();
-      
+
       expect(version).toBeUndefined();
     });
 
@@ -64,7 +64,7 @@ describe("pact", () => {
       } as any);
 
       const version = await getCurrentPactVersion();
-      
+
       expect(version).toBeUndefined();
     });
 
@@ -95,7 +95,7 @@ describe("pact", () => {
       } as any);
 
       const installed = await isAnyPactInstalled();
-      
+
       expect(installed).toBe(true);
     });
 
@@ -103,7 +103,7 @@ describe("pact", () => {
       vi.mocked(helpers.execAsync).mockRejectedValue(new Error("Command not found"));
 
       const installed = await isAnyPactInstalled();
-      
+
       expect(installed).toBe(false);
     });
 
@@ -122,7 +122,7 @@ describe("pact", () => {
       vi.mocked(helpers.execAsync).mockRejectedValue(new Error("Command not found"));
 
       const installed = await isAnyPactInstalled("4.11");
-      
+
       expect(installed).toBe(false);
     });
   });
@@ -133,7 +133,7 @@ describe("pact", () => {
       vi.mocked(helpers.execAsync).mockResolvedValue(mockResult as any);
 
       const result = await installPact();
-      
+
       expect(result).toBe(mockResult);
       expect(helpers.execAsync).toHaveBeenCalledWith("npx pactup install --latest");
     });
@@ -143,7 +143,7 @@ describe("pact", () => {
       vi.mocked(helpers.execAsync).mockResolvedValue(mockResult as any);
 
       const result = await installPact("4.11.0");
-      
+
       expect(result).toBe(mockResult);
       expect(helpers.execAsync).toHaveBeenCalledWith("npx pactup install 4.11.0");
     });
@@ -153,7 +153,7 @@ describe("pact", () => {
       vi.mocked(helpers.execAsync).mockResolvedValue(mockResult as any);
 
       const result = await installPact(undefined, true);
-      
+
       expect(result).toBe(mockResult);
       expect(helpers.execAsync).toHaveBeenCalledWith("npx pactup install --nightly");
     });
@@ -163,7 +163,7 @@ describe("pact", () => {
       vi.mocked(helpers.execAsync).mockResolvedValue(mockResult as any);
 
       const result = await installPact("4.11.0", true);
-      
+
       expect(result).toBe(mockResult);
       expect(helpers.execAsync).toHaveBeenCalledWith("npx pactup install --nightly");
     });

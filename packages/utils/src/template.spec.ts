@@ -27,16 +27,14 @@ describe("fillTemplatePlaceholders", () => {
   it("should throw an error if a placeholder is missing in context", () => {
     const template = "Hello, {{name}}!";
     const context = {};
-    expect(() => fillTemplatePlaceholders(template, context)).toThrow(
-      /Missing required context values for keys: name/
-    );
+    expect(() => fillTemplatePlaceholders(template, context)).toThrow(/Missing required context values for keys: name/);
   });
 
   it("should handle multiple missing keys", () => {
     const template = "{{greeting}}, {{name}}!";
     const context = {};
     expect(() => fillTemplatePlaceholders(template, context)).toThrow(
-      /Missing required context values for keys: greeting, name/
+      /Missing required context values for keys: greeting, name/,
     );
   });
 

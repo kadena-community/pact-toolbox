@@ -8,10 +8,10 @@ describe("Pact Toolbox CLI Integration", () => {
   describe("Package exports", () => {
     it("should export all required modules from index", async () => {
       const exports = await import("../src/index");
-      
+
       // Check that main exports are available
       expect(exports).toBeDefined();
-      
+
       // Test that we can access key exports without throwing
       expect(typeof exports).toBe("object");
     });
@@ -26,7 +26,7 @@ describe("Pact Toolbox CLI Integration", () => {
   describe("Command availability", () => {
     it("should have doctor command available", async () => {
       const { doctorCommand } = await import("../src/commands/doctor");
-      
+
       expect(doctorCommand).toBeDefined();
       // Access meta properties directly without type checking
       const meta = doctorCommand.meta as any;
@@ -38,19 +38,19 @@ describe("Pact Toolbox CLI Integration", () => {
       // Test that all command files can be imported explicitly
       const doctorCommand = await import("../src/commands/doctor");
       expect(doctorCommand).toBeDefined();
-      
+
       const initCommand = await import("../src/commands/init");
       expect(initCommand).toBeDefined();
-      
+
       const preludeCommand = await import("../src/commands/prelude");
       expect(preludeCommand).toBeDefined();
-      
+
       const runCommand = await import("../src/commands/run");
       expect(runCommand).toBeDefined();
-      
+
       const startCommand = await import("../src/commands/start");
       expect(startCommand).toBeDefined();
-      
+
       const testCommand = await import("../src/commands/test");
       expect(testCommand).toBeDefined();
     });

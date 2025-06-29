@@ -5,7 +5,7 @@ describe("Standard Library Utilities", () => {
   describe("Guard creation", () => {
     it("should create a keyset guard", () => {
       const guard = standard.createKeysetGuard("test-keyset", ["key1", "key2"], "keys-all");
-      
+
       expect(guard).toEqual({
         keys: ["key1", "key2"],
         pred: "keys-all",
@@ -14,7 +14,7 @@ describe("Standard Library Utilities", () => {
 
     it("should create a keyset guard with default predicate", () => {
       const guard = standard.createKeysetGuard("test-keyset", ["key1"]);
-      
+
       expect(guard).toEqual({
         keys: ["key1"],
         pred: "keys-all",
@@ -23,7 +23,7 @@ describe("Standard Library Utilities", () => {
 
     it("should create a capability guard", () => {
       const guard = standard.createCapabilityGuard("coin.TRANSFER", "from", "to", 10.0);
-      
+
       expect(guard).toEqual({
         capability: {
           name: "coin.TRANSFER",
@@ -34,7 +34,7 @@ describe("Standard Library Utilities", () => {
 
     it("should create a user guard", () => {
       const guard = standard.createUserGuard("my-guard-function", "arg1", "arg2");
-      
+
       expect(guard).toEqual({
         fun: "my-guard-function",
         args: ["arg1", "arg2"],
@@ -43,7 +43,7 @@ describe("Standard Library Utilities", () => {
 
     it("should create a module guard", () => {
       const guard = standard.createModuleGuard("my-module.guard", "arg1");
-      
+
       expect(guard).toEqual({
         name: "my-module.guard",
         args: ["arg1"],
@@ -55,7 +55,7 @@ describe("Standard Library Utilities", () => {
     it("should create a Pact keyset from guard", () => {
       const guard = standard.createKeysetGuard("test", ["key1", "key2"], "keys-any");
       const keyset = standard.createKeyset(guard);
-      
+
       expect(keyset).toEqual({
         keys: ["key1", "key2"],
         pred: "keys-any",
@@ -64,7 +64,7 @@ describe("Standard Library Utilities", () => {
 
     it("should create a single key keyset", () => {
       const keyset = standard.createSingleKeyKeyset("test-key");
-      
+
       expect(keyset).toEqual({
         keys: ["test-key"],
         pred: "keys-all",
@@ -73,7 +73,7 @@ describe("Standard Library Utilities", () => {
 
     it("should create a multi-sig keyset with keys-all", () => {
       const keyset = standard.createMultiSigKeyset(["key1", "key2", "key3"]);
-      
+
       expect(keyset).toEqual({
         keys: ["key1", "key2", "key3"],
         pred: "keys-all",
@@ -82,7 +82,7 @@ describe("Standard Library Utilities", () => {
 
     it("should create a multi-sig keyset with keys-any", () => {
       const keyset = standard.createMultiSigKeyset(["key1", "key2", "key3"], 1);
-      
+
       expect(keyset).toEqual({
         keys: ["key1", "key2", "key3"],
         pred: "keys-any",
@@ -91,7 +91,7 @@ describe("Standard Library Utilities", () => {
 
     it("should create a multi-sig keyset with keys-2", () => {
       const keyset = standard.createMultiSigKeyset(["key1", "key2", "key3"], 2);
-      
+
       expect(keyset).toEqual({
         keys: ["key1", "key2", "key3"],
         pred: "keys-2",
@@ -115,7 +115,7 @@ describe("Standard Library Utilities", () => {
     it("should format a Date to Pact time", () => {
       const date = new Date("2023-01-01T12:00:00.000Z");
       const pactTime = standard.formatTime(date);
-      
+
       expect(pactTime).toEqual({
         time: "2023-01-01T12:00:00.000Z",
         timep: "2023-01-01T12:00:00.000Z",
@@ -125,7 +125,7 @@ describe("Standard Library Utilities", () => {
     it("should parse Pact time string to Date", () => {
       const timeString = "2023-01-01T12:00:00.000Z";
       const date = standard.parseTime(timeString);
-      
+
       expect(date).toEqual(new Date("2023-01-01T12:00:00.000Z"));
     });
 
@@ -135,21 +135,21 @@ describe("Standard Library Utilities", () => {
         timep: "2023-01-01T12:00:00.000Z",
       };
       const date = standard.parseTime(pactTime);
-      
+
       expect(date).toEqual(new Date("2023-01-01T12:00:00.000Z"));
     });
 
     it("should get current time", () => {
       const now = standard.getCurrentTime();
       const currentDate = new Date();
-      
+
       expect(new Date(now.time).getTime()).toBeCloseTo(currentDate.getTime(), -2);
     });
 
     it("should add time to a date", () => {
       const date = new Date("2023-01-01T12:00:00.000Z");
       const futureTime = standard.addTime(date, 3600); // Add 1 hour
-      
+
       expect(futureTime.time).toBe("2023-01-01T13:00:00.000Z");
     });
   });
@@ -157,7 +157,7 @@ describe("Standard Library Utilities", () => {
   describe("Decimal utilities", () => {
     it("should create a decimal from string", () => {
       const decimal = standard.createDecimal("123.456");
-      
+
       expect(decimal).toEqual({
         decimal: "123.456",
       });
@@ -165,7 +165,7 @@ describe("Standard Library Utilities", () => {
 
     it("should create a decimal from number", () => {
       const decimal = standard.createDecimal(123.456);
-      
+
       expect(decimal).toEqual({
         decimal: "123.456",
       });
@@ -174,25 +174,25 @@ describe("Standard Library Utilities", () => {
     it("should parse a decimal object to number", () => {
       const decimal = { decimal: "123.456" };
       const number = standard.parseDecimal(decimal);
-      
+
       expect(number).toBe(123.456);
     });
 
     it("should parse a decimal string to number", () => {
       const number = standard.parseDecimal("123.456");
-      
+
       expect(number).toBe(123.456);
     });
 
     it("should format a number to decimal string", () => {
       const formatted = standard.formatDecimal(123.456789, 2);
-      
+
       expect(formatted).toBe("123.46");
     });
 
     it("should format a number with default precision", () => {
       const formatted = standard.formatDecimal(123.456789);
-      
+
       // Check that it has 18 decimal places and starts correctly
       expect(formatted).toMatch(/^123\.456789\d{12}$/);
       expect(formatted.length).toBe(22); // "123.456789" + 12 more digits + decimal point
@@ -254,7 +254,7 @@ describe("Standard Library Utilities", () => {
     it("should create k: account from public key", () => {
       const publicKey = "a".repeat(64);
       const account = standard.createKAccount(publicKey);
-      
+
       expect(account).toBe(`k:${publicKey}`);
     });
 
@@ -268,7 +268,7 @@ describe("Standard Library Utilities", () => {
       const publicKey = "a".repeat(64);
       const account = `k:${publicKey}`;
       const extracted = standard.extractPublicKey(account);
-      
+
       expect(extracted).toBe(publicKey);
     });
 
@@ -288,7 +288,7 @@ describe("Standard Library Utilities", () => {
   describe("Capability utilities", () => {
     it("should create a capability", () => {
       const cap = standard.createCapability("coin.TRANSFER", "from", "to", 10.0);
-      
+
       expect(cap).toEqual({
         name: "coin.TRANSFER",
         args: ["from", "to", 10.0],
@@ -298,7 +298,7 @@ describe("Standard Library Utilities", () => {
     describe("coinCapabilities", () => {
       it("should create GAS capability", () => {
         const cap = standard.coinCapabilities.gas();
-        
+
         expect(cap).toEqual({
           name: "coin.GAS",
           args: [],
@@ -307,7 +307,7 @@ describe("Standard Library Utilities", () => {
 
       it("should create TRANSFER capability", () => {
         const cap = standard.coinCapabilities.transfer("from", "to", "10.0");
-        
+
         expect(cap).toEqual({
           name: "coin.TRANSFER",
           args: ["from", "to", { decimal: "10.0" }],
@@ -316,7 +316,7 @@ describe("Standard Library Utilities", () => {
 
       it("should create TRANSFER_XCHAIN capability", () => {
         const cap = standard.coinCapabilities.transferXchain("from", "to", "10.0", "2");
-        
+
         expect(cap).toEqual({
           name: "coin.TRANSFER_XCHAIN",
           args: ["from", "to", { decimal: "10.0" }, "2"],
@@ -325,7 +325,7 @@ describe("Standard Library Utilities", () => {
 
       it("should create ROTATE capability", () => {
         const cap = standard.coinCapabilities.rotate("account");
-        
+
         expect(cap).toEqual({
           name: "coin.ROTATE",
           args: ["account"],
@@ -335,7 +335,7 @@ describe("Standard Library Utilities", () => {
       it("should create COINBASE capability", () => {
         const guard = { keys: ["key"], pred: "keys-all" };
         const cap = standard.coinCapabilities.coinbase("account", guard, "10.0");
-        
+
         expect(cap).toEqual({
           name: "coin.COINBASE",
           args: ["account", guard, { decimal: "10.0" }],
@@ -345,7 +345,7 @@ describe("Standard Library Utilities", () => {
       it("should create REMEDIATE capability", () => {
         const guard = { keys: ["key"], pred: "keys-all" };
         const cap = standard.coinCapabilities.remediate("account", guard, "10.0");
-        
+
         expect(cap).toEqual({
           name: "coin.REMEDIATE",
           args: ["account", guard, { decimal: "10.0" }],

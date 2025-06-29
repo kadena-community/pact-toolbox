@@ -57,7 +57,7 @@ export class NamespaceHandler {
   constructor(client: PactToolboxClient, walletManager: WalletManager, chainId: string = "0") {
     this.client = client;
     this.walletManager = walletManager;
-    
+
     const wallet = walletManager.getWallet();
     if (!wallet) {
       throw new Error("Wallet manager must be initialized before creating namespace handler");
@@ -65,7 +65,7 @@ export class NamespaceHandler {
 
     this.namespaceService = new NamespaceService({
       context: client.getContext(),
-      defaultChainId: chainId as any
+      defaultChainId: chainId as any,
     });
   }
 
@@ -77,7 +77,7 @@ export class NamespaceHandler {
 
     const result: NamespaceDetectionResult = {
       hasNamespace: false,
-      isPrincipal: false
+      isPrincipal: false,
     };
 
     // Extract module definition
@@ -91,7 +91,7 @@ export class NamespaceHandler {
     result.fullModuleName = fullModuleName;
 
     // Check if module uses namespace
-    const namespaceParts = fullModuleName.split('.');
+    const namespaceParts = fullModuleName.split(".");
     if (namespaceParts.length > 1) {
       result.hasNamespace = true;
       result.namespaceName = namespaceParts[0];
@@ -117,13 +117,13 @@ export class NamespaceHandler {
    */
   async analyzeAndHandleContract(
     contractPath: string,
-    options: NamespaceHandlingOptions = {}
+    options: NamespaceHandlingOptions = {},
   ): Promise<{
     detection: NamespaceDetectionResult;
     operation?: NamespaceOperationResult;
     updatedSource?: string;
   }> {
-    const contractSource = await readFile(contractPath, 'utf-8');
+    const contractSource = await readFile(contractPath, "utf-8");
     const detection = await this.analyzeContract(contractSource);
 
     if (options.skipNamespaceHandling || !detection.hasNamespace) {
@@ -132,7 +132,7 @@ export class NamespaceHandler {
 
     // Handle namespace creation if needed
     const operation = await this.handleNamespaceCreation(detection, options);
-    
+
     // Update contract source if namespace was modified
     let updatedSource: string | undefined;
     if (operation?.created && options.autoCreate) {
@@ -147,7 +147,7 @@ export class NamespaceHandler {
    */
   async handleNamespaceCreation(
     detection: NamespaceDetectionResult,
-    options: NamespaceHandlingOptions
+    options: NamespaceHandlingOptions,
   ): Promise<NamespaceOperationResult | undefined> {
     if (!detection.hasNamespace || !detection.namespaceName) {
       return undefined;
@@ -157,13 +157,13 @@ export class NamespaceHandler {
 
     // Check if namespace already exists
     const exists = await this.checkNamespaceExists(namespaceName, options.chainId);
-    
+
     if (exists && !options.forceCreate) {
       logger.info(`Namespace ${namespaceName} already exists`);
       return {
         created: false,
         existed: true,
-        namespaceName
+        namespaceName,
       };
     }
 
@@ -173,7 +173,7 @@ export class NamespaceHandler {
         created: false,
         existed: false,
         namespaceName,
-        error: "Namespace does not exist and autoCreate is disabled"
+        error: "Namespace does not exist and autoCreate is disabled",
       };
     }
 
@@ -186,7 +186,7 @@ export class NamespaceHandler {
         created: false,
         existed: false,
         namespaceName,
-        error: "Non-principal namespace creation not yet supported"
+        error: "Non-principal namespace creation not yet supported",
       };
     }
   }
@@ -196,17 +196,15 @@ export class NamespaceHandler {
    */
   private async createPrincipalNamespace(
     detection: NamespaceDetectionResult,
-    options: NamespaceHandlingOptions
+    options: NamespaceHandlingOptions,
   ): Promise<NamespaceOperationResult> {
     const namespaceName = detection.namespaceName!;
-    
+
     logger.info(`Creating principal namespace: ${namespaceName}`);
 
     try {
       // Determine keyset to use
-      const adminKeyset = options.adminKeyset || 
-                         detection.suggestedKeyset || 
-                         this.getCurrentSignerKeyset();
+      const adminKeyset = options.adminKeyset || detection.suggestedKeyset || this.getCurrentSignerKeyset();
 
       if (!adminKeyset) {
         throw new Error("No admin keyset available for namespace creation");
@@ -216,8 +214,7 @@ export class NamespaceHandler {
       const expectedNamespace = this.namespaceService.generatePrincipalNamespace(adminKeyset);
       if (expectedNamespace !== namespaceName) {
         throw new Error(
-          `Keyset does not match expected namespace. ` +
-          `Expected: ${expectedNamespace}, Got: ${namespaceName}`
+          `Keyset does not match expected namespace. ` + `Expected: ${expectedNamespace}, Got: ${namespaceName}`,
         );
       }
 
@@ -225,7 +222,7 @@ export class NamespaceHandler {
       const result = await this.namespaceService.createPrincipalNamespace({
         adminKeyset,
         userKeyset: options.userKeyset,
-        chainId: options.chainId as any
+        chainId: options.chainId as any,
       });
 
       if (result.status === "success") {
@@ -234,19 +231,18 @@ export class NamespaceHandler {
           created: true,
           existed: false,
           namespaceName,
-          transactionHash: (result.transaction as any)?.requestKey
+          transactionHash: (result.transaction as any)?.requestKey,
         };
       } else {
         throw new Error(result.error || "Unknown error creating namespace");
       }
-
     } catch (error) {
       logger.error(`Failed to create principal namespace ${namespaceName}:`, error);
       return {
         created: false,
         existed: false,
         namespaceName,
-        error: (error as Error).message
+        error: (error as Error).message,
       };
     }
   }
@@ -257,7 +253,8 @@ export class NamespaceHandler {
   private async checkNamespaceExists(namespaceName: string, chainId?: string): Promise<boolean> {
     try {
       // Try to query the namespace
-      const query = this.client.execution(`(describe-namespace "${namespaceName}")`)
+      const query = this.client
+        .execution(`(describe-namespace "${namespaceName}")`)
         .withChainId((chainId || "0") as any);
 
       await query.build().dirtyRead();
@@ -276,7 +273,7 @@ export class NamespaceHandler {
     const keysetPatterns = [
       /\(define-keyset\s+"[^"]*"\s*\(read-keyset\s+"([^"]+)"\)\)/,
       /\(read-keyset\s+"([^"]+)"\)/,
-      /"[^"]*keyset":\s*\{\s*"keys":\s*\[([^\]]+)\],\s*"pred":\s*"([^"]+)"/
+      /"[^"]*keyset":\s*\{\s*"keys":\s*\[([^\]]+)\],\s*"pred":\s*"([^"]+)"/,
     ];
 
     for (const pattern of keysetPatterns) {
@@ -310,11 +307,13 @@ export class NamespaceHandler {
   private async updateContractNamespace(
     contractSource: string,
     _detection: NamespaceDetectionResult,
-    _operation: NamespaceOperationResult
+    _operation: NamespaceOperationResult,
   ): Promise<string> {
     // Source transformation is complex and not needed for basic deployment
     // Users should ensure their contracts have correct namespace references
-    logger.debug("Contract source transformation is not supported - ensure contracts have correct namespace references");
+    logger.debug(
+      "Contract source transformation is not supported - ensure contracts have correct namespace references",
+    );
     return contractSource;
   }
 
@@ -336,16 +335,16 @@ export class NamespaceHandler {
    */
   async interactiveNamespaceSetup(_contractPath: string): Promise<NamespaceHandlingOptions> {
     const { select, isCancel, confirm } = await import("@pact-toolbox/node-utils");
-    
+
     logger.info("🔧 Interactive namespace setup");
 
     const action = await select({
-      message: 'How would you like to handle namespaces?',
+      message: "How would you like to handle namespaces?",
       options: [
-        { value: 'auto', label: 'Auto-create namespaces if needed' },
-        { value: 'skip', label: 'Skip namespace handling' },
-        { value: 'manual', label: 'Manual namespace configuration' }
-      ]
+        { value: "auto", label: "Auto-create namespaces if needed" },
+        { value: "skip", label: "Skip namespace handling" },
+        { value: "manual", label: "Manual namespace configuration" },
+      ],
     });
 
     if (isCancel(action)) {
@@ -353,28 +352,30 @@ export class NamespaceHandler {
     }
 
     const options: NamespaceHandlingOptions = {
-      interactive: true
+      interactive: true,
     };
 
     switch (action) {
-      case 'skip':
+      case "skip":
         options.skipNamespaceHandling = true;
         break;
-        
-      case 'auto':
+
+      case "auto":
         options.autoCreate = true;
-        
+
         const useCurrentSigner = await confirm({
-          message: 'Use current signer keyset for namespace creation?'
+          message: "Use current signer keyset for namespace creation?",
         });
-        
+
         if (!isCancel(useCurrentSigner) && useCurrentSigner) {
           options.adminKeyset = this.getCurrentSignerKeyset();
         }
         break;
-        
-      case 'manual':
-        logger.info("Manual namespace configuration: Please configure namespaces manually in your contract or deployment options");
+
+      case "manual":
+        logger.info(
+          "Manual namespace configuration: Please configure namespaces manually in your contract or deployment options",
+        );
         break;
     }
 
@@ -396,7 +397,7 @@ export class NamespaceHandler {
 export function createNamespaceHandler(
   client: PactToolboxClient,
   walletManager: WalletManager,
-  chainId?: string
+  chainId?: string,
 ): NamespaceHandler {
   return new NamespaceHandler(client, walletManager, chainId);
 }
@@ -404,13 +405,15 @@ export function createNamespaceHandler(
 /**
  * Utility to create default namespace handling options
  */
-export function createDefaultNamespaceOptions(overrides: Partial<NamespaceHandlingOptions> = {}): NamespaceHandlingOptions {
+export function createDefaultNamespaceOptions(
+  overrides: Partial<NamespaceHandlingOptions> = {},
+): NamespaceHandlingOptions {
   return {
     autoCreate: true,
     interactive: false,
     chainId: "0",
     skipNamespaceHandling: false,
     forceCreate: false,
-    ...overrides
+    ...overrides,
   };
 }

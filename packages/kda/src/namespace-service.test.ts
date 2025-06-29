@@ -10,12 +10,12 @@ vi.mock("@pact-toolbox/crypto", () => ({
     // Create different hashes based on input content for testing
     const inputStr = new TextDecoder().decode(input);
     const hash = new Uint8Array(32);
-    
+
     // Simple deterministic hash based on input content
     for (let i = 0; i < 32; i++) {
       hash[i] = (inputStr.charCodeAt(i % inputStr.length) + i) % 256;
     }
-    
+
     return hash;
   }),
 }));
@@ -46,9 +46,9 @@ describe("NamespaceService", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
     mockContext = {} as ToolboxNetworkContext;
-    
+
     namespaceService = new NamespaceService({
       context: mockContext,
       defaultChainId: "0",
@@ -73,7 +73,7 @@ describe("NamespaceService", () => {
         keys: ["different1234567890123456789012345678901234567890123456789012345678".slice(0, 64)],
         pred: "keys-all",
       };
-      
+
       const result1 = namespaceService.generatePrincipalNamespace(validKeyset);
       const result2 = namespaceService.generatePrincipalNamespace(keyset2);
       expect(result1).not.toBe(result2);
@@ -81,15 +81,15 @@ describe("NamespaceService", () => {
 
     it("should sort keys for deterministic hashing", () => {
       const keyset1: PactKeyset = {
-        keys: ["a123", "b123"].map(k => k.padEnd(64, "0")),
+        keys: ["a123", "b123"].map((k) => k.padEnd(64, "0")),
         pred: "keys-all",
       };
-      
+
       const keyset2: PactKeyset = {
-        keys: ["b123", "a123"].map(k => k.padEnd(64, "0")), // Different order
+        keys: ["b123", "a123"].map((k) => k.padEnd(64, "0")), // Different order
         pred: "keys-all",
       };
-      
+
       const result1 = namespaceService.generatePrincipalNamespace(keyset1);
       const result2 = namespaceService.generatePrincipalNamespace(keyset2);
       expect(result1).toBe(result2);
@@ -102,7 +102,7 @@ describe("NamespaceService", () => {
       };
 
       expect(() => namespaceService.generatePrincipalNamespace(emptyKeyset)).toThrow(
-        "Admin keyset must have at least one key"
+        "Admin keyset must have at least one key",
       );
     });
 
@@ -113,7 +113,7 @@ describe("NamespaceService", () => {
       } as PactKeyset;
 
       expect(() => namespaceService.generatePrincipalNamespace(invalidKeyset)).toThrow(
-        "Admin keyset must have a predicate"
+        "Admin keyset must have a predicate",
       );
     });
   });
@@ -219,7 +219,9 @@ describe("NamespaceService", () => {
   describe("validation integration", () => {
     it("should use validation functions from pact module", () => {
       // Test that isPrincipalNamespace is available from pact module
-      expect(pact.isPrincipalNamespace("n_abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890")).toBe(true);
+      expect(pact.isPrincipalNamespace("n_abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890")).toBe(
+        true,
+      );
       expect(pact.isPrincipalNamespace("regular-namespace")).toBe(false);
 
       // Test that validatePrincipalKeyset is available from pact module
@@ -227,7 +229,9 @@ describe("NamespaceService", () => {
       expect(pact.validatePrincipalKeyset({ keys: ["short"], pred: "keys-all" })).toBe(false);
 
       // Test that validateNamespaceName is available from pact module
-      expect(pact.validateNamespaceName("n_abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890")).toBe(true);
+      expect(pact.validateNamespaceName("n_abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890")).toBe(
+        true,
+      );
       expect(pact.validateNamespaceName("invalid!")).toBe(false);
     });
   });

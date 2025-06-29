@@ -61,7 +61,7 @@ export interface DeployContractOptions {
   skipSign?: boolean;
   /** Wallet or signer configuration for transaction signing */
   wallet?: Wallet | PactSignerLike | KeyPair | string;
-  /** 
+  /**
    * Custom transaction builder configuration.
    * Can be either static data or a function that modifies the transaction builder.
    */
@@ -86,7 +86,7 @@ export interface LocalOptions {
 /**
  * Main client class for interacting with Pact smart contracts on Kadena blockchain.
  * Provides high-level APIs for contract deployment, transaction execution, and blockchain queries.
- * 
+ *
  * @example
  * ```typescript
  * const client = new PactToolboxClient({
@@ -126,7 +126,10 @@ export class PactToolboxClient {
    */
   setConfig(config: PactToolboxConfigObj): void {
     this.config = config;
-    this.context = createToolboxNetworkContext(getSerializableMultiNetworkConfig(config, { isDev: true, defaultNetwork: this.network }), true);
+    this.context = createToolboxNetworkContext(
+      getSerializableMultiNetworkConfig(config, { isDev: true, defaultNetwork: this.network }),
+      true,
+    );
   }
 
   /**
@@ -234,7 +237,7 @@ export class PactToolboxClient {
    * ```typescript
    * // Use default wallet from context
    * const wallet = client.getWallet();
-   * 
+   *
    * // Use custom keypair
    * const wallet = client.getWallet({
    *   publicKey: 'public-key',
@@ -271,7 +274,7 @@ export class PactToolboxClient {
    * // Simple query
    * const balance = await client.execution('(coin.get-balance "alice")')
    *   .dirtyRead();
-   * 
+   *
    * // Transaction with data and capabilities
    * const result = await client.execution('(coin.transfer "alice" "bob" amount)')
    *   .addData({ amount: 10.0 })
@@ -288,7 +291,7 @@ export class PactToolboxClient {
       // If no signer keys in context, use sender00 as default
       sender = "sender00";
     }
-    
+
     return execution<Result>(command, this.context)
       .withContext(this.context)
       .withMeta({
@@ -310,7 +313,7 @@ export class PactToolboxClient {
    * ```typescript
    * // Deploy to default chain
    * await client.deployCode('(module my-module ...)');
-   * 
+   *
    * // Deploy to specific chains
    * await client.deployCode('(module my-module ...)', {}, ['0', '1']);
    * ```
@@ -370,7 +373,7 @@ export class PactToolboxClient {
    * ```typescript
    * // Deploy from contracts directory
    * await client.deployContract('token.pact');
-   * 
+   *
    * // Deploy with options
    * await client.deployContract('token.pact', {
    *   listen: true,
@@ -570,7 +573,7 @@ export class PactToolboxClient {
    * ```typescript
    * // Read from contracts directory
    * const code = await client.getContractCode('token.pact');
-   * 
+   *
    * // Read from absolute path
    * const code = await client.getContractCode('/path/to/contract.pact');
    * ```

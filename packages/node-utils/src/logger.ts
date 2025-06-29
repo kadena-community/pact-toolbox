@@ -3,7 +3,7 @@ import { createConsola, type ConsolaInstance } from "consola";
 /**
  * Determines the log level from environment variables.
  * Supports DEBUG and LOG_LEVEL environment variables.
- * 
+ *
  * @returns The numeric log level (0-5)
  */
 function getLogLevel(): number {
@@ -43,7 +43,7 @@ function getLogLevel(): number {
 
 /**
  * Main logger instance configured with environment-based log level.
- * 
+ *
  * Log levels:
  * - 0: silent/fatal
  * - 1: error
@@ -51,15 +51,15 @@ function getLogLevel(): number {
  * - 3: info/log (default)
  * - 4: debug
  * - 5: trace
- * 
+ *
  * Set log level via environment variables:
  * - DEBUG=1 or DEBUG=true for debug level
  * - LOG_LEVEL=debug/info/warn/error/silent
- * 
+ *
  * @example
  * ```typescript
  * import { logger } from '@pact-toolbox/node-utils';
- * 
+ *
  * logger.info('Application started');
  * logger.error('An error occurred', error);
  * logger.debug('Debug information', { data });
@@ -117,15 +117,15 @@ export const box: typeof logger.box = logger.box.bind(logger);
 /**
  * Creates a tagged logger for a specific package or component.
  * Tagged loggers prefix all messages with the tag for easier identification.
- * 
+ *
  * @param tag - The tag to prefix messages with
  * @returns A new logger instance with the specified tag
- * 
+ *
  * @example
  * ```typescript
  * const networkLogger = createLogger('network');
  * networkLogger.info('Connection established'); // [network] Connection established
- * 
+ *
  * const dbLogger = createLogger('database');
  * dbLogger.error('Query failed'); // [database] Query failed
  * ```
@@ -137,17 +137,17 @@ export function createLogger(tag: string): ConsolaInstance {
 /**
  * Logs performance metrics for operations.
  * Only visible when debug level is enabled.
- * 
+ *
  * @param operation - The name of the operation
  * @param duration - The duration in milliseconds
  * @param data - Optional additional data to log
- * 
+ *
  * @example
  * ```typescript
  * const startTime = Date.now();
  * await performOperation();
  * const duration = Date.now() - startTime;
- * 
+ *
  * logPerformance('database.query', duration, { query: 'SELECT * FROM users' });
  * // [PERF] database.query completed in 123ms { query: 'SELECT * FROM users' }
  * ```
@@ -159,19 +159,19 @@ export function logPerformance(operation: string, duration: number, data?: any):
 /**
  * Logs a message with explicit context/category and level.
  * Useful for dynamic logging where the level is determined at runtime.
- * 
+ *
  * @param level - The log level to use
  * @param context - The context/category tag
  * @param message - The message to log
  * @param data - Optional additional data to log
- * 
+ *
  * @example
  * ```typescript
  * function handleRequest(severity: string) {
  *   const level = severity === 'critical' ? 'error' : 'warn';
- *   logWithContext(level, 'api', 'Request failed', { 
+ *   logWithContext(level, 'api', 'Request failed', {
  *     endpoint: '/users',
- *     status: 500 
+ *     status: 500
  *   });
  * }
  * ```

@@ -1,14 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import * as clackPrompts from "@clack/prompts";
 import { box, colors } from "consola/utils";
-import {
-  startSpinner,
-  stopSpinner,
-  updateSpinner,
-  boxMessage,
-  table,
-  clear,
-} from "../src/ui";
+import { startSpinner, stopSpinner, updateSpinner, boxMessage, table, clear } from "../src/ui";
 
 vi.mock("@clack/prompts");
 vi.mock("consola/utils");
@@ -19,22 +12,22 @@ describe("ui", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
     // Mock spinner
     mockSpinner = {
       start: vi.fn(),
       stop: vi.fn(),
       message: vi.fn(),
     };
-    
+
     vi.mocked(clackPrompts.spinner).mockReturnValue(mockSpinner);
     (vi.mocked(clackPrompts.log) as any).success = vi.fn();
     (vi.mocked(clackPrompts.log) as any).error = vi.fn();
-    
+
     // Mock colors
     vi.mocked(colors.bold).mockImplementation((text: string | number) => `**${text}**`);
     vi.mocked(box).mockImplementation((content: string) => `[BOX]\n${content}\n[/BOX]`);
-    
+
     // Spy on console methods
     consoleSpy = {
       log: vi.spyOn(console, "log").mockImplementation(() => {}),
@@ -109,7 +102,7 @@ describe("ui", () => {
     it("should clear spinner reference after stopping", () => {
       startSpinner("Test");
       stopSpinner();
-      
+
       // Try to update after stopping
       updateSpinner("Should not update");
       expect(mockSpinner.message).not.toHaveBeenCalledWith("Should not update");
@@ -146,18 +139,24 @@ describe("ui", () => {
 
   describe("table", () => {
     it("should render a simple table", () => {
-      table(["Name", "Age"], [["Alice", "30"], ["Bob", "25"]]);
+      table(
+        ["Name", "Age"],
+        [
+          ["Alice", "30"],
+          ["Bob", "25"],
+        ],
+      );
 
       const calls = consoleSpy.log.mock.calls;
-      
+
       // Check header
       expect(colors.bold).toHaveBeenCalled();
       expect(calls[0][0]).toContain("Name");
       expect(calls[0][0]).toContain("Age");
-      
+
       // Check separator
       expect(calls[1][0]).toMatch(/^─+$/);
-      
+
       // Check rows
       expect(calls[2][0]).toContain("Alice");
       expect(calls[2][0]).toContain("30");
@@ -168,13 +167,16 @@ describe("ui", () => {
     it("should handle column width calculation", () => {
       table(
         ["Short", "Very Long Header Name"],
-        [["A", "B"], ["Longer content here", "C"]]
+        [
+          ["A", "B"],
+          ["Longer content here", "C"],
+        ],
       );
 
       const calls = consoleSpy.log.mock.calls;
       const headerRow = calls[0][0];
       const dataRow1 = calls[2][0];
-      
+
       // Check that columns are properly padded
       expect(headerRow).toMatch(/Short\s+│\s+Very Long Header Name/);
       expect(dataRow1).toMatch(/A\s+│\s+B/);
@@ -186,24 +188,36 @@ describe("ui", () => {
 
       const calls = consoleSpy.log.mock.calls;
       const dataRow = calls[2][0];
-      
+
       // Should truncate to 40 chars max with ellipsis
       expect(dataRow).toContain("...");
       expect(dataRow.length).toBeLessThan(longText.length);
     });
 
     it("should handle empty cells", () => {
-      table(["A", "B", "C"], [["1", "", "3"], ["", "2", ""]]);
+      table(
+        ["A", "B", "C"],
+        [
+          ["1", "", "3"],
+          ["", "2", ""],
+        ],
+      );
 
       const calls = consoleSpy.log.mock.calls;
-      
+
       // Empty cells should be padded appropriately
       expect(calls[2][0]).toMatch(/1\s+│\s+│\s+3/);
       expect(calls[3][0]).toMatch(/\s+│\s+2\s+│/);
     });
 
     it("should handle mismatched row lengths", () => {
-      table(["A", "B", "C"], [["1", "2"], ["3", "4", "5", "6"]]);
+      table(
+        ["A", "B", "C"],
+        [
+          ["1", "2"],
+          ["3", "4", "5", "6"],
+        ],
+      );
 
       // Should not throw
       expect(consoleSpy.log).toHaveBeenCalled();
@@ -213,7 +227,7 @@ describe("ui", () => {
       table(["Col1", "Col2"], [["Val1", "Val2"]]);
 
       const calls = consoleSpy.log.mock.calls;
-      
+
       // Check for │ separator
       expect(calls[0][0]).toContain(" │ ");
       expect(calls[2][0]).toContain(" │ ");

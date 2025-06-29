@@ -33,11 +33,11 @@ describe("doctor command", () => {
 
   it("should have correct command metadata", async () => {
     const { doctorCommand } = await import("./doctor");
-    
+
     expect(doctorCommand).toBeDefined();
     // Check meta exists and has correct structure
     expect(doctorCommand.meta).toBeDefined();
-    
+
     // Access meta properties directly without type checking
     const meta = doctorCommand.meta as any;
     expect(meta.name).toBe("doctor");
@@ -47,7 +47,7 @@ describe("doctor command", () => {
 
   it("should detect docker when available", async () => {
     mockExecSync.mockReturnValue("Docker version 20.10.0");
-    
+
     const { doctorCommand } = await import("./doctor");
     expect(doctorCommand).toBeDefined();
   });
@@ -56,14 +56,14 @@ describe("doctor command", () => {
     mockExecSync.mockImplementation(() => {
       throw new Error("Command not found");
     });
-    
+
     const { doctorCommand } = await import("./doctor");
     expect(doctorCommand).toBeDefined();
   });
 
   it("should handle pact detection", async () => {
     mockIsAnyPactInstalled.mockResolvedValue(true);
-    
+
     const { doctorCommand } = await import("./doctor");
     expect(doctorCommand).toBeDefined();
     expect(typeof doctorCommand.run).toBe("function");
@@ -71,7 +71,7 @@ describe("doctor command", () => {
 
   it("should be importable without errors", async () => {
     const { doctorCommand } = await import("./doctor");
-    
+
     expect(doctorCommand).toBeDefined();
     expect(doctorCommand.meta).toBeDefined();
     expect(doctorCommand.run).toBeDefined();

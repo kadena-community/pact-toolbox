@@ -8,12 +8,7 @@
 import { join } from "pathe";
 import { rm, mkdir } from "node:fs/promises";
 import { existsSync } from "@pact-toolbox/node-utils";
-import { 
-  downloadAllPreludes, 
-  resolvePreludes, 
-  shouldDownloadPreludes,
-  getCacheStats 
-} from "../src/index";
+import { downloadAllPreludes, resolvePreludes, shouldDownloadPreludes, getCacheStats } from "../src/index";
 
 // Mock client for testing
 const mockClient = {
@@ -31,7 +26,7 @@ const mockClient = {
   }),
   getSignerKeys: () => ({
     publicKey: "test-key",
-    secretKey: "test-secret", 
+    secretKey: "test-secret",
     account: "test-account",
   }),
 } as any;
@@ -41,7 +36,7 @@ async function main() {
 
   const testDir = join(process.cwd(), ".test-integration");
   const contractsDir = join(testDir, "contracts");
-  
+
   try {
     // Clean up any previous test runs
     await rm(testDir, { recursive: true, force: true });
@@ -75,14 +70,9 @@ async function main() {
     const chainwebDir = join(preludesDir, "kadena/chainweb");
     if (existsSync(chainwebDir)) {
       console.log("✅ Chainweb prelude directory exists");
-      
+
       // Check for some expected files
-      const expectedFiles = [
-        "root/coin.pact",
-        "root/fungible-v2.pact", 
-        "root/ns.pact",
-        "install.repl"
-      ];
+      const expectedFiles = ["root/coin.pact", "root/fungible-v2.pact", "root/ns.pact", "install.repl"];
 
       for (const file of expectedFiles) {
         const filePath = join(chainwebDir, file);
@@ -114,7 +104,6 @@ async function main() {
     }
 
     console.log("\n🎉 Integration test completed successfully!");
-
   } catch (error) {
     console.error("\n❌ Integration test failed:", error);
     process.exit(1);

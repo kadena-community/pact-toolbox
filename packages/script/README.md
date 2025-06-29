@@ -2,7 +2,6 @@
 
 > Powerful, flexible deployment and automation script runner for Pact smart contracts
 
-
 ## Overview
 
 The `@pact-toolbox/script` package provides a comprehensive framework for creating, deploying, and managing Pact smart contracts with advanced features like:
@@ -195,13 +194,13 @@ export default createScript({
     await coinService.transfer({
       from: "sender00",
       to: "k:receiver",
-      amount: "10.0"
+      amount: "10.0",
     });
 
     // Create accounts
     await coinService.createAccount({
       account: "k:new-account",
-      guard: { keys: ["public-key"], pred: "keys-all" }
+      guard: { keys: ["public-key"], pred: "keys-all" },
     });
 
     // Use wallet manager for account switching

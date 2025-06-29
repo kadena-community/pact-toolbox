@@ -49,7 +49,7 @@ export {
   getSerializableMultiNetworkConfig,
   type MultiNetworkConfig,
   // Validation
-  ConfigValidationError
+  ConfigValidationError,
 } from "@pact-toolbox/config";
 
 // Export network utilities (excluding re-exported config types to avoid conflicts)

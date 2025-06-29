@@ -12,7 +12,7 @@ describe.skip("CoinService Integration Tests", () => {
   // Test keypairs with proper 64-character hex keys
   const alicePublicKey = "368820f80c324bbc7c2b0610688a7da43e39f91d118732671cd9c7500ff43cca";
   const bobPublicKey = "6be2f485a7af75fedb4b7f153a903f7e6000ca4aa501179c91a2450b777bd2a7";
-  
+
   const aliceKeyset: PactKeyset = {
     keys: [alicePublicKey],
     pred: "keys-all",
@@ -127,7 +127,7 @@ describe.skip("CoinService Integration Tests", () => {
           toGuard: aliceKeyset,
         });
         // Wait for transaction to settle
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        await new Promise((resolve) => setTimeout(resolve, 2000));
       } catch (error) {
         console.log("Initial funding failed:", error);
       }

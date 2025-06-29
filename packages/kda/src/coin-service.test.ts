@@ -15,12 +15,12 @@ describe("CoinService", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
     mockContext = {
       getDefaultSigner: vi.fn().mockReturnValue({ address: "sender00", pubKey: "test-key" }),
-      getSignerKeys: vi.fn().mockReturnValue({ publicKey: "test-key", privateKey: "test-private" })
+      getSignerKeys: vi.fn().mockReturnValue({ publicKey: "test-key", privateKey: "test-private" }),
     } as any;
-    
+
     coinService = new CoinService({
       context: mockContext,
       defaultChainId: "0",
@@ -139,7 +139,7 @@ describe("CoinService", () => {
       });
 
       expect(mockExecution).toHaveBeenCalledWith(
-        '(coin.create-account "k:test-account" (read-keyset \'account-guard))'
+        '(coin.create-account "k:test-account" (read-keyset \'account-guard))',
       );
       expect(mockBuilder.withKeyset).toHaveBeenCalledWith("account-guard", guard);
       expect(mockBuilder.sign).toHaveBeenCalledWith(undefined);
@@ -197,7 +197,7 @@ describe("CoinService", () => {
       });
 
       expect(mockExecution).toHaveBeenCalledWith(
-        '(coin.transfer-create "k:sender" "k:receiver" (read-keyset \'to-guard) 10.0)'
+        '(coin.transfer-create "k:sender" "k:receiver" (read-keyset \'to-guard) 10.0)',
       );
       expect(mockBuilder.withKeyset).toHaveBeenCalledWith("to-guard", toGuard);
       expect(result).toEqual(mockResult);
@@ -229,7 +229,7 @@ describe("CoinService", () => {
       });
 
       expect(mockExecution).toHaveBeenCalledWith(
-        '(coin.transfer-crosschain "k:sender" "k:receiver" (read-keyset \'receiver-guard) "2" 10.0)'
+        '(coin.transfer-crosschain "k:sender" "k:receiver" (read-keyset \'receiver-guard) "2" 10.0)',
       );
       expect(mockBuilder.withKeyset).toHaveBeenCalledWith("receiver-guard", toGuard);
       expect(result).toEqual(mockResult);
@@ -258,7 +258,7 @@ describe("CoinService", () => {
       });
 
       expect(mockExecution).toHaveBeenCalledWith(
-        '(coin.transfer-crosschain "k:sender" "k:receiver" (at \'guard (coin.details "k:receiver")) "2" 10.0)'
+        '(coin.transfer-crosschain "k:sender" "k:receiver" (at \'guard (coin.details "k:receiver")) "2" 10.0)',
       );
       expect(result).toEqual(mockResult);
     });

@@ -15,10 +15,10 @@ let currentSpinner: ClackSpinner | null = null;
 /**
  * Starts a new spinner with the given text.
  * If a spinner is already running, it will be stopped first.
- * 
+ *
  * @param text - The text to display with the spinner
  * @returns The spinner instance
- * 
+ *
  * @example
  * ```typescript
  * const spinner = startSpinner('Loading...');
@@ -37,10 +37,10 @@ export function startSpinner(text: string): ClackSpinner {
 
 /**
  * Stops the current spinner.
- * 
+ *
  * @param success - Whether the operation was successful (affects log color)
  * @param text - Optional text to display when stopping
- * 
+ *
  * @example
  * ```typescript
  * startSpinner('Processing...');
@@ -71,9 +71,9 @@ export function stopSpinner(success = true, text?: string): void {
 
 /**
  * Updates the text of the current spinner.
- * 
+ *
  * @param text - The new text to display
- * 
+ *
  * @example
  * ```typescript
  * startSpinner('Processing item 1 of 10...');
@@ -94,10 +94,10 @@ export function updateSpinner(text: string): void {
 
 /**
  * Displays a message in a bordered box for emphasis.
- * 
+ *
  * @param title - The title to display in bold
  * @param content - The content lines (string or array of strings)
- * 
+ *
  * @example
  * ```typescript
  * boxMessage('Important Notice', [
@@ -117,10 +117,10 @@ export function boxMessage(title: string, content: string | string[]): void {
 /**
  * Displays data in a simple table format.
  * Long cell values are truncated with ellipsis.
- * 
+ *
  * @param headers - The table headers
  * @param rows - The table rows (2D array)
- * 
+ *
  * @example
  * ```typescript
  * table(
@@ -163,7 +163,7 @@ export function table(headers: string[], rows: string[][]): void {
 
 /**
  * Clears the console screen.
- * 
+ *
  * @example
  * ```typescript
  * clear();

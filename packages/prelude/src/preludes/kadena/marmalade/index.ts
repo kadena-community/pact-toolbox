@@ -1,33 +1,26 @@
 import type { PreludeDefinition } from "../../../types";
-import { 
-  repository, 
-  file, 
-  namespace, 
-  deploymentGroup, 
-  keysetTemplate,
-  deploymentConditions 
-} from "../../../utils";
+import { repository, file, namespace, deploymentGroup, keysetTemplate, deploymentConditions } from "../../../utils";
 
 // Define the marmalade prelude using the new system
 export const marmaladeDefinition: PreludeDefinition = {
   id: "kadena/marmalade",
-  name: "Kadena Marmalade NFT Framework", 
+  name: "Kadena Marmalade NFT Framework",
   description: "Complete NFT framework with policies, ledger, and sale contracts",
   version: "2.0.0",
-  
+
   repository: repository("kadena-io", "marmalade", {
-    basePath: "pact"
+    basePath: "pact",
   }),
-  
+
   dependencies: ["kadena/chainweb"],
-  
+
   namespaces: [
     namespace("kip", ["ns-admin-keyset", "ns-operate-keyset"]),
     namespace("util", ["ns-admin-keyset", "ns-operate-keyset"]),
     namespace("marmalade-v2", ["marmalade-admin", "marmalade-contract-admin"]),
     namespace("marmalade-sale", ["marmalade-admin", "marmalade-contract-admin"]),
   ],
-  
+
   keysetTemplates: [
     keysetTemplate("marmalade-admin", "admin"),
     keysetTemplate("marmalade-user", "user"),
@@ -36,104 +29,119 @@ export const marmaladeDefinition: PreludeDefinition = {
     keysetTemplate("ns-operate-keyset", "admin"),
     keysetTemplate("ns-genesis-keyset", "admin"),
   ],
-  
+
   deploymentGroups: [
-    deploymentGroup("namespaces", [
-      file("ns-marmalade.pact", { path: "marmalade-ns/ns-marmalade.pact" }),
-    ], {
+    deploymentGroup("namespaces", [file("ns-marmalade.pact", { path: "marmalade-ns/ns-marmalade.pact" })], {
       shouldDeploy: async (client) => {
         const namespaces = ["kip", "util", "marmalade-v2", "marmalade-sale"];
-        const checks = await Promise.all(
-          namespaces.map(ns => client.isNamespaceDefined(ns))
-        );
-        return checks.some(exists => !exists);
-      }
+        const checks = await Promise.all(namespaces.map((ns) => client.isNamespaceDefined(ns)));
+        return checks.some((exists) => !exists);
+      },
     }),
-    
-    deploymentGroup("kip-standards", [
-      file("account-protocols-v1.pact", { path: "kip/account-protocols-v1.pact" }),
-      file("manifest.pact", { path: "kip/manifest.pact" }),
-      file("poly-fungible-v3.pact", { path: "kip/poly-fungible-v3.pact" }),
-      file("token-policy-v2.pact", { path: "kip/token-policy-v2.pact" }),
-      file("updatable-uri-policy-v1.pact", { path: "kip/updatable-uri-policy-v1.pact" }),
-    ], {
-      namespace: "kip",
-      dependsOn: ["namespaces"],
-    }),
-    
-    deploymentGroup("utilities", [
-      file("fungible-util.pact", { path: "util/fungible-util.pact" }),
-      file("guards1.pact", { path: "util/guards1.pact" }),
-    ], {
-      namespace: "util",
-      dependsOn: ["namespaces"],
-    }),
-    
-    deploymentGroup("core-ledger", [
-      file("ledger.interface.pact", { path: "ledger/ledger.interface.pact" }),
-      file("ledger.pact", { path: "ledger/ledger.pact" }),
-    ], {
-      namespace: "marmalade-v2", 
-      dependsOn: ["kip-standards"],
-    }),
-    
-    deploymentGroup("policy-manager", [
-      file("sale.interface.pact", { path: "policy-manager/sale.interface.pact" }),
-      file("policy-manager.pact", { path: "policy-manager/policy-manager.pact" }),
-      file("manager-init.pact", { path: "policy-manager/manager-init.pact" }),
-    ], {
-      namespace: "marmalade-v2",
-      dependsOn: ["core-ledger"],
-    }),
-    
-    deploymentGroup("marmalade-util", [
-      file("util-v1.pact", { path: "marmalade-util/util-v1.pact" }),
-    ], {
-      namespace: "marmalade-v2",
-      dependsOn: ["policy-manager"],
-    }),
-    
-    deploymentGroup("concrete-policies", [
-      file("collection-policy-v1.pact", { 
-        path: "concrete-policies/collection-policy/collection-policy-v1.pact" 
-      }),
-      file("guard-policy-v1.pact", { 
-        path: "concrete-policies/guard-policy/guard-policy-v1.pact" 
-      }),
-      file("non-fungible-policy-v1.pact", { 
-        path: "concrete-policies/non-fungible-policy/non-fungible-policy-v1.pact" 
-      }),
-      file("non-updatable-uri-policy-v1.pact", { 
-        path: "concrete-policies/non-updatable-uri-policy/non-updatable-uri-policy-v1.pact" 
-      }),
-      file("royalty-policy-v1.pact", { 
-        path: "concrete-policies/royalty-policy/royalty-policy-v1.pact" 
-      }),
-    ], {
+
+    deploymentGroup(
+      "kip-standards",
+      [
+        file("account-protocols-v1.pact", { path: "kip/account-protocols-v1.pact" }),
+        file("manifest.pact", { path: "kip/manifest.pact" }),
+        file("poly-fungible-v3.pact", { path: "kip/poly-fungible-v3.pact" }),
+        file("token-policy-v2.pact", { path: "kip/token-policy-v2.pact" }),
+        file("updatable-uri-policy-v1.pact", { path: "kip/updatable-uri-policy-v1.pact" }),
+      ],
+      {
+        namespace: "kip",
+        dependsOn: ["namespaces"],
+      },
+    ),
+
+    deploymentGroup(
+      "utilities",
+      [
+        file("fungible-util.pact", { path: "util/fungible-util.pact" }),
+        file("guards1.pact", { path: "util/guards1.pact" }),
+      ],
+      {
+        namespace: "util",
+        dependsOn: ["namespaces"],
+      },
+    ),
+
+    deploymentGroup(
+      "core-ledger",
+      [
+        file("ledger.interface.pact", { path: "ledger/ledger.interface.pact" }),
+        file("ledger.pact", { path: "ledger/ledger.pact" }),
+      ],
+      {
+        namespace: "marmalade-v2",
+        dependsOn: ["kip-standards"],
+      },
+    ),
+
+    deploymentGroup(
+      "policy-manager",
+      [
+        file("sale.interface.pact", { path: "policy-manager/sale.interface.pact" }),
+        file("policy-manager.pact", { path: "policy-manager/policy-manager.pact" }),
+        file("manager-init.pact", { path: "policy-manager/manager-init.pact" }),
+      ],
+      {
+        namespace: "marmalade-v2",
+        dependsOn: ["core-ledger"],
+      },
+    ),
+
+    deploymentGroup("marmalade-util", [file("util-v1.pact", { path: "marmalade-util/util-v1.pact" })], {
       namespace: "marmalade-v2",
       dependsOn: ["policy-manager"],
-      optional: true, // Policies are optional for basic functionality
     }),
-    
-    deploymentGroup("sale-contracts", [
-      file("conventional-auction.pact", { 
-        path: "sale-contracts/conventional-auction/conventional-auction.pact" 
-      }),
-      file("dutch-auction.pact", { 
-        path: "sale-contracts/dutch-auction/dutch-auction.pact" 
-      }),
-    ], {
-      namespace: "marmalade-sale",
-      dependsOn: ["policy-manager"],
-      optional: true,
-    }),
+
+    deploymentGroup(
+      "concrete-policies",
+      [
+        file("collection-policy-v1.pact", {
+          path: "concrete-policies/collection-policy/collection-policy-v1.pact",
+        }),
+        file("guard-policy-v1.pact", {
+          path: "concrete-policies/guard-policy/guard-policy-v1.pact",
+        }),
+        file("non-fungible-policy-v1.pact", {
+          path: "concrete-policies/non-fungible-policy/non-fungible-policy-v1.pact",
+        }),
+        file("non-updatable-uri-policy-v1.pact", {
+          path: "concrete-policies/non-updatable-uri-policy/non-updatable-uri-policy-v1.pact",
+        }),
+        file("royalty-policy-v1.pact", {
+          path: "concrete-policies/royalty-policy/royalty-policy-v1.pact",
+        }),
+      ],
+      {
+        namespace: "marmalade-v2",
+        dependsOn: ["policy-manager"],
+        optional: true, // Policies are optional for basic functionality
+      },
+    ),
+
+    deploymentGroup(
+      "sale-contracts",
+      [
+        file("conventional-auction.pact", {
+          path: "sale-contracts/conventional-auction/conventional-auction.pact",
+        }),
+        file("dutch-auction.pact", {
+          path: "sale-contracts/dutch-auction/dutch-auction.pact",
+        }),
+      ],
+      {
+        namespace: "marmalade-sale",
+        dependsOn: ["policy-manager"],
+        optional: true,
+      },
+    ),
   ],
-  
-  deploymentConditions: deploymentConditions.ifContractsMissing([
-    "marmalade-v2.ledger",
-    "marmalade-v2.policy-manager"
-  ]),
-  
+
+  deploymentConditions: deploymentConditions.ifContractsMissing(["marmalade-v2.ledger", "marmalade-v2.policy-manager"]),
+
   replTemplate: `
 ;; Marmalade v2 Installation Script
 ;; This script installs the complete Marmalade v2 token framework
@@ -241,16 +249,16 @@ export const marmaladeDefinition: PreludeDefinition = {
 (print "Policies: collection, guard, non-fungible, non-updatable-uri, royalty")
 (print "Sale contracts: conventional-auction, dutch-auction")
   `.trim(),
-  
+
   hooks: {
     beforeDeploy: async (_client) => {
       console.log("🚀 Starting Marmalade v2 deployment...");
     },
-    
+
     afterDeploy: async (_client) => {
       console.log("✅ Marmalade v2 deployment completed!");
     },
-    
+
     onError: async (_client, error) => {
       console.error("❌ Marmalade deployment failed:", error.message);
     },

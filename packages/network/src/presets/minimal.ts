@@ -241,7 +241,9 @@ export function createMinimalDevNet({
   persistDb = true,
 }: Partial<MinimalDevNetOptions> = {}): DevNetServiceDefinition {
   // Generate unique volume name with timestamp to ensure isolation in stateless mode
-  const volume = persistDb ? `devnet_db_${clusterId.replace("-", "_")}` : `devnet_db_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+  const volume = persistDb
+    ? `devnet_db_${clusterId.replace("-", "_")}`
+    : `devnet_db_${Date.now()}_${Math.random().toString(36).substring(7)}`;
   return {
     clusterId,
     networkName,

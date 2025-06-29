@@ -21,13 +21,13 @@ yarn add -D @pact-toolbox/init
 ### Programmatic API
 
 ```typescript
-import { initToolbox } from '@pact-toolbox/init';
+import { initToolbox } from "@pact-toolbox/init";
 
 // Initialize Pact Toolbox in your project
 await initToolbox({
-  contractsDir: './pact',      // Directory for Pact contracts
-  skipInstall: false,          // Skip dependency installation
-  packageManager: 'pnpm'       // Force specific package manager
+  contractsDir: "./pact", // Directory for Pact contracts
+  skipInstall: false, // Skip dependency installation
+  packageManager: "pnpm", // Force specific package manager
 });
 ```
 
@@ -54,17 +54,20 @@ pact-toolbox init --skip-install
 - =' **TypeScript Integration** - Updates tsconfig.json for Pact types
 - <� **Vite Plugin** - Adds Pact plugin to existing Vite config
 - =� **Sample Contracts** - Creates hello-world example to get started
-- = **Auto-Detection** - Detects project type and package manager
+- =
+  **Auto-Detection** - Detects project type and package manager
 
 ## What Gets Added
 
 ### Dependencies
 
 **Production:**
+
 - `@kadena/client` - Kadena client library
 - `@pact-toolbox/client` - High-level Pact client
 
 **Development:**
+
 - `pact-toolbox` - Main CLI and development tools
 - `@pact-toolbox/unplugin` - Build tool integration
 
@@ -73,52 +76,52 @@ pact-toolbox init --skip-install
 Creates `pact-toolbox.config.js` or `pact-toolbox.config.ts`:
 
 ```typescript
-import { defineConfig } from 'pact-toolbox';
+import { defineConfig } from "pact-toolbox";
 
 export default defineConfig({
   // Contracts directory
-  contractsDir: './pact',
-  
+  contractsDir: "./pact",
+
   // Default network
-  network: 'local',
-  
+  network: "local",
+
   // Network configurations
   networks: {
     local: {
-      type: 'pact-server',
-      name: 'local',
+      type: "pact-server",
+      name: "local",
       pactServer: {
-        url: 'http://localhost:9001',
-        port: 9001
-      }
+        url: "http://localhost:9001",
+        port: 9001,
+      },
     },
     devnet: {
-      type: 'devnet',
-      name: 'devnet',
+      type: "devnet",
+      name: "devnet",
       devnet: {
-        url: 'http://localhost:8080',
+        url: "http://localhost:8080",
         containerConfig: {
-          onDemand: true
-        }
-      }
+          onDemand: true,
+        },
+      },
     },
     testnet: {
-      type: 'chainweb',
-      name: 'testnet',
+      type: "chainweb",
+      name: "testnet",
       chainweb: {
-        networkId: 'testnet04',
-        apiHost: 'https://api.testnet.chainweb.com'
-      }
+        networkId: "testnet04",
+        apiHost: "https://api.testnet.chainweb.com",
+      },
     },
     mainnet: {
-      type: 'chainweb',
-      name: 'mainnet',
+      type: "chainweb",
+      name: "mainnet",
       chainweb: {
-        networkId: 'mainnet01',
-        apiHost: 'https://api.chainweb.com'
-      }
-    }
-  }
+        networkId: "mainnet01",
+        apiHost: "https://api.chainweb.com",
+      },
+    },
+  },
 });
 ```
 
@@ -144,10 +147,7 @@ Updates `tsconfig.json` to include generated types:
 
 ```json
 {
-  "include": [
-    "src",
-    ".pact-toolbox/pactjs-generated"
-  ]
+  "include": ["src", ".pact-toolbox/pactjs-generated"]
 }
 ```
 
@@ -156,16 +156,18 @@ Updates `tsconfig.json` to include generated types:
 Creates a hello-world example:
 
 **`pact/hello-world.pact`:**
+
 ```lisp
 (module hello-world GOVERNANCE
   (defcap GOVERNANCE () true)
-  
+
   (defun say-hello (name:string)
     (format "Hello, {}!" [name]))
 )
 ```
 
 **`pact/hello-world.repl`:**
+
 ```lisp
 (load "hello-world.pact")
 
@@ -182,13 +184,13 @@ Initializes Pact Toolbox in the current project.
 interface InitOptions {
   // Directory for Pact contracts (default: './pact')
   contractsDir?: string;
-  
+
   // Skip dependency installation (default: false)
   skipInstall?: boolean;
-  
+
   // Force specific package manager (auto-detected by default)
-  packageManager?: 'npm' | 'yarn' | 'pnpm';
-  
+  packageManager?: "npm" | "yarn" | "pnpm";
+
   // Working directory (default: process.cwd())
   cwd?: string;
 }
@@ -201,15 +203,12 @@ Updates an existing Vite configuration to include the Pact plugin.
 ```typescript
 // Before
 export default {
-  plugins: [react()]
+  plugins: [react()],
 };
 
 // After
 export default {
-  plugins: [
-    react(),
-    PactToolbox()
-  ]
+  plugins: [react(), PactToolbox()],
 };
 ```
 
@@ -218,7 +217,7 @@ export default {
 Returns commands for the detected package manager.
 
 ```typescript
-const commands = getPackageManagerCommands('pnpm');
+const commands = getPackageManagerCommands("pnpm");
 // {
 //   install: ['pnpm', 'install'],
 //   add: ['pnpm', 'add'],
@@ -297,53 +296,52 @@ export default defineConfig({
   // Add custom networks
   networks: {
     custom: {
-      type: 'chainweb',
-      name: 'custom-network',
+      type: "chainweb",
+      name: "custom-network",
       chainweb: {
-        networkId: 'custom',
-        apiHost: 'https://custom.example.com'
-      }
-    }
+        networkId: "custom",
+        apiHost: "https://custom.example.com",
+      },
+    },
   },
-  
+
   // Add preludes
-  preludes: ['kadena/chainweb'],
-  
+  preludes: ["kadena/chainweb"],
+
   // Custom settings
-  enableDevAccountFunding: true
+  enableDevAccountFunding: true,
 });
 ```
 
 ### Build Tool Integration
 
 **Webpack:**
+
 ```javascript
-const PactToolbox = require('@pact-toolbox/unplugin/webpack');
+const PactToolbox = require("@pact-toolbox/unplugin/webpack");
 
 module.exports = {
-  plugins: [
-    PactToolbox()
-  ]
+  plugins: [PactToolbox()],
 };
 ```
 
 **Rollup:**
+
 ```javascript
-import PactToolbox from '@pact-toolbox/unplugin/rollup';
+import PactToolbox from "@pact-toolbox/unplugin/rollup";
 
 export default {
-  plugins: [
-    PactToolbox()
-  ]
+  plugins: [PactToolbox()],
 };
 ```
 
 **ESBuild:**
-```javascript
-import PactToolbox from '@pact-toolbox/unplugin/esbuild';
 
-require('esbuild').build({
-  plugins: [PactToolbox()]
+```javascript
+import PactToolbox from "@pact-toolbox/unplugin/esbuild";
+
+require("esbuild").build({
+  plugins: [PactToolbox()],
 });
 ```
 
@@ -372,25 +370,27 @@ require('esbuild').build({
 If automatic setup fails, manually add:
 
 1. **Install dependencies:**
+
    ```bash
    npm install @kadena/client @pact-toolbox/client
    npm install -D pact-toolbox @pact-toolbox/unplugin
    ```
 
 2. **Create config file:**
+
    ```javascript
    // pact-toolbox.config.js
-   import { defineConfig } from 'pact-toolbox';
+   import { defineConfig } from "pact-toolbox";
    export default defineConfig({
-     contractsDir: './pact'
+     contractsDir: "./pact",
    });
    ```
 
 3. **Add build plugin:**
    ```javascript
    // vite.config.js
-   import PactToolbox from '@pact-toolbox/unplugin/vite';
-   plugins: [PactToolbox()]
+   import PactToolbox from "@pact-toolbox/unplugin/vite";
+   plugins: [PactToolbox()];
    ```
 
 ## Migration Guide
@@ -405,22 +405,25 @@ If you're currently using Pact without Pact Toolbox:
    pact-toolbox init --contracts-dir ./your-contracts
    ```
 3. **Update imports:**
+
    ```typescript
    // Before
-   import { Pact } from '@kadena/client';
-   
+   import { Pact } from "@kadena/client";
+
    // After
-   import { PactToolboxClient } from '@pact-toolbox/client';
+   import { PactToolboxClient } from "@pact-toolbox/client";
    ```
 
 ### From Older Versions
 
 1. **Remove old dependencies:**
+
    ```bash
    npm uninstall old-pact-packages
    ```
 
 2. **Initialize fresh:**
+
    ```bash
    pact-toolbox init
    ```
@@ -430,6 +433,7 @@ If you're currently using Pact without Pact Toolbox:
 ## Best Practices
 
 1. **Keep contracts organized:**
+
    ```
    pact/
       modules/
@@ -438,11 +442,13 @@ If you're currently using Pact without Pact Toolbox:
    ```
 
 2. **Use type generation:**
+
    ```bash
    npm run pact:types -- --watch
    ```
 
 3. **Version control configuration:**
+
    ```gitignore
    # Don't commit generated files
    .pact-toolbox/
@@ -451,7 +457,7 @@ If you're currently using Pact without Pact Toolbox:
 4. **Environment-specific configs:**
    ```javascript
    export default defineConfig({
-     network: process.env.PACT_NETWORK || 'local'
+     network: process.env.PACT_NETWORK || "local",
    });
    ```
 

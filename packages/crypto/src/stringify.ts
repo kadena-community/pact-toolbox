@@ -1,11 +1,11 @@
 /**
  * @fileoverview Deterministic JSON Serialization
- * 
+ *
  * This module provides deterministic JSON serialization that produces consistent
  * output regardless of property insertion order. This is critical for cryptographic
  * operations where the serialized representation must be identical across different
  * JavaScript engines and execution contexts.
- * 
+ *
  * The implementation sorts object keys and handles special values like BigInt,
  * functions, and undefined values in a consistent manner.
  */
@@ -26,14 +26,14 @@ const objKeys =
 
 /**
  * Internal recursive function that performs deterministic stringification.
- * 
+ *
  * This function handles various JavaScript types and ensures consistent output:
  * - Objects: Properties are sorted by key name
  * - Arrays: Elements are processed in order
  * - Functions/undefined: Handled differently in arrays vs objects
  * - BigInt: Serialized with 'n' suffix
  * - Numbers: Non-finite numbers become null
- * 
+ *
  * @param val - The value to stringify
  * @param isArrayProp - Whether this value is an array element (affects undefined/function handling)
  * @returns The stringified representation or undefined
@@ -107,20 +107,20 @@ function stringify(val: unknown, isArrayProp: boolean) {
 
 /**
  * Performs fast, stable, deterministic JSON stringification.
- * 
+ *
  * This function provides deterministic JSON serialization that:
  * - Sorts object keys alphabetically for consistent output
  * - Handles BigInt values with 'n' suffix
  * - Processes undefined and function values consistently
  * - Respects toJSON methods on objects
  * - Ensures identical output across different JavaScript engines
- * 
+ *
  * This is essential for cryptographic operations where the serialized
  * representation must be identical for operations like hashing and signing.
- * 
+ *
  * @param val - Function or undefined (returns undefined)
  * @returns undefined for functions and undefined values
- * 
+ *
  * @example
  * ```typescript
  * const result = fastStableStringify(undefined); // undefined
@@ -135,15 +135,15 @@ export function fastStableStringify(
 
 /**
  * Performs fast, stable, deterministic JSON stringification.
- * 
+ *
  * @param val - Any serializable value
  * @returns Deterministic JSON string representation
- * 
+ *
  * @example
  * ```typescript
  * const obj = { b: 2, a: 1 };
  * const result = fastStableStringify(obj); // '{"a":1,"b":2}'
- * 
+ *
  * const bigintVal = { num: 123n };
  * const result2 = fastStableStringify(bigintVal); // '{"num":"123n"}'
  * ```
@@ -152,7 +152,7 @@ export function fastStableStringify(val: unknown): string;
 
 /**
  * Implementation of fast, stable, deterministic JSON stringification.
- * 
+ *
  * @param val - The value to stringify
  * @returns String representation or undefined
  */

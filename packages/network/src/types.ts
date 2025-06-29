@@ -27,28 +27,28 @@ export interface NetworkStartOptions {
 export interface NetworkApi {
   /** Unique identifier for this network instance */
   readonly id: string;
-  
+
   /** Start the network */
   start(options?: NetworkStartOptions): Promise<void>;
-  
+
   /** Stop the network */
   stop(): Promise<void>;
-  
+
   /** Restart the network */
   restart(options?: NetworkStartOptions): Promise<void>;
-  
+
   /** Check if network is healthy */
   isHealthy(): Promise<boolean>;
-  
+
   /** Get the main service port */
   getPort(): number;
-  
+
   /** Get the RPC endpoint URL */
   getRpcUrl(): string;
-  
+
   /** Check if network supports on-demand mining */
   hasOnDemandMining(): boolean;
-  
+
   /** Get mining endpoint URL (if supported) */
   getMiningUrl(): string | null;
 }

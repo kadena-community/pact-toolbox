@@ -41,7 +41,7 @@ export function renderTemplate(template: string, data: any): string {
   // Simple template replacement for {{variable}} patterns
   let result = template;
   for (const [key, value] of Object.entries(data)) {
-    const regex = new RegExp(`{{${key}}}`, 'g');
+    const regex = new RegExp(`{{${key}}}`, "g");
     result = result.replace(regex, String(value));
   }
   return result;
@@ -227,7 +227,7 @@ export function keysetTemplate(
  */
 export class DeploymentConditions {
   /** Skip deployment on chainweb networks (production) */
-  static skipOnChainweb(): { skipOnNetworks: ("chainweb")[] } {
+  static skipOnChainweb(): { skipOnNetworks: "chainweb"[] } {
     return {
       skipOnNetworks: ["chainweb"],
     };

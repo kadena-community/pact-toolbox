@@ -74,10 +74,10 @@ export async function getRandomNetworkPorts(
 
 /**
  * Checks if a specific port is already in use.
- * 
+ *
  * @param port - The port number to check
  * @returns true if the port is taken, false if available
- * 
+ *
  * @example
  * ```typescript
  * if (await isPortTaken(3000)) {
@@ -91,7 +91,7 @@ export async function isPortTaken(port: number | string): Promise<boolean> {
   try {
     // Use getPort to check if the port is available
     // If getPort returns the same port, it's available
-    const availablePort = await getPort({ port: Number(port), host: '127.0.0.1' });
+    const availablePort = await getPort({ port: Number(port), host: "127.0.0.1" });
     return availablePort !== Number(port);
   } catch {
     // If there's an error, assume the port is taken

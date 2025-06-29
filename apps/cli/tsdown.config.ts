@@ -20,7 +20,7 @@ export default defineConfig({
     "ssh2",
     "cpu-features",
     "tree-sitter",
-    "tree-sitter-pact"
+    "tree-sitter-pact",
   ],
   clean: true,
   publint: true,

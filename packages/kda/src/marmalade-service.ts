@@ -156,7 +156,7 @@ export interface TokenAccountInfo {
 
 /**
  * Service for Marmalade NFT operations on Kadena blockchain
- * 
+ *
  * This service provides a high-level interface for Marmalade token operations
  * including creation, minting, transfers, and sales. It uses the configured
  * chainweb client and wallet for all operations.
@@ -173,7 +173,7 @@ export class MarmaladeService {
    */
   async getTokenInfo(tokenId: string, options?: MarmaladeOperationOptions): Promise<TokenInfo> {
     const chainId = options?.chainId || this.config.defaultChainId || "0";
-    
+
     return execution<TokenInfo>(`(marmalade-v2.ledger.get-token-info "${tokenId}")`)
       .withChainId(chainId)
       .withContext(this.config.context)
@@ -186,7 +186,7 @@ export class MarmaladeService {
    */
   async getBalance(tokenId: string, account: string, options?: MarmaladeOperationOptions): Promise<string> {
     const chainId = options?.chainId || this.config.defaultChainId || "0";
-    
+
     return execution<string>(`(marmalade-v2.ledger.get-balance "${tokenId}" "${account}")`)
       .withChainId(chainId)
       .withContext(this.config.context)
@@ -212,15 +212,15 @@ export class MarmaladeService {
   async createToken(options: CreateTokenOptions): Promise<string> {
     const { id, precision, uri, policies, creator, chainId, gasLimit, gasPrice, ttl } = options;
     const resolvedChainId = chainId || this.config.defaultChainId || "0";
-    
+
     const policiesCode = policies.length > 0 ? `[${policies.map((p) => `"${p}"`).join(" ")}]` : "[]";
-    
+
     // Get the default signer if creator not provided
     const signer = creator || this.config.context.getDefaultSigner()?.address || "sender00";
     const signerKeys = this.config.context.getSignerKeys(signer);
-    
+
     return execution(
-      `(marmalade-v2.ledger.create-token "${id}" ${precision} "${uri}" ${policiesCode} (read-keyset 'creation-guard))`
+      `(marmalade-v2.ledger.create-token "${id}" ${precision} "${uri}" ${policiesCode} (read-keyset 'creation-guard))`,
     )
       .withChainId(resolvedChainId)
       .withContext(this.config.context)
@@ -234,9 +234,7 @@ export class MarmaladeService {
         keys: [signerKeys.publicKey],
         pred: "keys-all",
       })
-      .withSigner(signerKeys.publicKey, (withCapability) => [
-        withCapability("coin.GAS"),
-      ])
+      .withSigner(signerKeys.publicKey, (withCapability) => [withCapability("coin.GAS")])
       .sign(this.config.wallet)
       .submitAndListen() as Promise<string>;
   }
@@ -247,13 +245,13 @@ export class MarmaladeService {
   async mintToken(options: MintTokenOptions): Promise<string> {
     const { tokenId, account, guard, amount, chainId, gasLimit, gasPrice, ttl } = options;
     const resolvedChainId = chainId || this.config.defaultChainId || "0";
-    
+
     // Get the default signer (usually the token creator or admin)
     const defaultSigner = this.config.context.getDefaultSigner();
     if (!defaultSigner) {
       throw new Error("No default signer configured for minting");
     }
-    
+
     return execution(`(marmalade-v2.ledger.mint "${tokenId}" "${account}" (read-keyset 'guard) ${amount})`)
       .withChainId(resolvedChainId)
       .withContext(this.config.context)
@@ -278,10 +276,10 @@ export class MarmaladeService {
   async transferToken(options: TransferTokenOptions): Promise<string> {
     const { tokenId, from, to, amount, chainId, gasLimit, gasPrice, ttl } = options;
     const resolvedChainId = chainId || this.config.defaultChainId || "0";
-    
+
     // Get the public key for the sender
     const signerKeys = this.config.context.getSignerKeys(from);
-    
+
     return execution(`(marmalade-v2.ledger.transfer "${tokenId}" "${from}" "${to}" ${amount})`)
       .withChainId(resolvedChainId)
       .withContext(this.config.context)
@@ -305,12 +303,12 @@ export class MarmaladeService {
   async transferCreateToken(options: TransferCreateTokenOptions): Promise<string> {
     const { tokenId, from, to, amount, toGuard, chainId, gasLimit, gasPrice, ttl } = options;
     const resolvedChainId = chainId || this.config.defaultChainId || "0";
-    
+
     // Get the public key for the sender
     const signerKeys = this.config.context.getSignerKeys(from);
-    
+
     return execution(
-      `(marmalade-v2.ledger.transfer-create "${tokenId}" "${from}" "${to}" (read-keyset 'receiver-guard) ${amount})`
+      `(marmalade-v2.ledger.transfer-create "${tokenId}" "${from}" "${to}" (read-keyset 'receiver-guard) ${amount})`,
     )
       .withChainId(resolvedChainId)
       .withContext(this.config.context)
@@ -335,10 +333,10 @@ export class MarmaladeService {
   async burnToken(options: BurnTokenOptions): Promise<string> {
     const { tokenId, account, amount, chainId, gasLimit, gasPrice, ttl } = options;
     const resolvedChainId = chainId || this.config.defaultChainId || "0";
-    
+
     // Get the public key for the account
     const signerKeys = this.config.context.getSignerKeys(account);
-    
+
     return execution(`(marmalade-v2.ledger.burn "${tokenId}" "${account}" ${amount})`)
       .withChainId(resolvedChainId)
       .withContext(this.config.context)
@@ -362,10 +360,10 @@ export class MarmaladeService {
   async createSale(options: CreateSaleOptions): Promise<string> {
     const { tokenId, seller, price, timeout, chainId, gasLimit, gasPrice, ttl } = options;
     const resolvedChainId = chainId || this.config.defaultChainId || "0";
-    
+
     // Get the public key for the seller
     const signerKeys = this.config.context.getSignerKeys(seller);
-    
+
     return execution(`(marmalade-v2.sale.sale "${tokenId}" "${seller}" 1.0 ${timeout})`)
       .withChainId(resolvedChainId)
       .withContext(this.config.context)
@@ -391,12 +389,12 @@ export class MarmaladeService {
   async buyToken(options: BuyTokenOptions): Promise<string> {
     const { tokenId, buyer, amount, chainId, gasLimit, gasPrice, ttl } = options;
     const resolvedChainId = chainId || this.config.defaultChainId || "0";
-    
+
     // Get the public key for the buyer
     const signerKeys = this.config.context.getSignerKeys(buyer);
-    
+
     return execution(
-      `(marmalade-v2.sale.buy "${tokenId}" "${buyer}" (read-keyset 'buyer-guard) ${amount} (read-msg "price"))`
+      `(marmalade-v2.sale.buy "${tokenId}" "${buyer}" (read-keyset 'buyer-guard) ${amount} (read-msg "price"))`,
     )
       .withChainId(resolvedChainId)
       .withContext(this.config.context)
@@ -423,7 +421,7 @@ export class MarmaladeService {
    */
   async getPolicyInfo(policyName: string, options?: MarmaladeOperationOptions): Promise<PolicyInfo> {
     const chainId = options?.chainId || this.config.defaultChainId || "0";
-    
+
     return execution<PolicyInfo>(`(${policyName}.get-policy-info)`)
       .withChainId(chainId)
       .withContext(this.config.context)
@@ -436,7 +434,7 @@ export class MarmaladeService {
    */
   async listTokens(options?: MarmaladeOperationOptions): Promise<string[]> {
     const chainId = options?.chainId || this.config.defaultChainId || "0";
-    
+
     return execution<string[]>(`(keys marmalade-v2.ledger.tokens)`)
       .withChainId(chainId)
       .withContext(this.config.context)
@@ -450,10 +448,10 @@ export class MarmaladeService {
   async getAccountDetails(
     tokenId: string,
     account: string,
-    options?: MarmaladeOperationOptions
+    options?: MarmaladeOperationOptions,
   ): Promise<TokenAccountInfo> {
     const chainId = options?.chainId || this.config.defaultChainId || "0";
-    
+
     return execution<TokenAccountInfo>(`(marmalade-v2.ledger.details "${tokenId}" "${account}")`)
       .withChainId(chainId)
       .withContext(this.config.context)

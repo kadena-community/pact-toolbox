@@ -70,7 +70,7 @@ describe("PactServerNetwork", () => {
     });
 
     it("should throw error for invalid port", () => {
-      vi.mocked(configModule.createPactServerConfig).mockReturnValue({ 
+      vi.mocked(configModule.createPactServerConfig).mockReturnValue({
         port: 70000, // Above valid range
         logDir: "logs",
         persistDir: "db",
@@ -90,7 +90,7 @@ describe("PactServerNetwork", () => {
       const network = new PactServerNetwork(mockNetworkConfig, mockClient as any);
       // Mock isHealthy to return false so start logic proceeds
       vi.spyOn(network, "isHealthy").mockResolvedValue(false);
-      
+
       await network.start();
 
       expect(nodeUtils.writeFile).toHaveBeenCalled();
@@ -114,7 +114,7 @@ describe("PactServerNetwork", () => {
       const network = new PactServerNetwork(mockNetworkConfig, mockClient as any);
       // Mock isHealthy to return false so start logic proceeds
       vi.spyOn(network, "isHealthy").mockResolvedValue(false);
-      
+
       await expect(network.start()).rejects.toThrow("Pact is not installed");
     });
 
@@ -122,7 +122,7 @@ describe("PactServerNetwork", () => {
       const network = new PactServerNetwork(mockNetworkConfig, mockClient as any);
       // Mock isHealthy to return false so start logic proceeds
       vi.spyOn(network, "isHealthy").mockResolvedValue(false);
-      
+
       await network.start({ stateless: true });
 
       const writeCall = vi.mocked(nodeUtils.writeFile).mock.calls[0];
@@ -138,7 +138,7 @@ describe("PactServerNetwork", () => {
       const network = new PactServerNetwork(mockNetworkConfig, mockClient as any);
       // Mock isHealthy to return false so start logic proceeds
       vi.spyOn(network, "isHealthy").mockResolvedValue(false);
-      
+
       await network.start();
       await network.stop();
 

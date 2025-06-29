@@ -60,7 +60,7 @@ export class TransactionValidator {
       blockedFunctions: [],
       customRules: [],
       strict: false,
-      ...config
+      ...config,
     };
 
     this.builtInRules = this.createBuiltInRules();
@@ -76,7 +76,7 @@ export class TransactionValidator {
       valid: true,
       errors: [],
       warnings: [],
-      suggestions: []
+      suggestions: [],
     };
 
     // Run all validation rules
@@ -85,7 +85,7 @@ export class TransactionValidator {
     for (const rule of allRules) {
       try {
         const ruleResult = rule.validate(txData);
-        
+
         result.errors.push(...ruleResult.errors);
         result.warnings.push(...ruleResult.warnings);
         result.suggestions.push(...ruleResult.suggestions);
@@ -107,9 +107,9 @@ export class TransactionValidator {
     }
 
     if (!result.valid) {
-      logger.warn(`Transaction validation failed: ${result.errors.join(', ')}`);
+      logger.warn(`Transaction validation failed: ${result.errors.join(", ")}`);
     } else {
-      logger.debug('Transaction validation passed');
+      logger.debug("Transaction validation passed");
     }
 
     return result;
@@ -132,7 +132,8 @@ export class TransactionValidator {
 
     try {
       // Simulate the transaction
-      const simulation = await this.client.execution(txData.pactCode)
+      const simulation = await this.client
+        .execution(txData.pactCode)
         .withChainId(txData.meta.chainId as any)
         .withMeta(txData.meta as any)
         .build()
@@ -144,9 +145,8 @@ export class TransactionValidator {
       return {
         validation,
         simulation,
-        gasEstimate
+        gasEstimate,
       };
-
     } catch (error) {
       validation.errors.push(`Simulation failed: ${(error as Error).message}`);
       validation.valid = false;
@@ -160,100 +160,100 @@ export class TransactionValidator {
   private createBuiltInRules(): ValidationRule[] {
     return [
       {
-        name: 'gas-limit-check',
-        description: 'Validate gas limit is within acceptable range',
+        name: "gas-limit-check",
+        description: "Validate gas limit is within acceptable range",
         validate: (tx) => {
           const result: ValidationResult = { valid: true, errors: [], warnings: [], suggestions: [] };
-          
+
           if (tx.meta.gasLimit > (this.config.maxGasLimit || 1000000)) {
             result.valid = false;
             result.errors.push(`Gas limit ${tx.meta.gasLimit} exceeds maximum ${this.config.maxGasLimit}`);
           }
-          
+
           if (tx.meta.gasLimit < 1000) {
-            result.warnings.push('Gas limit is very low, transaction may fail');
+            result.warnings.push("Gas limit is very low, transaction may fail");
           }
-          
+
           if (tx.meta.gasLimit > 500000) {
-            result.warnings.push('Gas limit is very high, consider optimizing');
+            result.warnings.push("Gas limit is very high, consider optimizing");
           }
-          
+
           return result;
-        }
+        },
       },
 
       {
-        name: 'gas-price-check',
-        description: 'Validate gas price meets minimum requirements',
+        name: "gas-price-check",
+        description: "Validate gas price meets minimum requirements",
         validate: (tx) => {
           const result: ValidationResult = { valid: true, errors: [], warnings: [], suggestions: [] };
-          
+
           if (tx.meta.gasPrice < (this.config.minGasPrice || 0.000001)) {
             result.valid = false;
             result.errors.push(`Gas price ${tx.meta.gasPrice} below minimum ${this.config.minGasPrice}`);
           }
-          
+
           if (tx.meta.gasPrice > 0.01) {
-            result.warnings.push('Gas price is very high');
+            result.warnings.push("Gas price is very high");
           }
-          
+
           return result;
-        }
+        },
       },
 
       {
-        name: 'sender-validation',
-        description: 'Validate sender account format',
+        name: "sender-validation",
+        description: "Validate sender account format",
         validate: (tx) => {
           const result: ValidationResult = { valid: true, errors: [], warnings: [], suggestions: [] };
-          
+
           if (!pact.validateAccountName(tx.meta.sender)) {
             result.valid = false;
             result.errors.push(`Invalid sender account format: ${tx.meta.sender}`);
           }
-          
+
           return result;
-        }
+        },
       },
 
       {
-        name: 'chain-id-validation',
-        description: 'Validate chain ID format',
+        name: "chain-id-validation",
+        description: "Validate chain ID format",
         validate: (tx) => {
           const result: ValidationResult = { valid: true, errors: [], warnings: [], suggestions: [] };
-          
+
           const chainId = parseInt(tx.meta.chainId);
           if (isNaN(chainId) || chainId < 0 || chainId > 19) {
             result.valid = false;
             result.errors.push(`Invalid chain ID: ${tx.meta.chainId}`);
           }
-          
+
           return result;
-        }
+        },
       },
 
       {
-        name: 'pact-code-safety',
-        description: 'Check for potentially unsafe Pact code patterns',
+        name: "pact-code-safety",
+        description: "Check for potentially unsafe Pact code patterns",
         validate: (tx) => {
           const result: ValidationResult = { valid: true, errors: [], warnings: [], suggestions: [] };
           const code = tx.pactCode;
-          
+
           // Check for dangerous patterns
-          if (code.includes('(read-msg)')) {
-            result.warnings.push('Direct use of read-msg detected, consider using typed readers');
+          if (code.includes("(read-msg)")) {
+            result.warnings.push("Direct use of read-msg detected, consider using typed readers");
           }
-          
-          if (code.includes('(eval ') || code.includes('(load ')) {
-            result.errors.push('Dynamic code evaluation detected, this is unsafe');
+
+          if (code.includes("(eval ") || code.includes("(load ")) {
+            result.errors.push("Dynamic code evaluation detected, this is unsafe");
             result.valid = false;
           }
-          
-          if (code.includes('(enforce false')) {
-            result.errors.push('Enforce false detected, this will always fail');
+
+          if (code.includes("(enforce false")) {
+            result.errors.push("Enforce false detected, this will always fail");
             result.valid = false;
           }
-          
+
           // Check for blocked functions
           for (const blockedFn of this.config.blockedFunctions || []) {
             if (code.includes(blockedFn)) {
@@ -261,82 +261,82 @@ export class TransactionValidator {
               result.valid = false;
             }
           }
-          
+
           return result;
-        }
+        },
       },
 
       {
-        name: 'capability-validation',
-        description: 'Validate required capabilities are present',
+        name: "capability-validation",
+        description: "Validate required capabilities are present",
         validate: (tx) => {
           const result: ValidationResult = { valid: true, errors: [], warnings: [], suggestions: [] };
-          
+
           // Check for common operations that require capabilities
-          if (tx.pactCode.includes('coin.transfer') && tx.capabilities) {
-            const hasTransferCap = tx.capabilities.some(cap => 
-              cap.name === 'coin.TRANSFER' || cap.name === 'coin.GAS'
+          if (tx.pactCode.includes("coin.transfer") && tx.capabilities) {
+            const hasTransferCap = tx.capabilities.some(
+              (cap) => cap.name === "coin.TRANSFER" || cap.name === "coin.GAS",
             );
-            
+
             if (!hasTransferCap) {
-              result.warnings.push('Coin transfer detected but no TRANSFER capability found');
+              result.warnings.push("Coin transfer detected but no TRANSFER capability found");
             }
           }
-          
-          if (tx.pactCode.includes('coin.create-account') && tx.capabilities) {
-            const hasGasCap = tx.capabilities.some(cap => cap.name === 'coin.GAS');
-            
+
+          if (tx.pactCode.includes("coin.create-account") && tx.capabilities) {
+            const hasGasCap = tx.capabilities.some((cap) => cap.name === "coin.GAS");
+
             if (!hasGasCap) {
-              result.warnings.push('Account creation detected but no GAS capability found');
+              result.warnings.push("Account creation detected but no GAS capability found");
             }
           }
-          
+
           return result;
-        }
+        },
       },
 
       {
-        name: 'signer-consistency',
-        description: 'Validate signers match capabilities and sender',
+        name: "signer-consistency",
+        description: "Validate signers match capabilities and sender",
         validate: (tx) => {
           const result: ValidationResult = { valid: true, errors: [], warnings: [], suggestions: [] };
-          
+
           if (tx.signers && tx.signers.length === 0) {
-            result.warnings.push('No signers specified for transaction');
+            result.warnings.push("No signers specified for transaction");
           }
-          
+
           if (tx.capabilities && tx.capabilities.length > 0 && (!tx.signers || tx.signers.length === 0)) {
-            result.warnings.push('Capabilities specified but no signers provided');
+            result.warnings.push("Capabilities specified but no signers provided");
           }
-          
+
           return result;
-        }
+        },
       },
 
       {
-        name: 'data-validation',
-        description: 'Validate transaction data format',
+        name: "data-validation",
+        description: "Validate transaction data format",
         validate: (tx) => {
           const result: ValidationResult = { valid: true, errors: [], warnings: [], suggestions: [] };
-          
+
           if (tx.data) {
             try {
               JSON.stringify(tx.data);
             } catch {
-              result.errors.push('Transaction data is not serializable');
+              result.errors.push("Transaction data is not serializable");
               result.valid = false;
             }
-            
+
             // Check for large data objects
             const dataSize = JSON.stringify(tx.data).length;
             if (dataSize > 10000) {
               result.warnings.push(`Transaction data is large (${dataSize} bytes)`);
             }
           }
-          
+
           return result;
-        }
-      }
+        },
+      },
     ];
   }
 
@@ -361,7 +361,7 @@ export class TransactionValidator {
    * Remove a validation rule by name
    */
   removeValidationRule(name: string): void {
-    this.config.customRules = this.config.customRules?.filter(rule => rule.name !== name) || [];
+    this.config.customRules = this.config.customRules?.filter((rule) => rule.name !== name) || [];
   }
 
   /**
@@ -382,10 +382,7 @@ export class TransactionValidator {
 /**
  * Create a transaction validator instance
  */
-export function createTransactionValidator(
-  client: PactToolboxClient,
-  config?: ValidationConfig
-): TransactionValidator {
+export function createTransactionValidator(client: PactToolboxClient, config?: ValidationConfig): TransactionValidator {
   return new TransactionValidator(client, config);
 }
 
@@ -397,73 +394,73 @@ export const CommonValidationRules = {
    * Strict deployment validation
    */
   deployment: (): ValidationRule => ({
-    name: 'deployment-validation',
-    description: 'Validate contract deployment transactions',
+    name: "deployment-validation",
+    description: "Validate contract deployment transactions",
     validate: (tx) => {
       const result: ValidationResult = { valid: true, errors: [], warnings: [], suggestions: [] };
-      
-      if (!tx.pactCode.includes('(module ')) {
-        result.errors.push('No module definition found in deployment');
+
+      if (!tx.pactCode.includes("(module ")) {
+        result.errors.push("No module definition found in deployment");
         result.valid = false;
       }
-      
+
       if (tx.meta.gasLimit < 100000) {
-        result.warnings.push('Gas limit may be too low for contract deployment');
+        result.warnings.push("Gas limit may be too low for contract deployment");
       }
-      
+
       return result;
-    }
+    },
   }),
 
   /**
    * Token transfer validation
    */
   tokenTransfer: (minAmount?: number, maxAmount?: number): ValidationRule => ({
-    name: 'token-transfer-validation',
-    description: 'Validate token transfer transactions',
+    name: "token-transfer-validation",
+    description: "Validate token transfer transactions",
     validate: (tx) => {
       const result: ValidationResult = { valid: true, errors: [], warnings: [], suggestions: [] };
-      
-      if (tx.pactCode.includes('transfer')) {
+
+      if (tx.pactCode.includes("transfer")) {
         // Extract amount from transaction (simplified)
         const amountMatch = tx.pactCode.match(/transfer.*?(\d+\.?\d*)/);
         if (amountMatch) {
           const amount = parseFloat(amountMatch[1]);
-          
+
           if (minAmount && amount < minAmount) {
             result.errors.push(`Transfer amount ${amount} below minimum ${minAmount}`);
             result.valid = false;
           }
-          
+
           if (maxAmount && amount > maxAmount) {
             result.errors.push(`Transfer amount ${amount} exceeds maximum ${maxAmount}`);
             result.valid = false;
           }
         }
       }
-      
+
       return result;
-    }
+    },
   }),
 
   /**
    * Namespace operation validation
    */
   namespace: (): ValidationRule => ({
-    name: 'namespace-validation',
-    description: 'Validate namespace operations',
+    name: "namespace-validation",
+    description: "Validate namespace operations",
     validate: (tx) => {
       const result: ValidationResult = { valid: true, errors: [], warnings: [], suggestions: [] };
-      
-      if (tx.pactCode.includes('define-namespace')) {
-        if (!tx.capabilities || !tx.capabilities.some(cap => cap.name === 'ns.ALLOW_NS_DEFINITION')) {
-          result.warnings.push('Namespace definition without ALLOW_NS_DEFINITION capability');
+
+      if (tx.pactCode.includes("define-namespace")) {
+        if (!tx.capabilities || !tx.capabilities.some((cap) => cap.name === "ns.ALLOW_NS_DEFINITION")) {
+          result.warnings.push("Namespace definition without ALLOW_NS_DEFINITION capability");
         }
       }
-      
+
       return result;
-    }
-  })
+    },
+  }),
 };
 
 /**
@@ -479,25 +476,20 @@ export class TransactionPatternValidator {
   /**
    * Validate a coin transfer transaction
    */
-  async validateCoinTransfer(
-    from: string,
-    to: string,
-    amount: string,
-    gasLimit?: number
-  ): Promise<ValidationResult> {
+  async validateCoinTransfer(from: string, to: string, amount: string, gasLimit?: number): Promise<ValidationResult> {
     const txData: TransactionData = {
       pactCode: `(coin.transfer "${from}" "${to}" ${amount})`,
       meta: {
         gasLimit: gasLimit || 10000,
         gasPrice: 0.00001,
         sender: from,
-        chainId: "0"
+        chainId: "0",
       },
       capabilities: [
-        { name: 'coin.TRANSFER', args: [from, to, parseFloat(amount)] },
-        { name: 'coin.GAS', args: [] }
+        { name: "coin.TRANSFER", args: [from, to, parseFloat(amount)] },
+        { name: "coin.GAS", args: [] },
       ],
-      signers: [from.startsWith('k:') ? from.slice(2) : from]
+      signers: [from.startsWith("k:") ? from.slice(2) : from],
     };
 
     return this.validator.validateTransaction(txData);
@@ -509,16 +501,16 @@ export class TransactionPatternValidator {
   async validateContractDeployment(
     contractCode: string,
     gasLimit?: number,
-    sender?: string
+    sender?: string,
   ): Promise<ValidationResult> {
     const txData: TransactionData = {
       pactCode: contractCode,
       meta: {
         gasLimit: gasLimit || 200000,
         gasPrice: 0.00001,
-        sender: sender || 'sender00',
-        chainId: "0"
-      }
+        sender: sender || "sender00",
+        chainId: "0",
+      },
     };
 
     return this.validator.validateTransaction(txData);
@@ -530,19 +522,19 @@ export class TransactionPatternValidator {
   async validateNamespaceCreation(
     namespaceName: string,
     adminKeyset: any,
-    gasLimit?: number
+    gasLimit?: number,
   ): Promise<ValidationResult> {
     const txData: TransactionData = {
       pactCode: `(define-namespace "${namespaceName}" (read-keyset "admin-keyset") (read-keyset "admin-keyset"))`,
       meta: {
         gasLimit: gasLimit || 50000,
         gasPrice: 0.00001,
-        sender: 'sender00',
-        chainId: "0"
+        sender: "sender00",
+        chainId: "0",
       },
       data: {
-        "admin-keyset": adminKeyset
-      }
+        "admin-keyset": adminKeyset,
+      },
     };
 
     return this.validator.validateTransaction(txData);

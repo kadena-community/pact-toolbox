@@ -277,7 +277,7 @@ describe("@pact-toolbox/config", () => {
     test("applies overrides", async () => {
       // Clear the config cache before this test
       clearConfigCache();
-      
+
       const overrides = {
         contractsDir: "./custom-contracts",
         defaultNetwork: "custom",

@@ -55,12 +55,12 @@ describe("PactTransactionBuilder", () => {
 
   describe("execution", () => {
     it("should create an execution transaction builder", () => {
-      const builder = execution("(coin.get-balance \"alice\")");
+      const builder = execution('(coin.get-balance "alice")');
       const command = builder.getCommand();
-      
+
       expect(command.payload).toEqual({
         exec: {
-          code: "(coin.get-balance \"alice\")",
+          code: '(coin.get-balance "alice")',
           data: {},
         },
       });
@@ -73,10 +73,10 @@ describe("PactTransactionBuilder", () => {
         ...mockMultiNetworkConfig,
         default: "testnet",
       });
-      
-      const builder = execution("(coin.get-balance \"alice\")", context);
+
+      const builder = execution('(coin.get-balance "alice")', context);
       const command = builder.getCommand();
-      
+
       expect(command.networkId).toBe("testnet04");
     });
   });
@@ -89,7 +89,7 @@ describe("PactTransactionBuilder", () => {
         rollback: false,
       });
       const command = builder.getCommand();
-      
+
       expect(command.payload).toEqual({
         cont: {
           pactId: "test-pact-id",
@@ -103,7 +103,7 @@ describe("PactTransactionBuilder", () => {
     it("should create with default values", () => {
       const builder = continuation();
       const command = builder.getCommand();
-      
+
       expect(command.payload).toEqual({
         cont: {
           pactId: "",
@@ -119,13 +119,13 @@ describe("PactTransactionBuilder", () => {
     let builder: PactTransactionBuilder<any>;
 
     beforeEach(() => {
-      builder = execution("(coin.get-balance \"alice\")");
+      builder = execution('(coin.get-balance "alice")');
     });
 
     it("should add data with withData", () => {
       builder.withData("user", "alice").withData("amount", 100);
       const command = builder.getCommand();
-      
+
       expect(command.payload.exec.data).toEqual({
         user: "alice",
         amount: 100,
@@ -139,7 +139,7 @@ describe("PactTransactionBuilder", () => {
         verified: true,
       });
       const command = builder.getCommand();
-      
+
       expect(command.payload.exec.data).toEqual({
         user: "alice",
         amount: 100,
@@ -152,10 +152,10 @@ describe("PactTransactionBuilder", () => {
         keys: ["alice-key"],
         pred: "keys-all" as const,
       };
-      
+
       builder.withKeyset("alice-keyset", keyset);
       const command = builder.getCommand();
-      
+
       expect(command.payload.exec.data["alice-keyset"]).toEqual(keyset);
     });
 
@@ -164,10 +164,10 @@ describe("PactTransactionBuilder", () => {
         "alice-keyset": { keys: ["alice-key"], pred: "keys-all" as const },
         "bob-keyset": { keys: ["bob-key"], pred: "keys-all" as const },
       };
-      
+
       builder.withKeysetMap(keysets);
       const command = builder.getCommand();
-      
+
       expect(command.payload.exec.data["alice-keyset"]).toEqual(keysets["alice-keyset"]);
       expect(command.payload.exec.data["bob-keyset"]).toEqual(keysets["bob-keyset"]);
     });
@@ -175,7 +175,7 @@ describe("PactTransactionBuilder", () => {
     it("should set chain ID with withChainId", () => {
       builder.withChainId("5");
       const command = builder.getCommand();
-      
+
       expect(command.meta.chainId).toBe("5");
     });
 
@@ -187,7 +187,7 @@ describe("PactTransactionBuilder", () => {
         ttl: 3600,
       });
       const command = builder.getCommand();
-      
+
       expect(command.meta.gasLimit).toBe(200000);
       expect(command.meta.gasPrice).toBe(1e-7);
       expect(command.meta.sender).toBe("alice");
@@ -197,7 +197,7 @@ describe("PactTransactionBuilder", () => {
     it("should add signer with withSigner", () => {
       builder.withSigner("alice-key");
       const command = builder.getCommand();
-      
+
       expect(command.signers).toHaveLength(1);
       expect(command.signers[0]).toEqual({
         pubKey: "alice-key",
@@ -212,7 +212,7 @@ describe("PactTransactionBuilder", () => {
         signFor("coin.GAS"),
       ]);
       const command = builder.getCommand();
-      
+
       expect(command.signers).toHaveLength(1);
       expect(command.signers[0]?.clist).toEqual([
         { name: "coin.TRANSFER", args: ["alice", "bob", 10.0] },
@@ -223,7 +223,7 @@ describe("PactTransactionBuilder", () => {
     it("should add multiple signers", () => {
       builder.withSigner(["alice-key", "bob-key"]);
       const command = builder.getCommand();
-      
+
       expect(command.signers).toHaveLength(2);
       expect(command.signers[0]?.pubKey).toBe("alice-key");
       expect(command.signers[1]?.pubKey).toBe("bob-key");
@@ -235,10 +235,10 @@ describe("PactTransactionBuilder", () => {
         proof: "test-proof",
         clist: [],
       };
-      
+
       builder.withVerifier(verifier);
       const command = builder.getCommand();
-      
+
       expect(command.verifiers).toHaveLength(1);
       expect(command.verifiers?.[0]).toEqual(verifier);
     });
@@ -246,14 +246,14 @@ describe("PactTransactionBuilder", () => {
     it("should set network ID with withNetworkId", () => {
       builder.withNetworkId("mainnet01");
       const command = builder.getCommand();
-      
+
       expect(command.networkId).toBe("mainnet01");
     });
 
     it("should set nonce with withNonce", () => {
       builder.withNonce("custom-nonce-123");
       const command = builder.getCommand();
-      
+
       expect(command.nonce).toBe("custom-nonce-123");
     });
 
@@ -262,11 +262,11 @@ describe("PactTransactionBuilder", () => {
         ...mockMultiNetworkConfig,
         default: "testnet",
       });
-      
+
       builder.withContext(newContext);
       // Context change should affect future builds
       const _dispatcher = builder.build();
-      
+
       // We can't easily test the internal context, but we can verify the method returns this
       expect(builder.withContext(newContext)).toBe(builder);
     });
@@ -277,9 +277,9 @@ describe("PactTransactionBuilder", () => {
         .withChainId("1")
         .withMeta({ gasLimit: 150000 })
         .withSigner("alice-key");
-      
+
       expect(result).toBe(builder);
-      
+
       const command = builder.getCommand();
       expect(command.payload.exec.data.user).toBe("alice");
       expect(command.meta.chainId).toBe("1");
@@ -290,7 +290,7 @@ describe("PactTransactionBuilder", () => {
     it("should convert to string with toString", () => {
       const _dispatcher = builder.build();
       const str = builder.toString();
-      
+
       expect(str).toBeDefined();
       expect(typeof str).toBe("string");
       expect(() => JSON.parse(str)).not.toThrow();
@@ -301,7 +301,7 @@ describe("PactTransactionBuilder", () => {
     let builder: PactTransactionBuilder<any>;
 
     beforeEach(() => {
-      builder = execution("(coin.get-balance \"alice\")");
+      builder = execution('(coin.get-balance "alice")');
     });
 
     it("should create signing dispatcher with sign method", () => {
@@ -323,7 +323,7 @@ describe("PactTransactionBuilder", () => {
       };
 
       const dispatcher = builder.sign(mockWallet);
-      
+
       expect(dispatcher).toBeDefined();
       // We can't easily test the signing without actually calling a dispatcher method
       // But we can verify the method returns a dispatcher
@@ -332,14 +332,14 @@ describe("PactTransactionBuilder", () => {
 
     it("should create signing dispatcher with wallet ID", () => {
       const dispatcher = builder.sign("test-wallet-id", { showUI: false });
-      
+
       expect(dispatcher).toBeDefined();
       expect(typeof dispatcher.submitAndListen).toBe("function");
     });
 
     it("should create signing dispatcher for wallet selector", () => {
       const dispatcher = builder.sign();
-      
+
       expect(dispatcher).toBeDefined();
       expect(typeof dispatcher.submitAndListen).toBe("function");
     });
@@ -349,12 +349,12 @@ describe("PactTransactionBuilder", () => {
     let builder: PactTransactionBuilder<any>;
 
     beforeEach(() => {
-      builder = execution("(coin.get-balance \"alice\")");
+      builder = execution('(coin.get-balance "alice")');
     });
 
     it("should build unsigned transaction", () => {
       const dispatcher = builder.build();
-      
+
       expect(dispatcher).toBeDefined();
       expect(typeof dispatcher.dirtyRead).toBe("function");
       expect(typeof dispatcher.local).toBe("function");
@@ -367,15 +367,15 @@ describe("PactTransactionBuilder", () => {
         ...mockMultiNetworkConfig,
         default: "testnet",
       });
-      
+
       const dispatcher = builder.build(context);
-      
+
       expect(dispatcher).toBeDefined();
     });
 
     it("should return partial transaction", async () => {
       const tx = await builder.getPartialTransaction();
-      
+
       expect(tx).toBeDefined();
       expect(tx.cmd).toBeDefined();
       expect(tx.hash).toBeDefined();

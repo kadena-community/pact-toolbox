@@ -72,20 +72,20 @@ describe("PactToolboxNetwork", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
     // Setup mocks
     vi.mocked(configModule.getDefaultNetworkConfig).mockReturnValue(mockNetworkConfig);
     vi.mocked(configModule.isLocalNetwork).mockReturnValue(true);
     vi.mocked(configModule.isPactServerNetworkConfig).mockReturnValue(true);
     vi.mocked(configModule.isDevNetworkConfig).mockReturnValue(false);
-    
+
     vi.mocked(utilsModule.getUuid).mockReturnValue("test-uuid");
-    
+
     vi.mocked(nodeUtilsModule.logger).info = vi.fn() as any;
     vi.mocked(nodeUtilsModule.logger).error = vi.fn() as any;
     vi.mocked(nodeUtilsModule.logger).success = vi.fn() as any;
     vi.mocked(nodeUtilsModule.logger).log = vi.fn() as any;
-    
+
     vi.mocked(PactServerNetwork).mockImplementation(() => mockPactServerInstance as any);
     vi.mocked(DevNetNetwork).mockImplementation(() => mockDevNetInstance as any);
   });
@@ -99,24 +99,20 @@ describe("PactToolboxNetwork", () => {
 
     it("should throw error if no networks defined", () => {
       expect(() => new PactToolboxNetwork({ networks: {}, defaultNetwork: "local" } as any)).toThrow(
-        "No networks defined in configuration"
+        "No networks defined in configuration",
       );
     });
 
     it("should throw error if network not found", () => {
       vi.mocked(configModule.getDefaultNetworkConfig).mockReturnValue(null as any);
-      
-      expect(() => new PactToolboxNetwork(mockConfig, { network: "invalid" })).toThrow(
-        "Network not found"
-      );
+
+      expect(() => new PactToolboxNetwork(mockConfig, { network: "invalid" })).toThrow("Network not found");
     });
 
     it("should throw error if network is not local", () => {
       vi.mocked(configModule.isLocalNetwork).mockReturnValue(false);
-      
-      expect(() => new PactToolboxNetwork(mockConfig)).toThrow(
-        "is not a local network"
-      );
+
+      expect(() => new PactToolboxNetwork(mockConfig)).toThrow("is not a local network");
     });
   });
 
@@ -124,7 +120,7 @@ describe("PactToolboxNetwork", () => {
     it("should start the network successfully", async () => {
       const network = new PactToolboxNetwork(mockConfig);
       await network.start();
-      
+
       expect(network.getRpcUrl()).toBe("http://localhost:8080");
       expect(network.getPort()).toBe(8080);
     });
@@ -136,10 +132,10 @@ describe("PactToolboxNetwork", () => {
         deployPreludes: true,
         preludes: ["kadena/coin" as any],
       };
-      
+
       const network = new PactToolboxNetwork(configWithPreludes);
       await network.start();
-      
+
       expect(preludeModule.downloadAllPreludes).toHaveBeenCalled();
       expect(preludeModule.deployPreludes).toHaveBeenCalled();
     });
@@ -150,28 +146,32 @@ describe("PactToolboxNetwork", () => {
         networks: {
           local: {
             ...mockNetworkConfig,
-            keyPairs: [{
-              account: "test-account",
-              publicKey: "public-key",
-              secretKey: "secret-key",
-            }],
+            keyPairs: [
+              {
+                account: "test-account",
+                publicKey: "public-key",
+                secretKey: "secret-key",
+              },
+            ],
           },
         },
       };
-      
+
       // Make sure getDefaultNetworkConfig returns the config with keyPairs
       vi.mocked(configModule.getDefaultNetworkConfig).mockReturnValue({
         ...mockNetworkConfig,
-        keyPairs: [{
-          account: "test-account",
-          publicKey: "public-key",
-          secretKey: "secret-key",
-        }],
+        keyPairs: [
+          {
+            account: "test-account",
+            publicKey: "public-key",
+            secretKey: "secret-key",
+          },
+        ],
       } as any);
-      
+
       const network = new PactToolboxNetwork(configWithAccounts);
       await network.start({ logAccounts: true } as any);
-      
+
       expect(nodeUtilsModule.logger.log).toHaveBeenCalledWith(expect.stringContaining("Network Accounts:"));
     });
   });
@@ -200,7 +200,7 @@ describe("PactToolboxNetwork", () => {
   describe("getters", () => {
     it("should return network information", () => {
       const network = new PactToolboxNetwork(mockConfig);
-      
+
       expect(network.getPort()).toBe(8080);
       expect(network.getRpcUrl()).toBe("http://localhost:8080");
       expect(network.hasOnDemandMining()).toBe(false);

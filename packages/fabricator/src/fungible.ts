@@ -24,8 +24,8 @@ export function generateFungible(context: FungibleContext): string {
   const fullContext = {
     name: context.name,
     namespace: context.namespace ?? "free",
-    adminKeyset: context.adminKeyset ?? "admin-keyset"
+    adminKeyset: context.adminKeyset ?? "admin-keyset",
   };
-  
+
   return fillTemplatePlaceholders(TEMPLATE.trim(), fullContext);
 }

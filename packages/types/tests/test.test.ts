@@ -1,11 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type {
-  ChainId,
-  PactCommand,
-  PactKeyset,
-  NetworkMeta,
-} from "../src";
+import type { ChainId, PactCommand, PactKeyset, NetworkMeta } from "../src";
 
 describe("@pact-toolbox/types", () => {
   it("should export all expected types", () => {
@@ -41,7 +36,7 @@ describe("@pact-toolbox/types", () => {
       networkId: "mainnet01",
       nonce: "test-nonce",
     };
-    
+
     expect(command.payload?.exec?.code).toBe("(+ 1 2)");
     expect(command.meta?.chainId).toBe("0");
   });

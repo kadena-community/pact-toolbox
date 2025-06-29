@@ -10,9 +10,7 @@ describe("chainwebApi", () => {
 
   describe("isChainWebNodeOk", () => {
     it("returns true when health check passes", async () => {
-      global.fetch = vi.fn().mockResolvedValue(
-        new Response("Health check OK.", { status: 200, statusText: "OK" })
-      );
+      global.fetch = vi.fn().mockResolvedValue(new Response("Health check OK.", { status: 200, statusText: "OK" }));
 
       const result = await isChainWebNodeOk("http://example.com");
 
@@ -26,7 +24,7 @@ describe("chainwebApi", () => {
         new Response("Service unavailable", {
           status: 503,
           statusText: "Service Unavailable",
-        })
+        }),
       );
 
       const result = await isChainWebNodeOk("http://example.com");
@@ -36,9 +34,7 @@ describe("chainwebApi", () => {
     });
 
     it("returns false when health check response does not contain expected message", async () => {
-      global.fetch = vi.fn().mockResolvedValue(
-        new Response("Some other message", { status: 200, statusText: "OK" })
-      );
+      global.fetch = vi.fn().mockResolvedValue(new Response("Some other message", { status: 200, statusText: "OK" }));
 
       const result = await isChainWebNodeOk("http://example.com");
 
@@ -68,7 +64,7 @@ describe("chainwebApi", () => {
       isChainWebNodeOk("http://example.com", 100);
 
       // Wait a bit to let the timeout trigger
-      await new Promise(resolve => setTimeout(resolve, 150));
+      await new Promise((resolve) => setTimeout(resolve, 150));
 
       expect(abortSpy).toHaveBeenCalled();
     });
@@ -78,26 +74,23 @@ describe("chainwebApi", () => {
     it("returns true when height is greater than or equal to targetHeight", async () => {
       const mockResponse = { height: 100 };
 
-      global.fetch = vi.fn().mockResolvedValue(
-        new Response(JSON.stringify(mockResponse), { status: 200, statusText: "OK" })
-      );
+      global.fetch = vi
+        .fn()
+        .mockResolvedValue(new Response(JSON.stringify(mockResponse), { status: 200, statusText: "OK" }));
 
       const result = await isChainWebAtHeight(50, "http://example.com");
 
       expect(result).toBe(true);
       expect(fetch).toHaveBeenCalledTimes(1);
-      expect(fetch).toHaveBeenCalledWith(
-        "http://example.com/chainweb/0.0/development/cut",
-        expect.any(Object)
-      );
+      expect(fetch).toHaveBeenCalledWith("http://example.com/chainweb/0.0/development/cut", expect.any(Object));
     });
 
     it("returns false when height is less than targetHeight", async () => {
       const mockResponse = { height: 40 };
 
-      global.fetch = vi.fn().mockResolvedValue(
-        new Response(JSON.stringify(mockResponse), { status: 200, statusText: "OK" })
-      );
+      global.fetch = vi
+        .fn()
+        .mockResolvedValue(new Response(JSON.stringify(mockResponse), { status: 200, statusText: "OK" }));
 
       const result = await isChainWebAtHeight(50, "http://example.com");
 
@@ -110,7 +103,7 @@ describe("chainwebApi", () => {
         new Response("Service unavailable", {
           status: 503,
           statusText: "Service Unavailable",
-        })
+        }),
       );
 
       const result = await isChainWebAtHeight(50, "http://example.com");
@@ -122,9 +115,9 @@ describe("chainwebApi", () => {
     it("returns false when response has invalid height data", async () => {
       const mockResponse = { notHeight: "invalid" };
 
-      global.fetch = vi.fn().mockResolvedValue(
-        new Response(JSON.stringify(mockResponse), { status: 200, statusText: "OK" })
-      );
+      global.fetch = vi
+        .fn()
+        .mockResolvedValue(new Response(JSON.stringify(mockResponse), { status: 200, statusText: "OK" }));
 
       const result = await isChainWebAtHeight(50, "http://example.com");
 
@@ -133,9 +126,7 @@ describe("chainwebApi", () => {
     });
 
     it("returns false when response is not valid JSON", async () => {
-      global.fetch = vi.fn().mockResolvedValue(
-        new Response("Invalid JSON", { status: 200, statusText: "OK" })
-      );
+      global.fetch = vi.fn().mockResolvedValue(new Response("Invalid JSON", { status: 200, statusText: "OK" }));
 
       const result = await isChainWebAtHeight(50, "http://example.com");
 
@@ -157,9 +148,9 @@ describe("chainwebApi", () => {
     it("successfully makes blocks with default parameters", async () => {
       const mockResponseData = { success: true };
 
-      global.fetch = vi.fn().mockResolvedValue(
-        new Response(JSON.stringify(mockResponseData), { status: 200, statusText: "OK" })
-      );
+      global.fetch = vi
+        .fn()
+        .mockResolvedValue(new Response(JSON.stringify(mockResponseData), { status: 200, statusText: "OK" }));
 
       const params: MakeBlocksParams = {
         onDemandUrl: "http://example.com",
@@ -175,16 +166,16 @@ describe("chainwebApi", () => {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ "0": 1 }),
-        })
+        }),
       );
     });
 
     it("successfully makes blocks with custom parameters", async () => {
       const mockResponseData = { success: true };
 
-      global.fetch = vi.fn().mockResolvedValue(
-        new Response(JSON.stringify(mockResponseData), { status: 200, statusText: "OK" })
-      );
+      global.fetch = vi
+        .fn()
+        .mockResolvedValue(new Response(JSON.stringify(mockResponseData), { status: 200, statusText: "OK" }));
 
       const params: MakeBlocksParams = {
         count: 2,
@@ -202,7 +193,7 @@ describe("chainwebApi", () => {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ "0": 2, "1": 2 }),
-        })
+        }),
       );
     });
 
@@ -211,7 +202,7 @@ describe("chainwebApi", () => {
         new Response("Service unavailable", {
           status: 500,
           statusText: "Internal Server Error",
-        })
+        }),
       );
 
       const params: MakeBlocksParams = {
@@ -220,9 +211,7 @@ describe("chainwebApi", () => {
         onDemandUrl: "http://example.com",
       };
 
-      await expect(makeBlocks(params)).rejects.toThrow(
-        "Failed to make blocks 500 Internal Server Error"
-      );
+      await expect(makeBlocks(params)).rejects.toThrow("Failed to make blocks 500 Internal Server Error");
 
       expect(fetch).toHaveBeenCalledTimes(1);
     });
@@ -246,9 +235,9 @@ describe("chainwebApi", () => {
     it("returns true when makeBlocks succeeds", async () => {
       const mockResponseData = { success: true };
 
-      global.fetch = vi.fn().mockResolvedValue(
-        new Response(JSON.stringify(mockResponseData), { status: 200, statusText: "OK" })
-      );
+      global.fetch = vi
+        .fn()
+        .mockResolvedValue(new Response(JSON.stringify(mockResponseData), { status: 200, statusText: "OK" }));
 
       const params: MakeBlocksParams = {
         count: 2,

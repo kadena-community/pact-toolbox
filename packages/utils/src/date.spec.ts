@@ -15,7 +15,7 @@ describe("formatDate", () => {
   it("should format Date object", () => {
     const date = new Date("2023-12-25T10:30:00Z");
     const result = formatDate(date);
-    
+
     // Result will vary based on locale and timezone, but should include the date components
     expect(result).toMatch(/Dec/); // December
     expect(result).toMatch(/25/); // Day
@@ -25,7 +25,7 @@ describe("formatDate", () => {
   it("should format date string", () => {
     const dateString = "2023-12-25T10:30:00Z";
     const result = formatDate(dateString);
-    
+
     // Should produce the same result as Date object
     const dateResult = formatDate(new Date(dateString));
     expect(result).toBe(dateResult);
@@ -68,7 +68,7 @@ describe("formatDate", () => {
   it("should handle invalid date strings", () => {
     const invalidDate = "invalid-date";
     const result = formatDate(invalidDate);
-    
+
     // Invalid dates in JS still parse to a valid date sometimes
     // So we just check it returns a string
     expect(typeof result).toBe("string");
@@ -77,7 +77,7 @@ describe("formatDate", () => {
   it("should format current date", () => {
     const now = new Date();
     const result = formatDate(now);
-    
+
     // Should return a non-empty string
     expect(typeof result).toBe("string");
     expect(result.length).toBeGreaterThan(0);
@@ -86,17 +86,17 @@ describe("formatDate", () => {
   it("should format dates consistently", () => {
     const date1 = new Date("2023-01-01T00:00:00Z");
     const date2 = new Date("2023-01-01T00:00:00Z");
-    
+
     const result1 = formatDate(date1);
     const result2 = formatDate(date2);
-    
+
     expect(result1).toBe(result2);
   });
 
   it("should include all time components", () => {
     const date = new Date("2023-12-25T15:45:30Z");
     const result = formatDate(date);
-    
+
     // Should include hours, minutes, seconds (exact format depends on locale)
     // Just verify the result is not empty and is a string
     expect(typeof result).toBe("string");

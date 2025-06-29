@@ -24,17 +24,17 @@ export interface RunBinOptions {
 /**
  * Runs a binary/executable with advanced control over process lifecycle.
  * Automatically registers cleanup handlers to ensure child processes are terminated on exit.
- * 
+ *
  * @param bin - The binary/executable to run
  * @param args - Arguments to pass to the binary
  * @param options - Configuration options
  * @returns Promise resolving to the child process
- * 
+ *
  * @example
  * ```typescript
  * // Run a simple command
  * const child = await runBin('node', ['--version']);
- * 
+ *
  * // Run with custom resolution condition
  * const server = await runBin('node', ['server.js'], {
  *   resolveIf: (output) => output.includes('Server started on port'),
@@ -107,9 +107,9 @@ export function runBin(
 /**
  * Kills all processes matching the given name.
  * Cross-platform implementation using taskkill on Windows and pkill on Unix-like systems.
- * 
+ *
  * @param name - The process name to kill (without .exe extension on Windows)
- * 
+ *
  * @example
  * ```typescript
  * await killProcess('node');
@@ -158,23 +158,23 @@ export interface SimpleProcessOptions {
 /**
  * Spawns a long-running process with simple monitoring.
  * Automatically registers cleanup handlers to ensure child processes are terminated on exit.
- * 
+ *
  * @param command - The command to execute
  * @param args - Arguments to pass to the command
  * @param options - Configuration options
  * @returns The spawned child process
- * 
+ *
  * @example
  * ```typescript
  * // Spawn a simple process
  * const child = spawnProcess('npm', ['run', 'dev']);
- * 
+ *
  * // Spawn with custom options
  * const server = spawnProcess('node', ['server.js'], {
  *   cwd: '/path/to/project',
  *   env: { ...process.env, PORT: '3000' }
  * });
- * 
+ *
  * // Handle process output
  * child.stdout?.on('data', (data) => {
  *   console.log(`Output: ${data}`);
@@ -205,10 +205,10 @@ export function spawnProcess(command: string, args: string[] = [], options: Simp
 /**
  * Checks if a process is running by PID.
  * Uses signal 0 to test process existence without actually sending a signal.
- * 
+ *
  * @param pid - The process ID to check
  * @returns true if the process is running, false otherwise
- * 
+ *
  * @example
  * ```typescript
  * if (isProcessRunning(12345)) {
@@ -228,10 +228,10 @@ export function isProcessRunning(pid: number): boolean {
 /**
  * Gets basic process information by PID.
  * Cross-platform implementation using tasklist on Windows and ps on Unix-like systems.
- * 
+ *
  * @param pid - The process ID to get information for
  * @returns Process information or null if process not found
- * 
+ *
  * @example
  * ```typescript
  * const info = await getProcessInfo(process.pid);

@@ -88,7 +88,7 @@ export async function runReplTests(
     return;
   }
 
-  stopSpinner(true, `Found ${testFiles.length} REPL test file${testFiles.length > 1 ? 's' : ''}`);
+  stopSpinner(true, `Found ${testFiles.length} REPL test file${testFiles.length > 1 ? "s" : ""}`);
 
   infoUI("repl-test", `${testFiles.length} tests found.`);
   updateSpinner(`Running REPL tests...`);
@@ -130,10 +130,10 @@ export async function runReplTests(
 
   // Create results table
   const tableHeaders = ["Status", "File", "Duration"];
-  const tableRows = allResults.map(result => [
+  const tableRows = allResults.map((result) => [
     result.status === "passed" ? "PASS" : "FAIL",
     result.filePath,
-    `${result.duration}ms`
+    `${result.duration}ms`,
   ]);
 
   table(tableHeaders, tableRows);
@@ -153,7 +153,7 @@ export async function runReplTests(
   infoUI("repl-test", "");
   boxMessage("REPL Test-runner Summary", [
     `Test Suites: ${failedTests.length > 0 ? `${failedTests.length} failed, ` : ""}${passedTests.length} passed, ${allResults.length} total`,
-    `Time: ${(totalDuration / 1000).toFixed(2)}s`
+    `Time: ${(totalDuration / 1000).toFixed(2)}s`,
   ]);
   infoUI("repl-test", "");
 

@@ -40,9 +40,7 @@ describe("port", () => {
 
       await getRandomNetworkPorts("192.168.1.1");
 
-      expect(getPortPlease.getPort).toHaveBeenCalledWith(
-        expect.objectContaining({ host: "192.168.1.1" })
-      );
+      expect(getPortPlease.getPort).toHaveBeenCalledWith(expect.objectContaining({ host: "192.168.1.1" }));
     });
 
     it("should use custom gaps", async () => {
@@ -59,34 +57,24 @@ describe("port", () => {
         expect.objectContaining({
           port: 5050,
           portRange: [5050, 5100],
-        })
+        }),
       );
     });
 
     it("should throw error for invalid gap values", async () => {
-      await expect(getRandomNetworkPorts("127.0.0.1", -1, 100)).rejects.toThrow(
-        "Invalid port gap values"
-      );
+      await expect(getRandomNetworkPorts("127.0.0.1", -1, 100)).rejects.toThrow("Invalid port gap values");
 
-      await expect(getRandomNetworkPorts("127.0.0.1", 0, 100)).rejects.toThrow(
-        "Invalid port gap values"
-      );
+      await expect(getRandomNetworkPorts("127.0.0.1", 0, 100)).rejects.toThrow("Invalid port gap values");
 
-      await expect(getRandomNetworkPorts("127.0.0.1", 100, 50)).rejects.toThrow(
-        "Invalid port gap values"
-      );
+      await expect(getRandomNetworkPorts("127.0.0.1", 100, 50)).rejects.toThrow("Invalid port gap values");
 
-      await expect(getRandomNetworkPorts("127.0.0.1", 10, 70000)).rejects.toThrow(
-        "Invalid port gap values"
-      );
+      await expect(getRandomNetworkPorts("127.0.0.1", 10, 70000)).rejects.toThrow("Invalid port gap values");
     });
 
     it("should throw error if getPort fails", async () => {
       vi.mocked(getPortPlease.getPort).mockRejectedValue(new Error("Port allocation failed"));
 
-      await expect(getRandomNetworkPorts()).rejects.toThrow(
-        "Failed to get network ports: Port allocation failed"
-      );
+      await expect(getRandomNetworkPorts()).rejects.toThrow("Failed to get network ports: Port allocation failed");
     });
 
     it("should pass correct names to getPort", async () => {

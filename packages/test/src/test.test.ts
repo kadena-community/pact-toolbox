@@ -28,7 +28,7 @@ vi.mock("@pact-toolbox/config", async () => {
     downloadPreludes: true,
     deployPreludes: true,
   };
-  
+
   return {
     ...actual,
     resolveConfig: vi.fn().mockResolvedValue(mockConfig),
@@ -52,7 +52,7 @@ vi.mock("@pact-toolbox/node-utils", async () => {
       directoriesFoundNamesToPaths: {},
       filesFoundNamesToPaths: {
         "test1.repl": ["./contracts/test1.repl"],
-        "test2.repl": ["./contracts/test2.repl"]
+        "test2.repl": ["./contracts/test2.repl"],
       },
       symlinksFoundNamesToPaths: {},
     }),
@@ -113,75 +113,78 @@ describe("@pact-toolbox/test", () => {
     filesFound: files,
     symlinksFound: [],
     directoriesFoundNames: new Set<string>(),
-    filesFoundNames: new Set(files.map(f => f.split('/').pop() || '')),
+    filesFoundNames: new Set(files.map((f) => f.split("/").pop() || "")),
     symlinksFoundNames: new Set<string>(),
     directoriesFoundNamesToPaths: {},
-    filesFoundNamesToPaths: files.reduce((acc, file) => {
-      const name = file.split('/').pop() || '';
-      if (!acc[name]) acc[name] = [];
-      acc[name].push(file);
-      return acc;
-    }, {} as Record<string, string[]>),
+    filesFoundNamesToPaths: files.reduce(
+      (acc, file) => {
+        const name = file.split("/").pop() || "";
+        if (!acc[name]) acc[name] = [];
+        acc[name].push(file);
+        return acc;
+      },
+      {} as Record<string, string[]>,
+    ),
     symlinksFoundNamesToPaths: {},
   });
 
   describe("runReplTests", () => {
     test("runs with default config when no config provided", async () => {
       const { glob } = await import("@pact-toolbox/node-utils");
-      
+
       vi.mocked(glob).mockResolvedValue(createMockGlobResult(["test1.repl", "test2.repl"]));
 
       await runReplTests();
-      
+
       expect(glob).toHaveBeenCalledWith(
         "**/*.repl",
         expect.objectContaining({
           ignore: ["prelude/**"],
-        })
+        }),
       );
     });
 
     test("runs with provided config", async () => {
       const { glob } = await import("@pact-toolbox/node-utils");
-      
+
       vi.mocked(glob).mockResolvedValue(createMockGlobResult(["custom-test.repl"]));
 
       await runReplTests();
-      
+
       expect(glob).toHaveBeenCalled();
     });
 
     test("handles empty test results", async () => {
       const { glob } = await import("@pact-toolbox/node-utils");
-      
+
       vi.mocked(glob).mockResolvedValue(createMockGlobResult([]));
 
       await runReplTests();
-      
+
       expect(glob).toHaveBeenCalled();
     });
 
     test("processes multiple test files", async () => {
       const { glob, execAsync } = await import("@pact-toolbox/node-utils");
-      
+
       vi.mocked(glob).mockResolvedValue(createMockGlobResult(["test1.repl", "test2.repl", "test3.repl"]));
 
       await runReplTests();
-      
+
       expect(glob).toHaveBeenCalled();
       expect(execAsync).toHaveBeenCalledTimes(3);
     });
 
     test("ignores prelude directory by default", async () => {
       const { glob } = await import("@pact-toolbox/node-utils");
-      
+
       await runReplTests();
-      
+
       expect(glob).toHaveBeenCalledWith(
         "**/*.repl",
         expect.objectContaining({
           ignore: ["prelude/**"],
-        })
+        }),
       );
     });
   });
@@ -234,7 +237,7 @@ describe("@pact-toolbox/test", () => {
   describe("utility functions", () => {
     test("getConfigOverrides returns valid config object", async () => {
       const { getConfigOverrides } = await import("./utils");
-      
+
       const overrides = getConfigOverrides({
         contractsDir: "./test-contracts",
       });
@@ -244,7 +247,7 @@ describe("@pact-toolbox/test", () => {
 
     test("injectNetworkConfig sets global variables", async () => {
       const { injectNetworkConfig } = await import("./utils");
-      
+
       const config = {
         networks: {
           testnet: {

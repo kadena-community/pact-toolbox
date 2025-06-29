@@ -52,11 +52,7 @@ await verifySignature(
   signedCommand2.hash,
 );
 
-verifySig(
-  signedCommand2.hash,
-  fromHex(signedCommand2.sigs[0]!.sig!) as SignatureBytes,
-  fromHex(keyPair.publicKey),
-);
+verifySig(signedCommand2.hash, fromHex(signedCommand2.sigs[0]!.sig!) as SignatureBytes, fromHex(keyPair.publicKey));
 const bench = new Bench({
   warmup: true,
   // time: 100000,
@@ -87,11 +83,7 @@ bench
       nonce: "some-nonce",
     };
     const [signedCommand] = await signer.signPactCommands([command]);
-    verifySig(
-      signedCommand.hash,
-      fromHex(signedCommand.sigs[0]!.sig!) as SignatureBytes,
-      fromHex(keyPair.publicKey),
-    );
+    verifySig(signedCommand.hash, fromHex(signedCommand.sigs[0]!.sig!) as SignatureBytes, fromHex(keyPair.publicKey));
   })
   .add("@pact-toolbox/signers -> keyPairSigner", async () => {
     const signer = await KeyPairSigner.generate();

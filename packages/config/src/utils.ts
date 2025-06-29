@@ -140,9 +140,7 @@ export function getDefaultNetworkConfig(config: PactToolboxConfigObj, network?: 
 
   if (!found) {
     const availableNetworks = Object.keys(config.networks).join(", ");
-    throw new Error(
-      `Network "${networkName}" not found in config. Available networks: ${availableNetworks || "none"}`
-    );
+    throw new Error(`Network "${networkName}" not found in config. Available networks: ${availableNetworks || "none"}`);
   }
 
   // Create a copy to avoid mutating the original network config
@@ -163,9 +161,7 @@ function getNetworkByName(config: PactToolboxConfigObj, networkName: string): Ne
   const found = config.networks[networkName];
   if (!found) {
     const availableNetworks = Object.keys(config.networks).join(", ");
-    throw new Error(
-      `Network "${networkName}" not found in config. Available networks: ${availableNetworks || "none"}`
-    );
+    throw new Error(`Network "${networkName}" not found in config. Available networks: ${availableNetworks || "none"}`);
   }
 
   // Create a copy to avoid mutating the original network config

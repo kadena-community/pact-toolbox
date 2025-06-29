@@ -66,7 +66,7 @@ const cleanupHandler = new CleanupHandler();
 
 /**
  * Registers a cleanup function to be executed when the process exits.
- * 
+ *
  * The cleanup function will be called on:
  * - SIGINT (Ctrl+C)
  * - SIGTERM (termination signal)
@@ -75,19 +75,19 @@ const cleanupHandler = new CleanupHandler();
  * - Normal process exit
  * - Uncaught exceptions
  * - Unhandled promise rejections
- * 
+ *
  * Multiple cleanup functions can be registered and will be executed in the order
  * they were registered. If a cleanup function throws an error, it will be logged
  * but won't prevent other cleanup functions from running.
- * 
+ *
  * @param cleanupFn - The cleanup function to register
- * 
+ *
  * @example
  * ```typescript
  * import { cleanupOnExit } from '@pact-toolbox/node-utils';
- * 
+ *
  * const server = createServer();
- * 
+ *
  * cleanupOnExit(async () => {
  *   await server.close();
  *   console.log('Server closed gracefully');

@@ -15,12 +15,12 @@ describe("MarmaladeService", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
     mockContext = {
       getDefaultSigner: vi.fn().mockReturnValue({ address: "sender00", pubKey: "test-key" }),
-      getSignerKeys: vi.fn().mockReturnValue({ publicKey: "test-key", privateKey: "test-private" })
+      getSignerKeys: vi.fn().mockReturnValue({ publicKey: "test-key", privateKey: "test-private" }),
     } as any;
-    
+
     marmaladeService = new MarmaladeService({
       context: mockContext,
       defaultChainId: "0",

@@ -24,27 +24,21 @@ async function isOpenSSLAvailable(): Promise<boolean> {
  */
 async function generateSelfSignedCert(certPath: string, keyPath: string): Promise<void> {
   const hasOpenSSL = await isOpenSSLAvailable();
-  
+
   if (!hasOpenSSL) {
     logger.warn("OpenSSL not found. Using fallback certificates.");
-    await Promise.all([
-      writeFile(certPath, DEFAULT_CERTIFICATE),
-      writeFile(keyPath, DEFAULT_KEY)
-    ]);
+    await Promise.all([writeFile(certPath, DEFAULT_CERTIFICATE), writeFile(keyPath, DEFAULT_KEY)]);
     return;
   }
 
   try {
     // Generate RSA key
-    execSync(
-      `openssl genpkey -algorithm RSA -out "${keyPath}" -pkeyopt rsa_keygen_bits:2048`,
-      { stdio: "pipe" }
-    );
-    
+    execSync(`openssl genpkey -algorithm RSA -out "${keyPath}" -pkeyopt rsa_keygen_bits:2048`, { stdio: "pipe" });
+
     // Generate certificate
     execSync(
       `openssl req -new -x509 -key "${keyPath}" -out "${certPath}" -days 365 -subj "/CN=devnet-bootstrap-node" -nodes`,
-      { stdio: "pipe" }
+      { stdio: "pipe" },
     );
   } catch (error) {
     logger.error("Failed to generate certificate with OpenSSL:", error);
@@ -58,10 +52,7 @@ async function generateSelfSignedCert(certPath: string, keyPath: string): Promis
 export async function ensureCertificates(certPath: string, keyPath: string): Promise<void> {
   try {
     // Check if both files exist
-    await Promise.all([
-      access(certPath),
-      access(keyPath)
-    ]);
+    await Promise.all([access(certPath), access(keyPath)]);
   } catch {
     // Generate if missing
     await generateSelfSignedCert(certPath, keyPath);

@@ -10,13 +10,7 @@ import {
 } from "@pact-toolbox/crypto";
 import type { PactCommand, PartiallySignedTransaction } from "@pact-toolbox/types";
 import { beforeEach, describe, expect, test, vi } from "vitest";
-import {
-  KeyPairSigner,
-  NoopSigner,
-  createSignableMessage,
-  isKeyPairSigner,
-  isSigner,
-} from "./signer";
+import { KeyPairSigner, NoopSigner, createSignableMessage, isKeyPairSigner, isSigner } from "./signer";
 import { finalizeTransaction } from "./utils";
 
 // Mock crypto for deterministic tests
@@ -208,11 +202,12 @@ describe("@pact-toolbox/signers", () => {
     test("handles abort signal", async () => {
       const abortController = new AbortController();
       abortController.abort();
-      
+
       const message = createSignableMessage("Test");
 
-      await expect(signer.signMessages!([message], { abortSignal: abortController.signal }))
-        .rejects.toThrow("Operation aborted");
+      await expect(signer.signMessages!([message], { abortSignal: abortController.signal })).rejects.toThrow(
+        "Operation aborted",
+      );
     });
   });
 
@@ -283,8 +278,9 @@ describe("@pact-toolbox/signers", () => {
       const abortController = new AbortController();
       abortController.abort();
 
-      await expect(signer.signPactCommands([mockCommand], { abortSignal: abortController.signal }))
-        .rejects.toThrow("Operation aborted");
+      await expect(signer.signPactCommands([mockCommand], { abortSignal: abortController.signal })).rejects.toThrow(
+        "Operation aborted",
+      );
     });
   });
 

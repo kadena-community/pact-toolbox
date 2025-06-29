@@ -9,7 +9,7 @@ import type { KeyPair } from "@pact-toolbox/types";
  * ```typescript
  * // Looks for PACT_TOOLBOX_PUBLIC_KEY and PACT_TOOLBOX_SECRET_KEY
  * const signer = getSignerFromEnvVars();
- * 
+ *
  * // Looks for DEVNET_PUBLIC_KEY and DEVNET_SECRET_KEY
  * const devnetSigner = getSignerFromEnvVars('DEVNET');
  * ```

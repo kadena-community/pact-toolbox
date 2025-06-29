@@ -19,10 +19,10 @@ export type SignerConfig = Readonly<{
 export interface Signer<TAddress extends string = string> {
   readonly address: Address<TAddress>;
   readonly keyPair?: CryptoKeyPair; // Optional for external signers (wallets)
-  
+
   // Core Kadena functionality - sign Pact commands
   signPactCommands(commands: PactCommand[], config?: SignerConfig): Promise<PartiallySignedTransaction[]>;
-  
+
   // Optional message signing for arbitrary data
   signMessages?(messages: readonly SignableMessage[], config?: SignerConfig): Promise<readonly SignatureDictionary[]>;
 }

@@ -1,9 +1,4 @@
-import type {
-  NetworkConfig,
-  PactServerConfig,
-  DevNetContainerConfig,
-  DevNetMiningConfig,
-} from "./config";
+import type { NetworkConfig, PactServerConfig, DevNetContainerConfig, DevNetMiningConfig } from "./config";
 import type { NetworkMeta } from "@pact-toolbox/types";
 
 /**
@@ -45,9 +40,9 @@ export function validateUrl(url: unknown, field: string): string {
 
   // Allow placeholders in URLs - replace with valid values for validation
   const urlWithoutPlaceholders = url
-    .replace(/{port}/g, "9091")           // Replace {port} with valid port
-    .replace(/{networkId}/g, "testnet")   // Replace {networkId} with valid network ID
-    .replace(/{chainId}/g, "0");          // Replace {chainId} with valid chain ID
+    .replace(/{port}/g, "9091") // Replace {port} with valid port
+    .replace(/{networkId}/g, "testnet") // Replace {networkId} with valid network ID
+    .replace(/{chainId}/g, "0"); // Replace {chainId} with valid chain ID
 
   try {
     new URL(urlWithoutPlaceholders);

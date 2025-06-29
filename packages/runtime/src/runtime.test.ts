@@ -47,7 +47,7 @@ vi.mock("@pact-toolbox/wallet-adapters/keypair", () => {
     connect: vi.fn().mockResolvedValue(undefined),
     disconnect: vi.fn().mockResolvedValue(undefined),
   };
-  
+
   return {
     KeypairWallet: vi.fn(() => mockWallet),
   };
@@ -115,7 +115,7 @@ describe("@pact-toolbox/runtime", () => {
 
     // Setup mock context with proper return values
     mockContext = {
-      getCurrentNetworkConfig: vi.fn().mockReturnValue(mockConfig.networks['default']),
+      getCurrentNetworkConfig: vi.fn().mockReturnValue(mockConfig.networks["default"]),
       getNetworkId: vi.fn().mockReturnValue("devnet"),
       getMeta: vi.fn().mockReturnValue({ chainId: "0" }),
       getSignerKeys: vi.fn().mockReturnValue({
@@ -129,8 +129,8 @@ describe("@pact-toolbox/runtime", () => {
         scheme: "ED25519",
       }),
       getClient: vi.fn().mockReturnValue({}),
-      getNetworkConfig: vi.fn().mockReturnValue(mockConfig.networks['default']),
-      getAllNetworkConfigs: vi.fn().mockReturnValue([mockConfig.networks['default']]),
+      getNetworkConfig: vi.fn().mockReturnValue(mockConfig.networks["default"]),
+      getAllNetworkConfigs: vi.fn().mockReturnValue([mockConfig.networks["default"]]),
       getAvailableNetworks: vi.fn().mockReturnValue(["default"]),
       switchNetwork: vi.fn().mockResolvedValue(undefined),
       isNetworkAvailable: vi.fn().mockReturnValue(true),
@@ -145,9 +145,9 @@ describe("@pact-toolbox/runtime", () => {
     // Get mocked module and set up return values
     const { createToolboxNetworkContext } = await import("@pact-toolbox/transaction");
     vi.mocked(createToolboxNetworkContext).mockReturnValue(mockContext);
-    
+
     // Set up mock context methods to return proper values
-    mockContext.getCurrentNetworkConfig.mockReturnValue(mockConfig.networks['default']);
+    mockContext.getCurrentNetworkConfig.mockReturnValue(mockConfig.networks["default"]);
     mockContext.getNetworkId.mockReturnValue("devnet");
     mockContext.getMeta.mockReturnValue({ chainId: "0" });
     mockContext.getSignerKeys.mockReturnValue({
@@ -160,8 +160,8 @@ describe("@pact-toolbox/runtime", () => {
       address: "sender00",
       scheme: "ED25519",
     });
-    mockContext.getNetworkConfig.mockReturnValue(mockConfig.networks['default']);
-    mockContext.getAllNetworkConfigs.mockReturnValue([mockConfig.networks['default']]);
+    mockContext.getNetworkConfig.mockReturnValue(mockConfig.networks["default"]);
+    mockContext.getAllNetworkConfigs.mockReturnValue([mockConfig.networks["default"]]);
     mockContext.getAvailableNetworks.mockReturnValue(["default"]);
     mockContext.isNetworkAvailable.mockReturnValue(true);
     mockContext.getNetworkType.mockReturnValue("chainweb-devnet");
@@ -213,7 +213,7 @@ describe("@pact-toolbox/runtime", () => {
       };
 
       // Update mock context to return pact-server config
-      mockContext.getCurrentNetworkConfig.mockReturnValue(pactServerConfig.networks['default']);
+      mockContext.getCurrentNetworkConfig.mockReturnValue(pactServerConfig.networks["default"]);
       mockContext.getNetworkType.mockReturnValue("pact-server");
 
       const pactClient = new PactToolboxClient(pactServerConfig);
@@ -239,7 +239,7 @@ describe("@pact-toolbox/runtime", () => {
       };
 
       // Update mock context to return chainweb config
-      mockContext.getCurrentNetworkConfig.mockReturnValue(chainwebConfig.networks['default']);
+      mockContext.getCurrentNetworkConfig.mockReturnValue(chainwebConfig.networks["default"]);
       mockContext.getNetworkType.mockReturnValue("chainweb");
 
       const chainwebClient = new PactToolboxClient(chainwebConfig);

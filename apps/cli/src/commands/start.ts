@@ -44,21 +44,21 @@ export const startCommand = defineCommand({
   run: async ({ args }) => {
     const config = await resolveConfig();
     const { network, quiet, tunnel } = args;
-    
+
     // Show startup message if not in quiet mode
     if (!quiet && !tunnel) {
       clear();
       boxMessage("Pact Toolbox DevNet", ["Starting development network..."]);
       log("info", "cli", "Starting Pact Toolbox DevNet...");
     }
-    
+
     const networkInstance = await createNetwork(config, {
       detached: !quiet && !tunnel,
       logAccounts: true,
       autoStart: true,
       network,
     });
-    
+
     // Setup cleanup handlers
     const cleanup = async () => {
       log("info", "cli", "Shutting down network...");
@@ -77,7 +77,7 @@ export const startCommand = defineCommand({
     process.on("exit", () => {
       // Synchronous cleanup if needed
     });
-    
+
     if (!quiet && !tunnel) {
       log("info", "cli", "DevNet started successfully");
       // Display network information
@@ -86,10 +86,10 @@ export const startCommand = defineCommand({
         `Network ID: ${networkInstance.getNetworkName()}`,
         "Status: running",
         "",
-        "Press Ctrl+C to stop"
+        "Press Ctrl+C to stop",
       ]);
     }
-    
+
     if (quiet || tunnel) {
       process.exit(0);
     } else {

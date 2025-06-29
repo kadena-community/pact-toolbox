@@ -5,7 +5,7 @@ describe("@pact-toolbox/node-utils", () => {
   it("should export all utilities from index", () => {
     // Cleanup utilities
     expect(nodeUtils).toHaveProperty("cleanupOnExit");
-    
+
     // Filesystem utilities
     expect(nodeUtils).toHaveProperty("ensureDir");
     expect(nodeUtils).toHaveProperty("writeFile");
@@ -21,16 +21,16 @@ describe("@pact-toolbox/node-utils", () => {
     expect(nodeUtils).toHaveProperty("glob");
     expect(nodeUtils).toHaveProperty("watch");
     expect(nodeUtils).toHaveProperty("matchPattern");
-    
+
     // Path utilities (from pathe)
     expect(nodeUtils).toHaveProperty("join");
     expect(nodeUtils).toHaveProperty("resolve");
     expect(nodeUtils).toHaveProperty("dirname");
     expect(nodeUtils).toHaveProperty("basename");
-    
+
     // Helper utilities
     expect(nodeUtils).toHaveProperty("execAsync");
-    
+
     // Logger utilities
     expect(nodeUtils).toHaveProperty("logger");
     expect(nodeUtils).toHaveProperty("createLogger");
@@ -45,31 +45,31 @@ describe("@pact-toolbox/node-utils", () => {
     expect(nodeUtils).toHaveProperty("ready");
     expect(nodeUtils).toHaveProperty("start");
     expect(nodeUtils).toHaveProperty("colors");
-    
+
     // Object utilities
     expect(nodeUtils).toHaveProperty("defu");
     expect(nodeUtils).toHaveProperty("defuFn");
     expect(nodeUtils).toHaveProperty("defuArrayFn");
     expect(nodeUtils).toHaveProperty("createDefu");
-    
+
     // Pact utilities
     expect(nodeUtils).toHaveProperty("isAnyPactInstalled");
     expect(nodeUtils).toHaveProperty("getCurrentPactVersion");
     expect(nodeUtils).toHaveProperty("installPact");
     expect(nodeUtils).toHaveProperty("PACT_VERSION_REGEX");
-    
+
     // Port utilities
     expect(nodeUtils).toHaveProperty("getRandomNetworkPorts");
     expect(nodeUtils).toHaveProperty("isPortTaken");
     expect(nodeUtils).toHaveProperty("getRandomPort");
-    
+
     // Process utilities
     expect(nodeUtils).toHaveProperty("runBin");
     expect(nodeUtils).toHaveProperty("killProcess");
     expect(nodeUtils).toHaveProperty("spawnProcess");
     expect(nodeUtils).toHaveProperty("isProcessRunning");
     expect(nodeUtils).toHaveProperty("getProcessInfo");
-    
+
     // Prompt utilities
     expect(nodeUtils).toHaveProperty("spinner");
     expect(nodeUtils).toHaveProperty("isCancel");
@@ -78,7 +78,7 @@ describe("@pact-toolbox/node-utils", () => {
     expect(nodeUtils).toHaveProperty("intro");
     expect(nodeUtils).toHaveProperty("outro");
     expect(nodeUtils).toHaveProperty("multiselect");
-    
+
     // UI utilities
     expect(nodeUtils).toHaveProperty("startSpinner");
     expect(nodeUtils).toHaveProperty("stopSpinner");
@@ -91,7 +91,7 @@ describe("@pact-toolbox/node-utils", () => {
   it("should have proper type exports", () => {
     // Type checking happens at compile time, but we can check the shape
     const utils: typeof nodeUtils = nodeUtils;
-    
+
     // Verify it's an object with expected shape
     expect(typeof utils).toBe("object");
     expect(utils).not.toBeNull();

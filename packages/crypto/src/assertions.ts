@@ -1,10 +1,10 @@
 /**
  * @fileoverview Cryptographic Capability and Context Assertions
- * 
+ *
  * This module provides assertion functions to verify that the current environment
  * supports the required cryptographic operations. It ensures secure contexts,
  * validates SubtleCrypto availability, and checks for Ed25519 curve support.
- * 
+ *
  * These assertions are critical for security as they prevent cryptographic
  * operations from running in insecure contexts or unsupported environments.
  */
@@ -27,13 +27,13 @@ export interface ReadonlyUint8Array {
 
 /**
  * Asserts that the current context is secure for cryptographic operations.
- * 
+ *
  * In browser environments, cryptographic operations require a secure context
  * (HTTPS, localhost, or file:// protocol). This function throws an error
  * if cryptographic operations would be unavailable due to insecure context.
- * 
+ *
  * @throws {Error} When running in a browser without a secure context
- * 
+ *
  * @example
  * ```typescript
  * try {
@@ -55,14 +55,14 @@ let cachedEd25519Decision: PromiseLike<boolean> | boolean | undefined;
 
 /**
  * Checks if the Ed25519 elliptic curve is supported by the SubtleCrypto implementation.
- * 
+ *
  * Ed25519 support varies across browsers and Node.js versions. This function performs
  * a capability test by attempting to generate an Ed25519 key pair. The result is cached
  * to avoid repeated expensive operations.
- * 
+ *
  * @param subtle - The SubtleCrypto instance to test
  * @returns A promise that resolves to true if Ed25519 is supported, false otherwise
- * 
+ *
  * @example
  * ```typescript
  * const isSupported = await isEd25519CurveSupported(crypto.subtle);
@@ -95,13 +95,13 @@ async function isEd25519CurveSupported(subtle: SubtleCrypto): Promise<boolean> {
 
 /**
  * Asserts that cryptographic digest functionality is available.
- * 
+ *
  * Verifies that the environment supports secure context and that
  * SubtleCrypto.digest is available for hashing operations.
- * 
+ *
  * @throws {Error} When digest capability is not available
  * @throws {Error} When not in a secure context (browser only)
- * 
+ *
  * @example
  * ```typescript
  * try {
@@ -121,16 +121,16 @@ export function assertDigestCapabilityIsAvailable(): void {
 
 /**
  * Asserts that Ed25519 key generation is available.
- * 
+ *
  * Performs comprehensive checks for key generation capability including:
  * - Secure context verification
  * - SubtleCrypto.generateKey availability
  * - Ed25519 curve support
- * 
+ *
  * @throws {Error} When key generation capability is not available
  * @throws {Error} When Ed25519 curve is not supported
  * @throws {Error} When not in a secure context (browser only)
- * 
+ *
  * @example
  * ```typescript
  * try {
@@ -153,16 +153,16 @@ export async function assertKeyGenerationIsAvailable(): Promise<void> {
 
 /**
  * Asserts that key export functionality is available.
- * 
+ *
  * Verifies that the environment supports secure context and that
  * SubtleCrypto.exportKey is available for extracting key material.
- * 
+ *
  * **Security Note**: Key export should only be used when necessary,
  * as it exposes cryptographic key material to JavaScript.
- * 
+ *
  * @throws {Error} When key export capability is not available
  * @throws {Error} When not in a secure context (browser only)
- * 
+ *
  * @example
  * ```typescript
  * try {
@@ -182,13 +182,13 @@ export function assertKeyExporterIsAvailable(): void {
 
 /**
  * Asserts that digital signing functionality is available.
- * 
+ *
  * Verifies that the environment supports secure context and that
  * SubtleCrypto.sign is available for creating digital signatures.
- * 
+ *
  * @throws {Error} When signing capability is not available
  * @throws {Error} When not in a secure context (browser only)
- * 
+ *
  * @example
  * ```typescript
  * try {
@@ -208,13 +208,13 @@ export function assertSigningCapabilityIsAvailable(): void {
 
 /**
  * Asserts that signature verification functionality is available.
- * 
+ *
  * Verifies that the environment supports secure context and that
  * SubtleCrypto.verify is available for verifying digital signatures.
- * 
+ *
  * @throws {Error} When verification capability is not available
  * @throws {Error} When not in a secure context (browser only)
- * 
+ *
  * @example
  * ```typescript
  * try {
@@ -234,16 +234,16 @@ export function assertVerificationCapabilityIsAvailable(): void {
 
 /**
  * Asserts that cryptographically secure random number generation is available.
- * 
+ *
  * Verifies that crypto.getRandomValues is available for generating
  * cryptographically secure random values. This is essential for key generation
  * and other security-critical operations.
- * 
+ *
  * Note: This function does not require a secure context check as getRandomValues
  * is available in all contexts, unlike SubtleCrypto operations.
- * 
+ *
  * @throws {Error} When secure random number generation is not available
- * 
+ *
  * @example
  * ```typescript
  * try {
@@ -262,15 +262,15 @@ export function assertPRNGIsAvailable(): void {
 
 /**
  * Asserts that a byte array has data available for codec operations.
- * 
+ *
  * This function checks that a byte array has at least one byte available
  * for decoding operations, taking into account the specified offset.
- * 
+ *
  * @param codecDescription - Description of the codec for error messages
  * @param bytes - The byte array to check
  * @param offset - The starting offset in the byte array (default: 0)
  * @throws {Error} When the byte array is empty or offset exceeds array length
- * 
+ *
  * @example
  * ```typescript
  * try {
@@ -293,16 +293,16 @@ export function assertByteArrayIsNotEmptyForCodec(
 
 /**
  * Asserts that a byte array has sufficient bytes for codec operations.
- * 
+ *
  * This function validates that the byte array contains at least the expected
  * number of bytes for a codec operation, accounting for the specified offset.
- * 
+ *
  * @param codecDescription - Description of the codec for error messages
  * @param expected - The minimum number of bytes required
  * @param bytes - The byte array to check
  * @param offset - The starting offset in the byte array (default: 0)
  * @throws {Error} When insufficient bytes are available
- * 
+ *
  * @example
  * ```typescript
  * try {
@@ -327,17 +327,17 @@ export function assertByteArrayHasEnoughBytesForCodec(
 
 /**
  * Asserts that an offset is within valid bounds for a byte array.
- * 
+ *
  * Validates that the offset is between 0 and the byte array length (inclusive).
  * An offset equal to the byte array length is considered valid as it represents
  * the position after the last byte, which is useful for codec operations that
  * need to signal the end of data.
- * 
+ *
  * @param codecDescription - Description of the codec for error messages
  * @param offset - The offset to validate
  * @param bytesLength - The length of the byte array
  * @throws {Error} When the offset is negative or exceeds the array length
- * 
+ *
  * @example
  * ```typescript
  * try {
@@ -360,16 +360,16 @@ export function assertByteArrayOffsetIsNotOutOfRange(
 
 /**
  * Asserts that a string contains only valid characters for a specific base encoding.
- * 
+ *
  * Validates that all characters in the test string are present in the specified
  * alphabet. This is used to ensure that encoded strings are valid before
  * attempting to decode them.
- * 
+ *
  * @param alphabet - The valid character set for the encoding
  * @param testValue - The string to validate
  * @param givenValue - The original value for error reporting (defaults to testValue)
  * @throws {Error} When the string contains invalid characters
- * 
+ *
  * @example
  * ```typescript
  * try {

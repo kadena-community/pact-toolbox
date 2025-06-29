@@ -168,7 +168,7 @@ async function demonstrateComposeConverter() {
     console.log(`    - Container: ${config.name}`);
     if (config.ports) {
       const ports = Array.isArray(config.ports) ? config.ports : [config.ports];
-      console.log(`    - Ports: ${ports.map(p => `${p.host}:${p.container}`).join(", ")}`);
+      console.log(`    - Ports: ${ports.map((p) => `${p.host}:${p.container}`).join(", ")}`);
     }
     if (config.dependsOn) {
       if (Array.isArray(config.dependsOn)) {
@@ -251,7 +251,6 @@ async function demonstrateComposeConverter() {
     });
 
     console.log("\n💡 Press Ctrl+C to stop all services\n");
-
   } catch (error) {
     console.error("\n❌ Failed to start services:", error);
     await orchestrator.stopAll(true);

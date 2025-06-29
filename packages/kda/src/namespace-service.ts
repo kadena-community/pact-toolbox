@@ -55,7 +55,7 @@ export interface NamespaceResult {
 
 /**
  * Service for principal namespace operations on Kadena blockchain
- * 
+ *
  * This service focuses specifically on creating principal namespaces,
  * which are autonomously defined namespaces derived from keysets.
  */
@@ -82,17 +82,17 @@ export class NamespaceService {
     // Create canonical keyset representation for hashing
     const canonicalKeyset = {
       keys: [...adminKeyset.keys].sort(), // Sort keys for deterministic hashing
-      pred: adminKeyset.pred
+      pred: adminKeyset.pred,
     };
 
     // Serialize keyset for hashing
     const keysetStr = JSON.stringify(canonicalKeyset);
     const keysetBytes = new TextEncoder().encode(keysetStr);
-    
+
     // Hash the keyset using Blake2b
     const hashBytes = blake2b(keysetBytes, undefined, 32);
-    const hashHex = Array.from(hashBytes, byte => byte.toString(16).padStart(2, '0')).join('');
-    
+    const hashHex = Array.from(hashBytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+
     // Return principal namespace with "n_" prefix
     return `n_${hashHex}`;
   }
@@ -109,15 +109,15 @@ export class NamespaceService {
       return {
         namespace: "",
         status: "error",
-        error: "Invalid admin keyset for principal namespace creation"
+        error: "Invalid admin keyset for principal namespace creation",
       };
     }
 
     if (!validatePrincipalKeyset(userKeyset)) {
       return {
         namespace: "",
-        status: "error", 
-        error: "Invalid user keyset for principal namespace creation"
+        status: "error",
+        error: "Invalid user keyset for principal namespace creation",
       };
     }
 
@@ -134,7 +134,7 @@ export class NamespaceService {
         (define-namespace namespace-name admin-keyset user-keyset)
         { "namespace": namespace-name, "status": "ready" })`;
 
-      const transaction = await execution(pactCode)
+      const transaction = (await execution(pactCode)
         .withChainId(resolvedChainId)
         .withContext(this.config.context)
         .withMeta({
@@ -146,18 +146,18 @@ export class NamespaceService {
         .withKeyset("admin-keyset", adminKeyset)
         .withKeyset("user-keyset", userKeyset)
         .sign()
-        .submitAndListen() as Promise<PactTransactionResult>;
+        .submitAndListen()) as Promise<PactTransactionResult>;
 
       return {
         namespace: namespaceName,
         status: "success",
-        transaction: await transaction
+        transaction: await transaction,
       };
     } catch (error) {
       return {
         namespace: namespaceName,
         status: "error",
-        error: error instanceof Error ? error.message : "Unknown error"
+        error: error instanceof Error ? error.message : "Unknown error",
       };
     }
   }

@@ -30,7 +30,7 @@ export class AbortError extends Error {
  * ```typescript
  * // Simple delay
  * await delay(1000);
- * 
+ *
  * // Cancellable delay
  * const controller = new AbortController();
  * setTimeout(() => controller.abort(), 500);

@@ -2,13 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { spawn, exec } from "child_process";
 import { EventEmitter } from "events";
 import type { Readable, Writable } from "stream";
-import {
-  runBin,
-  killProcess,
-  spawnProcess,
-  isProcessRunning,
-  getProcessInfo,
-} from "../src/process";
+import { runBin, killProcess, spawnProcess, isProcessRunning, getProcessInfo } from "../src/process";
 import * as cleanup from "../src/cleanup";
 import * as helpers from "../src/helpers";
 
@@ -53,7 +47,7 @@ describe("process", () => {
   describe("runBin", () => {
     it("should spawn a process with default options", async () => {
       const promise = runBin("node", ["--version"]);
-      
+
       // Default resolveOnStart should resolve immediately
       const child = await promise;
 
@@ -140,13 +134,13 @@ describe("process", () => {
       await runBin("test", []);
 
       expect(cleanup.cleanupOnExit).toHaveBeenCalled();
-      
+
       // Get the cleanup function
       const cleanupFn = vi.mocked(cleanup.cleanupOnExit).mock.calls[0]?.[0];
-      
+
       // Execute cleanup
       if (cleanupFn) cleanupFn();
-      
+
       expect(mockChild.killed).toBe(true);
     });
 
@@ -154,14 +148,14 @@ describe("process", () => {
       await runBin("test", []);
 
       const cleanupFn = vi.mocked(cleanup.cleanupOnExit).mock.calls[0]?.[0];
-      
+
       // Kill process first
       mockChild.kill();
       const killSpy = vi.spyOn(mockChild, "kill");
-      
+
       // Execute cleanup
       if (cleanupFn) cleanupFn();
-      
+
       expect(killSpy).not.toHaveBeenCalled();
     });
   });
@@ -245,9 +239,9 @@ describe("process", () => {
       spawnProcess("test");
 
       const cleanupFn = vi.mocked(cleanup.cleanupOnExit).mock.calls[0]?.[0];
-      
+
       if (cleanupFn) cleanupFn();
-      
+
       expect(mockChild.killed).toBe(true);
     });
 
@@ -347,9 +341,7 @@ describe("process", () => {
         status: "running",
       });
 
-      expect(helpers.execAsync).toHaveBeenCalledWith(
-        'tasklist /fi "pid eq 12345" /fo csv /nh'
-      );
+      expect(helpers.execAsync).toHaveBeenCalledWith('tasklist /fi "pid eq 12345" /fo csv /nh');
 
       (process as any).kill = originalKill;
     });

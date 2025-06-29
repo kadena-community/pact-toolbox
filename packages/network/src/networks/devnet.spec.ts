@@ -54,7 +54,7 @@ describe("DevNetNetwork", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
     vi.mocked(docker.ContainerOrchestrator).mockImplementation(() => mockOrchestrator as any);
     vi.mocked(fs.rm).mockResolvedValue(undefined);
     vi.mocked(pathe.join).mockImplementation((...args) => args.join("/"));
@@ -94,10 +94,8 @@ describe("DevNetNetwork", () => {
         ...mockNetworkConfig,
         containerConfig: { port: 0 },
       };
-      
-      expect(() => new DevNetNetwork(invalidConfig, mockClient as any)).toThrow(
-        "Invalid port: 0"
-      );
+
+      expect(() => new DevNetNetwork(invalidConfig, mockClient as any)).toThrow("Invalid port: 0");
     });
 
     it("should use custom logger", () => {
@@ -110,7 +108,7 @@ describe("DevNetNetwork", () => {
     it("should start devnet successfully", async () => {
       const network = new DevNetNetwork(mockNetworkConfig, mockClient as any);
       await network.start();
-      
+
       expect(nodeUtils.ensureDir).toHaveBeenCalled();
       expect(nodeUtils.writeFile).toHaveBeenCalledTimes(3); // common, logging, nginx
       expect(mockOrchestrator.startServices).toHaveBeenCalled();
@@ -119,20 +117,20 @@ describe("DevNetNetwork", () => {
     it("should handle stateless mode", async () => {
       const network = new DevNetNetwork(mockNetworkConfig, mockClient as any);
       await network.start({ stateless: true });
-      
+
       // Stateless mode should have been set up with persistDb: false
       expect(minimal.createMinimalDevNet).toHaveBeenCalledWith(
         expect.objectContaining({
           networkName: "devnet-test-uuid-network",
           persistDb: false,
-        })
+        }),
       );
     });
 
     it("should stream logs if not detached", async () => {
       const network = new DevNetNetwork(mockNetworkConfig, mockClient as any);
       await network.start({ detached: false });
-      
+
       expect(mockOrchestrator.streamAllLogs).toHaveBeenCalled();
     });
   });
@@ -141,9 +139,12 @@ describe("DevNetNetwork", () => {
     it("should stop devnet and cleanup", async () => {
       const network = new DevNetNetwork(mockNetworkConfig, mockClient as any);
       await network.stop();
-      
+
       expect(mockOrchestrator.stopAllServices).toHaveBeenCalled();
-      expect(fs.rm).toHaveBeenCalledWith(expect.stringContaining(".pact-toolbox/configs"), { recursive: true, force: true });
+      expect(fs.rm).toHaveBeenCalledWith(expect.stringContaining(".pact-toolbox/configs"), {
+        recursive: true,
+        force: true,
+      });
     });
   });
 
@@ -152,9 +153,9 @@ describe("DevNetNetwork", () => {
       const network = new DevNetNetwork(mockNetworkConfig, mockClient as any);
       const stopSpy = vi.spyOn(network, "stop");
       const startSpy = vi.spyOn(network, "start");
-      
+
       await network.restart();
-      
+
       expect(stopSpy).toHaveBeenCalled();
       expect(startSpy).toHaveBeenCalled();
     });
@@ -163,20 +164,20 @@ describe("DevNetNetwork", () => {
   describe("isHealthy", () => {
     it("should return true for healthy network", async () => {
       vi.mocked(utils.isChainWebNodeOk).mockResolvedValue(true);
-      
+
       const network = new DevNetNetwork(mockNetworkConfig, mockClient as any);
       const healthy = await network.isHealthy();
-      
+
       expect(healthy).toBe(true);
       expect(utils.isChainWebNodeOk).toHaveBeenCalledWith("http://localhost:8080");
     });
 
     it("should return false for unhealthy network", async () => {
       vi.mocked(utils.isChainWebNodeOk).mockRejectedValue(new Error("Network error"));
-      
+
       const network = new DevNetNetwork(mockNetworkConfig, mockClient as any);
       const healthy = await network.isHealthy();
-      
+
       expect(healthy).toBe(false);
     });
   });
@@ -184,7 +185,7 @@ describe("DevNetNetwork", () => {
   describe("getters", () => {
     it("should return correct values with on-demand mining", () => {
       const network = new DevNetNetwork(mockNetworkConfig, mockClient as any);
-      
+
       expect(network.getPort()).toBe(8080);
       expect(network.getRpcUrl()).toBe("http://localhost:8080");
       expect(network.hasOnDemandMining()).toBe(true);
@@ -199,7 +200,7 @@ describe("DevNetNetwork", () => {
           onDemandMining: false,
         },
       };
-      
+
       const network = new DevNetNetwork(configWithoutMining, mockClient as any);
       expect(network.hasOnDemandMining()).toBe(false);
       expect(network.getMiningUrl()).toBe(null);
@@ -210,7 +211,7 @@ describe("DevNetNetwork", () => {
         ...mockNetworkConfig,
         containerConfig: {},
       };
-      
+
       const network = new DevNetNetwork(configWithoutPort, mockClient as any);
       expect(network.getPort()).toBe(8080); // DEVNET_PUBLIC_PORT
     });

@@ -1,16 +1,16 @@
 /**
  * @fileoverview Doctor command for system health checks
- * 
+ *
  * The doctor command performs comprehensive system health checks to ensure
  * all required dependencies and tools are properly installed and configured
  * for Pact development.
- * 
+ *
  * Checks performed:
  * - Pact compiler installation and version
  * - Docker daemon availability
  * - Node.js version compatibility
  * - pnpm package manager
- * 
+ *
  * @author Pact Toolbox Team
  */
 
@@ -47,12 +47,12 @@ function isDockerInstalled(): boolean {
  */
 function checkNodeVersion(): SystemCheck {
   const currentVersion = process.version;
-  const versionPart = currentVersion.substring(1).split('.')[0];
+  const versionPart = currentVersion.substring(1).split(".")[0];
   if (!versionPart) {
     return {
       name: "Node.js",
       status: "error",
-      message: "Unable to determine Node.js version"
+      message: "Unable to determine Node.js version",
     };
   }
   const majorVersion = parseInt(versionPart);
@@ -62,7 +62,7 @@ function checkNodeVersion(): SystemCheck {
     return {
       name: "Node.js",
       status: "ok",
-      message: `Node.js ${currentVersion} (✓ >= ${minVersion}.0.0)`
+      message: `Node.js ${currentVersion} (✓ >= ${minVersion}.0.0)`,
     };
   }
 
@@ -70,7 +70,7 @@ function checkNodeVersion(): SystemCheck {
     name: "Node.js",
     status: "warning",
     message: `Node.js ${currentVersion} (requires >= ${minVersion}.0.0)`,
-    fixable: true
+    fixable: true,
   };
 }
 
@@ -84,21 +84,21 @@ function checkPnpm(): SystemCheck {
     return {
       name: "pnpm",
       status: "ok",
-      message: `pnpm ${version} ✓`
+      message: `pnpm ${version} ✓`,
     };
   } catch {
     return {
       name: "pnpm",
       status: "warning",
       message: "pnpm not found (recommended for monorepo development)",
-      fixable: true
+      fixable: true,
     };
   }
 }
 
 /**
  * Doctor command definition
- * 
+ *
  * Performs comprehensive system health checks and provides
  * actionable feedback for any issues found.
  */
@@ -125,14 +125,14 @@ export const doctorCommand = defineCommand({
       checks.push({
         name: "Pact",
         status: "ok",
-        message: "Pact compiler ✓"
+        message: "Pact compiler ✓",
       });
     } else {
       checks.push({
         name: "Pact",
         status: "error",
         message: "Pact compiler not found",
-        fixable: true
+        fixable: true,
       });
     }
 
@@ -142,14 +142,14 @@ export const doctorCommand = defineCommand({
       checks.push({
         name: "Docker",
         status: "ok",
-        message: "Docker ✓"
+        message: "Docker ✓",
       });
     } else {
       checks.push({
         name: "Docker",
         status: "warning",
         message: "Docker not found (required for local development networks)",
-        fixable: true
+        fixable: true,
       });
     }
 
@@ -160,8 +160,8 @@ export const doctorCommand = defineCommand({
     }
 
     // Handle fixable issues
-    const hasErrors = checks.some(c => c.status === "error");
-    const hasWarnings = checks.some(c => c.status === "warning");
+    const hasErrors = checks.some((c) => c.status === "error");
+    const hasWarnings = checks.some((c) => c.status === "warning");
 
     if (hasErrors || hasWarnings) {
       logger.info("");
@@ -186,14 +186,14 @@ export const doctorCommand = defineCommand({
         logger.info("• Install Docker to enable local development networks");
         logger.info("  https://docs.docker.com/get-docker/");
       }
-      
-      const pnpmCheck = checks.find(c => c.name === "pnpm");
+
+      const pnpmCheck = checks.find((c) => c.name === "pnpm");
       if (pnpmCheck?.status === "warning") {
         logger.info("• Install pnpm for better monorepo support:");
         logger.info("  npm install -g pnpm");
       }
 
-      const nodeCheck = checks.find(c => c.name === "Node.js");
+      const nodeCheck = checks.find((c) => c.name === "Node.js");
       if (nodeCheck?.status === "warning") {
         logger.info("• Update Node.js to version 22 or higher:");
         logger.info("  https://nodejs.org/");
