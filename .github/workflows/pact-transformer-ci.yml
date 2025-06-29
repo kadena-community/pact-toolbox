@@ -80,10 +80,11 @@ jobs:
             build: |-
               set -e &&
               corepack disable || true &&
-              apt-get update && apt-get install -y libc6-dev build-essential &&
+              apt-get update && apt-get install -y libc6-dev build-essential gcc-multilib &&
               rustup target add x86_64-unknown-linux-gnu &&
               cd crates/pact-transformer &&
               npm install -g pnpm@10.12.4 &&
+              export CFLAGS="-I/usr/include" &&
               pnpm build --target x86_64-unknown-linux-gnu &&
               strip *.node
           - host: ubuntu-latest
