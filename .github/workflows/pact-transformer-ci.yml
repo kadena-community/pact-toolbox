@@ -80,14 +80,14 @@ jobs:
             build: |-
               set -e &&
               cd crates/pact-transformer &&
-              npm install -g pnpm@10.12.4 &&
+              command -v pnpm >/dev/null 2>&1 || npm install -g pnpm@10.12.4 &&
               pnpm build --target x86_64-unknown-linux-gnu &&
               strip *.node
           - host: ubuntu-latest
             target: x86_64-unknown-linux-musl
             build: |-
               cd crates/pact-transformer &&
-              pnpm build --target x86_64-unknown-linux-musl --use-napi-cross &&
+              pnpm build --target x86_64-unknown-linux-musl &&
               strip *.node
           - host: macos-latest
             target: aarch64-apple-darwin
@@ -101,14 +101,14 @@ jobs:
             build: |-
               set -e &&
               cd crates/pact-transformer &&
-              npm install -g pnpm@10.12.4 &&
+              command -v pnpm >/dev/null 2>&1 || npm install -g pnpm@10.12.4 &&
               pnpm build --target aarch64-unknown-linux-gnu &&
               aarch64-unknown-linux-gnu-strip *.node
           - host: ubuntu-latest
             target: aarch64-unknown-linux-musl
             build: |-
               cd crates/pact-transformer &&
-              pnpm build --target aarch64-unknown-linux-musl --use-napi-cross &&
+              pnpm build --target aarch64-unknown-linux-musl &&
               ${ANDROID_NDK_LATEST_HOME}/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip *.node || strip *.node
           - host: windows-latest
             target: aarch64-pc-windows-msvc
@@ -324,7 +324,7 @@ jobs:
             echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_${{ matrix.node }}.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list
             apt-get update
             apt-get install -y nodejs npm
-            npm install -g pnpm@10.12.4
+            command -v pnpm >/dev/null 2>&1 || npm install -g pnpm@10.12.4
             cd crates/pact-transformer && pnpm test
   test-linux-aarch64-musl-binding:
     name: Test bindings on aarch64-unknown-linux-musl - node@lts
@@ -359,7 +359,7 @@ jobs:
           run: |
             set -e
             apk add --no-cache npm
-            npm install -g pnpm@10.12.4
+            command -v pnpm >/dev/null 2>&1 || npm install -g pnpm@10.12.4
             cd crates/pact-transformer && pnpm test
 
 
