@@ -116,6 +116,7 @@ jobs:
           - host: ubuntu-latest
             target: wasm32-wasip1-threads
             build: |
+              rustup target add wasm32-wasip1-threads
               cd crates/pact-transformer
               export CARGO_TARGET_WASM32_WASIP1_THREADS_RUNNER="wasmtime --wasm-features threads,bulk-memory --wasi-modules experimental-wasi-threads"
               pnpm build --target wasm32-wasip1-threads
