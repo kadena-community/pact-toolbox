@@ -80,11 +80,12 @@ jobs:
             build: |-
               set -e &&
               corepack disable || true &&
-              apt-get update && apt-get install -y libc6-dev build-essential gcc-multilib &&
+              apt-get update && apt-get install -y libc6-dev build-essential &&
               rustup target add x86_64-unknown-linux-gnu &&
               cd crates/pact-transformer &&
               npm install -g pnpm@10.12.4 &&
-              export CFLAGS="-I/usr/include" &&
+              export CC_x86_64_unknown_linux_gnu=gcc &&
+              export AR_x86_64_unknown_linux_gnu=ar &&
               pnpm build --target x86_64-unknown-linux-gnu &&
               strip *.node
           - host: ubuntu-latest
@@ -107,14 +108,12 @@ jobs:
             build: |-
               set -e &&
               corepack disable || true &&
-              apt-get update && apt-get install -y wget build-essential gcc-multilib &&
-              wget https://ziglang.org/download/0.13.0/zig-linux-aarch64-0.13.0.tar.xz &&
-              tar -xf zig-linux-aarch64-0.13.0.tar.xz &&
-              export PATH=$PATH:$(pwd)/zig-linux-aarch64-0.13.0 &&
+              apt-get update && apt-get install -y build-essential gcc-aarch64-linux-gnu &&
               rustup target add aarch64-unknown-linux-gnu &&
               cd crates/pact-transformer &&
               npm install -g pnpm@10.12.4 &&
-              export CFLAGS="-I/usr/include" &&
+              export CC_aarch64_unknown_linux_gnu=aarch64-linux-gnu-gcc &&
+              export AR_aarch64_unknown_linux_gnu=aarch64-linux-gnu-ar &&
               pnpm build --target aarch64-unknown-linux-gnu &&
               aarch64-unknown-linux-gnu-strip *.node
           - host: ubuntu-latest
