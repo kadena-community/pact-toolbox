@@ -107,7 +107,7 @@ jobs:
               set -e &&
               corepack disable || true &&
               apt-get update && apt-get install -y wget &&
-              wget https://github.com/ziglang/zig/releases/download/0.13.0/zig-linux-aarch64-0.13.0.tar.xz &&
+              wget https://ziglang.org/download/0.13.0/zig-linux-aarch64-0.13.0.tar.xz &&
               tar -xf zig-linux-aarch64-0.13.0.tar.xz &&
               export PATH=$PATH:$(pwd)/zig-linux-aarch64-0.13.0 &&
               rustup target add aarch64-unknown-linux-gnu &&
