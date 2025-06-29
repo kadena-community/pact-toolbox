@@ -52,10 +52,10 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit --skipLibCheck",
     "version": "napi version",
-    "format": "pnpm run format:source && pnpm run format:rs && pnpm run format:toml",
+    "format": "pnpm run format:source && pnpm run format:rs",
     "format:rs": "cargo fmt",
     "format:source": "prettier --write .",
-    "format:toml": "taplo format",
+    "format:toml": "taplo format || true",
     "lint": "oxlint ."
   },
   "dependencies": {},
