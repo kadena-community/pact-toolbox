@@ -80,6 +80,7 @@ jobs:
             build: |-
               set -e &&
               corepack disable || true &&
+              apt-get update && apt-get install -y libc6-dev build-essential &&
               rustup target add x86_64-unknown-linux-gnu &&
               cd crates/pact-transformer &&
               npm install -g pnpm@10.12.4 &&
