@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { transformPactToJs, createPactTransformer } from "../index.js";
+import { PactTransformer } from "../index.js";
 
 const pactCode = `
 (module coin GOVERNANCE
@@ -32,84 +32,86 @@ const pactCode = `
 
 describe("Pact Transformer", () => {
   it("should transform Pact code to JS", async () => {
-    const result = await transformPactToJs(pactCode, {
+    const transformer = new PactTransformer();
+    const result = await transformer.transform(pactCode, {
       generateTypes: true,
     });
 
     expect(result).toBeDefined();
-    expect(result.modules).toBeDefined();
-    expect(result.modules).toHaveLength(1);
+    expect(result.javascript).toBeDefined();
+    expect(result.typescript).toBeDefined();
 
-    const module = result.modules[0];
-    expect(module.name).toBe("coin");
-    expect(module.governance).toBe("GOVERNANCE");
-    expect(module.functions).toHaveLength(1);
-    expect(module.schemas).toHaveLength(1);
-    expect(module.capabilities).toHaveLength(1);
-    expect(module.constants).toHaveLength(1);
-
-    expect(result.code).toBeDefined();
-    expect(result.types).toBeDefined();
+    expect(result.javascript).toContain("coin");
+    expect(result.javascript).toContain("transfer");
+    expect(result.typescript).toContain("interface");
   });
 
-  it("should work with sync transformer", () => {
-    const transformer = createPactTransformer();
+  it("should parse Pact code and return module info", () => {
+    const transformer = new PactTransformer();
+    const modules = transformer.parse(pactCode);
 
-    const modules = transformer.transform(pactCode);
     expect(modules).toBeDefined();
     expect(modules).toHaveLength(1);
 
     const module = modules[0];
     expect(module.name).toBe("coin");
     expect(module.governance).toBe("GOVERNANCE");
+    expect(module.functionCount).toBe(1);
+    expect(module.schemaCount).toBe(1);
+    expect(module.capabilityCount).toBe(1);
+    expect(module.constantCount).toBe(1);
   });
 
   it("should detect errors in invalid Pact code", () => {
-    const transformer = createPactTransformer();
+    const transformer = new PactTransformer();
+    const errors = transformer.getErrors("(invalid pact code");
 
-    expect(() => {
-      transformer.transform("(invalid pact code");
-    }).toThrow();
+    expect(errors).toBeDefined();
+    expect(errors.length).toBeGreaterThan(0);
+    expect(errors[0].message).toBeDefined();
+    expect(errors[0].line).toBeDefined();
+    expect(errors[0].column).toBeDefined();
   });
 
-  it("should parse function with parameters", () => {
-    const transformer = createPactTransformer();
-    const modules = transformer.transform(pactCode);
+  it("should transform with source maps", async () => {
+    const transformer = new PactTransformer();
+    const result = await transformer.transformFile(pactCode, "test.pact", {
+      generateTypes: true,
+      sourceMaps: true,
+    });
 
-    const transferFunction = modules[0].functions.find((f) => f.name === "transfer");
-    expect(transferFunction).toBeDefined();
-    expect(transferFunction?.parameters).toHaveLength(3);
-    expect(transferFunction?.parameters[0].name).toBe("from");
-    expect(transferFunction?.parameters[1].name).toBe("to");
-    expect(transferFunction?.parameters[2].name).toBe("amount");
+    expect(result).toBeDefined();
+    expect(result.javascript).toBeDefined();
+    expect(result.typescript).toBeDefined();
+    expect(result.sourceMap).toBeDefined();
   });
 
-  it("should parse schema with fields", () => {
-    const transformer = createPactTransformer();
-    const modules = transformer.transform(pactCode);
+  it("should handle empty source code", async () => {
+    const transformer = new PactTransformer();
+    const result = await transformer.transform("", {
+      generateTypes: true,
+    });
 
-    const accountSchema = modules[0].schemas.find((s) => s.name === "account");
-    expect(accountSchema).toBeDefined();
-    expect(accountSchema?.fields).toHaveLength(2);
-    expect(accountSchema?.fields[0].name).toBe("balance");
-    expect(accountSchema?.fields[1].name).toBe("guard");
+    expect(result).toBeDefined();
+    expect(result.javascript).toBeDefined();
   });
 
-  it("should parse capability", () => {
-    const transformer = createPactTransformer();
-    const modules = transformer.transform(pactCode);
+  it("should parse module documentation", () => {
+    const transformer = new PactTransformer();
+    const modules = transformer.parse(pactCode);
 
-    const transferCap = modules[0].capabilities.find((c) => c.name === "TRANSFER");
-    expect(transferCap).toBeDefined();
-    expect(transferCap?.parameters).toHaveLength(3);
+    const module = modules[0];
+    expect(module.doc).toBe("Coin contract with transfer functionality");
   });
 
-  it("should parse constant", () => {
-    const transformer = createPactTransformer();
-    const modules = transformer.transform(pactCode);
+  it("should handle transform without types", async () => {
+    const transformer = new PactTransformer();
+    const result = await transformer.transform(pactCode, {
+      generateTypes: false,
+    });
 
-    const minTransfer = modules[0].constants.find((c) => c.name === "MIN_TRANSFER");
-    expect(minTransfer).toBeDefined();
-    expect(minTransfer?.constantType).toBe("decimal");
+    expect(result).toBeDefined();
+    expect(result.javascript).toBeDefined();
+    expect(result.typescript).toBeUndefined();
   });
 });
