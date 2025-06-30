@@ -442,6 +442,7 @@ jobs:
           cd crates/pact-transformer
           LOCAL_VERSION=$(node -p "require('./package.json').version")
           echo "Local version: $LOCAL_VERSION"
+          echo "version=$LOCAL_VERSION" >> $GITHUB_OUTPUT
           
           # Check if package exists on npm
           if npm view @pact-toolbox/pact-transformer@$LOCAL_VERSION version 2>/dev/null; then
@@ -467,13 +468,34 @@ jobs:
         if: steps.version_check.outputs.should_publish == 'true'
         run: ls -R ./crates/pact-transformer/npm
         shell: bash
-      - name: Publish
+      - name: Create GitHub Release
+        if: steps.version_check.outputs.should_publish == 'true'
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: pact-transformer-v${{ steps.version_check.outputs.version }}
+          release_name: pact-transformer v${{ steps.version_check.outputs.version }}
+          draft: false
+          prerelease: false
+          
+      - name: Prepare npm packages
+        if: steps.version_check.outputs.should_publish == 'true'
+        run: |
+          cd crates/pact-transformer
+          # Prepare platform packages and upload to GitHub release
+          pnpm napi prepublish -t npm --gh-release-id ${{ steps.create_release.outputs.id }}
+          
+      - name: Publish packages
         if: steps.version_check.outputs.should_publish == 'true'
         run: |
           npm config set provenance true
           cd crates/pact-transformer
           echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc
-          npm publish --access public
+          
+          # Use custom publish script that handles already published packages gracefully
+          node scripts/publish-pact-transformer.js
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
