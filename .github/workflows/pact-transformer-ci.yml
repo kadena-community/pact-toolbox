@@ -290,6 +290,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - uses: pnpm/action-setup@v4
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
@@ -298,10 +303,6 @@ jobs:
       - name: List packages
         run: ls -R .
         shell: bash
-      - name: Install dependencies
-        run: |
-          pnpm config set supportedArchitectures.libc "musl"
-          pnpm install --frozen-lockfile
       - name: Set up Docker
         uses: docker/setup-buildx-action@v3
       - name: Setup and run tests
