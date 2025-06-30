@@ -346,11 +346,6 @@ jobs:
       - name: List packages
         run: ls -R .
         shell: bash
-      - name: Install dependencies
-        run: |
-          pnpm config set supportedArchitectures.cpu "arm64"
-          pnpm config set supportedArchitectures.libc "glibc"
-          pnpm install --frozen-lockfile
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
         with:
@@ -363,8 +358,9 @@ jobs:
           options: "--platform linux/arm64 -v ${{ github.workspace }}:/build -w /build"
           run: |
             set -e
+            export DEBIAN_FRONTEND=noninteractive
             apt-get update
-            apt-get install -y ca-certificates gnupg
+            apt-get install -y ca-certificates gnupg curl
             mkdir -p /etc/apt/keyrings
             curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg
             echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_${{ matrix.node }}.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list
@@ -372,6 +368,9 @@ jobs:
             apt-get install -y nodejs npm
             corepack disable || true
             npm install -g pnpm@10.12.4
+            pnpm config set supportedArchitectures.cpu "arm64"
+            pnpm config set supportedArchitectures.libc "glibc"
+            pnpm install --frozen-lockfile
             export LD_LIBRARY_PATH=/usr/lib/aarch64-linux-gnu:/lib/aarch64-linux-gnu
             cd crates/pact-transformer && pnpm test
   test-linux-aarch64-musl-binding:
@@ -394,11 +393,6 @@ jobs:
       - name: List packages
         run: ls -R .
         shell: bash
-      - name: Install dependencies
-        run: |
-          pnpm config set supportedArchitectures.cpu "arm64"
-          pnpm config set supportedArchitectures.libc "musl"
-          pnpm install --frozen-lockfile
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
         with:
@@ -411,11 +405,17 @@ jobs:
           options: "--platform linux/arm64 -v ${{ github.workspace }}:/build -w /build"
           run: |
             set -e
-            apk add --no-cache npm
+            apk add --no-cache npm file
             corepack disable || true
             npm install -g pnpm@10.12.4
-            export LD_LIBRARY_PATH=/usr/lib/aarch64-linux-gnu:/lib/aarch64-linux-gnu
-            cd crates/pact-transformer && pnpm test
+            pnpm config set supportedArchitectures.cpu "arm64"
+            pnpm config set supportedArchitectures.libc "musl"
+            pnpm install --frozen-lockfile
+            cd crates/pact-transformer
+            ls -la *.node
+            file *.node 2>/dev/null || echo "No .node files found"
+            node -e "try { require('./index.js'); console.log('Native module loads correctly'); } catch(e) { console.error('Module loading error:', e.message); process.exit(1); }"
+            pnpm test
 
   publish:
     name: Publish
