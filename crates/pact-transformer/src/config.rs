@@ -109,9 +109,9 @@ impl Default for PactConfig {
   }
 }
 
-/// Load configuration from various sources
-#[napi]
+/// Load configuration from various sources (internal use only)
 #[allow(clippy::needless_pass_by_value)]
+#[allow(dead_code)]
 pub fn load_config(
   config_path: Option<String>,
   environment: Option<String>,
@@ -122,6 +122,7 @@ pub fn load_config(
   }
 }
 
+#[allow(dead_code)]
 fn load_config_impl(
   config_path: Option<&str>,
   environment: Option<&str>,
@@ -185,6 +186,7 @@ fn load_config_impl(
   })
 }
 
+#[allow(dead_code)]
 fn load_from_file(path: &str) -> Result<PactConfig> {
   let extension = Path::new(path)
     .extension()
@@ -213,6 +215,7 @@ fn load_from_file(path: &str) -> Result<PactConfig> {
   }
 }
 
+#[allow(dead_code)]
 fn load_json_config(path: &str) -> Result<PactConfig> {
   let content =
     fs::read_to_string(path).with_context(|| format!("Failed to read JSON config file: {path}"))?;
@@ -220,6 +223,7 @@ fn load_json_config(path: &str) -> Result<PactConfig> {
   serde_json::from_str(&content).with_context(|| format!("Failed to parse JSON config: {path}"))
 }
 
+#[allow(dead_code)]
 fn load_toml_config(path: &str) -> Result<PactConfig> {
   let content =
     fs::read_to_string(path).with_context(|| format!("Failed to read TOML config file: {path}"))?;
@@ -227,6 +231,7 @@ fn load_toml_config(path: &str) -> Result<PactConfig> {
   toml::from_str(&content).with_context(|| format!("Failed to parse TOML config: {path}"))
 }
 
+#[allow(dead_code)]
 fn load_yaml_config(path: &str) -> Result<PactConfig> {
   let content =
     fs::read_to_string(path).with_context(|| format!("Failed to read YAML config file: {path}"))?;
@@ -234,6 +239,7 @@ fn load_yaml_config(path: &str) -> Result<PactConfig> {
   serde_yaml::from_str(&content).with_context(|| format!("Failed to parse YAML config: {path}"))
 }
 
+#[allow(dead_code)]
 fn load_from_package_json() -> Result<PactConfig> {
   let content =
     fs::read_to_string("package.json").with_context(|| "Failed to read package.json")?;
@@ -251,6 +257,7 @@ fn load_from_package_json() -> Result<PactConfig> {
   }
 }
 
+#[allow(dead_code)]
 fn apply_environment(config: &PactConfig, environment: Option<&str>) -> Result<PactConfig> {
   let mut result = config.clone();
 
@@ -272,6 +279,7 @@ fn apply_environment(config: &PactConfig, environment: Option<&str>) -> Result<P
   Ok(result)
 }
 
+#[allow(dead_code)]
 fn merge_configs(base: &PactConfig, override_config: &PactConfig) -> PactConfig {
   PactConfig {
     transform: override_config
@@ -314,6 +322,7 @@ fn merge_configs(base: &PactConfig, override_config: &PactConfig) -> PactConfig 
   }
 }
 
+#[allow(dead_code)]
 fn apply_env_overrides(config: &PactConfig, env_config: &EnvironmentConfig) -> PactConfig {
   PactConfig {
     transform: env_config
@@ -335,9 +344,9 @@ fn apply_env_overrides(config: &PactConfig, env_config: &EnvironmentConfig) -> P
   }
 }
 
-/// Apply a preset to the current configuration
-#[napi]
+/// Apply a preset to the current configuration (internal use only)
 #[allow(clippy::needless_pass_by_value)]
+#[allow(dead_code)]
 pub fn apply_preset(config: PactConfig, preset_name: String) -> Result<PactConfig, napi::Error> {
   let presets = config
     .presets
@@ -365,9 +374,9 @@ pub fn apply_preset(config: PactConfig, preset_name: String) -> Result<PactConfi
   })
 }
 
-/// Validate configuration
-#[napi]
+/// Validate configuration (internal use only)
 #[allow(clippy::needless_pass_by_value)]
+#[allow(dead_code)]
 pub fn validate_config(config: PactConfig) -> Result<bool, napi::Error> {
   // Validate file output directory exists or can be created
   if let Some(file_output) = &config.file_output {

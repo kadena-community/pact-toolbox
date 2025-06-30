@@ -358,7 +358,7 @@ export class ChainwebClient {
 
         // Wait before polling again
         await new Promise((resolve) => setTimeout(resolve, pollInterval));
-      } catch (error) {
+      } catch {
         // Try listen endpoint as fallback
         try {
           const listenResult = await this.listen(requestKey, config);

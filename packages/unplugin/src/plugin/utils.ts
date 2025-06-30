@@ -51,7 +51,7 @@ export async function createPactToolboxNetwork(
 
   // Check if we already have a running network
   if (runningNetwork) {
-    logger.info("Network already running, reusing existing instance");
+    logger.debug("Network already running, reusing existing instance");
     if (onReady) {
       await onReady(client);
     }
@@ -67,7 +67,7 @@ export async function createPactToolboxNetwork(
     const portInUse = await isPortTaken(port);
 
     if (portInUse) {
-      logger.info(`Port ${port} is already in use, assuming network is running`);
+      logger.debug(`Port ${port} is already in use, assuming network is running`);
       if (onReady) {
         await onReady(client);
       }
@@ -89,6 +89,7 @@ export async function createPactToolboxNetwork(
       logAccounts: true,
       detached: true,
       autoStart: true,
+      registerCleanup: true,
     });
 
     runningNetwork = network;

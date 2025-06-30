@@ -1,11 +1,11 @@
 import {
-  PactTransformer,
-  Utils,
+  createPactTransformer,
+  type PactTransformer,
   type TransformResult,
   type TransformOptions,
   type ModuleInfo,
 } from "@pact-toolbox/pact-transformer";
-import { logger } from "@pact-toolbox/node-utils";
+import { logger, cleanupOnExit } from "@pact-toolbox/node-utils";
 
 interface PactModule {
   name: string;
@@ -30,8 +30,34 @@ interface PactToJSTransformerOptions extends TransformOptions {
 const pactToolboxPool: PactTransformer[] = [];
 const MAX_POOL_SIZE = 4;
 
+// Register transformer cleanup on process exit
+let cleanupRegistered = false;
+function registerTransformerCleanup() {
+  if (cleanupRegistered) return;
+  cleanupRegistered = true;
+
+  cleanupOnExit(
+    () => {
+      cleanupTransformer();
+    },
+    {
+      name: "pact-transformer-pool",
+      priority: 5, // Medium priority
+      timeout: 5000,
+    },
+  );
+}
+
 function getPactTransformer(): PactTransformer {
-  return pactToolboxPool.pop() || new PactTransformer();
+  return (
+    pactToolboxPool.pop() ||
+    createPactTransformer({
+      transform: {
+        generateTypes: true,
+        sourceMaps: true,
+      },
+    })
+  );
 }
 
 function returnPactTransformer(instance: PactTransformer): void {
@@ -45,24 +71,20 @@ export function createPactToJSTransformer({
   generateTypes = true,
   moduleName,
 }: PactToJSTransformerOptions = {}): PactToJSTransformer {
-  // Warm up the parser pool for better performance
-  Utils.warmUp();
-
+  // Register transformer cleanup on first use
+  registerTransformerCleanup();
   const transform = async (pactCode: string, filePath?: string): Promise<TransformationResult> => {
     const pactToolbox = getPactTransformer();
     const startTime = debug ? performance.now() : 0;
 
     try {
-      // Transform the code with source maps if we have a file path
-      const result: TransformResult = filePath
-        ? await pactToolbox.transformFile(pactCode, filePath, {
-            generateTypes,
-            moduleName,
-          })
-        : await pactToolbox.transform(pactCode, {
-            generateTypes,
-            moduleName,
-          });
+      // Transform the code using the new API
+      const result: TransformResult = await pactToolbox.transform(pactCode, {
+        generateTypes,
+        moduleName,
+        sourceMaps: Boolean(filePath),
+        sourceFilePath: filePath,
+      });
 
       // Parse modules to get module information
       let modules: ModuleInfo[];

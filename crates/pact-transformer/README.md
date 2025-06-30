@@ -4,15 +4,15 @@ High-performance Pact code transformer implemented in Rust with Node.js bindings
 
 ## Features
 
+- **Clean API**: Simple `createPactTransformer` factory function with configuration-driven design
 - **Fast Parsing**: Uses tree-sitter-pact for efficient parsing with pooled parsers
 - **Type Generation**: Generates TypeScript type definitions from Pact modules
 - **Cross-Platform**: Supports Windows, macOS, Linux, FreeBSD, Android, and WebAssembly
-- **Framework Support**: Generate framework-specific code for React, Vue, Angular, and more
-- **File Watching**: Monitor Pact files and auto-transform on changes
-- **Documentation Generation**: Create HTML, Markdown, or GitBook documentation
-- **Test Generation**: Generate test suites for Jest, Vitest, Mocha, or AVA
+- **File Watching**: Built-in file monitoring and auto-transformation on changes
 - **Plugin System**: Extensible architecture with built-in plugins
 - **Source Maps**: Full source map support for debugging
+- **Batch Processing**: Transform multiple files efficiently with glob patterns
+- **Error Handling**: Built-in parsing error detection and reporting
 
 ## Installation
 
@@ -39,22 +39,36 @@ The package will automatically install the appropriate native binary for your pl
 
 ## Quick Start
 
-### Basic Transformation
+### Basic Usage
 
 ```javascript
-import { PactTransformer } from "@pact-toolbox/pact-transformer";
+import { createPactTransformer } from "@pact-toolbox/pact-transformer";
 
-const pact = new PactTransformer();
+// Create transformer instance with configuration
+const transformer = createPactTransformer({
+  transform: {
+    generateTypes: true,
+    sourceMaps: true,
+  },
+  fileOutput: {
+    outputDir: "./output",
+    format: "js-types",
+  },
+});
 
-const source = `
+const pactCode = `
 (module coin GOVERNANCE
+  (defcap GOVERNANCE () true)
   (defun transfer:string (from:string to:string amount:decimal)
     "Transfer tokens between accounts"
     (format "Transferred {} from {} to {}" [amount from to])))
 `;
 
 // Transform to JavaScript/TypeScript
-const result = await pact.transform(source, { generateTypes: true });
+const result = await transformer.transform(pactCode, {
+  moduleName: "coin-contract",
+});
+
 console.log(result.javascript); // Generated JavaScript code
 console.log(result.typescript); // Generated TypeScript types
 ```
@@ -63,7 +77,7 @@ console.log(result.typescript); // Generated TypeScript types
 
 ```javascript
 // Parse modules and get metadata
-const modules = pact.parse(source);
+const modules = transformer.parse(pactCode);
 modules.forEach((module) => {
   console.log(`Module: ${module.name}`);
   console.log(`Functions: ${module.functionCount}`);
@@ -71,7 +85,7 @@ modules.forEach((module) => {
 });
 
 // Get parsing errors
-const errors = pact.getErrors(invalidSource);
+const errors = transformer.getErrors(invalidCode);
 errors.forEach((err) => {
   console.log(`Error at ${err.line}:${err.column} - ${err.message}`);
 });
@@ -82,170 +96,121 @@ errors.forEach((err) => {
 ### Transform Files
 
 ```javascript
-import { FileOps } from "@pact-toolbox/pact-transformer";
-
 // Transform a single file
-const result = await FileOps.transformFile(
-  "contracts/coin.pact",
-  { generateTypes: true },
-  {
-    outputDir: "dist",
-    format: "ts", // or 'js-types' for separate .js and .d.ts
-  },
-);
+const fileResult = await transformer.transformFile("contracts/coin.pact", {
+  transformOptions: { generateTypes: true },
+});
 
-// Transform multiple files
-const results = await FileOps.transformFiles(
-  ["src/**/*.pact", "contracts/*.pact"],
-  { generateTypes: true },
-  { outputDir: "dist", preserveStructure: true },
-);
+console.log(`File ${fileResult.sourcePath} processed in ${fileResult.timeMs}ms`);
 
-// Find Pact files
-const files = await FileOps.findFiles(["src/**/*.pact"]);
+// Transform multiple files using glob patterns
+const batchResult = await transformer.transformFiles(["src/**/*.pact", "contracts/*.pact"], {
+  transformOptions: { generateTypes: true },
+});
+
+console.log(`Processed ${batchResult.successCount} files successfully`);
+console.log(`Failed: ${batchResult.errorCount} files`);
 ```
 
-## Watch Mode
+### Watch Mode
 
 ```javascript
-import { WatchSession } from "@pact-toolbox/pact-transformer";
-
-// Start watching files
-const watcher = await WatchSession.start(
-  ["src/**/*.pact"],
-  {
+// Create transformer with watch configuration
+const transformer = createPactTransformer({
+  watch: {
+    patterns: ["**/*.pact"],
     debounceMs: 300,
     initialTransform: true,
     handleDeletions: true,
   },
-  { generateTypes: true },
-  { outputDir: "dist" },
-);
-
-// Get statistics
-const stats = await watcher.stats();
-console.log(`Watching ${stats.watchedFiles} files`);
-console.log(`Processed ${stats.totalTransforms} transforms`);
-
-// Stop watching
-await watcher.stop();
-```
-
-## Documentation Generation
-
-```javascript
-import { DocsGenerator } from "@pact-toolbox/pact-transformer";
-
-const docs = await DocsGenerator.generate(source, {
-  format: "html",
-  theme: "dark",
-  includeExamples: true,
-  searchEnabled: true,
-  apiPlayground: true,
+  fileOutput: {
+    outputDir: "dist",
+    format: "js-types",
+  },
 });
 
-console.log(docs.content); // Generated documentation
-console.log(docs.assets); // Additional assets (CSS, JS, images)
-```
-
-## Test Generation
-
-```javascript
-import { TestGenerator } from "@pact-toolbox/pact-transformer";
-
-const tests = await TestGenerator.generate(source, {
-  framework: "vitest",
-  typescript: true,
-  generateMocks: true,
-  generateFixtures: true,
-  propertyTests: true,
+// Start watching files
+const batchResult = await transformer.transformFiles(["src/**/*.pact"], {
+  transformOptions: { generateTypes: true },
+  watch: true, // Enable watch mode
 });
 
-// Write test files
-tests.testFiles.forEach((file) => {
-  console.log(`Generated: ${file.path}`);
-  // Write file.content to disk
-});
+// Watch mode will continue monitoring files in the background
 ```
 
-## Framework Integration
+### Configuration Override
 
 ```javascript
-import { transformPactToFramework } from "@pact-toolbox/pact-transformer";
-
-// Generate React hooks
-const reactResult = await transformPactToFramework(source, {
-  target: "react",
-  patterns: ["hooks"],
-  typescript: true,
-  treeShaking: true,
+// Set default configuration
+const transformer = createPactTransformer({
+  transform: {
+    generateTypes: false, // Default setting
+    sourceMaps: true,
+  },
 });
 
-// Generate Vue composables
-const vueResult = await transformPactToFramework(source, {
-  target: "vue",
-  patterns: ["composables"],
-  frameworkVersion: "3",
+// Override configuration per transform
+const result = await transformer.transform(pactCode, {
+  generateTypes: true, // Override the default
+  moduleName: "custom-module",
 });
-```
-
-## Configuration
-
-```javascript
-import { ConfigManager } from "@pact-toolbox/pact-transformer";
-
-// Load configuration
-const config = await ConfigManager.load("./pact-toolbox.config.js", "production");
-
-// Validate configuration
-const isValid = ConfigManager.validate(config);
-```
-
-## Plugin System
-
-```javascript
-import { PluginManager } from "@pact-toolbox/pact-transformer";
-
-// List available plugins
-const plugins = PluginManager.list();
-
-// Register and enable a plugin
-PluginManager.register("minifier");
-PluginManager.setEnabled("minifier", true);
-```
-
-## Performance Utilities
-
-```javascript
-import { Utils } from "@pact-toolbox/pact-transformer";
-
-// Warm up parser pool for better initial performance
-Utils.warmUp();
-
-// Benchmark performance
-const avgTime = Utils.benchmark(source, 1000); // Run 1000 iterations
-console.log(`Average parse time: ${avgTime}ms`);
-
-// Reset optimization state
-Utils.resetOptimizations();
 ```
 
 ## API Reference
 
-### Main Classes
+### `createPactTransformer(config?: PactTransformerConfig): PactTransformer`
 
-- **`PactTransformer`** - Main API for transformations
-- **`FileOps`** - File operation utilities
-- **`WatchSession`** - File watching functionality
-- **`DocsGenerator`** - Documentation generation
-- **`TestGenerator`** - Test suite generation
-- **`ConfigManager`** - Configuration management
-- **`PluginManager`** - Plugin system
-- **`Utils`** - Performance utilities
+Creates a new transformer instance with the specified configuration.
 
-### Types
+#### Configuration Options
 
-The package exports comprehensive TypeScript definitions for all APIs. See the [type definitions](./index.d.ts) for complete details.
+```typescript
+interface PactTransformerConfig {
+  plugins?: PluginConfig[];
+  transform?: TransformOptions;
+  fileOutput?: FileOutputOptions;
+  watch?: WatchOptions;
+}
+```
+
+### PactTransformer Methods
+
+- **`transform(code: string, options?: TransformOptions): Promise<TransformResult>`** - Transform Pact source code
+- **`transformFile(filePath: string, options?: TransformFileOptions): Promise<FileResult>`** - Transform single file with optional watch mode
+- **`transformFiles(patterns: string[], options?: TransformFilesOptions): Promise<BatchResult>`** - Transform multiple files with glob patterns
+- **`parse(code: string): ModuleInfo[]`** - Parse Pact code and return module information
+- **`getErrors(code: string): ErrorInfo[]`** - Get parsing errors for source code
+
+### Core Types
+
+```typescript
+interface TransformResult {
+  javascript: string;
+  typescript?: string;
+  sourceMap?: string;
+  declarationMap?: string;
+}
+
+interface FileResult {
+  sourcePath: string;
+  outputPath?: string;
+  success: boolean;
+  error?: string;
+  timeMs: number;
+}
+
+interface ModuleInfo {
+  name: string;
+  namespace?: string;
+  governance: string;
+  functionCount: number;
+  schemaCount: number;
+  capabilityCount: number;
+  constantCount: number;
+}
+```
+
+See the [type definitions](./index.d.ts) for complete API documentation.
 
 ## Development
 

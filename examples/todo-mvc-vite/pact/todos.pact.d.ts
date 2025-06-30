@@ -35,5 +35,3 @@ export function getTodo(id: string): PactTransactionBuilder<PactExecPayload, Tod
  * Get all todos.
  */
 export function getTodos(): PactTransactionBuilder<PactExecPayload, Todo[]>;
-
-//# sourceMappingURL=todos.pact.d.ts.map

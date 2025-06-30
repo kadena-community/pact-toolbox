@@ -14,7 +14,7 @@ import {
 } from "@pact-toolbox/config";
 import { deployPreludes, downloadAllPreludes } from "@pact-toolbox/prelude";
 import { PactToolboxClient } from "@pact-toolbox/runtime";
-import { logger as defaultLogger } from "@pact-toolbox/node-utils";
+import { logger as defaultLogger, cleanupOnExit } from "@pact-toolbox/node-utils";
 import { getUuid } from "@pact-toolbox/utils";
 
 import { DevNetNetwork } from "./networks/devnet";
@@ -29,6 +29,8 @@ export interface NetworkOptions extends NetworkStartOptions {
   autoStart?: boolean;
   /** Log account details on start (default: false) */
   logAccounts?: boolean;
+  /** Register cleanup handlers for graceful shutdown (default: true) */
+  registerCleanup?: boolean;
 }
 
 /**
@@ -42,6 +44,7 @@ export class PactToolboxNetwork implements NetworkApi {
   private client: PactToolboxClient;
   private logger: Logger;
   private toolboxConfig: PactToolboxConfigObj;
+  private cleanupRegistered = false;
 
   constructor(toolboxConfig: PactToolboxConfigObj, options: NetworkOptions = {}) {
     // Validate configuration
@@ -75,6 +78,11 @@ export class PactToolboxNetwork implements NetworkApi {
     } else {
       //@ts-expect-error Unsupported network type for '${networkConfig.name}'
       throw new Error(`Unsupported network type for '${networkConfig.name}'`);
+    }
+
+    // Register cleanup handler if requested (default: true)
+    if (options.registerCleanup !== false) {
+      this.registerCleanupHandler();
     }
   }
 
@@ -118,7 +126,21 @@ export class PactToolboxNetwork implements NetworkApi {
   }
 
   async stop(): Promise<void> {
-    await this.network.stop();
+    try {
+      this.logger.debug(`Stopping network ${this.config.name}...`);
+
+      // Stop with timeout to prevent hanging processes
+      const stopPromise = this.network.stop();
+      const timeoutPromise = new Promise<void>((_, reject) => {
+        setTimeout(() => reject(new Error("Network stop operation timed out")), 10000);
+      });
+
+      await Promise.race([stopPromise, timeoutPromise]);
+      this.logger.debug(`Network ${this.config.name} stopped successfully`);
+    } catch (error) {
+      this.logger.error(`Error stopping network ${this.config.name}:`, error);
+      throw error;
+    }
   }
 
   async restart(options?: NetworkStartOptions): Promise<void> {
@@ -149,6 +171,29 @@ export class PactToolboxNetwork implements NetworkApi {
   // Additional helper methods
   getNetworkName(): string {
     return this.config.name ?? "unknown";
+  }
+
+  /**
+   * Register cleanup handler for graceful shutdown
+   */
+  private registerCleanupHandler(): void {
+    if (this.cleanupRegistered) return;
+    this.cleanupRegistered = true;
+
+    cleanupOnExit(
+      async () => {
+        try {
+          await this.stop();
+        } catch (error) {
+          this.logger.error(`Failed to cleanup network ${this.config.name}:`, error);
+        }
+      },
+      {
+        name: `network-${this.config.name}`,
+        priority: 10, // High priority for network cleanup
+        timeout: 15000, // Allow extra time for network cleanup
+      },
+    );
   }
 
   getNetworkConfig(): NetworkConfig {

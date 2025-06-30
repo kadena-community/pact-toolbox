@@ -30,7 +30,7 @@ async function cleanupExistingNetwork(): Promise<void> {
 
   if (existingNetwork) {
     try {
-      logger.info("[next-plugin] Cleaning up existing network...");
+      logger.debug("[next-plugin] Cleaning up existing network...");
       await existingNetwork.stop();
       registry[NETWORK_KEY] = undefined;
       registry[INIT_FLAG_KEY] = false;
@@ -54,7 +54,7 @@ async function startNetwork(): Promise<void> {
 
   // Use environment variable to prevent multiple initialization
   if (process.env["_PACT_TOOLBOX_NEXT"] === "1") {
-    logger.info("[next-plugin] Network already initialized, skipping...");
+    logger.debug("[next-plugin] Network already initialized, skipping...");
     return;
   }
   process.env["_PACT_TOOLBOX_NEXT"] = "1";
@@ -69,9 +69,11 @@ async function startNetwork(): Promise<void> {
     const resolvedConfig = await resolveConfig();
 
     // Create and start network with Next.js specific settings
+    // Disable automatic cleanup registration since Next.js handles its own cleanup
     const network = await createNetwork(resolvedConfig, {
       autoStart: true,
       detached: true,
+      registerCleanup: false,
     });
 
     // Store in global registry to survive hot reloads
@@ -94,7 +96,7 @@ async function startNetwork(): Promise<void> {
         process.on("exit", cleanup);
       }
     }
-    logger.info("[next-plugin] Pact network started successfully");
+    logger.success("[next-plugin] Pact network started successfully");
   } catch (error) {
     logger.error(`[next-plugin] Failed to start network: ${error}`);
     // Reset flags on failure

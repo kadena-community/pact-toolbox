@@ -345,7 +345,7 @@ export class DockerService {
       await existingContainer
         .remove()
         .catch((err: Error) => this.#logger.warn(`Could not remove existing container: ${err.message}`));
-      this.#logger.log(`Existing container '${this.containerName}' removed.`);
+      this.#logger.debug(`Existing container '${this.containerName}' removed.`);
     } catch (error: any) {
       if (error.statusCode !== 404) {
         this.#logger.error(`Error checking for existing container:`, error.message || error);
@@ -498,9 +498,9 @@ export class DockerService {
       this.#logger.start(`Creating container '${this.containerName}' with image '${this.config.image}'...`);
       const container = await this.#docker.createContainer(createOptions);
       this.#containerId = container.id;
-      this.#logger.log(`Container '${this.containerName}' (ID: ${this.#containerId}) created. Starting...`);
+      this.#logger.debug(`Container '${this.containerName}' (ID: ${this.#containerId}) created. Starting...`);
       await container.start();
-      this.#logger.log(`Service started (Container: ${this.containerName}).`);
+      this.#logger.debug(`Service started (Container: ${this.containerName}).`);
     } catch (error: any) {
       this.#logger.error(
         `Error starting service:`,
@@ -523,7 +523,7 @@ export class DockerService {
       const inspectInfo = await container.inspect().catch(() => null);
 
       if (!inspectInfo) {
-        this.#logger.log(`Container '${containerRef}' not found for stopping.`);
+        this.#logger.debug(`Container '${containerRef}' not found for stopping.`);
         return;
       }
 
@@ -657,7 +657,7 @@ export class DockerService {
 
   async waitForHealthy(timeoutMs = 120000, intervalMs = 1000): Promise<void> {
     if (!this.config.healthCheck) {
-      this.#logger.log(`No health check defined for '${this.containerName}'. Assuming healthy.`);
+      this.#logger.debug(`No health check defined for '${this.containerName}'. Assuming healthy.`);
       return;
     }
 
@@ -685,7 +685,7 @@ export class DockerService {
         }
 
         if (healthStatus === "healthy") {
-          this.#logger.log(`Container '${this.containerName}' is healthy.`);
+          this.#logger.debug(`Container '${this.containerName}' is healthy.`);
           this.healthCheckFailed = false;
           return;
         }

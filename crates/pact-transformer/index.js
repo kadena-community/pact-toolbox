@@ -310,20 +310,7 @@ if (!nativeBinding) {
   throw new Error(`Failed to load native binding`)
 }
 
-const { loadConfig, applyPreset, validateConfig, registerBuiltinPlugin, getRegisteredPlugins, setPluginEnabled, initializePlugins, WatchHandle, PactTransformer, FileOps, WatchSession, ConfigManager, PluginManager, Utils, ErrorDetail } = nativeBinding
+const { PactTransformer, createPactTransformer } = nativeBinding
 
-module.exports.loadConfig = loadConfig
-module.exports.applyPreset = applyPreset
-module.exports.validateConfig = validateConfig
-module.exports.registerBuiltinPlugin = registerBuiltinPlugin
-module.exports.getRegisteredPlugins = getRegisteredPlugins
-module.exports.setPluginEnabled = setPluginEnabled
-module.exports.initializePlugins = initializePlugins
-module.exports.WatchHandle = WatchHandle
 module.exports.PactTransformer = PactTransformer
-module.exports.FileOps = FileOps
-module.exports.WatchSession = WatchSession
-module.exports.ConfigManager = ConfigManager
-module.exports.PluginManager = PluginManager
-module.exports.Utils = Utils
-module.exports.ErrorDetail = ErrorDetail
+module.exports.createPactTransformer = createPactTransformer

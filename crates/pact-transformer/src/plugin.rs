@@ -12,6 +12,7 @@ pub trait TransformPlugin: Send + Sync {
   fn name(&self) -> &str;
 
   /// Get plugin description
+  #[allow(dead_code)]
   fn description(&self) -> &'static str {
     "No description provided"
   }
@@ -58,6 +59,7 @@ impl PluginManager {
   }
 
   /// Register a plugin
+  #[allow(dead_code)]
   pub fn register(&mut self, plugin: Box<dyn TransformPlugin>) {
     let name = plugin.name().to_string();
     self.plugins.push(plugin);
@@ -65,6 +67,7 @@ impl PluginManager {
   }
 
   /// Enable or disable a plugin
+  #[allow(dead_code)]
   pub fn set_enabled(&mut self, name: &str, enabled: bool) {
     self.enabled_plugins.insert(name.to_string(), enabled);
   }
@@ -148,6 +151,7 @@ pub struct JSDocEnhancerPlugin {
 }
 
 impl JSDocEnhancerPlugin {
+  #[allow(dead_code)]
   pub fn new() -> Self {
     Self {
       add_examples: true,
@@ -251,10 +255,12 @@ impl TransformPlugin for JSDocEnhancerPlugin {
 }
 
 /// Plugin registry for built-in plugins
+#[allow(dead_code)]
 pub struct BuiltinPlugins;
 
 impl BuiltinPlugins {
   /// Get a built-in plugin by name
+  #[allow(dead_code)]
   pub fn get(name: &str) -> Option<Box<dyn TransformPlugin>> {
     match name {
       "jsdoc-enhancer" => Some(Box::new(JSDocEnhancerPlugin::new())),
@@ -295,9 +301,9 @@ pub struct PluginInfo {
   pub options: Option<HashMap<String, serde_json::Value>>,
 }
 
-/// Register a built-in plugin
-#[napi]
+/// Register a built-in plugin (internal use only)
 #[allow(clippy::needless_pass_by_value)]
+#[allow(dead_code)]
 pub fn register_builtin_plugin(name: String) -> Result<bool, napi::Error> {
   if let Some(plugin) = BuiltinPlugins::get(&name) {
     let manager = get_plugin_manager();
@@ -311,8 +317,8 @@ pub fn register_builtin_plugin(name: String) -> Result<bool, napi::Error> {
   }
 }
 
-/// Get information about all registered plugins
-#[napi]
+/// Get information about all registered plugins (internal use only)
+#[allow(dead_code)]
 pub fn get_registered_plugins() -> Vec<PluginInfo> {
   let manager = get_plugin_manager();
   let manager_lock = manager.lock().unwrap();
@@ -330,9 +336,9 @@ pub fn get_registered_plugins() -> Vec<PluginInfo> {
   plugins
 }
 
-/// Enable or disable a plugin
-#[napi]
+/// Enable or disable a plugin (internal use only)
 #[allow(clippy::needless_pass_by_value)]
+#[allow(dead_code)]
 pub fn set_plugin_enabled(name: String, enabled: bool) {
   let manager = get_plugin_manager();
   let mut manager_lock = manager.lock().unwrap();
@@ -340,7 +346,6 @@ pub fn set_plugin_enabled(name: String, enabled: bool) {
 }
 
 /// Initialize plugins with options
-#[napi]
 #[allow(dead_code)]
 #[allow(clippy::needless_pass_by_value)]
 pub fn initialize_plugins(

@@ -66,6 +66,7 @@ export const pluginPactToolbox = (options?: PluginOptions): RsbuildPlugin => {
             network = await createNetwork(toolboxConfig, {
               autoStart: true,
               detached: true,
+              registerCleanup: false, // Rsbuild handles its own cleanup via onCloseDevServer
             });
             stopSpinner(true, "Network started!");
 

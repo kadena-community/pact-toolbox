@@ -316,7 +316,6 @@ impl CodeGenerator {
     js_code: &mut String,
     ts_types: &mut String,
   ) {
-    eprintln!("GENERATE_FUNCTION_WITH_SOURCE_MAP: {}", function.name);
     let camel_case_name = to_camel_case(&function.name);
 
     // Generate JSDoc for JavaScript
@@ -385,11 +384,6 @@ impl CodeGenerator {
     }
 
     // Generate TypeScript declaration if requested
-    eprintln!(
-      "generate_types: {}, source_map_gen: {}",
-      self.generate_types,
-      self.source_map_gen.is_some()
-    );
     if self.generate_types {
       if let Some(doc) = &function.doc {
         let doc_comment = format!("/**\n * {doc}\n */\n");
@@ -450,11 +444,6 @@ impl CodeGenerator {
               if let Some(col_idx) = line.find(&search_text) {
                 let source_line = (line_idx + 1) as u32;
                 let source_column = col_idx as u32;
-
-                // Debug output to verify our code is running
-                eprintln!(
-                  "DIRECT LOOKUP: {camel_case_name} -> {source_line}:{source_column} ({search_text}) [GEN: {ts_lines}:{function_name_column}]"
-                );
 
                 // Convert to relative path for VSCode compatibility
                 let relative_file_path = std::path::Path::new(file_path)

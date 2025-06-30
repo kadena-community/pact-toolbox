@@ -68,9 +68,11 @@ export const unpluginFactory: UnpluginFactory<PluginOptions | undefined> = (opti
 
       if (startNetwork && isLocalNetwork(networkConfig) && (!isTest || isServe)) {
         // Create and start the network using the simplified API
+        // Network will automatically register cleanup handlers for Ctrl+C, SIGTERM etc.
         network = await createNetwork(resolvedConfig, {
           autoStart: true,
           detached: true,
+          registerCleanup: true,
         });
 
         // Ensure the global context is set
@@ -240,7 +242,7 @@ export const unpluginFactory: UnpluginFactory<PluginOptions | undefined> = (opti
       .then(() => {
         // Update deployment status in cache
         cache.setDeploymentStatus(id, true);
-        logger.info(`Contract ${contractName} deployed successfully.`);
+        logger.success(`Contract ${contractName} deployed successfully.`);
       });
   };
 
@@ -276,6 +278,7 @@ export const unpluginFactory: UnpluginFactory<PluginOptions | undefined> = (opti
         network = await createNetwork(resolvedConfig, {
           autoStart: true,
           detached: true,
+          registerCleanup: true,
         });
 
         // Ensure the global context is set
@@ -287,6 +290,8 @@ export const unpluginFactory: UnpluginFactory<PluginOptions | undefined> = (opti
       }
 
       compiler.hooks.shutdown.tap(PLUGIN_NAME, async () => {
+        // Explicit cleanup for immediate bundler shutdown
+        // Networks also register their own signal handlers as fallback
         if (network) {
           await network.stop();
         }
@@ -321,6 +326,7 @@ export const unpluginFactory: UnpluginFactory<PluginOptions | undefined> = (opti
         network = await createNetwork(resolvedConfig, {
           autoStart: true,
           detached: true,
+          registerCleanup: true,
         });
 
         // Initialize client if not already done
@@ -384,6 +390,8 @@ export const unpluginFactory: UnpluginFactory<PluginOptions | undefined> = (opti
         if (error) {
           logger.error("Error during Vite bundle:", error);
         }
+        // Explicit cleanup for immediate bundler shutdown
+        // Networks also register their own signal handlers as fallback
         if (network) {
           await network.stop();
         }

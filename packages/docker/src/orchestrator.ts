@@ -1,4 +1,4 @@
-import { logger, LogLevels, type Logger } from "@pact-toolbox/node-utils";
+import { logger, type Logger } from "@pact-toolbox/node-utils";
 import Docker from "dockerode";
 import { DockerService } from "./service";
 import type { DockerServiceConfig, OrchestratorConfig } from "./types";
@@ -14,7 +14,7 @@ export class ContainerOrchestrator {
   constructor(config: OrchestratorConfig) {
     this.#networkName = config.networkName;
     this.#runningServices = new Map();
-    this.#logger = config.logger ?? logger.create({ level: LogLevels.info });
+    this.#logger = config.logger ?? logger.create({ level: 2 }); // Use warn level (2) to match default logger
     this.#volumes = config.volumes || [];
   }
 
@@ -153,7 +153,7 @@ export class ContainerOrchestrator {
     await this.#getOrCreateNetwork();
     await this.#createVolumes();
     const orderedServiceGroupNames = this.#resolveServiceOrder(serviceConfigs);
-    this.#logger.info(`Service group startup order: ${orderedServiceGroupNames.join(", ")}`);
+    this.#logger.debug(`Service group startup order: ${orderedServiceGroupNames.join(", ")}`);
 
     for (const serviceGroupName of orderedServiceGroupNames) {
       const config = serviceConfigs.find((s) => s.containerName === serviceGroupName)!;
@@ -165,7 +165,7 @@ export class ContainerOrchestrator {
       const replicaCount = config.deploy?.replicas || 1;
       const serviceInstances: DockerService[] = [];
 
-      this.#logger.info(`Preparing to start ${replicaCount} instance(s) of service group '${serviceGroupName}'...`);
+      this.#logger.debug(`Preparing to start ${replicaCount} instance(s) of service group '${serviceGroupName}'...`);
 
       for (let i = 0; i < replicaCount; i++) {
         const instanceName = replicaCount > 1 ? `${serviceGroupName}-${i + 1}` : serviceGroupName;
@@ -192,7 +192,7 @@ export class ContainerOrchestrator {
               );
               try {
                 await Promise.all(depServiceGroupInstances.map((depInstance) => depInstance.waitForHealthy()));
-                this.#logger.success(`All instances of '${depGroupName}' are healthy for '${instanceName}'.`);
+                this.#logger.debug(`All instances of '${depGroupName}' are healthy for '${instanceName}'.`);
               } catch (healthError: any) {
                 this.#logger.error(
                   `Health check failed for at least one instance of dependency group '${depGroupName}' for '${instanceName}': ${healthError.message}`,
@@ -204,7 +204,7 @@ export class ContainerOrchestrator {
         }
 
         try {
-          this.#logger.start(`Starting instance '${instanceName}' of service group '${serviceGroupName}'...`);
+          this.#logger.debug(`Starting instance '${instanceName}' of service group '${serviceGroupName}'...`);
           await service.start();
           serviceInstances.push(service);
         } catch (startError: any) {
@@ -219,7 +219,7 @@ export class ContainerOrchestrator {
         `All ${replicaCount} instance(s) of service group '${serviceGroupName}' attempted to start.`,
       );
     }
-    this.#logger.success(`All provided service groups attempted to start.`);
+    this.#logger.debug(`All provided service groups attempted to start.`);
   }
 
   async streamAllLogs(): Promise<void> {
@@ -250,7 +250,7 @@ export class ContainerOrchestrator {
     for (const serviceGroupName of serviceGroupNamesToStop) {
       const serviceInstances = this.#runningServices.get(serviceGroupName);
       if (serviceInstances) {
-        this.#logger.start(`Stopping ${serviceInstances.length} instance(s) of service group '${serviceGroupName}'...`);
+        this.#logger.debug(`Stopping ${serviceInstances.length} instance(s) of service group '${serviceGroupName}'...`);
         // Stop instances of a group in parallel for faster shutdown
         await Promise.all(
           serviceInstances.map(async (service) => {
@@ -258,7 +258,7 @@ export class ContainerOrchestrator {
             await service.remove();
           }),
         );
-        this.#logger.success(`All instances of service group '${serviceGroupName}' stopped and removed.`);
+        this.#logger.debug(`All instances of service group '${serviceGroupName}' stopped and removed.`);
       }
     }
     this.#runningServices.clear();

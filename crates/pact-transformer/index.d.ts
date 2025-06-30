@@ -109,12 +109,6 @@ export interface ConfigLoadResult {
   /** Whether default config was used */
   isDefault: boolean
 }
-/** Load configuration from various sources */
-export declare function loadConfig(configPath?: string | undefined | null, environment?: string | undefined | null): ConfigLoadResult
-/** Apply a preset to the current configuration */
-export declare function applyPreset(config: PactConfig, presetName: string): PactConfig
-/** Validate configuration */
-export declare function validateConfig(config: PactConfig): boolean
 export interface FileOutputOptions {
   /** Output directory for generated files */
   outputDir: string
@@ -154,14 +148,6 @@ export interface PluginInfo {
   /** Plugin options */
   options?: Record<string, any>
 }
-/** Register a built-in plugin */
-export declare function registerBuiltinPlugin(name: string): boolean
-/** Get information about all registered plugins */
-export declare function getRegisteredPlugins(): Array<PluginInfo>
-/** Enable or disable a plugin */
-export declare function setPluginEnabled(name: string, enabled: boolean): void
-/** Initialize plugins with options */
-export declare function initializePlugins(options: Record<string, Record<string, any>>): void
 export interface SourceMapOptions {
   /** Whether to generate source maps */
   generate?: boolean
@@ -234,6 +220,25 @@ export interface WatchStats {
   /** Time since watch started in milliseconds */
   uptimeMs: number
 }
+/** Simplified configuration interface for PactTransformer */
+export interface PactTransformerConfig {
+  plugins?: Array<PluginConfig>
+  transform?: TransformOptions
+  fileOutput?: FileOutputOptions
+  watch?: WatchOptions
+}
+/** Options for transformFile method */
+export interface TransformFileOptions {
+  transformOptions?: TransformOptions
+  watch?: boolean
+}
+/** Options for transformFiles method */
+export interface TransformFilesOptions {
+  transformOptions?: TransformOptions
+  watch?: boolean
+}
+/** Factory function to create a PactTransformer */
+export declare function createPactTransformer(config?: PactTransformerConfig | undefined | null): PactTransformer
 /** Transform operation result */
 export interface TransformResult {
   javascript: string
@@ -282,107 +287,16 @@ export interface WatchStatsResult {
   avgTransformTimeMs: number
   uptimeMs: number
 }
-export declare class WatchHandle {
-  /** Get the next watch event */
-  static nextEvent(): WatchEvent | null
-  /** Get current watch statistics */
-  getStats(): Promise<WatchStats>
-  /** Stop watching and cleanup */
-  static stop(): void
-}
-/**
- * Main Pact Transformer API
- *
- * This is the primary interface for all Pact transformation operations.
- * It provides a unified API for parsing, transforming, and generating code.
- */
+/** Main PactTransformer with configuration-driven API */
 export declare class PactTransformer {
-  /** Create a new PactTransformer instance */
-  constructor()
-  /**
-   * Transform Pact source to JavaScript/TypeScript
-   *
-   * ```javascript
-   * const pact = new PactTransformer();
-   * const result = await pact.transform(source, { generateTypes: true });
-   * console.log(result.javascript, result.typescript);
-   * ```
-   */
-  transform(source: string, options?: TransformOptions | undefined | null): Promise<TransformResult>
-  /**
-   * Transform Pact source from a file with source maps enabled
-   *
-   * ```javascript
-   * const pact = new PactTransformer();
-   * const result = await pact.transformFile(source, 'path/to/file.pact', { generateTypes: true });
-   * console.log(result.javascript, result.typescript, result.sourceMap);
-   * ```
-   */
-  transformFile(source: string, filePath: string, options?: TransformOptions | undefined | null): Promise<TransformResult>
-  /**
-   * Get parsing errors for source code
-   *
-   * ```javascript
-   * const errors = pact.getErrors(invalidSource);
-   * errors.forEach(err => console.log(`${err.line}:${err.column} ${err.message}`));
-   * ```
-   */
+  /** Transform code string with options */
+  transform(code: string, options?: TransformOptions | undefined | null): Promise<TransformResult>
+  /** Transform single file with options and optional watch mode */
+  transformFile(filePath: string, options?: TransformFileOptions | undefined | null): Promise<FileResult>
+  /** Transform multiple files with options and optional watch mode */
+  transformFiles(patterns: Array<string>, options?: TransformFilesOptions | undefined | null): Promise<BatchResult>
+  /** Get parsing errors for source code */
   getErrors(source: string): Array<ErrorInfo>
-  /**
-   * Parse Pact source and return module AST
-   *
-   * ```javascript
-   * const modules = pact.parse(source);
-   * modules.forEach(m => console.log(`Module: ${m.name}`));
-   * ```
-   */
+  /** Parse Pact source and return module AST */
   parse(source: string): Array<ModuleInfo>
-}
-/** File operations API */
-export declare class FileOps {
-  /** Transform a single file to disk */
-  static transformFile(inputPath: string, options?: TransformOptions | undefined | null, fileOptions?: FileOutputOptions | undefined | null): Promise<FileResult>
-  /** Transform multiple files to disk */
-  static transformFiles(patterns: Array<string>, options?: TransformOptions | undefined | null, fileOptions?: FileOutputOptions | undefined | null): Promise<BatchResult>
-  /** Find Pact files matching patterns */
-  static findFiles(patterns: Array<string>): Array<string>
-}
-/** Watch API for file monitoring */
-export declare class WatchSession {
-  /** Start watching files */
-  static start(patterns: Array<string>, watchOptions?: WatchOptions | undefined | null, transformOptions?: TransformOptions | undefined | null, fileOptions?: FileOutputOptions | undefined | null): Promise<WatchSession>
-  /** Stop watching */
-  stop(): void
-  /** Get watch statistics */
-  stats(): Promise<WatchStatsResult>
-}
-/** Configuration management */
-export declare class ConfigManager {
-  /** Load configuration from file */
-  static load(path?: string | undefined | null, environment?: string | undefined | null): PactConfig
-  /** Validate configuration */
-  static validate(config: PactConfig): boolean
-}
-/** Plugin management */
-export declare class PluginManager {
-  /** Get list of available plugins */
-  static list(): Array<PluginInfo>
-  /** Register a built-in plugin */
-  static register(name: string): boolean
-  /** Enable or disable a plugin */
-  static setEnabled(name: string, enabled: boolean): void
-}
-/** Utility functions */
-export declare class Utils {
-  /** Warm up the parser for better performance */
-  static warmUp(): void
-  /** Benchmark parser performance */
-  static benchmark(source: string, iterations: number): number
-  /** Reset optimization state */
-  static resetOptimizations(): void
-}
-export declare class ErrorDetail {
-  message: string
-  line: number
-  column: number
 }

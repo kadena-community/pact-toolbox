@@ -178,13 +178,13 @@ impl CoreTransformer {
     result
   }
 
-  pub fn get_errors(source: &str) -> Vec<crate::ErrorDetail> {
+  pub fn get_errors(source: &str) -> Vec<crate::ErrorInfo> {
     let mut parser = get_parser();
     let (_, errors) = parser.parse(source);
     return_parser(parser);
     errors
       .into_iter()
-      .map(|e| crate::ErrorDetail {
+      .map(|e| crate::ErrorInfo {
         message: e.message,
         line: e.line as u32,
         column: e.column as u32,
@@ -215,6 +215,7 @@ pub struct TransformOptions {
 }
 
 /// Benchmark function to measure parser performance
+#[allow(dead_code)]
 pub fn run_parser_benchmark(source: &str, iterations: u32) -> Result<f64, napi::Error> {
   let start = std::time::Instant::now();
 
@@ -238,6 +239,7 @@ pub fn run_parser_benchmark(source: &str, iterations: u32) -> Result<f64, napi::
 }
 
 /// Warm up the parser pool for better initial performance
+#[allow(dead_code)]
 pub fn warm_up_parsers() {
   let pool_size = num_cpus::get();
   for _ in 0..pool_size {
@@ -247,6 +249,7 @@ pub fn warm_up_parsers() {
 }
 
 /// Reset the parser pool
+#[allow(dead_code)]
 pub fn reset_parser_pool() {
   let mut pool = PARSER_POOL.lock().unwrap();
   pool.clear();

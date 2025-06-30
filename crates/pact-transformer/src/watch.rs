@@ -81,6 +81,7 @@ struct WatchState {
   successful_transforms: u32,
   failed_transforms: u32,
   total_transform_time_ms: f64,
+  #[allow(dead_code)]
   start_time: Instant,
 }
 
@@ -113,8 +114,8 @@ pub async fn create_watch_session(
     .map_err(|e| napi::Error::from_reason(e.to_string()))
 }
 
-#[napi]
 pub struct WatchHandle {
+  #[allow(dead_code)]
   state: Arc<RwLock<WatchState>>,
   #[allow(dead_code)]
   event_sender: mpsc::UnboundedSender<WatchEvent>,
@@ -122,7 +123,6 @@ pub struct WatchHandle {
   _task_handle: tokio::task::JoinHandle<()>,
 }
 
-#[napi]
 impl WatchHandle {
   async fn new(
     watch_opts: WatchOptions,
@@ -210,7 +210,7 @@ impl WatchHandle {
   }
 
   /// Get the next watch event
-  #[napi]
+  #[allow(dead_code)]
   pub fn next_event() -> Option<WatchEvent> {
     // This would need a receiver to be stored in the handle
     // For now, returning None as a placeholder
@@ -218,7 +218,7 @@ impl WatchHandle {
   }
 
   /// Get current watch statistics
-  #[napi]
+  #[allow(dead_code)]
   pub async fn get_stats(&self) -> WatchStats {
     let state = self.state.read().await;
     let avg_time = if state.total_transforms > 0 {
@@ -238,7 +238,7 @@ impl WatchHandle {
   }
 
   /// Stop watching and cleanup
-  #[napi]
+  #[allow(dead_code)]
   pub fn stop() {
     // The watcher will be dropped automatically
     // Task will be cancelled when the handle is dropped
@@ -501,6 +501,7 @@ async fn process_file_events(
 }
 
 /// Find all Pact files matching the given patterns
+#[allow(dead_code)]
 pub fn find_pact_files(
   patterns: Vec<String>,
   directories: Option<Vec<String>>,

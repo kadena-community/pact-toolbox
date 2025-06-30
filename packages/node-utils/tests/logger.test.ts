@@ -36,7 +36,7 @@ vi.mock("consola", () => {
   return {
     createConsola: vi.fn(() => mockLogger),
     LogLevels: {
-      silent: 0,
+      silent: -1,
       error: 1,
       warn: 2,
       info: 3,
@@ -59,7 +59,7 @@ describe("logger", () => {
   });
 
   describe("log level configuration", () => {
-    it("should use default info level", async () => {
+    it("should use default warn level", async () => {
       delete process.env["DEBUG"];
       delete process.env["LOG_LEVEL"];
 
@@ -69,7 +69,7 @@ describe("logger", () => {
 
       expect(createConsola).toHaveBeenCalledWith(
         expect.objectContaining({
-          level: 3, // info level
+          level: 2, // warn level (new default)
         }),
       );
     });
@@ -102,7 +102,7 @@ describe("logger", () => {
 
     it("should respect LOG_LEVEL environment variable", async () => {
       const testCases = [
-        { env: "silent", expected: 0 },
+        { env: "silent", expected: -1 },
         { env: "fatal", expected: 0 },
         { env: "error", expected: 1 },
         { env: "warn", expected: 2 },

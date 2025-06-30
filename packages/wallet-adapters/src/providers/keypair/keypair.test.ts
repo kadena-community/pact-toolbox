@@ -1,8 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { KeypairWalletProvider } from './provider';
 import { KeypairWallet } from './wallet';
-import { WalletError } from '@pact-toolbox/wallet-core';
-import type { PartiallySignedTransaction, SignedTransaction } from '@pact-toolbox/types';
+import type { PartiallySignedTransaction } from '@pact-toolbox/types';
 
 // Mock the crypto module
 vi.mock('@pact-toolbox/crypto', () => ({

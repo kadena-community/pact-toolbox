@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi, type MockedFunction } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { WalletService } from './wallet-service';
 import { WalletError } from '@pact-toolbox/wallet-core';
 import type { Wallet, WalletProvider, WalletAccount, WalletNetwork } from '@pact-toolbox/wallet-core';
@@ -484,7 +484,7 @@ describe('WalletService', () => {
       service.registerAll(providers);
       
       const wallet1 = await service.connect('wallet-1');
-      const wallet2 = await service.connect('wallet-2');
+      await service.connect('wallet-2');
       
       expect(service.getPrimaryWallet()).toBe(wallet1); // First connected
       

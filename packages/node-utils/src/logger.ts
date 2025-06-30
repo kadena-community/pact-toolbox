@@ -7,8 +7,11 @@ import { createConsola, type ConsolaInstance } from "consola";
  * @returns The numeric log level (0-5)
  */
 function getLogLevel(): number {
-  // Check for DEBUG environment variable (1 = debug level)
-  if (process.env["DEBUG"] === "1" || process.env["DEBUG"] === "true") {
+  // Check for DEBUG environment variable - supports various patterns
+  const debug = process.env["DEBUG"];
+  if (debug && debug !== "0" && debug.toLowerCase() !== "false") {
+    // Support common DEBUG patterns:
+    // DEBUG=* (enable all debug), DEBUG=pact-* (namespaced), DEBUG=1, DEBUG=true, etc.
     return 4; // debug level
   }
 
@@ -17,7 +20,7 @@ function getLogLevel(): number {
     const level = process.env["LOG_LEVEL"].toLowerCase();
     switch (level) {
       case "silent":
-        return 0;
+        return -1; // Below all levels to ensure silence
       case "fatal":
         return 0;
       case "error":
@@ -37,24 +40,25 @@ function getLogLevel(): number {
     }
   }
 
-  // Default to info level (3)
-  return 3;
+  // Default to warn level (2) - less verbose by default
+  return 2;
 }
 
 /**
  * Main logger instance configured with environment-based log level.
  *
  * Log levels:
- * - 0: silent/fatal
+ * - -1: silent (no output)
+ * - 0: fatal
  * - 1: error
- * - 2: warn
- * - 3: info/log (default)
+ * - 2: warn (default)
+ * - 3: info/log
  * - 4: debug
  * - 5: trace
  *
  * Set log level via environment variables:
- * - DEBUG=1 or DEBUG=true for debug level
- * - LOG_LEVEL=debug/info/warn/error/silent
+ * - DEBUG=1 (or any truthy value except "0"/"false") for debug level
+ * - LOG_LEVEL=debug/info/warn/error/silent for specific levels
  *
  * @example
  * ```typescript

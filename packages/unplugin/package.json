@@ -163,7 +163,7 @@
     "release": "pnpm test && pnpm publish",
     "test:watch": "vitest",
     "test": "vitest run",
-    "typecheck": "echo 'Type checking skipped for unplugin due to Rollup version compatibility'"
+    "typecheck": "tsc --noEmit --skipLibCheck"
   },
   "dependencies": {
     "@pact-toolbox/config": "workspace:*",

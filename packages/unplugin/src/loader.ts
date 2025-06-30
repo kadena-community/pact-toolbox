@@ -35,7 +35,7 @@ async function transformAndDeploy(id: string, src: string) {
     // TODO: Deploy only in dev mode
     const networkConfig = getDefaultNetworkConfig(cache.resolvedConfig);
     if (isLocalNetwork(networkConfig)) {
-      logger.start(`[pactLoader] Deploying contract ${id} to ${networkConfig.name}`);
+      logger.info(`[pactLoader] Deploying contract ${id} to ${networkConfig.name}`);
       await client.deployCode(src, {
         builder: {
           upgrade: isDeployed,

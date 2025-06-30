@@ -55,6 +55,7 @@ vi.mock("@pact-toolbox/node-utils", () => ({
   },
   writeFile: vi.fn().mockResolvedValue(undefined),
   isPortTaken: vi.fn().mockResolvedValue(false),
+  cleanupOnExit: vi.fn(),
 }));
 
 describe("unpluginFactory", () => {
