@@ -406,7 +406,7 @@ jobs:
           options: "--platform linux/arm64 -v ${{ github.workspace }}:/build -w /build"
           run: |
             set -e
-            apk add --no-cache npm file
+            apk add --no-cache npm file python3 make g++
             corepack disable || true
             npm install -g pnpm@10.12.4
             pnpm config set supportedArchitectures.cpu "arm64"
