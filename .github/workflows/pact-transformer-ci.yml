@@ -290,16 +290,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Setup node
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ matrix.node }}
-      - uses: pnpm/action-setup@v4
-
-      - name: Install dependencies
-        run: |
-          pnpm config set supportedArchitectures.libc "musl"
-          pnpm install --frozen-lockfile
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
@@ -308,10 +298,27 @@ jobs:
       - name: List packages
         run: ls -R .
         shell: bash
-      - name: Test bindings
-        run: cd crates/pact-transformer && pnpm test
-        env:
-          LD_LIBRARY_PATH: /usr/lib/x86_64-linux-gnu:/lib/x86_64-linux-gnu
+      - name: Install dependencies
+        run: |
+          pnpm config set supportedArchitectures.libc "musl"
+          pnpm install --frozen-lockfile
+      - name: Set up Docker
+        uses: docker/setup-buildx-action@v3
+      - name: Setup and run tests
+        uses: addnab/docker-run-action@v3
+        with:
+          image: node:${{ matrix.node }}-alpine
+          options: "-v ${{ github.workspace }}:/build -w /build"
+          run: |
+            set -e
+            apk add --no-cache npm file
+            corepack disable || true
+            npm install -g pnpm@10.12.4
+            cd crates/pact-transformer
+            ls -la *.node
+            file *.node 2>/dev/null || echo "No .node files found"
+            node -e "try { require('./index.js'); console.log('Native module loads correctly'); } catch(e) { console.error('Module loading error:', e.message); process.exit(1); }"
+            pnpm test
   test-linux-aarch64-gnu-binding:
     name: Test bindings on aarch64-unknown-linux-gnu - node@${{ matrix.node }}
     needs:
