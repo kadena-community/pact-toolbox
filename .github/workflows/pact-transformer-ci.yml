@@ -315,6 +315,7 @@ jobs:
             apk add --no-cache npm file
             corepack disable || true
             npm install -g pnpm@10.12.4
+            pnpm install --frozen-lockfile
             cd crates/pact-transformer
             ls -la *.node
             file *.node 2>/dev/null || echo "No .node files found"
@@ -411,7 +412,8 @@ jobs:
             npm install -g pnpm@10.12.4
             pnpm config set supportedArchitectures.cpu "arm64"
             pnpm config set supportedArchitectures.libc "musl"
-            pnpm install --frozen-lockfile
+            # Skip postinstall scripts to avoid qemu issues
+            pnpm install --frozen-lockfile --ignore-scripts
             cd crates/pact-transformer
             ls -la *.node
             file *.node 2>/dev/null || echo "No .node files found"
