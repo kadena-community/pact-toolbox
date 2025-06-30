@@ -63,7 +63,7 @@ cd crates/pact-transformer && cargo test
 
 ### Monorepo Structure
 
-- **packages/**: Core library packages (25+ packages including transaction, chainweb-client, wallet-*, etc.)
+- **packages/**: Core library packages (25+ packages including transaction, chainweb-client, wallet-\*, etc.)
 - **apps/**: Applications
   - `cli/`: Main pact-toolbox CLI with commands for init, start, test, run, generate, doctor, prelude
   - `docs/`: Documentation site built with Next.js and Fumadocs
@@ -134,16 +134,16 @@ The main `pact-toolbox` CLI provides these commands:
 Projects use `pact-toolbox.config.ts` for configuration:
 
 ```typescript
-import { defineConfig } from '@pact-toolbox/config';
+import { defineConfig } from "@pact-toolbox/config";
 
 export default defineConfig({
-  contracts: ['./pact/*.pact'],
+  contracts: ["./pact/*.pact"],
   network: {
-    networkId: 'development',
-    chainId: '0',
+    networkId: "development",
+    chainId: "0",
   },
   test: {
-    setupFiles: ['./test/setup.ts'],
+    setupFiles: ["./test/setup.ts"],
   },
 });
 ```
@@ -152,3 +152,8 @@ export default defineConfig({
 
 - **Commit Signatures**:
   - Do not add Anthropic/Claude signatures to the commit messages
+
+## Development Instructions
+
+- **Important Notes**:
+  - Never commit or push anything until explicitly mentioned

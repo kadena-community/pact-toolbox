@@ -80,12 +80,17 @@ jobs:
             build: |-
               set -e &&
               corepack disable || true &&
-              apt-get update && apt-get install -y libc6-dev build-essential &&
+              apt-get update && apt-get install -y libc6-dev build-essential curl xz-utils &&
+              curl -fsSL https://ziglang.org/download/0.13.0/zig-linux-x86_64-0.13.0.tar.xz | tar -xJ -C /usr/local --strip-components=1 &&
               rustup target add x86_64-unknown-linux-gnu &&
               cd crates/pact-transformer &&
               npm install -g pnpm@10.12.4 &&
               export CC_x86_64_unknown_linux_gnu=gcc &&
               export AR_x86_64_unknown_linux_gnu=ar &&
+              export CFLAGS_x86_64_unknown_linux_gnu="-D_GNU_SOURCE -D_DEFAULT_SOURCE" &&
+              export CPPFLAGS_x86_64_unknown_linux_gnu="-D_GNU_SOURCE -D_DEFAULT_SOURCE" &&
+              export CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=gcc &&
+              export RUSTFLAGS="-C link-arg=-Wl,--no-as-needed" &&
               pnpm build --target x86_64-unknown-linux-gnu &&
               strip *.node
           - host: ubuntu-latest
@@ -108,12 +113,17 @@ jobs:
             build: |-
               set -e &&
               corepack disable || true &&
-              apt-get update && apt-get install -y build-essential gcc-aarch64-linux-gnu &&
+              apt-get update && apt-get install -y build-essential gcc-aarch64-linux-gnu curl xz-utils &&
+              curl -fsSL https://ziglang.org/download/0.13.0/zig-linux-x86_64-0.13.0.tar.xz | tar -xJ -C /usr/local --strip-components=1 &&
               rustup target add aarch64-unknown-linux-gnu &&
               cd crates/pact-transformer &&
               npm install -g pnpm@10.12.4 &&
               export CC_aarch64_unknown_linux_gnu=aarch64-linux-gnu-gcc &&
               export AR_aarch64_unknown_linux_gnu=aarch64-linux-gnu-ar &&
+              export CFLAGS_aarch64_unknown_linux_gnu="-D_GNU_SOURCE -D_DEFAULT_SOURCE" &&
+              export CPPFLAGS_aarch64_unknown_linux_gnu="-D_GNU_SOURCE -D_DEFAULT_SOURCE" &&
+              export CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc &&
+              export RUSTFLAGS="-C link-arg=-Wl,--no-as-needed" &&
               pnpm build --target aarch64-unknown-linux-gnu &&
               aarch64-unknown-linux-gnu-strip *.node
           - host: ubuntu-latest
@@ -221,6 +231,8 @@ jobs:
         shell: bash
       - name: Test bindings
         run: cd crates/pact-transformer && pnpm test
+        env:
+          LD_LIBRARY_PATH: /usr/lib/x86_64-linux-gnu:/lib/x86_64-linux-gnu
   test-linux-x64-gnu-binding:
     name: Test bindings on Linux-x64-gnu - node@${{ matrix.node }}
     needs:
@@ -251,8 +263,19 @@ jobs:
       - name: List packages
         run: ls -R .
         shell: bash
+      - name: Check downloaded artifacts
+        run: |
+          ls -la crates/pact-transformer/
+          file crates/pact-transformer/*.node 2>/dev/null || echo "No .node files found"
+          ldd crates/pact-transformer/*.node 2>/dev/null || echo "Cannot check .node file dependencies"
+          # Test if the module can be loaded directly
+          cd crates/pact-transformer && node -e "try { require('./index.js'); console.log('Native module loads correctly'); } catch(e) { console.error('Module loading error:', e.message); process.exit(1); }"
+        shell: bash
       - name: Test bindings
         run: cd crates/pact-transformer && pnpm test
+        env:
+          LD_LIBRARY_PATH: /usr/lib/x86_64-linux-gnu:/lib/x86_64-linux-gnu
+          DEBUG: napi:*
   test-linux-x64-musl-binding:
     name: Test bindings on x86_64-unknown-linux-musl - node@${{ matrix.node }}
     needs:
@@ -287,6 +310,8 @@ jobs:
         shell: bash
       - name: Test bindings
         run: cd crates/pact-transformer && pnpm test
+        env:
+          LD_LIBRARY_PATH: /usr/lib/x86_64-linux-gnu:/lib/x86_64-linux-gnu
   test-linux-aarch64-gnu-binding:
     name: Test bindings on aarch64-unknown-linux-gnu - node@${{ matrix.node }}
     needs:
@@ -301,6 +326,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - uses: pnpm/action-setup@v4
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
@@ -335,6 +365,7 @@ jobs:
             apt-get install -y nodejs npm
             corepack disable || true
             npm install -g pnpm@10.12.4
+            export LD_LIBRARY_PATH=/usr/lib/aarch64-linux-gnu:/lib/aarch64-linux-gnu
             cd crates/pact-transformer && pnpm test
   test-linux-aarch64-musl-binding:
     name: Test bindings on aarch64-unknown-linux-musl - node@lts
@@ -343,6 +374,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+      - uses: pnpm/action-setup@v4
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
@@ -371,6 +407,7 @@ jobs:
             apk add --no-cache npm
             corepack disable || true
             npm install -g pnpm@10.12.4
+            export LD_LIBRARY_PATH=/usr/lib/aarch64-linux-gnu:/lib/aarch64-linux-gnu
             cd crates/pact-transformer && pnpm test
 
   publish:

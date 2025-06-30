@@ -28,15 +28,19 @@ export class DevWallet extends BaseWallet {
 
   private async initializeModalManager(): Promise<void> {
     try {
+      console.log("Starting dev wallet UI initialization...");
       // Import UI components first
       await import("./ui");
+      console.log("UI components imported successfully");
 
       const { ModalManager } = await import("./ui/modal-manager");
+      console.log("ModalManager imported successfully");
       this.modalManager = ModalManager.getInstance();
       this.modalManager.initialize();
       console.log("Dev wallet modal manager initialized successfully");
     } catch (error) {
       console.error("Modal manager not available:", error);
+      console.error("Error details:", error);
     }
   }
 
@@ -61,8 +65,10 @@ export class DevWallet extends BaseWallet {
   }
 
   async connect(networkId?: string): Promise<WalletAccount> {
+    console.log("DevWallet connect called, shouldUseUI:", this.shouldUseUI());
     // Check if we have a previously selected key for auto-reconnect
     const savedKeyAddress = await this.storage.getSelectedKey();
+    console.log("Saved key address:", savedKeyAddress);
 
     if (this.shouldUseUI() && savedKeyAddress) {
       // Try to auto-reconnect with saved key
@@ -89,19 +95,22 @@ export class DevWallet extends BaseWallet {
         this.keyPairSigner = await KeyPairSigner.fromPrivateKeyHex(this.selectedKey.privateKey);
       }
     } else if (this.shouldUseUI()) {
-      // No saved key - check if this is from auto-connect
+      // No saved key - show UI for key creation/selection
       const keys = await this.storage.getKeys();
+      console.log("No saved key, existing keys count:", keys.length);
+
       if (keys.length === 0) {
-        // No accounts exist - fail silently for auto-connect, or show UI for manual connect
-        // We can detect auto-connect by checking the call stack or adding a parameter
+        // No accounts exist - for auto-connect scenarios, we should fail gracefully
         throw WalletError.notFound("No accounts configured in dev wallet");
       }
 
       // Have keys but no selected key, show UI for selection
       if (this.modalManagerPromise) {
+        console.log("Waiting for modal manager initialization...");
         await this.modalManagerPromise;
       }
 
+      console.log("Showing UI for key selection/creation");
       const selectedKeyData = await this.showUIAndWaitForSelection();
       if (!selectedKeyData) {
         throw WalletError.userRejected("connection");
