@@ -434,6 +434,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+          registry-url: 'https://registry.npmjs.org'
       - uses: pnpm/action-setup@v4
 
       - name: Check if version needs publishing
@@ -490,12 +491,11 @@ jobs:
       - name: Publish packages
         if: steps.version_check.outputs.should_publish == 'true'
         run: |
-          npm config set provenance true
           cd crates/pact-transformer
-          echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc
           
           # Use custom publish script that handles already published packages gracefully
           node scripts/publish-pact-transformer.js
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

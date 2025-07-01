@@ -54,6 +54,9 @@ export class PactToolboxNetwork implements NetworkApi {
 
     this.toolboxConfig = toolboxConfig;
     this.logger = options.logger ?? defaultLogger;
+    
+    // Debug log the configuration
+    this.logger.debug(`PactToolboxNetwork constructor - downloadPreludes: ${toolboxConfig.downloadPreludes}, deployPreludes: ${toolboxConfig.deployPreludes}`)
 
     // Get network configuration
     const networkConfig = getDefaultNetworkConfig(toolboxConfig, options.network);
@@ -90,27 +93,42 @@ export class PactToolboxNetwork implements NetworkApi {
   async start(options?: NetworkStartOptions): Promise<void> {
     try {
       this.logger.info(`Starting network ${this.config.name}...`);
+      this.logger.debug(`Config - downloadPreludes: ${this.toolboxConfig.downloadPreludes}, deployPreludes: ${this.toolboxConfig.deployPreludes}`);
 
-      // Handle preludes if configured
-      if (this.toolboxConfig.downloadPreludes || this.toolboxConfig.deployPreludes) {
-        const preludeConfig = {
+      // Download preludes before starting network (doesn't need client connection)
+      if (this.toolboxConfig.downloadPreludes) {
+        this.logger.info("Downloading preludes...");
+        const downloadConfig = {
           client: options?.client ?? this.client,
           contractsDir: this.toolboxConfig.contractsDir ?? "contracts",
           preludes: this.toolboxConfig.preludes ?? [],
         };
+        await downloadAllPreludes(downloadConfig);
+        this.logger.success("Preludes downloaded successfully");
+      }
 
-        if (this.toolboxConfig.downloadPreludes) {
-          await downloadAllPreludes(preludeConfig);
-        }
+      // Start network
+      this.logger.debug("Starting network implementation...");
+      await this.network.start(options);
 
-        // Start network before deploying preludes
-        await this.network.start(options);
+      // Update client with actual network URL after it starts
+      const networkUrl = this.getRpcUrl();
+      this.logger.debug(`Network started at ${networkUrl}, updating client...`);
+      this.client = new PactToolboxClient(this.toolboxConfig);
 
-        if (this.toolboxConfig.deployPreludes) {
-          await deployPreludes(preludeConfig);
-        }
+      // Deploy preludes after network starts with updated client
+      if (this.toolboxConfig.deployPreludes) {
+        this.logger.info("Deploying preludes...");
+        const deployConfig = {
+          client: this.client,
+          contractsDir: this.toolboxConfig.contractsDir ?? "contracts",
+          preludes: this.toolboxConfig.preludes ?? [],
+        };
+        this.logger.debug(`Deploy config - contractsDir: ${deployConfig.contractsDir}, preludes count: ${deployConfig.preludes.length}`);
+        await deployPreludes(deployConfig);
+        this.logger.success("Preludes deployed successfully");
       } else {
-        await this.network.start(options);
+        this.logger.debug("Prelude deployment is disabled");
       }
 
       // Log accounts if requested
@@ -127,7 +145,7 @@ export class PactToolboxNetwork implements NetworkApi {
 
   async stop(): Promise<void> {
     try {
-      this.logger.debug(`Stopping network ${this.config.name}...`);
+      this.logger.info(`Stopping network ${this.config.name}...`);
 
       // Stop with timeout to prevent hanging processes
       const stopPromise = this.network.stop();
@@ -136,7 +154,7 @@ export class PactToolboxNetwork implements NetworkApi {
       });
 
       await Promise.race([stopPromise, timeoutPromise]);
-      this.logger.debug(`Network ${this.config.name} stopped successfully`);
+      this.logger.info(`Network ${this.config.name} stopped successfully`);
     } catch (error) {
       this.logger.error(`Error stopping network ${this.config.name}:`, error);
       throw error;
