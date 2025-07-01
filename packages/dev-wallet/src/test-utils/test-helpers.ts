@@ -1,5 +1,5 @@
 import { vi } from 'vitest';
-import type { Account, Network } from '../ui/types';
+import type { Account, Network } from '../types';
 import type { DevWalletSettings as Settings, DevWalletKey, DevWalletTransaction as Transaction } from '../types';
 
 // Mock implementations
@@ -126,7 +126,7 @@ export function createMockNetwork(overrides?: Partial<Network>): Network {
     id: 'testnet04',
     chainId: '0',
     rpcUrl: 'https://api.testnet.chainweb.com',
-    explorerUrl: 'https://explorer.testnet.chainweb.com',
+    isActive: true,
     ...overrides,
   };
 }

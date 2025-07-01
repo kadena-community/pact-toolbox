@@ -18,6 +18,9 @@ vi.mock('@pact-toolbox/crypto', () => ({
     publicKey: 'created-public-key',
     secretKey: 'created-secret-key',
   }),
+  generateSecurePassword: vi.fn().mockReturnValue('secure-password-123'),
+  encrypt: vi.fn().mockResolvedValue({ encrypted: 'data' }),
+  decrypt: vi.fn().mockResolvedValue('decrypted-data'),
 }));
 
 describe("DevWallet", () => {

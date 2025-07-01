@@ -1,6 +1,4 @@
-import { existsSync } from "node:fs";
-import { mkdir, writeFile } from "node:fs/promises";
-import { join } from "pathe";
+import { ensureDir, join, writeFile } from "@pact-toolbox/node-utils";
 
 export const pactFile: string = `
 (namespace 'free )
@@ -25,9 +23,7 @@ export const replFile: string = `
 
 export async function createHelloWorld(contractFolder: string): Promise<void> {
   // check if contract folder exists
-  if (!existsSync(contractFolder)) {
-    await mkdir(contractFolder, { recursive: true });
-  }
+  await ensureDir(contractFolder);
   // overwrite hello-world.pact and hello-world.repl
   await writeFile(join(contractFolder, "hello-world.pact"), pactFile);
   await writeFile(join(contractFolder, "hello-world.repl"), replFile);

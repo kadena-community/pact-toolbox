@@ -9,9 +9,10 @@ export class DevWalletProvider implements WalletProvider {
   readonly metadata: WalletMetadata = {
     id: "keypair",
     name: "Development Wallet",
-    description: typeof window === "undefined" 
-      ? "Development wallet for Node.js environments" 
-      : "Development wallet with key management UI",
+    description:
+      typeof window === "undefined"
+        ? "Development wallet for Node.js environments"
+        : "Development wallet with key management UI",
     type: "built-in",
     features: ["sign", "batch-sign", "key-management"],
   };

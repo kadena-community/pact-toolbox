@@ -143,6 +143,7 @@ export function isSignature(putativeSignature: string): putativeSignature is Sig
  */
 export async function signBytes(key: CryptoKey, data: ReadonlyUint8Array): Promise<SignatureBytes> {
   assertSigningCapabilityIsAvailable();
+  // @ts-expect-error TS doesn't recognize "Ed25519" for sign yet
   const signedData = await crypto.subtle.sign("Ed25519", key, data);
   return new Uint8Array(signedData) as SignatureBytes;
 }
@@ -206,5 +207,6 @@ export async function verifySignature(
   data: ReadonlyUint8Array | Uint8Array,
 ): Promise<boolean> {
   assertVerificationCapabilityIsAvailable();
+  // @ts-expect-error TS doesn't recognize "Ed25519" for verify yet
   return await crypto.subtle.verify("Ed25519", key, signature, data);
 }

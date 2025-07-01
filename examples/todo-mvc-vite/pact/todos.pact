@@ -50,7 +50,7 @@
   )
 
   (defun get-todos:[object{todo}] ()
-    "Get all todos."
+    "Get all todos. blah"
     (filter (lambda (todo) (= (at "deleted" todo) false)) (map (get-todo) (keys todo-table)))
   )
 )

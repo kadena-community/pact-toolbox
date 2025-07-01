@@ -63,18 +63,27 @@ pact-toolbox doctor
 
 ### `init`
 
-Initialize a new Pact project with templates and boilerplate code.
+Initialize Pact Toolbox in an existing project.
 
 ```bash
-pact-toolbox init [project-name]
-pact-toolbox init my-dapp --template basic
+pact-toolbox init
+pact-toolbox init --contractsDir ./contracts
 ```
 
 **Options:**
 
-- `--template`: Choose project template (basic, advanced, defi)
-- `--git`: Initialize git repository (default: true)
-- `--install`: Install dependencies automatically (default: true)
+- `--cwd`: Working directory path (default: current directory)
+- `--contractsDir`: Path to contracts directory (default: "pact")
+
+**What it does:**
+
+- Installs required dependencies (@pact-toolbox/chainweb-client, @pact-toolbox/transaction)
+- Installs dev dependencies (pact-toolbox, @pact-toolbox/unplugin)
+- Creates `pact-toolbox.config.ts` (or .js for CommonJS projects)
+- Adds pact:* scripts to package.json
+- Updates tsconfig.json to include Pact types
+- Creates a hello-world contract example
+- Downloads preludes
 
 ### `start`
 
@@ -82,38 +91,40 @@ Start local Pact development network for testing and development.
 
 ```bash
 pact-toolbox start
-pact-toolbox start --network devnet
-pact-toolbox start --port 8080
+pact-toolbox start local
+pact-toolbox start --quiet --tunnel
 ```
 
 **Options:**
 
-- `--network`: Network type (devnet, testnet, minimal)
-- `--port`: Port for the network (default: 8080)
-- `--clean`: Start with clean state
-- `--docker`: Use Docker for network (default: true)
+- `network`: Network to start (positional, default: "local")
+- `-q, --quiet`: Silence logs
+- `-t, --tunnel`: Start a cloudflare tunnel to the network
+- `-c, --clipboard`: Copy the network url to the clipboard (default: true)
 
 ### `prelude`
 
-Generate TypeScript type definitions from Pact contracts.
+Download and manage Pact preludes (standard library contracts).
 
 ```bash
 pact-toolbox prelude
-pact-toolbox prelude --watch
-pact-toolbox prelude --output ./types
+pact-toolbox prelude --network testnet
+pact-toolbox prelude --force
+pact-toolbox prelude --clean
 ```
 
 **Options:**
 
-- `--watch`: Watch for changes and regenerate types
-- `--output`: Output directory for generated types
-- `--include`: Glob pattern for contract files to include
+- `--network`: Network to use for prelude deployment
+- `--force`: Force re-download even if preludes are cached
+- `--clean`: Clean cache before downloading
 
 **Features:**
 
-- Hot reload in development
-- Type-safe contract interactions
-- IntelliSense support in IDEs
+- Downloads configured preludes from repositories
+- Caches preludes for faster subsequent runs
+- Generates init.repl for easy loading in REPL
+- Checksum verification for security
 
 ### `run`
 
@@ -133,27 +144,33 @@ pact-toolbox run --network testnet deploy
 
 ### `test`
 
-Run Pact contract tests with REPL support.
+Run Pact contract tests with REPL and JavaScript/TypeScript test support.
 
 ```bash
 pact-toolbox test
 pact-toolbox test --watch
-pact-toolbox test --pattern "*.repl"
+pact-toolbox test --repl --no-js
+pact-toolbox test --coverage --verbose
 ```
 
 **Options:**
 
-- `--watch`: Watch mode for continuous testing
-- `--pattern`: Glob pattern for test files
-- `--coverage`: Generate test coverage report
-- `--reporter`: Test reporter (default, json, xml)
+- `-w, --watch`: Watch for changes and re-run tests
+- `-r, --repl`: Run REPL tests (default: true)
+- `-j, --js`: Run JavaScript/TypeScript tests (default: true)
+- `-t, --trace`: Enable trace output for REPL tests
+- `-c, --coverage`: Enable coverage reporting for REPL tests
+- `-v, --verbose`: Enable verbose output
+- `-b, --bail`: Stop on first test failure
+- `-s, --silent`: Silent mode - suppress output
 
 **Features:**
 
-- REPL-based testing
-- Property-based testing
-- Integration test support
+- REPL-based Pact testing
+- JavaScript/TypeScript test support via Vitest
+- Watch mode for continuous testing
 - Coverage reporting
+- Parallel test execution
 
 ### `generate`
 

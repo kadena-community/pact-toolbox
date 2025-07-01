@@ -1,6 +1,6 @@
-import type { PactToolboxClient } from "@pact-toolbox/runtime";
+import type { PactDeployer } from "@pact-toolbox/deployer";
 import type { PactKeyset } from "@pact-toolbox/types";
-import { NamespaceService, pact } from "@pact-toolbox/kda";
+import { createPrincipalNamespace, createPrincipal, createSingleKeyKeyset, isPrincipalNamespace } from "@pact-toolbox/kda";
 import { logger, readFile } from "@pact-toolbox/node-utils";
 import type { WalletManager } from "./wallet-manager";
 
@@ -50,11 +50,13 @@ export interface NamespaceOperationResult {
 }
 
 export class NamespaceHandler {
-  private client: PactToolboxClient;
+  private client: PactDeployer;
   private walletManager: WalletManager;
-  private namespaceService: NamespaceService;
 
-  constructor(client: PactToolboxClient, walletManager: WalletManager, chainId: string = "0") {
+  constructor(
+    client: PactDeployer,
+    walletManager: WalletManager,
+  ) {
     this.client = client;
     this.walletManager = walletManager;
 
@@ -62,11 +64,6 @@ export class NamespaceHandler {
     if (!wallet) {
       throw new Error("Wallet manager must be initialized before creating namespace handler");
     }
-
-    this.namespaceService = new NamespaceService({
-      context: client.getContext(),
-      defaultChainId: chainId as any,
-    });
   }
 
   /**
@@ -96,7 +93,7 @@ export class NamespaceHandler {
       result.hasNamespace = true;
       result.namespaceName = namespaceParts[0];
       result.moduleName = namespaceParts[1];
-      result.isPrincipal = pact.isPrincipalNamespace(result.namespaceName);
+      result.isPrincipal = isPrincipalNamespace(result.namespaceName);
 
       logger.info(`Detected namespace: ${result.namespaceName} (principal: ${result.isPrincipal})`);
 
@@ -210,8 +207,8 @@ export class NamespaceHandler {
         throw new Error("No admin keyset available for namespace creation");
       }
 
-      // Validate that the keyset matches the namespace
-      const expectedNamespace = this.namespaceService.generatePrincipalNamespace(adminKeyset);
+      // Validate that the keyset matches the namespace by creating a principal
+      const expectedNamespace = await createPrincipal(adminKeyset);
       if (expectedNamespace !== namespaceName) {
         throw new Error(
           `Keyset does not match expected namespace. ` + `Expected: ${expectedNamespace}, Got: ${namespaceName}`,
@@ -219,7 +216,7 @@ export class NamespaceHandler {
       }
 
       // Create the namespace
-      const result = await this.namespaceService.createPrincipalNamespace({
+      const result = await createPrincipalNamespace({
         adminKeyset,
         userKeyset: options.userKeyset,
         chainId: options.chainId as any,
@@ -231,7 +228,7 @@ export class NamespaceHandler {
           created: true,
           existed: false,
           namespaceName,
-          transactionHash: (result.transaction as any)?.requestKey,
+          transactionHash: result.result,
         };
       } else {
         throw new Error(result.error || "Unknown error creating namespace");
@@ -298,7 +295,7 @@ export class NamespaceHandler {
       return undefined;
     }
 
-    return pact.createSingleKeyKeyset(signer.publicKey);
+    return createSingleKeyKeyset(signer.publicKey);
   }
 
   /**
@@ -320,14 +317,14 @@ export class NamespaceHandler {
   /**
    * Generate a principal namespace for the current signer
    */
-  generateNamespaceForCurrentSigner(): string | null {
+  async generateNamespaceForCurrentSigner(): Promise<string | null> {
     const signer = this.walletManager.getCurrentSigner();
     if (!signer) {
       return null;
     }
 
-    const keyset = pact.createSingleKeyKeyset(signer.publicKey);
-    return this.namespaceService.generatePrincipalNamespace(keyset);
+    const keyset = createSingleKeyKeyset(signer.publicKey);
+    return await createPrincipal(keyset);
   }
 
   /**
@@ -395,11 +392,10 @@ export class NamespaceHandler {
  * Create a namespace handler instance
  */
 export function createNamespaceHandler(
-  client: PactToolboxClient,
+  client: PactDeployer,
   walletManager: WalletManager,
-  chainId?: string,
 ): NamespaceHandler {
-  return new NamespaceHandler(client, walletManager, chainId);
+  return new NamespaceHandler(client, walletManager);
 }
 
 /**

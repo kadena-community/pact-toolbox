@@ -1,10 +1,18 @@
 # @pact-toolbox/docker
 
-> Simple and powerful Docker container orchestration with Docker Compose support
+Modern Docker container orchestration library for Node.js with Docker Compose-like features.
 
-## Overview
+## Features
 
-The `@pact-toolbox/docker` package provides a clean, TypeScript-first approach to Docker container orchestration. It focuses on simplicity while supporting all Docker Compose features you need for Pact development environments.
+- 🚀 **Simple API** - Easy to use programmatic interface for Docker containers
+- 🔄 **Auto-recovery** - Automatic container restart with exponential backoff
+- 🏗️ **Build Support** - Build images from Dockerfiles
+- 🔗 **Dependencies** - Service dependencies with health check conditions
+- 🌐 **Networking** - Automatic network creation and management
+- 💾 **Volumes** - Named volumes and bind mounts support
+- 🏥 **Health Checks** - Built-in health monitoring and recovery
+- 🧹 **Cleanup** - Automatic cleanup of containers and networks
+- 📊 **Resource Limits** - CPU and memory limits with smart defaults
 
 ## Installation
 
@@ -14,479 +22,269 @@ npm install @pact-toolbox/docker
 pnpm add @pact-toolbox/docker
 ```
 
-## Features
-
-- 🐳 **Container Lifecycle Management** - Create, start, stop, and remove containers
-- 🔗 **Dependency Resolution** - Support for `depends_on` with health conditions
-- 🏥 **Health Monitoring** - Built-in health checks with configurable timeouts
-- 🌐 **Network Management** - Custom networks with automatic creation
-- 💾 **Volume Management** - Named volumes and bind mounts
-- 📄 **Docker Compose Support** - Convert compose services to TypeScript configs
-- 🎯 **Type Safety** - Full TypeScript support with comprehensive types
-- 📝 **Logging** - Structured logging with service-specific tags
-- 🔄 **Graceful Shutdown** - Proper cleanup on process termination
-
 ## Quick Start
 
 ```typescript
-import { ContainerOrchestrator } from "@pact-toolbox/docker";
+import { ContainerOrchestrator } from '@pact-toolbox/docker';
 
-// Create orchestrator instance
 const orchestrator = new ContainerOrchestrator({
-  networkName: "pact-dev",
+  networkName: 'my-network',
 });
 
-// Define services
-const services = [
+const service = {
+  containerName: 'my-nginx',
+  image: 'nginx:alpine',
+  ports: [{ target: 80, published: 8080 }],
+};
+
+// Start the service
+await orchestrator.startServices([service]);
+
+// Stop all services
+await orchestrator.stopAllServices();
+```
+
+## Docker Compose-like Example
+
+```typescript
+import { ContainerOrchestrator } from '@pact-toolbox/docker';
+import type { DockerServiceConfig } from '@pact-toolbox/docker';
+
+const orchestrator = new ContainerOrchestrator({
+  networkName: 'app-network',
+  volumes: ['postgres_data'],
+});
+
+const services: DockerServiceConfig[] = [
+  // Database
   {
-    containerName: "pact-server",
-    image: "kadena/pact:latest",
-    ports: [{ target: 9001, published: 9001 }],
-    healthCheck: {
-      Test: ["CMD", "curl", "-f", "http://localhost:9001/health"],
-      Interval: 10000000000, // 10s in nanoseconds
-      Retries: 3,
+    containerName: 'postgres',
+    image: 'postgres:15-alpine',
+    environment: {
+      POSTGRES_PASSWORD: 'secret',
+      POSTGRES_DB: 'appdb',
     },
+    volumes: ['postgres_data:/var/lib/postgresql/data'],
+    ports: [{ target: 5432, published: 5432 }],
+    healthCheck: {
+      Test: ['CMD-SHELL', 'pg_isready -U postgres'],
+      Interval: 10000000000, // 10s in nanoseconds
+      Timeout: 5000000000,   // 5s
+      Retries: 5,
+    },
+  },
+  // Application
+  {
+    containerName: 'app',
+    image: 'node:18-alpine',
+    dependsOn: {
+      'postgres': { condition: 'service_healthy' },
+    },
+    environment: {
+      DATABASE_URL: 'postgresql://postgres:secret@postgres:5432/appdb',
+    },
+    volumes: ['./app:/app'],
+    workingDir: '/app',
+    command: ['npm', 'start'],
+    ports: [{ target: 3000, published: 3000 }],
   },
 ];
 
-// Start services
+// Setup graceful shutdown
+orchestrator.setupGracefulShutdown();
+
+// Start all services
 await orchestrator.startServices(services);
-console.log("Pact server is running!");
 
-// Graceful shutdown
-process.on("SIGINT", async () => {
-  await orchestrator.stopAllServices();
-  process.exit(0);
-});
-```
-
-## Docker Compose Support
-
-### Converting Existing docker-compose.yml
-
-```typescript
-import { convertComposeService } from "@pact-toolbox/docker";
-
-// Your existing docker-compose service
-const composeService = {
-  image: "postgres:15",
-  environment: {
-    POSTGRES_PASSWORD: "secret",
-    POSTGRES_DB: "myapp",
-  },
-  ports: ["5432:5432"],
-  volumes: ["postgres_data:/var/lib/postgresql/data"],
-  healthcheck: {
-    test: ["CMD-SHELL", "pg_isready -U postgres"],
-    interval: "10s",
-    timeout: "5s",
-    retries: 5,
-  },
-};
-
-// Convert to our format
-const serviceConfig = convertComposeService("database", composeService);
-
-// Use with orchestrator
-const orchestrator = new ContainerOrchestrator({ networkName: "myapp" });
-await orchestrator.startServices([serviceConfig]);
-```
-
-### Example: Multi-Service Setup
-
-```typescript
-import { ContainerOrchestrator, convertComposeService } from "@pact-toolbox/docker";
-
-const orchestrator = new ContainerOrchestrator({
-  networkName: "myapp-network",
-  volumes: ["postgres_data", "redis_data"],
-});
-
-// Database service
-const database = convertComposeService("database", {
-  image: "postgres:15-alpine",
-  environment: {
-    POSTGRES_PASSWORD: "secret",
-    POSTGRES_DB: "myapp",
-  },
-  volumes: ["postgres_data:/var/lib/postgresql/data"],
-  healthcheck: {
-    test: ["CMD-SHELL", "pg_isready -U postgres"],
-    interval: "10s",
-    retries: 5,
-  },
-});
-
-// Cache service
-const cache = convertComposeService("cache", {
-  image: "redis:7-alpine",
-  volumes: ["redis_data:/data"],
-  command: ["redis-server", "--appendonly", "yes"],
-});
-
-// Application service
-const app = convertComposeService("app", {
-  image: "node:20-alpine",
-  ports: ["3000:3000"],
-  environment: {
-    DATABASE_URL: "postgresql://postgres:secret@database:5432/myapp",
-    REDIS_URL: "redis://cache:6379",
-  },
-  depends_on: {
-    database: { condition: "service_healthy" },
-    cache: { condition: "service_started" },
-  },
-  working_dir: "/app",
-  volumes: ["./app:/app"],
-  command: ["npm", "start"],
-});
-
-// Start all services in dependency order
-await orchestrator.startServices([database, cache, app]);
+// Stream logs
+await orchestrator.streamAllLogs();
 ```
 
 ## API Reference
 
 ### ContainerOrchestrator
 
-Main class for managing Docker containers and services.
-
 ```typescript
 class ContainerOrchestrator {
   constructor(config: OrchestratorConfig);
 
-  // Start multiple services with dependency resolution
-  async startServices(services: DockerServiceConfig[]): Promise<void>;
+  // Core methods
+  startServices(services: DockerServiceConfig[]): Promise<void>;
+  stopAllServices(): Promise<void>;
+  setupGracefulShutdown(): void;
 
-  // Stop all running services
-  async stopAllServices(): Promise<void>;
-
-  // Stream logs from all services
-  async streamAllLogs(): Promise<void>;
-
-  // Stop all log streams
+  // Logging
+  streamAllLogs(): Promise<void>;
   stopAllLogStreams(): void;
 
-  // Setup graceful shutdown handlers
-  setupGracefulShutdown(): void;
+  // Service inspection
+  isServiceHealthy(serviceName: string): Promise<boolean>;
+  getServiceLogs(serviceName: string, tail?: number): Promise<string[]>;
+  getService(serviceName: string): DockerService | undefined;
 }
 ```
 
-#### Configuration
+### Configuration Types
 
 ```typescript
 interface OrchestratorConfig {
-  networkName: string; // Docker network name
-  volumes?: string[]; // Named volumes to create
-  networks?: NetworkConfig[]; // Additional networks
-  secrets?: SecretDefinition[]; // Docker secrets
-  configs?: ConfigDefinition[]; // Docker configs
-  defaultRestartPolicy?: string; // Default restart policy
-  logger?: Logger; // Custom logger instance
+  networkName: string;
+  volumes?: string[];
+  logger?: Logger;
 }
-```
 
-### Service Configuration
-
-```typescript
 interface DockerServiceConfig {
-  // Basic configuration
-  containerName: string; // Container name
-  image?: string; // Docker image
-  platform?: string; // Platform (e.g., "linux/amd64")
+  // Required
+  containerName: string;
+  image?: string;
 
-  // Build configuration
+  // Build
   build?: {
-    context: string; // Build context path
-    dockerfile?: string; // Dockerfile path
-    args?: Record<string, string>; // Build arguments
-    target?: string; // Build target
-    // ... more build options
+    context: string;
+    dockerfile?: string;
+    args?: Record<string, string>;
   };
 
-  // Runtime configuration
-  command?: string[]; // Command to run
-  entrypoint?: string | string[]; // Entry point
-  environment?: string[] | Record<string, string>; // Environment variables
-  envFile?: string | string[]; // Environment files
-  workingDir?: string; // Working directory
-  user?: string; // User to run as
+  // Runtime
+  command?: string[];
+  entrypoint?: string | string[];
+  environment?: Record<string, string> | string[];
+  workingDir?: string;
+  user?: string;
 
   // Networking
   ports?: Array<{
-    target: number; // Container port
-    published: string | number; // Host port
-    protocol?: string; // Protocol (tcp/udp)
-    mode?: "host" | "ingress"; // Port mode
+    target: number;
+    published: number | string;
+    protocol?: 'tcp' | 'udp';
   }>;
-  networks?: string[] | Record<string, NetworkAttachConfig>;
   hostname?: string;
-  expose?: string[]; // Exposed ports
 
   // Storage
-  volumes?: string[] | VolumeConfig[];
+  volumes?: string[];
   tmpfs?: string | string[];
 
-  // Health checks
-  healthCheck?: {
-    Test: string[]; // Health check command
-    Interval?: number; // Interval in nanoseconds
-    Timeout?: number; // Timeout in nanoseconds
-    Retries?: number; // Number of retries
-    StartPeriod?: number; // Start period in nanoseconds
-  };
-
   // Dependencies
-  dependsOn?: Record<
-    string,
-    {
-      condition: "service_started" | "service_healthy" | "service_completed_successfully";
-      required?: boolean;
-    }
-  >;
+  dependsOn?: Record<string, {
+    condition: 'service_started' | 'service_healthy';
+  }>;
 
-  // Resource limits
-  memLimit?: string; // Memory limit (e.g., "512m")
-  cpuShares?: number; // CPU shares
-  deploy?: {
-    replicas?: number; // Number of replicas
-    resources?: {
-      limits?: {
-        cpus?: string; // CPU limit
-        memory?: string; // Memory limit
-      };
-    };
-    restartPolicy?: {
-      condition?: "on-failure" | "none" | "always" | "unless-stopped";
-      maxAttempts?: number;
-    };
+  // Resources
+  memLimit?: string;  // e.g., '512m'
+  cpus?: number;      // e.g., 1.5
+
+  // Health
+  healthCheck?: {
+    Test: string[];
+    Interval?: number;  // nanoseconds
+    Timeout?: number;   // nanoseconds
+    Retries?: number;
+    StartPeriod?: number;
   };
 
-  // Security
-  privileged?: boolean; // Privileged mode
-  capAdd?: string[]; // Capabilities to add
-  capDrop?: string[]; // Capabilities to drop
+  // Lifecycle
+  restart?: 'no' | 'always' | 'unless-stopped' | 'on-failure';
+  stopGracePeriod?: number;
 
-  // Other options
-  restart?: string; // Restart policy
-  labels?: Record<string, string>; // Labels
-  profiles?: string[]; // Compose profiles
+  // Labels
+  labels?: Record<string, string>;
 }
 ```
 
-### Utility Functions
+## Utility Functions
 
 ```typescript
-// Convert Docker Compose service to our format
-function convertComposeService(serviceName: string, composeService: any): DockerServiceConfig;
+import { parseTime, parseMemory } from '@pact-toolbox/docker';
 
-// Parse time strings (e.g., "30s", "1m30s") to seconds
-function parseTime(timeStr: string): number;
+// Parse time strings
+parseTime('30s');    // 30
+parseTime('1m30s');  // 90
+parseTime('2h');     // 7200
 
-// Validate service configuration
-function validateServiceConfig(config: DockerServiceConfig): string[];
-
-// Get color function for service logs
-function getServiceColor(serviceName: string): ColorFunction;
+// Parse memory strings
+parseMemory('512m'); // 536870912
+parseMemory('1g');   // 1073741824
 ```
 
 ## Examples
 
-### Pact Development Environment
+Run the included examples:
 
-```typescript
-import { ContainerOrchestrator, convertComposeService } from "@pact-toolbox/docker";
+```bash
+# Basic single container
+npx tsx examples/basic.ts
 
-const orchestrator = new ContainerOrchestrator({
-  networkName: "pact-devnet",
-  volumes: ["chainweb_db", "pact_data"],
-});
+# Multi-service with dependencies
+npx tsx examples/compose.ts
 
-// Chainweb node
-const chainweb = convertComposeService("chainweb", {
-  image: "ghcr.io/kadena-io/chainweb-node:latest",
-  volumes: ["chainweb_db:/chainweb/db"],
-  ports: ["1848:1848", "1789:1789"],
-  command: ["--p2p-hostname=chainweb", "--enable-mining-coordination", "--disable-pow"],
-  healthcheck: {
-    test: ["CMD", "curl", "-f", "http://localhost:1848/health-check"],
-    interval: "30s",
-    retries: 3,
-  },
-});
-
-// Pact server
-const pact = convertComposeService("pact", {
-  image: "kadena/pact:latest",
-  ports: ["9001:9001"],
-  volumes: ["pact_data:/pact/data"],
-  depends_on: {
-    chainweb: { condition: "service_healthy" },
-  },
-  environment: {
-    CHAINWEB_NODE: "http://chainweb:1848",
-  },
-});
-
-// Start development environment
-await orchestrator.startServices([chainweb, pact]);
-console.log("Pact development environment is ready!");
+# Build from Dockerfile
+npx tsx examples/build.ts
 ```
 
-### Testing Environment
+## Features in Detail
+
+### Auto-Recovery
+
+Services are automatically monitored and restarted on failure:
+
+- Health checks every 30 seconds
+- Exponential backoff on restart (5s, 10s, 20s)
+- Maximum 3 restart attempts by default
+- Automatic cleanup of failed containers
+
+### Resource Management
+
+Prevent resource exhaustion with limits:
 
 ```typescript
-import { ContainerOrchestrator } from "@pact-toolbox/docker";
+{
+  containerName: 'app',
+  image: 'node:18',
+  memLimit: '512m',
+  cpus: 1.5,
+  // Smart defaults applied based on image
+}
+```
 
-const testOrchestrator = new ContainerOrchestrator({
-  networkName: "test-network",
-});
+### Volume Management
 
-// Test database
-const testDb = {
-  containerName: "test-db",
-  image: "postgres:15-alpine",
-  environment: {
-    POSTGRES_PASSWORD: "test",
-    POSTGRES_DB: "testdb",
-  },
-  tmpfs: ["/var/lib/postgresql/data"], // Use tmpfs for faster tests
+```typescript
+{
+  volumes: [
+    'named_volume:/data',           // Named volume
+    './host/path:/container/path',  // Bind mount
+    '/abs/path:/path:ro',          // Read-only
+  ]
+}
+```
+
+### Health Monitoring
+
+```typescript
+{
   healthCheck: {
-    Test: ["CMD-SHELL", "pg_isready -U postgres"],
-    Interval: 5000000000, // 5s
+    Test: ['CMD', 'curl', '-f', 'http://localhost/health'],
+    Interval: 30000000000,  // 30s
+    Timeout: 10000000000,   // 10s
     Retries: 3,
-  },
-};
-
-// Start test database
-await testOrchestrator.startServices([testDb]);
-
-// Run your tests
-try {
-  // ... run tests
-  console.log("Tests completed!");
-} finally {
-  // Clean up
-  await testOrchestrator.stopAllServices();
+    StartPeriod: 60000000000, // 60s grace period
+  }
 }
 ```
 
 ## Best Practices
 
-### 1. Always Use Health Checks
+1. **Always use health checks** for production services
+2. **Set resource limits** to prevent resource exhaustion
+3. **Use named volumes** for persistent data
+4. **Handle graceful shutdown** with `setupGracefulShutdown()`
+5. **Use dependency conditions** for service ordering
 
-```typescript
-const service = {
-  containerName: "my-service",
-  image: "my-app:latest",
-  healthCheck: {
-    Test: ["CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"],
-    Interval: 30000000000, // 30s in nanoseconds
-    Timeout: 10000000000, // 10s in nanoseconds
-    Retries: 3,
-    StartPeriod: 60000000000, // 60s for startup
-  },
-};
-```
+## Requirements
 
-### 2. Use Dependency Conditions
-
-```typescript
-const services = [
-  {
-    containerName: "database",
-    image: "postgres:15",
-    healthCheck: {
-      /* ... */
-    },
-  },
-  {
-    containerName: "app",
-    image: "my-app:latest",
-    dependsOn: {
-      database: { condition: "service_healthy" },
-    },
-  },
-];
-```
-
-### 3. Graceful Shutdown
-
-```typescript
-const orchestrator = new ContainerOrchestrator({ networkName: "myapp" });
-
-// Use built-in graceful shutdown
-orchestrator.setupGracefulShutdown();
-
-// Or implement custom shutdown
-process.on("SIGINT", async () => {
-  console.log("Shutting down gracefully...");
-  await orchestrator.stopAllServices();
-  process.exit(0);
-});
-```
-
-### 4. Resource Limits
-
-```typescript
-const service = {
-  containerName: "memory-limited-app",
-  image: "my-app:latest",
-  memLimit: "512m",
-  deploy: {
-    resources: {
-      limits: {
-        cpus: "0.5",
-        memory: "512m",
-      },
-    },
-  },
-};
-```
-
-## Troubleshooting
-
-### Common Issues
-
-1. **"Cannot connect to Docker daemon"**
-   - Ensure Docker is running: `docker info`
-   - Check permissions: Add user to `docker` group
-   - Verify socket: `ls -la /var/run/docker.sock`
-
-2. **"Port already in use"**
-   - Check running containers: `docker ps`
-   - Use different ports or stop conflicting services
-   - Use dynamic ports: `published: "0"`
-
-3. **"Container dependency failed"**
-   - Check health checks are properly configured
-   - Increase `StartPeriod` for slow-starting services
-   - Verify dependency container logs
-
-4. **"Image pull failed"**
-   - Check image name and tag
-   - Verify network connectivity
-   - Login to private registries: `docker login`
-
-### Debug Mode
-
-Enable debug logging:
-
-```typescript
-import { logger } from "@pact-toolbox/node-utils";
-
-// Set debug level
-const orchestrator = new ContainerOrchestrator({
-  networkName: "myapp",
-  logger: logger.create({ level: "debug" }),
-});
-```
+- Docker installed and running
+- Node.js >= 20.0.0
 
 ## License
 
 MIT
-
----
-
-Made with ❤️ by [@salamaashoush](https://github.com/salamaashoush)

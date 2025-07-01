@@ -1,6 +1,6 @@
 # @pact-toolbox/ui-shared
 
-Shared UI components and styles for Pact Toolbox using Lit web components. This package provides a consistent design system for building user interfaces across the Pact Toolbox ecosystem.
+Shared UI components and styles for Pact Toolbox using SolidJS and Goober. This package provides a consistent design system for building user interfaces across the Pact Toolbox ecosystem.
 
 ## Installation
 
@@ -11,41 +11,51 @@ npm install @pact-toolbox/ui-shared
 ## Features
 
 - 🎨 **Themeable**: Built-in light, dark, and auto theme support
-- 🧩 **Web Components**: Framework-agnostic components built with Lit
-- 📦 **Zero Dependencies**: Only depends on Lit for maximum compatibility
+- ⚛️ **SolidJS Components**: Fast, reactive components with fine-grained reactivity
+- 💅 **Goober CSS-in-JS**: Zero-runtime CSS with full TypeScript support
 - 🎯 **TypeScript Support**: Full TypeScript definitions included
 - ⚡ **Performance**: Optimized for small bundle size and fast rendering
 - 🌐 **CSS Custom Properties**: Extensive customization through CSS variables
 
 ## Quick Start
 
-### 1. Import Components
+### 1. Import and Initialize
 
 ```typescript
-import "@pact-toolbox/ui-shared";
-// Or import specific components
+import { initializeGlobalStyles, ThemeProvider } from "@pact-toolbox/ui-shared";
 import { PactButton, PactCard, PactModal } from "@pact-toolbox/ui-shared";
+
+// Initialize global styles once in your app
+initializeGlobalStyles();
 ```
 
 ### 2. Use Theme Provider
 
 Wrap your application with the theme provider to enable theming:
 
-```html
-<pact-theme-provider theme="light">
-  <your-app></your-app>
-</pact-theme-provider>
+```tsx
+import { ThemeProvider } from "@pact-toolbox/ui-shared";
+
+function App() {
+  return (
+    <ThemeProvider theme="light">
+      <YourApp />
+    </ThemeProvider>
+  );
+}
 ```
 
 ### 3. Use Components
 
-```html
-<pact-button variant="primary" size="md"> Click Me </pact-button>
+```tsx
+<PactButton variant="primary" size="md" onClick={handleClick}>
+  Click Me
+</PactButton>
 
-<pact-card>
+<PactCard>
   <h2>Card Title</h2>
   <p>Card content goes here</p>
-</pact-card>
+</PactCard>
 ```
 
 ## Components
@@ -54,12 +64,18 @@ Wrap your application with the theme provider to enable theming:
 
 A versatile button component with multiple variants and states.
 
-```html
-<pact-button variant="primary" size="md" @click="${handleClick}"> Primary Button </pact-button>
+```tsx
+<PactButton variant="primary" size="md" onClick={handleClick}>
+  Primary Button
+</PactButton>
 
-<pact-button variant="secondary" loading> Loading... </pact-button>
+<PactButton variant="secondary" loading>
+  Loading...
+</PactButton>
 
-<pact-button variant="danger" disabled> Disabled </pact-button>
+<PactButton variant="danger" disabled>
+  Disabled
+</PactButton>
 ```
 
 **Props:**

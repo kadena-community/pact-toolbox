@@ -22,8 +22,6 @@
  * const addr = address("a1b2c3d4e5f6..."); // throws if invalid
  * ```
  *
- * @author Pact Toolbox Team
- * @version 1.0.0
  */
 
 // Install polyfill for Ed25519 support
@@ -33,6 +31,7 @@ install();
 export * from "./address";
 export * from "./assertions";
 export * from "./encoding";
+export * from "./encryption";
 export * from "./hash";
 export * from "./keys";
 export * from "./stringify";

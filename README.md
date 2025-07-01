@@ -102,7 +102,7 @@ const result = await todos
 
 ### Applications
 
-- **`pact-toolbox` CLI** - Command-line interface with commands for init, start, test, run, generate, and more
+- **`pact-toolbox` CLI** - Command-line interface with commands for init, start, test, run, generate, prelude, and doctor
 - **`docs`** - Comprehensive documentation site built with Rspress
 
 ### Development Workflow

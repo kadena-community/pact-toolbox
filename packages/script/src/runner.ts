@@ -7,8 +7,9 @@ import { resolve } from "pathe";
 
 import { resolveConfig } from "@pact-toolbox/config";
 import { createNetwork } from "@pact-toolbox/network";
-import { PactToolboxClient } from "@pact-toolbox/runtime";
+import { PactDeployer } from "@pact-toolbox/deployer";
 import { logger, defu, cleanupOnExit } from "@pact-toolbox/node-utils";
+import { createCoinContract, createMarmaladeContract } from "@pact-toolbox/kda";
 
 import type { ScriptContext } from "./script-context";
 import { createScriptContextBuilder } from "./script-context";
@@ -62,18 +63,20 @@ export interface RunScriptOptions {
   cwd?: string;
   /** Network to use */
   network?: string;
-  /** Script arguments */
+  /** Script arguments and CLI options */
   args?: Record<string, unknown>;
   /** Configuration object */
   config?: PactToolboxConfigObj;
-  /** Pre-configured client */
-  client?: PactToolboxClient;
+  /** Pre-configured deployer */
+  deployer?: PactDeployer;
   /** Script options override */
   scriptOptions?: ScriptOptions;
-  /** Signing configuration */
+  /** Signing configuration (can be derived from args) */
   signing?: SigningConfig;
   /** Environment variables to inject */
   environment?: Record<string, string>;
+  /** CLI arguments passed directly from command line */
+  cliArgs?: Record<string, unknown>;
 }
 
 export interface ScriptExecutionResult {
@@ -148,7 +151,11 @@ export async function runScript(source: string, options: RunScriptOptions = {}):
   }
 
   // Load script definition
-  let scriptObject = await jiti.import(scriptPath);
+  let scriptObject: any;
+  let scriptInstance: Script;
+
+  // Load script
+  scriptObject = await jiti.import(scriptPath);
 
   // Handle ES module default export
   if (scriptObject && typeof scriptObject === "object" && "default" in scriptObject) {
@@ -159,7 +166,7 @@ export async function runScript(source: string, options: RunScriptOptions = {}):
     throw new Error(`Script ${source} should export an object with a run method`);
   }
 
-  const scriptInstance = defu(scriptObject, options.scriptOptions) as Script;
+  scriptInstance = defu(scriptObject, options.scriptOptions) as Script;
 
   // Apply configuration overrides
   if (scriptInstance.configOverrides) {
@@ -170,11 +177,11 @@ export async function runScript(source: string, options: RunScriptOptions = {}):
   options.network = options.network ?? scriptInstance.network ?? options.config.defaultNetwork;
   const chainId = options.config.networks?.[options.network]?.meta?.chainId?.toString() || "0";
 
-  // Initialize client
-  if (!options.client) {
-    options.client = new PactToolboxClient(options.config, options.network);
+  // Initialize deployer
+  if (!options.deployer) {
+    options.deployer = new PactDeployer(options.config, options.network);
   }
-  options.client.setConfig(options.config);
+  options.deployer.updateConfig(options.config);
 
   // Setup cleanup handler
   const cleanup = async () => {
@@ -206,15 +213,34 @@ export async function runScript(source: string, options: RunScriptOptions = {}):
 
     profiler?.start("initialization");
 
-    // Resolve signing configuration
-    const signingConfig = resolveSigningConfig({ ...options.args, ...options.signing }, options.environment);
+    // Merge CLI args with script args and signing config
+    const mergedArgs = {
+      ...options.cliArgs,
+      ...options.args,
+      ...options.signing,
+    };
 
-    // Initialize wallet manager
+    // Resolve signing configuration from all available sources
+    const signingConfig = resolveSigningConfig(mergedArgs, options.environment);
+
+    // Initialize wallet manager with resolved configuration
     walletManager = createWalletManager(options.config, signingConfig, options.network);
-    await walletManager.initialize();
+    const walletInstance = await walletManager.initialize();
+
+    // Log wallet status
+    if (!walletInstance && !signingConfig.skipWallet) {
+      logger.debug("Running in read-only mode (no wallet initialized)");
+    }
+
+    // Get network context from the deployer
+    const networkContext = options.deployer.getNetworkProvider();
+
+    // Initialize KDA services with proper configuration
+    const coin = createCoinContract(networkContext);
+    const marmalade = createMarmaladeContract(networkContext);
 
     // Initialize namespace handler
-    namespaceHandler = createNamespaceHandler(options.client, walletManager, chainId);
+    namespaceHandler = createNamespaceHandler(options.deployer, walletManager);
 
     profiler?.end("initialization");
     profiler?.start("network");
@@ -224,7 +250,6 @@ export async function runScript(source: string, options: RunScriptOptions = {}):
       network = await createNetwork(options.config, {
         ...scriptInstance.startNetworkOptions,
         network: options.network,
-        client: options.client,
         autoStart: true,
       });
     }
@@ -234,13 +259,15 @@ export async function runScript(source: string, options: RunScriptOptions = {}):
 
     // Build script context
     const contextBuilder = createScriptContextBuilder(
-      options.client,
+      options.deployer,
       options.config,
       options.network,
       chainId as ChainId,
       options.args || {},
       walletManager,
       namespaceHandler,
+      coin,
+      marmalade,
     );
 
     context = await contextBuilder.build();
@@ -255,7 +282,11 @@ export async function runScript(source: string, options: RunScriptOptions = {}):
     // Log script execution start
     logger.info(`🚀 Starting enhanced script: ${scriptInstance.metadata?.name || source}`);
     logger.info(`📍 Network: ${options.network} (Chain: ${chainId})`);
-    logger.info(`👤 Signer: ${context.currentSigner.account}`);
+    if (context.currentSigner) {
+      logger.info(`👤 Signer: ${context.currentSigner.account}`);
+    } else if (!signingConfig.skipWallet) {
+      logger.warn(`⚠️ No signer available (read-only mode)`);
+    }
 
     // Run pre-execution hook
     if (scriptInstance.hooks?.preRun) {
@@ -301,7 +332,7 @@ export async function runScript(source: string, options: RunScriptOptions = {}):
         scriptName: scriptInstance.metadata?.name || source,
         network: options.network!,
         chainId,
-        signer: context.currentSigner.account,
+        signer: context.currentSigner?.account || "none",
         startTime,
         endTime,
         duration: endTime.getTime() - startTime.getTime(),

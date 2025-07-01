@@ -67,7 +67,7 @@ describe("DevNetNetwork", () => {
     vi.mocked(utils.getUuid).mockReturnValue("test-uuid");
     vi.mocked(utils.isChainWebAtHeight).mockResolvedValue(true);
     vi.mocked(utils.isChainWebNodeOk).mockResolvedValue(true);
-    vi.mocked(utils.pollFn).mockImplementation(async (fn) => {
+    vi.mocked(utils.pollFn).mockImplementation(async (fn: () => Promise<boolean>) => {
       const result = await fn();
       if (!result) throw new Error("Poll failed");
     });

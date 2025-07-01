@@ -22,7 +22,6 @@ This package exports TypeScript type definitions used across the pact-toolbox ec
 - Transaction and signing types
 - Pact command and result types
 - Wallet interface definitions
-- Re-exports of essential types from @kadena/types
 
 ## Type Reference
 

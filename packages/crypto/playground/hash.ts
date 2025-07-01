@@ -2,7 +2,7 @@ import { hash } from "@kadena/cryptography-utils";
 import { blake2b as blake2bJs } from "blakejs";
 import { Bench } from "tinybench";
 
-import { blake2bBase64Url } from "../src/hash";
+import { blake2bBase64Url } from "../src";
 
 const bench = new Bench({
   warmup: true,

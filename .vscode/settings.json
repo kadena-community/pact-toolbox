@@ -35,5 +35,6 @@
   "rust-analyzer.procMacro.ignored": {
     "napi-derive": ["napi"]
   },
-  "svg.preview.background": "custom"
+  "svg.preview.background": "custom",
+  "typescript.tsdk": "node_modules/typescript/lib"
 }

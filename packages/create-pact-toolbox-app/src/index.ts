@@ -1,10 +1,8 @@
 import { fillTemplatePlaceholders } from "@pact-toolbox/utils";
-import { logger, writeFile, execAsync, spinner, isCancel, select, text } from "@pact-toolbox/node-utils";
+import { logger, writeFile, execAsync, spinner, isCancel, select, text, glob, readFile, exists, resolve, dirname, join } from "@pact-toolbox/node-utils";
 import { defineCommand, runMain } from "citty";
-import { readdir, readFile, access } from "node:fs/promises";
-import { resolve, dirname, join } from "pathe";
+import { readdir } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
-import { glob } from "glob";
 import packageJson from "../package.json" with { type: "json" };
 
 const __filename = fileURLToPath(import.meta.url);
@@ -42,17 +40,6 @@ export function validateProjectName(name: string): { valid: boolean; error?: str
   return { valid: true };
 }
 
-/**
- * Checks if a directory exists and is accessible
- */
-export async function directoryExists(path: string): Promise<boolean> {
-  try {
-    await access(path);
-    return true;
-  } catch {
-    return false;
-  }
-}
 
 const main = defineCommand({
   meta: {
@@ -142,13 +129,13 @@ const main = defineCommand({
     const templatePath = resolve(__dirname, "..", "templates", template);
 
     // Check if project directory already exists
-    if (await directoryExists(projectPath)) {
+    if (await exists(projectPath)) {
       logger.error(`Directory ${projectName} already exists. Please choose a different name.`);
       process.exit(1);
     }
 
     // Check if template exists
-    if (!(await directoryExists(templatePath))) {
+    if (!(await exists(templatePath))) {
       logger.error(`Template "${template}" not found`);
       process.exit(1);
     }
@@ -157,11 +144,12 @@ const main = defineCommand({
 
     try {
       // Copy template files
-      const templateFiles = await glob("**/*", {
+      const globResult = await glob("**/*", {
         cwd: templatePath,
-        nodir: true,
+        onlyFiles: true,
         dot: true,
       });
+      const templateFiles = globResult.files || [];
 
       if (templateFiles.length === 0) {
         logger.error(`Template "${template}" is empty`);

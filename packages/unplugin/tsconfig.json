@@ -5,6 +5,6 @@
     "skipLibCheck": true,
     "noEmit": false
   },
-  "include": ["src", "tests", "scripts", "playground", "tsdown.config.ts"],
+  "include": ["src", "tests", "scripts", "playground"],
   "exclude": ["**/*.test.ts", "**/*.spec.ts"]
 }

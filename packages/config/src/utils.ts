@@ -1,4 +1,5 @@
 import type { GetRpcUrlParams, SerializableNetworkConfig } from "@pact-toolbox/types";
+import { isProduction } from "@pact-toolbox/utils";
 
 import type {
   ChainwebNetworkConfig,
@@ -201,7 +202,7 @@ export function getSerializableNetworkConfig(
 
   // Only include server-side configs if explicitly in development mode
   // These are NOT needed in browser bundles
-  if (isDev && process.env["NODE_ENV"] !== "production") {
+  if (isDev && !isProduction()) {
     // Include server config for pact-server networks
     if (isPactServerNetworkConfig(network) && network.serverConfig) {
       (serialized as any).serverConfig = {

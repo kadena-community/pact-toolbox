@@ -32,6 +32,6 @@ export function deleteTodo(id: string): PactTransactionBuilder<PactExecPayload, 
  */
 export function getTodo(id: string): PactTransactionBuilder<PactExecPayload, Todo>;
 /**
- * Get all todos.
+ * Get all todos. blah
  */
 export function getTodos(): PactTransactionBuilder<PactExecPayload, Todo[]>;

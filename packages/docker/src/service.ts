@@ -11,7 +11,7 @@ import {
   type ServiceState,
   ServiceStatus,
 } from "./types";
-import { getServiceColor } from "./utils";
+import { parseMemory, createServiceTag } from "./utils";
 
 interface DockerServiceOptions {
   serviceName?: string;
@@ -25,6 +25,8 @@ export class DockerService {
   public readonly config: DockerServiceConfig;
   public readonly containerName: string;
   public healthCheckFailed: boolean = false;
+  public restartCount: number = 0;
+  public lastRestartTime?: Date;
   #docker: Docker;
   #networkName: string;
   #containerId?: string;
@@ -35,11 +37,11 @@ export class DockerService {
   constructor(config: DockerServiceConfig, options: DockerServiceOptions) {
     this.serviceName = options.serviceName || config.containerName;
     this.config = config;
+
     this.containerName = config.containerName;
     this.#docker = options.docker;
     this.#networkName = options.networkName;
-    const colorizer = process.stdout.isTTY ? getServiceColor(this.serviceName) : null;
-    this.#coloredPrefix = colorizer ? colorizer(this.serviceName) : this.serviceName;
+    this.#coloredPrefix = process.stdout.isTTY ? createServiceTag(this.serviceName) : `[${this.serviceName}]`;
     this.#logger = options.logger.withTag(this.#coloredPrefix);
   }
 
@@ -278,21 +280,11 @@ export class DockerService {
 
   #parseMemory(memory?: string): number | undefined {
     if (!memory) return undefined;
-
-    const units: { [key: string]: number } = {
-      b: 1,
-      k: 1024,
-      m: 1024 * 1024,
-      g: 1024 * 1024 * 1024,
-    };
-
-    const match = memory.toLowerCase().match(/^(\d+)([bkmg])?$/);
-    if (!match) return undefined;
-
-    const value = parseInt(match[1]);
-    const unit = match[2] || "b";
-
-    return value * units[unit];
+    try {
+      return parseMemory(memory);
+    } catch {
+      return undefined;
+    }
   }
 
   #parseNetworkingConfig(): any {
@@ -329,6 +321,14 @@ export class DockerService {
   }
 
   async start(): Promise<void> {
+    // Log resource limits
+    const resourceInfo = [];
+    if (this.config.memLimit) resourceInfo.push(`Memory: ${this.config.memLimit}`);
+    if (this.config.cpus) resourceInfo.push(`CPUs: ${this.config.cpus}`);
+    if (resourceInfo.length > 0) {
+      this.#logger.debug(`Resource limits: ${resourceInfo.join(", ")}`);
+    }
+
     this.#logger.start(`Starting service instance...`);
     await this.prepareImage();
     try {
@@ -398,7 +398,12 @@ export class DockerService {
       Entrypoint: typeof this.config.entrypoint === "string" ? [this.config.entrypoint] : this.config.entrypoint,
       Env: this.#parseEnvironment(),
       ExposedPorts: {},
-      Labels: this.config.labels,
+      Labels: {
+        ...this.config.labels,
+        "com.pact-toolbox.managed": "true",
+        "com.pact-toolbox.network": this.#networkName,
+        "com.pact-toolbox.service": this.serviceName,
+      },
       User: this.config.user,
       WorkingDir: this.config.workingDir,
       Hostname: this.config.hostname,
@@ -443,9 +448,17 @@ export class DockerService {
         MemorySwappiness: this.config.memSwappiness,
         OomKillDisable: this.config.oomKillDisable,
         OomScoreAdj: this.config.oomScoreAdj,
+        // CPU configuration - use either NanoCpus OR CpuQuota/CpuPeriod, never both
+        ...(this.config.cpus
+          ? { NanoCpus: this.config.cpus * 1e9 } // Use NanoCpus when cpus is set
+          : this.config.cpuQuota || this.config.cpuPeriod
+            ? {
+                // Use CpuQuota/CpuPeriod when they are set and cpus is not
+                CpuQuota: this.config.cpuQuota,
+                CpuPeriod: this.config.cpuPeriod,
+              }
+            : {}), // Don't set any CPU limit options if none are configured
         CpuShares: this.config.cpuShares,
-        CpuQuota: this.config.cpuQuota,
-        CpuPeriod: this.config.cpuPeriod,
         CpusetCpus: this.config.cpusetCpus,
         CpusetMems: this.config.cpusetMems,
         BlkioWeight: this.config.blkioWeight,
@@ -484,7 +497,8 @@ export class DockerService {
     }
 
     // Handle CPU limits from deploy.resources
-    if (this.config.deploy?.resources?.limits?.cpus) {
+    // Only apply if cpus is not already set (to avoid conflicting with NanoCpus)
+    if (this.config.deploy?.resources?.limits?.cpus && !this.config.cpus) {
       const cpus = parseFloat(this.config.deploy.resources.limits.cpus);
       createOptions.HostConfig!.CpuQuota = Math.floor(cpus * 100000);
       createOptions.HostConfig!.CpuPeriod = 100000;
@@ -512,6 +526,9 @@ export class DockerService {
   }
 
   async stop(): Promise<void> {
+    // Clean up log stream first
+    this.stopLogStream();
+
     const containerRef = this.#containerId || this.containerName;
     if (!containerRef) {
       this.#logger.warn(`No container ID or name to stop.`);
@@ -562,12 +579,39 @@ export class DockerService {
     }
   }
 
+  async restart(): Promise<void> {
+    this.#logger.info(`Restarting container '${this.containerName}'...`);
+
+    try {
+      await this.stop();
+    } catch (err: any) {
+      this.#logger.debug(`Error stopping during restart: ${err.message}`);
+    }
+
+    try {
+      await this.remove();
+    } catch (err: any) {
+      this.#logger.debug(`Error removing during restart: ${err.message}`);
+    }
+
+    // Update restart tracking
+    this.restartCount++;
+    this.lastRestartTime = new Date();
+
+    await this.start();
+    this.#logger.success(`Container '${this.containerName}' restarted (attempt ${this.restartCount})`);
+  }
+
   async remove(): Promise<void> {
     const containerRef = this.#containerId || this.containerName;
     if (!containerRef) {
       this.#logger.warn(`No container ID or name to remove.`);
       return;
     }
+
+    // Clean up log streams before removal
+    this.stopLogStream();
+
     try {
       const container = this.#docker.getContainer(containerRef);
       await container.inspect().catch((err: any) => {
@@ -578,9 +622,13 @@ export class DockerService {
       this.#logger.log(`Removing container '${this.containerName}'...`);
       await container.remove({ force: true });
       this.#logger.log(`Container '${this.containerName}' removed.`);
+
+      // Clear container reference after successful removal
+      this.#containerId = undefined;
     } catch (error: any) {
       if (error.statusCode === 404) {
         this.#logger.log(`Container '${containerRef}' was already removed.`);
+        this.#containerId = undefined;
       } else {
         this.#logger.warn(`Error removing container '${this.containerName}':`, error.message || error);
       }
@@ -713,6 +761,11 @@ export class DockerService {
   }
 
   async streamLogs(): Promise<void> {
+    // Clean up any existing stream first
+    if (this.#logStream) {
+      this.stopLogStream();
+    }
+
     const containerRef = this.#containerId || this.containerName;
     if (!containerRef) {
       this.#logger.warn(`No container ID or name to stream logs from.`);
@@ -737,51 +790,76 @@ export class DockerService {
 
       this.#logStream = stream as Duplex;
 
-      this.#logStream.on("data", (chunk) => {
-        let logLine = chunk.toString("utf8");
-        const potentiallyPrefixed = /^[^a-zA-Z0-9\s\p{P}]*(?=\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})/u;
-        logLine = logLine.replace(potentiallyPrefixed, "");
-        logLine = logLine.replace(/[^\x20-\x7E\n\r\t]/g, "");
-        const trimmedMessage = logLine.trimEnd();
+      // Setup event handlers with proper error handling
+      const dataHandler = (chunk: Buffer) => {
+        try {
+          let logLine = chunk.toString("utf8");
+          const potentiallyPrefixed = /^[^a-zA-Z0-9\s\p{P}]*(?=\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})/u;
+          logLine = logLine.replace(potentiallyPrefixed, "");
+          logLine = logLine.replace(/[^\x20-\x7E\n\r\t]/g, "");
+          const trimmedMessage = logLine.trimEnd();
 
-        if (trimmedMessage) {
-          trimmedMessage.split("\n").forEach((line: string) => {
-            if (line.trim()) {
-              console.log(`${this.#coloredPrefix} ${line}`);
-            }
-          });
+          if (trimmedMessage) {
+            trimmedMessage.split("\n").forEach((line: string) => {
+              if (line.trim()) {
+                console.log(`${this.#coloredPrefix} ${line}`);
+              }
+            });
+          }
+        } catch (err) {
+          this.#logger.debug(`Error processing log chunk: ${err}`);
         }
-      });
+      };
 
-      this.#logStream.on("end", () => {
+      const endHandler = () => {
         this.#logger.log(`Log stream ended for container '${this.containerName}'.`);
-        this.#logStream = null;
-      });
+        this.cleanupLogStream();
+      };
 
-      this.#logStream.on("error", (err) => {
+      const errorHandler = (err: Error) => {
         this.#logger.error(`Error in log stream for container '${this.containerName}':`, err);
-        this.#logStream = null;
-      });
+        this.cleanupLogStream();
+      };
+
+      this.#logStream.on("data", dataHandler);
+      this.#logStream.on("end", endHandler);
+      this.#logStream.on("error", errorHandler);
+
+      // Store handlers for cleanup
+      (this.#logStream as any)._handlers = { dataHandler, endHandler, errorHandler };
     } catch (error: any) {
       this.#logger.error(`Error attaching to logs for container '${this.containerName}':`, error.message || error);
-      this.#logStream = null;
+      this.cleanupLogStream();
+    }
+  }
+
+  private cleanupLogStream(): void {
+    if (this.#logStream) {
+      try {
+        // Remove event listeners if they exist
+        const handlers = (this.#logStream as any)._handlers;
+        if (handlers) {
+          this.#logStream.removeListener("data", handlers.dataHandler);
+          this.#logStream.removeListener("end", handlers.endHandler);
+          this.#logStream.removeListener("error", handlers.errorHandler);
+        }
+
+        // Destroy the stream
+        if (typeof this.#logStream.destroy === "function") {
+          this.#logStream.destroy();
+        }
+      } catch (err) {
+        this.#logger.debug(`Error during log stream cleanup: ${err}`);
+      } finally {
+        this.#logStream = null;
+      }
     }
   }
 
   stopLogStream(): void {
     if (this.#logStream) {
       this.#logger.log(`Detaching from logs of container '${this.containerName}'.`);
-      try {
-        if (typeof this.#logStream.destroy === "function") {
-          this.#logStream.destroy();
-        } else if (typeof (this.#logStream as any).end === "function") {
-          (this.#logStream as any).end();
-        }
-      } catch (error) {
-        this.#logger.warn(`Error stopping log stream for '${this.containerName}':`, error);
-      } finally {
-        this.#logStream = null;
-      }
+      this.cleanupLogStream();
     }
   }
 

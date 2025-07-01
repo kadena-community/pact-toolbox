@@ -2,7 +2,7 @@
  * Network API types for Pact Toolbox
  */
 
-import type { PactToolboxClient } from "@pact-toolbox/runtime";
+import type { PactDeployer } from "@pact-toolbox/deployer";
 
 /**
  * Network types supported by Pact Toolbox
@@ -17,8 +17,8 @@ export interface NetworkStartOptions {
   detached?: boolean;
   /** Don't persist data between restarts (default: false) */
   stateless?: boolean;
-  /** Custom client instance */
-  client?: PactToolboxClient;
+  /** Custom deployer instance */
+  deployer?: PactDeployer;
 }
 
 /**
@@ -70,5 +70,5 @@ export interface DevNetServiceDefinition {
   networkName: string;
   clusterId: string;
   volumes: string[];
-  services: Record<string, any>;
+  services: Record<string, import("@pact-toolbox/docker").DockerServiceConfig>;
 }

@@ -1,9 +1,8 @@
 import { exec } from "child_process";
-import { writeFile } from "node:fs/promises";
 import { loadFile } from "magicast";
 import { addVitePlugin } from "magicast/helpers";
 import { addDependency, detectPackageManager } from "nypm";
-import { join } from "pathe";
+import { writeFile, join } from "@pact-toolbox/node-utils";
 import {
   readPackageJSON,
   readTSConfig,

@@ -9,6 +9,33 @@ import {
   verifyPolyfill,
 } from "./secrets";
 
+function isAlgorithmEd25519(putativeEd25519Algorithm: AlgorithmIdentifier): boolean {
+  const name = typeof putativeEd25519Algorithm === "string" ? putativeEd25519Algorithm : putativeEd25519Algorithm.name;
+  return name.localeCompare("Ed25519", "en-US", { sensitivity: "base" }) === 0;
+}
+
+/**
+ * Polyfills methods on `globalThis.SubtleCrypto` to add support for the Ed25519 algorithm.
+ *
+ * @example
+ * ```ts
+ * import { install } from '@pact-toolbox/crypto/polyfill';
+ *
+ * // Calling this will shim methods on `SubtleCrypto`, adding Ed25519 support.
+ * install();
+ *
+ * // Now you can do this, in environments that do not otherwise support Ed25519.
+ * const keyPair = await crypto.subtle.generateKey({ name: 'Ed25519' }, false, ['sign']);
+ * const publicKeyBytes = await crypto.subtle.exportKey('raw', keyPair.publicKey);
+ * const data = new Uint8Array([1, 2, 3]);
+ * const signature = await crypto.subtle.sign({ name: 'Ed25519' }, keyPair.privateKey, data);
+ * if (await crypto.subtle.verify({ name: 'Ed25519' }, keyPair.publicKey, signature, data)) {
+ *     console.log('Data was signed using the private key associated with this public key');
+ * } else {
+ *     throw new Error('Signature verification error');
+ * }
+ * ```
+ */
 export function install(): void {
   if (__NODEJS__) {
     /**
@@ -48,7 +75,7 @@ export function install(): void {
     let originalGenerateKeySupportsEd25519: Promise<boolean> | boolean | undefined;
     originalSubtleCrypto.generateKey = (async (...args: Parameters<SubtleCrypto["generateKey"]>) => {
       const [algorithm] = args;
-      if (algorithm !== "Ed25519") {
+      if (!isAlgorithmEd25519(algorithm)) {
         if (originalGenerateKey) {
           return await originalGenerateKey.apply(originalSubtleCrypto, args);
         } else {
@@ -67,7 +94,7 @@ export function install(): void {
             .then((keyPair) => {
               if (__DEV__) {
                 console.warn(
-                  "`webcrypto-ed25519-polyfill` was installed in an " +
+                  "`@pact-toolbox/crypto/polyfill` was installed in an " +
                     "environment that supports Ed25519 key manipulation " +
                     "natively. Falling back to the native implementation. " +
                     "Consider installing this polyfill only in environments where " +
@@ -99,7 +126,7 @@ export function install(): void {
         }
       } else {
         const [_, extractable, keyUsages] = args;
-        return generateKeyPolyfill(extractable, keyUsages);
+        return generateKeyPolyfill(extractable, keyUsages as readonly KeyUsage[]);
       }
     }) as SubtleCrypto["generateKey"];
 
@@ -142,7 +169,7 @@ export function install(): void {
     let originalImportKeySupportsEd25519: Promise<boolean> | boolean | undefined;
     originalSubtleCrypto.importKey = (async (...args: Parameters<SubtleCrypto["importKey"]>) => {
       const [format, keyData, algorithm] = args;
-      if (algorithm !== "Ed25519") {
+      if (!isAlgorithmEd25519(algorithm)) {
         if (originalImportKey) {
           return await originalImportKey.apply(originalSubtleCrypto, args);
         } else {
@@ -161,7 +188,7 @@ export function install(): void {
             .then((key) => {
               if (__DEV__) {
                 console.warn(
-                  "`webcrypto-ed25519-polyfill` was included in an " +
+                  "`@pact-toolbox/crypto/polyfill` was included in an " +
                     "environment that supports Ed25519 key manipulation " +
                     "natively. Falling back to the native implementation. " +
                     "Consider including this polyfill only in environments where " +
@@ -193,7 +220,7 @@ export function install(): void {
         }
       } else {
         const [_format, _keyData, _algorithm, extractable, keyUsages] = args;
-        return importKeyPolyfill(format, keyData, extractable, keyUsages);
+        return importKeyPolyfill(format, keyData, extractable, keyUsages as readonly KeyUsage[]);
       }
     }) as SubtleCrypto["importKey"];
   }

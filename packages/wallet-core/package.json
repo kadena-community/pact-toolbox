@@ -26,11 +26,14 @@
     "lint:fix": "oxlint . --fix"
   },
   "dependencies": {
-    "@pact-toolbox/types": "workspace:*"
+    "@pact-toolbox/signers": "workspace:*",
+    "@pact-toolbox/types": "workspace:*",
+    "@pact-toolbox/utils": "workspace:*"
   },
   "devDependencies": {
     "@pact-toolbox/tsconfig": "workspace:*",
     "@pact-toolbox/tsdown": "workspace:*",
+    "react": "^19.1.1",
     "vitest": "^3.2.4"
   },
   "license": "MIT",

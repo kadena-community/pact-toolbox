@@ -4,7 +4,7 @@
  *   ʕ·͡ᴥ·ʔ     <== ATTENTION PLEASE
  *
  * Key material generated in this module must stay in this module. So long as the secrets cache and
- * the methods that interact with it are not exported from `@solana/webcrypto-ed25519-polyfill`,
+ * the methods that interact with it are not exported from `@pact-toolbox/crypto/polyfill`, then
  * accidental logging of the actual bytes of a secret key (eg. to the console, or to a remote
  * server) should not be possible.
  *
@@ -153,7 +153,7 @@ export async function exportKeyPolyfill(format: "jwk", key: CryptoKey): Promise<
 export async function exportKeyPolyfill(format: KeyFormat, key: CryptoKey): Promise<ArrayBuffer>;
 export async function exportKeyPolyfill(format: KeyFormat, key: CryptoKey): Promise<ArrayBuffer | JsonWebKey> {
   if (key.extractable === false) {
-    throw new DOMException("key is not extractable", "InvalidAccessError");
+    throw new DOMException("key is not extractable", "InvalidAccessException");
   }
   switch (format) {
     case "raw": {
@@ -161,16 +161,17 @@ export async function exportKeyPolyfill(format: KeyFormat, key: CryptoKey): Prom
         throw new DOMException(`Unable to export a raw Ed25519 ${key.type} key`, "InvalidAccessError");
       }
       const publicKeyBytes = await getPublicKeyBytes(key);
-      // @ts-expect-error
-      return publicKeyBytes;
+      return publicKeyBytes.buffer as ArrayBuffer;
     }
     case "pkcs8": {
       if (key.type !== "private") {
         throw new DOMException(`Unable to export a pkcs8 Ed25519 ${key.type} key`, "InvalidAccessError");
       }
       const secretKeyBytes = getSecretKeyBytes_INTERNAL_ONLY_DO_NOT_EXPORT(key);
-      // @ts-expect-error
-      return new Uint8Array([...ED25519_PKCS8_HEADER, ...secretKeyBytes]);
+      const result = new Uint8Array(ED25519_PKCS8_HEADER.length + secretKeyBytes.length);
+      result.set(ED25519_PKCS8_HEADER, 0);
+      result.set(secretKeyBytes, ED25519_PKCS8_HEADER.length);
+      return result.buffer;
     }
     case "jwk": {
       const publicKeyBytes = await getPublicKeyBytes(key);
@@ -202,7 +203,7 @@ export async function exportKeyPolyfill(format: KeyFormat, key: CryptoKey): Prom
  * associated with the secret.
  */
 export function generateKeyPolyfill(extractable: boolean, keyUsages: readonly KeyUsage[]): CryptoKeyPair {
-  const privateKeyBytes = utils.randomPrivateKey();
+  const privateKeyBytes = utils.randomSecretKey();
   const keyPair = createKeyPairFromBytes(privateKeyBytes, extractable, keyUsages);
   return keyPair;
 }
@@ -218,8 +219,7 @@ export async function signPolyfill(key: CryptoKey, data: BufferSource): Promise<
   const privateKeyBytes = getSecretKeyBytes_INTERNAL_ONLY_DO_NOT_EXPORT(key);
   const payload = bufferSourceToUint8Array(data);
   const signature = await signAsync(payload, privateKeyBytes);
-  // @ts-expect-error
-  return signature;
+  return signature.buffer as ArrayBuffer;
 }
 
 export async function verifyPolyfill(key: CryptoKey, signature: BufferSource, data: BufferSource): Promise<boolean> {

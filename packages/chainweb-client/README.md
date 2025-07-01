@@ -45,7 +45,13 @@ const client = new ChainwebClient({
 ```typescript
 // Send signed transactions
 const result = await client.send([signedTransaction]);
+// or use alias
+const submitResult = await client.submit([signedTransaction]);
 console.log("Request keys:", result.requestKeys);
+
+// Submit single transaction (returns request key directly)
+const requestKey = await client.submitOne(signedTransaction);
+console.log("Request key:", requestKey);
 
 // Submit and wait for result
 const txResult = await client.submitAndWait(signedTransaction);
@@ -64,11 +70,28 @@ const localResult = await client.local({
   }),
 });
 
+// Preflight check with signature verification
+const preflightResult = await client.preflight(signedCommand);
+
+// Run Pact code directly
+const runResult = await client.runPact('(+ 1 2)', {
+  data: { account: "alice" },
+  gasLimit: 1000,
+});
+
 // Poll for transaction status
 const pollResult = await client.poll(["request-key-123"]);
+// or use alias
+const pollStatus = await client.pollStatus(["request-key-123"]);
+
+// Poll for single transaction
+const singleResult = await client.pollOne("request-key-123");
 
 // Listen for single transaction
 const listenResult = await client.listen("request-key-123");
+
+// Get transaction status
+const status = await client.getStatus("request-key-123");
 ```
 
 ### Batch Operations
@@ -81,6 +104,28 @@ const batchResult = await client.submitBatch(signedTransactions, {
 });
 
 console.log(`${batchResult.successCount} succeeded, ${batchResult.failureCount} failed`);
+```
+
+### Cross-Chain SPV
+
+```typescript
+// Create SPV proof for cross-chain transaction
+const spvProof = await client.createSpv({
+  targetChainId: "1",
+  requestKey: "transaction-request-key",
+});
+
+// Poll for SPV proof with retries
+const spvWithRetries = await client.pollCreateSpv(
+  {
+    targetChainId: "1", 
+    requestKey: "transaction-request-key",
+  },
+  {
+    retryCount: 15,
+    retryDelay: 3000,
+  }
+);
 ```
 
 ### Network Information
@@ -225,9 +270,19 @@ const result = await client.submitAndWait(signedTx);
 ### Core Methods
 
 - `send(transactions)` - Send signed transactions
+- `submit(transactions)` - Alias for send() to match kadena.js API
+- `submitOne(transaction)` - Submit a single transaction, returns request key
 - `poll(requestKeys)` - Poll for transaction results
+- `pollStatus(requestKeys)` - Alias for poll() to match kadena.js API
+- `pollOne(requestKey)` - Poll for a single transaction result
 - `listen(requestKey)` - Listen for single transaction result
 - `local(command)` - Execute read-only local query
+- `preflight(command)` - Execute local query with preflight and signature verification
+- `signatureVerification(command)` - Execute local query with signature verification only
+- `dirtyRead(command)` - Execute dirty read (minimal restrictions)
+- `runPact(code, options)` - Run Pact code directly (generates and sends local command)
+- `getStatus(requestKey)` - Get transaction status (alias for getTransaction)
+- `getPoll(requestKey)` - Get transaction status (alternative alias)
 - `submitAndWait(transaction)` - Send transaction and wait for result
 - `submitBatch(transactions, options)` - Process multiple transactions in batches
 
@@ -238,6 +293,11 @@ const result = await client.submitAndWait(signedTx);
 - `getCut()` - Get current cut information
 - `getChainInfo(chainId?)` - Get chain-specific information
 - `getTransaction(requestKey)` - Get transaction by request key
+
+### SPV Methods
+
+- `createSpv(request)` - Create SPV proof for cross-chain transaction
+- `pollCreateSpv(request, options)` - Poll for SPV proof creation with retries
 
 ### Utility Methods
 

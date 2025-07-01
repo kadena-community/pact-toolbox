@@ -1,15 +1,16 @@
 import type { GitInfo } from "giget";
 
 import type {
+  DeploymentGroup,
+  FileSpec,
+  KeysetTemplate,
+  NamespaceConfig,
   PreludeDefinition,
   RepositoryConfig,
-  FileSpec,
-  NamespaceConfig,
-  DeploymentGroup,
-  KeysetTemplate,
 } from "./types";
 
-import type { PactToolboxClient } from "@pact-toolbox/runtime";
+import type { PactDeployer } from "@pact-toolbox/deployer";
+import type { PactCapability, SerializableNetworkConfig } from "@pact-toolbox/types";
 
 const inputRegex = /^(?<provider>[\w-.]+):(?<repo>[\w.-]+\/[\w.-]+)(?<subdir>[^#]+)?#?(?<ref>[\w./-]+)?/;
 const providerShortcuts: Record<string, string> = {
@@ -168,7 +169,14 @@ export function repository(
 /**
  * Factory function for creating file specifications
  */
-export function file(name: string, options?: { path?: string; checksum?: string; version?: string }): FileSpec {
+export function file(
+  name: string,
+  options?: {
+    path?: string;
+    checksum?: string;
+    version?: string;
+  },
+): FileSpec {
   return {
     name,
     path: options?.path || name,
@@ -198,7 +206,9 @@ export function deploymentGroup(
     namespace?: string;
     dependsOn?: string[];
     optional?: boolean;
-    shouldDeploy?: (client: PactToolboxClient) => Promise<boolean>;
+    shouldDeploy?: (deployer: PactDeployer) => Promise<boolean>;
+    keysetTemplates?: KeysetTemplate[];
+    capabilities?: PactCapability[];
   },
 ): DeploymentGroup {
   return {
@@ -208,6 +218,8 @@ export function deploymentGroup(
     dependsOn: options?.dependsOn,
     optional: options?.optional,
     shouldDeploy: options?.shouldDeploy,
+    keysetTemplates: options?.keysetTemplates,
+    capabilities: options?.capabilities,
   };
 }
 
@@ -222,56 +234,101 @@ export function keysetTemplate(
   return { name, keys, pred };
 }
 
+export function capabilityTempalate(name: string, args: any[] = []): { name: string; args: any[] } {
+  return { name, args };
+}
+
+/**
+ * Deployment condition interface
+ */
+export interface DeploymentCondition {
+  skipOnNetworks?: SerializableNetworkConfig["type"][];
+  requireMissingContracts?: string[];
+  requireMissingNamespaces?: string[];
+  operator?: "every" | "some" | "none";
+}
+
+/**
+ * Merge multiple deployment conditions into one
+ */
+function mergeConditions(...conditions: DeploymentCondition[]): DeploymentCondition {
+  return conditions.reduce(
+    (acc, condition) => ({
+      skipOnNetworks: [...(acc.skipOnNetworks || []), ...(condition.skipOnNetworks || [])],
+      requireMissingContracts: [...(acc.requireMissingContracts || []), ...(condition.requireMissingContracts || [])],
+      requireMissingNamespaces: [
+        ...(acc.requireMissingNamespaces || []),
+        ...(condition.requireMissingNamespaces || []),
+      ],
+    }),
+    {} as DeploymentCondition,
+  );
+}
+
 /**
  * Helper class for common deployment conditions
  */
 export class DeploymentConditions {
   /** Skip deployment on chainweb networks (production) */
-  static skipOnChainweb(): { skipOnNetworks: "chainweb"[] } {
+  static skipOnChainweb(): DeploymentCondition {
     return {
       skipOnNetworks: ["chainweb"],
     };
   }
 
+  /**
+   * Skip deployment on pact-server networks (local dev server)
+   */
+  static skipOnPactServer(): DeploymentCondition {
+    return {
+      skipOnNetworks: ["pact-server"],
+    };
+  }
+
+  /**
+   * Skip deployment on local networks (e.g. devnet)
+   */
+  static skipOnLocal(): DeploymentCondition {
+    return {
+      skipOnNetworks: ["chainweb-local", "pact-server", "chainweb-devnet"],
+    };
+  }
+
   /** Only deploy if specific contracts are missing */
-  static ifContractsMissing(contracts: string[]): { requireMissingContracts: string[] } {
+  static ifContractsMissing(contracts: string[]): DeploymentCondition {
     return {
       requireMissingContracts: contracts,
     };
   }
 
   /** Only deploy if specific namespaces are missing */
-  static ifNamespacesMissing(namespaces: string[]): { requireMissingNamespaces: string[] } {
+  static ifNamespacesMissing(namespaces: string[]): DeploymentCondition {
     return {
       requireMissingNamespaces: namespaces,
     };
   }
 
-  /** Combine multiple conditions */
-  static combine(
-    ...conditions: Array<{
-      skipOnNetworks?: ("chainweb" | "pact-server" | "local")[];
-      requireMissingContracts?: string[];
-      requireMissingNamespaces?: string[];
-    }>
-  ): {
-    skipOnNetworks?: ("chainweb" | "pact-server" | "local")[];
-    requireMissingContracts?: string[];
-    requireMissingNamespaces?: string[];
-  } {
-    return conditions.reduce(
-      (acc, condition) => ({
-        skipOnNetworks: [...(acc.skipOnNetworks || []), ...(condition.skipOnNetworks || [])],
-        requireMissingContracts: [...(acc.requireMissingContracts || []), ...(condition.requireMissingContracts || [])],
-        requireMissingNamespaces: [
-          ...(acc.requireMissingNamespaces || []),
-          ...(condition.requireMissingNamespaces || []),
-        ],
-      }),
-      {} as any,
-    );
+  /**
+   * All skip conditions must be true to skip (AND logic)
+   * Skip only if ALL conditions say to skip
+   */
+  static every(...conditions: DeploymentCondition[]): DeploymentCondition {
+    return { ...mergeConditions(...conditions), operator: "every" };
+  }
+
+  /**
+   * At least one skip condition must be true to skip (OR logic)
+   * Skip if ANY condition says to skip
+   */
+  static some(...conditions: DeploymentCondition[]): DeploymentCondition {
+    return { ...mergeConditions(...conditions), operator: "some" };
+  }
+
+  /**
+   * None of the skip conditions should be true to skip (NOT logic)
+   * Deploy unless ALL conditions say to skip
+   */
+  static none(...conditions: DeploymentCondition[]): DeploymentCondition {
+    return { ...mergeConditions(...conditions), operator: "none" };
   }
 }
-
-// Export as both class and legacy object for backward compatibility
-export const deploymentConditions: typeof DeploymentConditions = DeploymentConditions;

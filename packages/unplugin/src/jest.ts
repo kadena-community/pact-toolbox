@@ -15,7 +15,7 @@ interface JestTransformerOptions {
  *   transform: {
  *     "\\.pact$": ["@pact-toolbox/unplugin/jest", { generateTypes: true }]
  *   },
- *   extensionsToTreatAsEsm: [".pact"],
+ *   extensionsToTreatAsEsm: [".pact"],s
  * };
  * ```
  */

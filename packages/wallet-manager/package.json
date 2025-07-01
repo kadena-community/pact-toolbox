@@ -1,0 +1,77 @@
+{
+  "name": "@pact-toolbox/wallet-manager",
+  "version": "0.1.0",
+  "description": "Wallet manager for Kadena wallets",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kadena-community/pact-toolbox.git",
+    "directory": "packages/wallet-manager"
+  },
+  "author": "Pact Toolbox Team",
+  "license": "MIT",
+  "type": "module",
+  "private": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsdown",
+    "dev": "tsdown --watch",
+    "test": "vitest run",
+    "test:watch": "vitest --watch",
+    "typecheck": "tsc --noEmit --skipLibCheck",
+    "lint": "oxlint .",
+    "lint:fix": "oxlint . --fix",
+    "prepack": "pnpm run build"
+  },
+  "dependencies": {
+    "@pact-toolbox/crypto": "workspace:*",
+    "@pact-toolbox/signers": "workspace:*",
+    "@pact-toolbox/types": "workspace:*",
+    "@pact-toolbox/utils": "workspace:*",
+    "@pact-toolbox/wallet-core": "workspace:*"
+  },
+  "peerDependencies": {
+    "@pact-toolbox/dev-wallet": "workspace:*",
+    "@pact-toolbox/wallet-ui": "workspace:*"
+  },
+  "peerDependenciesMeta": {
+    "@pact-toolbox/dev-wallet": {
+      "optional": true
+    },
+    "@pact-toolbox/wallet-ui": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@pact-toolbox/dev-wallet": "workspace:*",
+    "@pact-toolbox/tsdown": "workspace:*",
+    "@pact-toolbox/wallet-ui": "workspace:*",
+    "@types/node": "^24.5.2",
+    "jsdom": "^27.0.0",
+    "oxlint": "^1.16.0",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
+  },
+  "keywords": [
+    "pact",
+    "kadena",
+    "wallet",
+    "blockchain",
+    "smart-contracts",
+    "adaptor"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
+}

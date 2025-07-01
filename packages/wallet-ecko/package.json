@@ -1,0 +1,60 @@
+{
+  "name": "@pact-toolbox/wallet-ecko",
+  "version": "0.1.0",
+  "description": "Ecko wallet adapter for Pact toolbox",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kadena-community/pact-toolbox.git",
+    "directory": "packages/wallet-ecko"
+  },
+  "author": "Pact Toolbox Team",
+  "license": "MIT",
+  "type": "module",
+  "private": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsdown",
+    "dev": "tsdown --watch",
+    "test": "vitest run",
+    "test:watch": "vitest --watch",
+    "typecheck": "tsc --noEmit --skipLibCheck",
+    "lint": "oxlint .",
+    "lint:fix": "oxlint . --fix",
+    "prepack": "pnpm run build"
+  },
+  "dependencies": {
+    "@pact-toolbox/types": "workspace:*",
+    "@pact-toolbox/wallet-core": "workspace:*"
+  },
+  "devDependencies": {
+    "@pact-toolbox/tsdown": "workspace:*",
+    "@types/node": "^24.5.2",
+    "jsdom": "^27.0.0",
+    "oxlint": "^1.16.0",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
+  },
+  "keywords": [
+    "pact",
+    "kadena",
+    "wallet",
+    "ecko",
+    "blockchain",
+    "adapter"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
+}

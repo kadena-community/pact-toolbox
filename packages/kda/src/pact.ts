@@ -132,12 +132,12 @@ export function validateAccountName(account: string): boolean {
 
   // Check for w: accounts (WebAuthn accounts)
   if (account.startsWith("w:")) {
-    return account.length >= 3;
+    return account.length > 4; // "w:" + at least 3 chars
   }
 
   // Check for c: accounts (contract accounts)
   if (account.startsWith("c:")) {
-    return account.length >= 3;
+    return account.length > 4; // "c:" + at least 3 chars
   }
 
   // Regular account names
@@ -188,7 +188,7 @@ export function createCapability(name: string, ...args: PactValue[]): { name: st
 /**
  * Helper to create common coin capabilities
  */
-export const coinCapabilities = {
+export const COIN_CAPABILITIES = {
   gas: (): { name: string; args: PactValue[] } => createCapability("coin.GAS"),
   transfer: (from: string, to: string, amount: string): { name: string; args: PactValue[] } =>
     createCapability("coin.TRANSFER", from, to, createDecimal(amount)),

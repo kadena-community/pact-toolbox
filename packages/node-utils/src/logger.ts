@@ -40,8 +40,8 @@ function getLogLevel(): number {
     }
   }
 
-  // Default to warn level (2) - less verbose by default
-  return 2;
+  // Default to info level (3) - show important status updates by default
+  return 3;
 }
 
 /**
@@ -51,8 +51,8 @@ function getLogLevel(): number {
  * - -1: silent (no output)
  * - 0: fatal
  * - 1: error
- * - 2: warn (default)
- * - 3: info/log
+ * - 2: warn
+ * - 3: info/log (default)
  * - 4: debug
  * - 5: trace
  *

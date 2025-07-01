@@ -10,11 +10,14 @@ export class ContainerOrchestrator {
   #runningServices: Map<string, DockerService[]>;
   #logger: Logger;
   #volumes: string[];
+  #healthMonitorInterval?: NodeJS.Timeout;
+  #recoveryEnabled: boolean = true;
+  #maxRestartAttempts: number = 3;
 
   constructor(config: OrchestratorConfig) {
     this.#networkName = config.networkName;
     this.#runningServices = new Map();
-    this.#logger = config.logger ?? logger.create({ level: 2 }); // Use warn level (2) to match default logger
+    this.#logger = config.logger ?? logger.create({ level: 3 }); // Use info level (3) to match default logger
     this.#volumes = config.volumes || [];
   }
 
@@ -153,7 +156,7 @@ export class ContainerOrchestrator {
     await this.#getOrCreateNetwork();
     await this.#createVolumes();
     const orderedServiceGroupNames = this.#resolveServiceOrder(serviceConfigs);
-    this.#logger.debug(`Service group startup order: ${orderedServiceGroupNames.join(", ")}`);
+    this.#logger.debug(`Service startup order: ${orderedServiceGroupNames.join(", ")}`);
 
     for (const serviceGroupName of orderedServiceGroupNames) {
       const config = serviceConfigs.find((s) => s.containerName === serviceGroupName)!;
@@ -219,7 +222,69 @@ export class ContainerOrchestrator {
         `All ${replicaCount} instance(s) of service group '${serviceGroupName}' attempted to start.`,
       );
     }
+
+    // Start health monitoring
+    this.startHealthMonitoring();
+
     this.#logger.debug(`All provided service groups attempted to start.`);
+  }
+
+  private startHealthMonitoring(): void {
+    if (this.#healthMonitorInterval) {
+      clearInterval(this.#healthMonitorInterval);
+    }
+
+    if (!this.#recoveryEnabled) return;
+
+    let isChecking = false;
+    this.#healthMonitorInterval = setInterval(() => {
+      // Prevent overlapping checks
+      if (isChecking) return;
+      isChecking = true;
+
+      this.checkHealthAndRecover().finally(() => {
+        isChecking = false;
+      });
+    }, 30000); // Check every 30 seconds
+  }
+
+  private async checkHealthAndRecover(): Promise<void> {
+    for (const [_groupName, services] of this.#runningServices.entries()) {
+      for (const service of services) {
+        try {
+          const healthy = await service.isHealthy();
+          if (!healthy && service.restartCount < this.#maxRestartAttempts) {
+            this.#logger.warn(`Service '${service.serviceName}' is unhealthy. Attempting recovery...`);
+            await this.recoverService(service);
+          }
+        } catch (err: any) {
+          this.#logger.debug(`Health check error for ${service.serviceName}: ${err.message}`);
+        }
+      }
+    }
+  }
+
+  private async recoverService(service: DockerService): Promise<void> {
+    try {
+      // Calculate backoff delay
+      const baseDelay = 5000; // 5 seconds
+      const delay = baseDelay * Math.pow(2, service.restartCount);
+
+      this.#logger.info(`Waiting ${delay}ms before restart attempt ${service.restartCount + 1}...`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+
+      await service.restart();
+
+      // Wait for service to become healthy
+      try {
+        await service.waitForHealthy(60000); // 1 minute timeout
+        this.#logger.success(`Service '${service.serviceName}' recovered successfully`);
+      } catch {
+        this.#logger.error(`Service '${service.serviceName}' failed to become healthy after restart`);
+      }
+    } catch (err: any) {
+      this.#logger.error(`Failed to recover service '${service.serviceName}': ${err.message}`);
+    }
   }
 
   async streamAllLogs(): Promise<void> {
@@ -240,8 +305,36 @@ export class ContainerOrchestrator {
     }
   }
 
+  async isServiceHealthy(serviceName: string): Promise<boolean> {
+    const services = this.#runningServices.get(serviceName);
+    if (!services || services.length === 0) {
+      return false;
+    }
+    return services[0].isHealthy();
+  }
+
+  async getServiceLogs(serviceName: string, tail: number = 100): Promise<string[]> {
+    const services = this.#runningServices.get(serviceName);
+    if (!services || services.length === 0) {
+      return [];
+    }
+    return services[0].getLogs(tail);
+  }
+
+  getService(serviceName: string): DockerService | undefined {
+    const services = this.#runningServices.get(serviceName);
+    return services?.[0];
+  }
+
   async stopAllServices(): Promise<void> {
     this.#logger.start(`Gracefully shutting down all services...`);
+
+    // Stop health monitoring
+    if (this.#healthMonitorInterval) {
+      clearInterval(this.#healthMonitorInterval);
+      this.#healthMonitorInterval = undefined;
+    }
+
     this.stopAllLogStreams();
 
     // Stop services in reverse order of their startup (group-wise)
@@ -254,8 +347,12 @@ export class ContainerOrchestrator {
         // Stop instances of a group in parallel for faster shutdown
         await Promise.all(
           serviceInstances.map(async (service) => {
-            await service.stop();
-            await service.remove();
+            try {
+              await service.stop();
+              await service.remove();
+            } catch (err: any) {
+              this.#logger.warn(`Error stopping/removing ${service.serviceName}: ${err.message}`);
+            }
           }),
         );
         this.#logger.debug(`All instances of service group '${serviceGroupName}' stopped and removed.`);
@@ -263,34 +360,84 @@ export class ContainerOrchestrator {
     }
     this.#runningServices.clear();
 
-    if (this.#networkId) {
-      try {
-        const network = this.#docker.getNetwork(this.#networkId);
-        const netInfo = await network.inspect().catch(() => null);
-        if (netInfo && netInfo.Containers && Object.keys(netInfo.Containers).length > 0) {
-          this.#logger.warn(
-            `Network '${this.#networkName}' (ID: ${this.#networkId}) still has containers: ${Object.keys(
-              netInfo.Containers,
-            ).join(", ")}. Manual cleanup may be required.`,
-          );
-        } else if (netInfo) {
-          this.#logger.info(`Removing network '${this.#networkName}' (ID: ${this.#networkId})...`);
-          await network.remove();
-          this.#logger.success(`Network '${this.#networkName}' removed.`);
-        } else {
-          this.#logger.info(
-            `Network '${this.#networkName}' (ID: ${this.#networkId}) not found, likely already removed.`,
-          );
+    // Cleanup orphaned containers with our label
+    await this.cleanupOrphanedContainers();
+
+    // Cleanup network
+    await this.cleanupNetwork();
+
+    this.#logger.success(`Service cleanup complete.`);
+  }
+
+  private async cleanupOrphanedContainers(): Promise<void> {
+    try {
+      const containers = await this.#docker.listContainers({
+        all: true,
+        filters: {
+          label: [`com.pact-toolbox.network=${this.#networkName}`]
         }
-      } catch (error: any) {
-        if (error.statusCode === 404) {
-          this.#logger.info(`Network '${this.#networkName}' (ID: ${this.#networkId}) was already removed.`);
-        } else {
-          this.#logger.warn(`Error removing network '${this.#networkName}':`, error.message || error);
+      });
+
+      for (const container of containers) {
+        try {
+          this.#logger.debug(`Removing orphaned container: ${container.Names[0]}`);
+          await this.#docker.getContainer(container.Id).remove({ force: true });
+        } catch (err: any) {
+          this.#logger.debug(`Could not remove orphaned container ${container.Id}: ${err.message}`);
         }
       }
+    } catch (err: any) {
+      this.#logger.debug(`Error during orphan cleanup: ${err.message}`);
+    }
+  }
+
+  private async cleanupNetwork(): Promise<void> {
+    if (!this.#networkId) return;
+
+    try {
+      const network = this.#docker.getNetwork(this.#networkId);
+      const netInfo = await network.inspect().catch(() => null);
+
+      if (!netInfo) {
+        this.#logger.info(`Network '${this.#networkName}' not found, likely already removed.`);
+        this.#networkId = undefined;
+        return;
+      }
+
+      // Check if network has containers
+      const hasContainers = netInfo.Containers && Object.keys(netInfo.Containers).length > 0;
+
+      if (hasContainers) {
+        // Try to disconnect containers first
+        for (const [containerId, containerInfo] of Object.entries(netInfo.Containers)) {
+          try {
+            await network.disconnect({ Container: containerId, Force: true });
+            this.#logger.debug(`Disconnected container ${(containerInfo as any).Name} from network`);
+          } catch (err: any) {
+            this.#logger.debug(`Could not disconnect container ${containerId}: ${err.message}`);
+          }
+        }
+
+        // Try to remove network again
+        try {
+          await network.remove();
+          this.#logger.success(`Network '${this.#networkName}' removed after disconnecting containers.`);
+        } catch (err: any) {
+          this.#logger.warn(`Network '${this.#networkName}' could not be removed: ${err.message}`);
+        }
+      } else {
+        // No containers, remove network
+        await network.remove();
+        this.#logger.success(`Network '${this.#networkName}' removed.`);
+      }
+    } catch (error: any) {
+      if (error.statusCode === 404) {
+        this.#logger.info(`Network '${this.#networkName}' was already removed.`);
+      } else {
+        this.#logger.warn(`Error removing network '${this.#networkName}':`, error.message || error);
+      }
+    } finally {
       this.#networkId = undefined;
     }
-    this.#logger.success(`Service cleanup complete.`);
   }
 }

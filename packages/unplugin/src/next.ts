@@ -2,7 +2,8 @@ import type { NextConfig } from "next";
 
 import { getSerializableMultiNetworkConfig, resolveConfig } from "@pact-toolbox/config";
 import { logger } from "@pact-toolbox/node-utils";
-import { PactToolboxClient } from "@pact-toolbox/runtime";
+import { PactDeployer } from "@pact-toolbox/deployer";
+import { isDevelopment, isTest, isProduction } from "@pact-toolbox/utils";
 
 import type { PluginOptions } from "./plugin/types";
 import { PactToolboxNetwork, createNetwork } from "@pact-toolbox/network";
@@ -43,12 +44,10 @@ async function cleanupExistingNetwork(): Promise<void> {
 }
 
 async function startNetwork(): Promise<void> {
-  const isDev = process.env.NODE_ENV === "development";
-  const isTest = process.env.NODE_ENV === "test";
   const registry = getGlobalRegistry();
 
   // Only start in dev mode and not in test
-  if (!isDev || isTest) {
+  if (!isDevelopment() || isTest()) {
     return;
   }
 
@@ -81,7 +80,7 @@ async function startNetwork(): Promise<void> {
     registry[INIT_FLAG_KEY] = true;
 
     // Setup proper cleanup for Next.js hot reloads
-    if (process.env.NODE_ENV === "development") {
+    if (isDevelopment()) {
       const cleanup = async () => {
         await cleanupExistingNetwork();
       };
@@ -117,11 +116,11 @@ function withPactToolbox(options: PluginOptions = {}) {
       // Resolve configuration
       const resolvedConfig = await resolveConfig();
 
-      // Initialize client if needed
-      const { client: passedClient } = options;
-      if (passedClient || options.client !== undefined) {
-        // Client provided by user - they manage it
-        void (passedClient ?? new PactToolboxClient(resolvedConfig));
+      // Initialize deployer if needed
+      const { deployer: passedDeployer } = options;
+      if (passedDeployer || options.deployer !== undefined) {
+        // Deployer provided by user - they manage it
+        void (passedDeployer ?? new PactDeployer(resolvedConfig));
       }
 
       // Return the enhanced Next.js configuration
@@ -131,14 +130,13 @@ function withPactToolbox(options: PluginOptions = {}) {
           ...nextConfig.compiler,
           define: {
             ...nextConfig.compiler?.define,
-            "globalThis.__PACT_TOOLBOX_NETWORKS__":
-              (globalThis as any).__PACT_TOOLBOX_NETWORKS__ ||
-              JSON.stringify(
-                getSerializableMultiNetworkConfig(resolvedConfig, {
-                  isDev: process.env.NODE_ENV !== "production",
-                  isTest: process.env.NODE_ENV === "test",
-                }),
-              ),
+            __PACT_TOOLBOX_BUILD_ID__: JSON.stringify("nextjs-" + Date.now()),
+            __PACT_TOOLBOX_NETWORKS__: JSON.stringify(
+              getSerializableMultiNetworkConfig(resolvedConfig, {
+                isDev: !isProduction(),
+                isTest: isTest(),
+              }),
+            ),
           },
         },
         turbopack: {

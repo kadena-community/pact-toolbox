@@ -1,4 +1,4 @@
-import type { PactToolboxClient } from "@pact-toolbox/runtime";
+import type { PactDeployer } from "@pact-toolbox/deployer";
 import { downloadTemplate } from "giget";
 import {
   existsSync,
@@ -134,7 +134,7 @@ export async function downloadPactDependency(
  *
  * @param prelude - The PreludeDefinition object to download.
  * @param preludesDir - The directory to download the prelude into.
- * @param client - The PactToolboxClient instance.
+ * @param deployer - The PactDeployer instance.
  * @param allPreludes - An array of all available preludes.
  * @param downloaded - A set of already downloaded prelude names.
  * @param forceDownload - Whether to force download even if cached.
@@ -142,7 +142,7 @@ export async function downloadPactDependency(
 export async function downloadPrelude(
   prelude: PreludeDefinition,
   preludesDir: string,
-  client: PactToolboxClient,
+  deployer: PactDeployer,
   allPreludes: PreludeDefinition[] = [],
   downloaded: Set<string> = new Set(),
   forceDownload = false,
@@ -172,7 +172,7 @@ export async function downloadPrelude(
       if (downloaded.has(dep)) {
         continue;
       }
-      await downloadPrelude(found, preludesDir, client, allPreludes, downloaded, forceDownload);
+      await downloadPrelude(found, preludesDir, deployer, allPreludes, downloaded, forceDownload);
     }
   }
 
@@ -228,7 +228,7 @@ export async function downloadPrelude(
     }
 
     // Generate and save install script
-    const installScript = await generatePreludeRepl(prelude, client);
+    const installScript = await generatePreludeRepl(prelude, deployer);
     const installPath = join(preludeDir, "install.repl");
     await writeFile(installPath, installScript);
 
@@ -361,13 +361,13 @@ export async function createReplTestTools(config: CommonPreludeOptions): Promise
   const { preludes, preludesDir } = await resolvePreludes(config);
   // Write accounts repl
   await mkdir(join(preludesDir, "tools"), { recursive: true });
-  const accounts = config.client.getNetworkConfig().keyPairs ?? [];
+  const accounts = config.deployer.getNetworkConfig().keyPairs ?? [];
   const accountsRepl = generateTestAccountsRepl(accounts);
   await writeFile(join(preludesDir, "tools/test-accounts.repl"), accountsRepl);
 
   // Write init repl
   const preludeNames = sortPreludesNames(preludes);
-  const gasLimit = config.client.getNetworkConfig().meta?.gasLimit || 150000;
+  const gasLimit = config.deployer.getNetworkConfig().meta?.gasLimit || 150000;
   const initRepl = generateInitRepl(preludeNames, gasLimit);
   await writeFile(join(preludesDir, "init.repl"), initRepl);
 }
@@ -416,7 +416,7 @@ export async function downloadAllPreludes(
       (!forceDownload &&
         (await isPreludeCached(prelude.name, extractPreludeVersion(prelude), preludesDir, !validateChecksums)));
 
-    await downloadPrelude(prelude, preludesDir, config.client, preludes, downloaded, forceDownload);
+    await downloadPrelude(prelude, preludesDir, config.deployer, preludes, downloaded, forceDownload);
 
     if (wasAlreadyDownloaded && !forceDownload) {
       skippedCount++;

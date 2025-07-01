@@ -1,14 +1,29 @@
-import type { PartiallySignedTransaction, SignedTransaction } from "@pact-toolbox/types";
-import type { Wallet, WalletAccount, WalletNetwork } from "./types";
+import type {
+  PartiallySignedTransaction,
+  SignedTransaction,
+  Wallet,
+  WalletAccount,
+  WalletNetwork,
+  WalletEvents,
+} from "@pact-toolbox/types";
+import { EventEmitter } from "@pact-toolbox/utils";
 
 /**
  * Abstract base class for wallet implementations
  * Provides common properties and basic implementations
+ * Extends EventEmitter for wallets that need event handling
  */
-export abstract class BaseWallet implements Wallet {
+export abstract class BaseWallet extends EventEmitter<WalletEvents> implements Wallet {
+  /** Wallet provider ID */
+  readonly id?: string;
+
   protected account: WalletAccount | null = null;
   protected network: WalletNetwork | null = null;
   protected connected = false;
+
+  constructor() {
+    super();
+  }
 
   abstract isInstalled(): boolean;
   abstract connect(networkId?: string): Promise<WalletAccount>;

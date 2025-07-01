@@ -77,27 +77,21 @@ function addPkcs8Header(bytes: ReadonlyUint8Array): ReadonlyUint8Array {
 }
 
 /**
- * Creates an Ed25519 private key from raw bytes.
+ * Given a private key represented as a 32-byte `Uint8Array`, creates an Ed25519 private key for use
+ * with other methods in this package that accept
+ * [`CryptoKey`](https://developer.mozilla.org/en-US/docs/Web/API/CryptoKey) objects.
  *
- * Imports a 32-byte Ed25519 private key into the Web Crypto API format.
- * The raw bytes are wrapped in PKCS#8 format before import.
- *
- * **Security Note**: Use extractable=false (default) when the private key
- * material doesn't need to be accessed directly. This prevents the key
- * bytes from being extracted after import.
- *
- * @param bytes - Raw 32-byte Ed25519 private key
- * @param extractable - Whether the key can be exported later (default: false)
- * @returns A promise that resolves to the imported CryptoKey
- * @throws {Error} When the key length is not exactly 32 bytes
+ * @param bytes 32 bytes that represent the private key
+ * @param extractable Setting this to `true` makes it possible to extract the bytes of the private
+ * key using the [`crypto.subtle.exportKey()`](https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto/exportKey)
+ * API. Defaults to `false`.
  *
  * @example
- * ```typescript
- * const rawKey = new Uint8Array(32); // Should be cryptographically secure
- * crypto.getRandomValues(rawKey);
+ * ```ts
+ * import { createPrivateKeyFromBytes } from '@pact-toolbox/crypto';
  *
- * const privateKey = await createPrivateKeyFromBytes(rawKey, false);
- * // privateKey can be used for signing but cannot be re-exported
+ * const privateKey = await createPrivateKeyFromBytes(new Uint8Array([...]));
+ * const extractablePrivateKey = await createPrivateKeyFromBytes(new Uint8Array([...]), true);
  * ```
  */
 export async function createPrivateKeyFromBytes(bytes: ReadonlyUint8Array, extractable?: boolean): Promise<CryptoKey> {
@@ -106,28 +100,27 @@ export async function createPrivateKeyFromBytes(bytes: ReadonlyUint8Array, extra
     throw new Error(`Invalid private key length: ${actualLength}`);
   }
   const privateKeyBytesPkcs8 = addPkcs8Header(bytes);
+  // @ts-expect-error TS doesn't recognize "pkcs8" for Ed25519 yet
   return crypto.subtle.importKey("pkcs8", privateKeyBytesPkcs8, "Ed25519", extractable ?? false, ["sign"]);
 }
 
 /**
- * Derives the public key from an Ed25519 private key.
+ * Given an extractable [`CryptoKey`](https://developer.mozilla.org/en-US/docs/Web/API/CryptoKey)
+ * private key, gets the corresponding public key as a
+ * [`CryptoKey`](https://developer.mozilla.org/en-US/docs/Web/API/CryptoKey).
  *
- * This function extracts the public key component from an extractable private key
- * by exporting the private key as JWK format and re-importing only the public
- * key material. This is useful when you have a private key and need the
- * corresponding public key for verification operations.
- *
- * @param privateKey - The extractable Ed25519 private key
- * @param extractable - Whether the derived public key should be extractable (default: false)
- * @returns A promise that resolves to the derived public key
- * @throws {Error} When the private key is not extractable
- * @throws {Error} When key export functionality is not available
+ * @param extractable Setting this to `true` makes it possible to extract the bytes of the public
+ * key using the [`crypto.subtle.exportKey()`](https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto/exportKey)
+ * API. Defaults to `false`.
  *
  * @example
- * ```typescript
- * const keyPair = await generateExtractableKeyPair();
- * const publicKey = await getPublicKeyFromPrivateKey(keyPair.privateKey, true);
- * // publicKey can be used for verification and is extractable
+ * ```ts
+ * import { createPrivateKeyFromBytes, getPublicKeyFromPrivateKey } from '@pact-toolbox/crypto';
+ *
+ * const privateKey = await createPrivateKeyFromBytes(new Uint8Array([...]), true);
+ *
+ * const publicKey = await getPublicKeyFromPrivateKey(privateKey);
+ * const extractablePublicKey = await getPublicKeyFromPrivateKey(privateKey, true);
  * ```
  */
 export async function getPublicKeyFromPrivateKey(

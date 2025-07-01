@@ -81,74 +81,72 @@ All checks passed! Your system is ready for Pact development.
 
 ### `init`
 
-Create a new Pact project with scaffolding:
+Initialize Pact Toolbox in an existing project:
 
 ```bash
-# Interactive mode
+# Initialize in current directory
 pact-toolbox init
 
-# With project name
-pact-toolbox init my-dapp
-
-# With options
-pact-toolbox init my-dapp --template defi --no-git
+# With custom contracts directory
+pact-toolbox init --contractsDir ./contracts
 ```
 
 **Options:**
-- `--template <name>` - Project template
-  - `basic` - Simple starter project (default)
-  - `advanced` - Full-featured project
-  - `defi` - DeFi-focused template
-  - `nft` - NFT marketplace template
-- `--bundler <name>` - Build tool
-  - `vite` - Fast, modern bundler (default)
-  - `webpack` - Traditional bundler
-  - `next` - Next.js framework
-- `--git` - Initialize git repo (default: true)
-- `--install` - Install dependencies (default: true)
+- `--cwd <path>` - Working directory path (default: current directory)
+- `--contractsDir <path>` - Path to contracts directory (default: "pact")
 
-**Created structure:**
-```
-my-dapp/
-├── pact/                  # Smart contracts
-│   ├── hello-world.pact
-│   └── hello-world.repl
-├── src/                   # Application code
-│   ├── main.ts
-│   └── App.tsx
-├── tests/                 # Test files
-├── scripts/               # Deployment scripts
-├── pact-toolbox.config.ts # Configuration
-├── package.json
-└── README.md
-```
+**What it does:**
+
+1. **Installs dependencies:**
+   - `@pact-toolbox/chainweb-client` - Chainweb API client
+   - `@pact-toolbox/transaction` - Transaction builder
+   - `pact-toolbox` - CLI tool (dev dependency)
+   - `@pact-toolbox/unplugin` - Bundler plugin (dev dependency)
+
+2. **Creates configuration file:**
+   - `pact-toolbox.config.ts` for TypeScript projects
+   - `pact-toolbox.config.js` for JavaScript projects
+
+3. **Updates package.json:**
+   - Adds `pact:start` script
+   - Adds `pact:run` script
+   - Adds `pact:prelude` script
+   - Adds `pact:types` script
+   - Adds `pact:test` script
+
+4. **Updates tsconfig.json:**
+   - Adds `.pact-toolbox/pactjs-generated` to types array
+
+5. **Creates example contract:**
+   - `hello-world.pact` in contracts directory
+   - `hello-world.repl` test file
+
+6. **Downloads preludes:**
+   - Fetches standard library contracts
 
 ### `start`
 
 Start local development environment:
 
 ```bash
-# Start with defaults
+# Start with defaults (local network)
 pact-toolbox start
 
-# Specific network preset
-pact-toolbox start --network minimal
+# Start specific network
+pact-toolbox start devnet
 
-# Custom configuration
-pact-toolbox start --port 8080 --mining-delay 5
+# Quiet mode with tunnel
+pact-toolbox start --quiet --tunnel
+
+# Without clipboard copy
+pact-toolbox start --no-clipboard
 ```
 
 **Options:**
-- `--network <preset>` - Network configuration
-  - `devnet` - Full 10-chain network (default)
-  - `minimal` - Single chain for testing
-  - `compact` - 5-chain network
-- `--port <number>` - API port (default: 8080)
-- `--mining-delay <seconds>` - Block time (default: 5)
-- `--persist` - Persist blockchain data
-- `--clean` - Start with fresh state
-- `--docker` - Use Docker (default: true)
-- `--native` - Use native Pact installation
+- `network` - Network to start (positional argument, default: "local")
+- `-q, --quiet` - Silence logs
+- `-t, --tunnel` - Start a cloudflare tunnel to the network
+- `-c, --clipboard` - Copy the network url to the clipboard (default: true)
 
 **Network Details:**
 
@@ -170,38 +168,39 @@ pact-toolbox start --port 8080 --mining-delay 5
 
 ### `test`
 
-Run contract tests:
+Run contract tests with REPL and JavaScript/TypeScript support:
 
 ```bash
-# Run all tests
+# Run all tests (REPL and JS)
 pact-toolbox test
-
-# Specific file/pattern
-pact-toolbox test hello-world.repl
-pact-toolbox test "**/*token*.repl"
 
 # Watch mode
 pact-toolbox test --watch
 
-# With coverage
-pact-toolbox test --coverage
+# REPL tests only
+pact-toolbox test --repl --no-js
+
+# With coverage and verbose output
+pact-toolbox test --coverage --verbose
+
+# Silent mode
+pact-toolbox test --silent
 ```
 
 **Options:**
-- `--watch` - Re-run on file changes
-- `--pattern <glob>` - File pattern
-- `--coverage` - Generate coverage report
-- `--reporter <name>` - Output format
-  - `default` - Human-readable
-  - `json` - Machine-readable
-  - `junit` - CI/CD compatible
-- `--timeout <ms>` - Test timeout
-- `--parallel` - Run tests in parallel
+- `-w, --watch` - Watch for changes and re-run tests
+- `-r, --repl` - Run REPL tests (default: true)
+- `-j, --js` - Run JavaScript/TypeScript tests (default: true)
+- `-t, --trace` - Enable trace output for REPL tests
+- `-c, --coverage` - Enable coverage reporting for REPL tests
+- `-v, --verbose` - Enable verbose output
+- `-b, --bail` - Stop on first test failure
+- `-s, --silent` - Silent mode - suppress output
 
 **Test file formats:**
-- `.repl` - REPL-based tests
-- `.test.ts` - TypeScript integration tests
-- `.spec.ts` - Unit tests
+- `.repl` - REPL-based Pact tests
+- `.test.ts` - TypeScript tests (via Vitest)
+- `.spec.ts` - Unit tests (via Vitest)
 
 ### `run`
 
@@ -335,35 +334,33 @@ Generates a deployment configuration for multiple networks.
 
 ### `prelude`
 
-Manage Pact prelude (standard library):
+Download and manage Pact preludes (standard library contracts):
 
 ```bash
-# Deploy prelude to local network
+# Download configured preludes
 pact-toolbox prelude
 
-# Check prelude status
-pact-toolbox prelude --check
+# Use specific network
+pact-toolbox prelude --network testnet
 
-# Update to latest version
-pact-toolbox prelude --update
+# Force re-download
+pact-toolbox prelude --force
 
-# Deploy specific modules
-pact-toolbox prelude --modules coin,fungible-v2
+# Clean cache before downloading
+pact-toolbox prelude --clean
 ```
 
 **Options:**
-- `--check` - Verify deployment status
-- `--update` - Update to latest version
-- `--modules <list>` - Specific modules
-- `--network <name>` - Target network
-- `--force` - Redeploy if exists
+- `-n, --network <name>` - Network to use for prelude deployment
+- `-f, --force` - Force re-download even if preludes are cached
+- `-c, --clean` - Clean cache before downloading
 
-**Included modules:**
-- `coin` - KDA token contract
-- `fungible-v2` - Token standard
-- `fungible-xchain-v1` - Cross-chain
-- `ns` - Namespace management
-- `pact` - Core functionality
+**Features:**
+- Downloads preludes from configured repositories
+- Caches preludes for faster subsequent runs
+- Generates init.repl for loading in REPL
+- Checksum verification for integrity
+- Progress tracking with timing information
 
 ## Configuration
 

@@ -1,18 +1,4 @@
-// Base wallet class
-export { BaseWallet, detectBrowserExtension } from "./base-wallet";
-
-// Types
-export type {
-  Wallet,
-  WalletAccount,
-  WalletNetwork,
-  WalletMetadata,
-  WalletProvider,
-  WalletErrorType,
-  WalletEvents,
-  ConnectOptions,
-  AutoConnectOptions,
-} from "./types";
-
-// Error class
-export { WalletError } from "./types";
+export * from "./base-wallet";
+export * from "./types";
+export * from "./wallet-error";
+export * from "./keypair";

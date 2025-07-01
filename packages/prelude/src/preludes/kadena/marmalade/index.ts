@@ -1,5 +1,5 @@
 import type { PreludeDefinition } from "../../../types";
-import { repository, file, namespace, deploymentGroup, keysetTemplate, deploymentConditions } from "../../../utils";
+import { repository, file, namespace, deploymentGroup, keysetTemplate, DeploymentConditions } from "../../../utils";
 
 // Define the marmalade prelude using the new system
 export const marmaladeDefinition: PreludeDefinition = {
@@ -32,9 +32,9 @@ export const marmaladeDefinition: PreludeDefinition = {
 
   deploymentGroups: [
     deploymentGroup("namespaces", [file("ns-marmalade.pact", { path: "marmalade-ns/ns-marmalade.pact" })], {
-      shouldDeploy: async (client) => {
+      shouldDeploy: async (deployer) => {
         const namespaces = ["kip", "util", "marmalade-v2", "marmalade-sale"];
-        const checks = await Promise.all(namespaces.map((ns) => client.isNamespaceDefined(ns)));
+        const checks = await Promise.all(namespaces.map((ns) => deployer.isNamespaceDefined(ns)));
         return checks.some((exists) => !exists);
       },
     }),
@@ -140,7 +140,7 @@ export const marmaladeDefinition: PreludeDefinition = {
     ),
   ],
 
-  deploymentConditions: deploymentConditions.ifContractsMissing(["marmalade-v2.ledger", "marmalade-v2.policy-manager"]),
+  deploymentConditions: DeploymentConditions.ifContractsMissing(["marmalade-v2.ledger", "marmalade-v2.policy-manager"]),
 
   replTemplate: `
 ;; Marmalade v2 Installation Script
@@ -251,15 +251,15 @@ export const marmaladeDefinition: PreludeDefinition = {
   `.trim(),
 
   hooks: {
-    beforeDeploy: async (_client) => {
+    beforeDeploy: async (_deployer) => {
       console.log("🚀 Starting Marmalade v2 deployment...");
     },
 
-    afterDeploy: async (_client) => {
+    afterDeploy: async (_deployer) => {
       console.log("✅ Marmalade v2 deployment completed!");
     },
 
-    onError: async (_client, error) => {
+    onError: async (_deployer, error) => {
       console.error("❌ Marmalade deployment failed:", error.message);
     },
   },

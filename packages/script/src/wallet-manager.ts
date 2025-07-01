@@ -1,12 +1,19 @@
 import type { PactToolboxConfigObj } from "@pact-toolbox/config";
 import { DEFAULT_TESTNET_RPC_URL } from "@pact-toolbox/config";
-import type { Wallet } from "@pact-toolbox/wallet-adapters";
-import { KeypairWallet } from "@pact-toolbox/wallet-adapters/keypair";
-import { logger, select, text, isCancel } from "@pact-toolbox/node-utils";
+import type { Wallet } from "@pact-toolbox/wallet-core";
+import { KeypairWallet } from "@pact-toolbox/wallet-core";
+import { ChainweaverLegacyWallet } from "@pact-toolbox/wallet-chainweaver-legacy";
+import { ZelcoreWallet } from "@pact-toolbox/wallet-zelcore";
+import { KeyPairSigner } from "@pact-toolbox/signers";
+import { exportBase16Key } from "@pact-toolbox/crypto";
+import { logger, select, text, isCancel, confirm } from "@pact-toolbox/node-utils";
+import { parseWalletArgs } from "./cli-utils";
 
 export interface SigningConfig {
   /** Private key for signing (hex string) */
   privateKey?: string;
+  /** Public key (hex string) - used when private key is managed externally */
+  publicKey?: string;
   /** Account name to use for transactions */
   account?: string;
   /** Environment variable name for private key */
@@ -16,9 +23,11 @@ export interface SigningConfig {
   /** Use interactive TUI for signing */
   interactive?: boolean;
   /** Wallet type to use */
-  walletType?: "keypair" | "zelcore" | "chainweaver";
+  walletType?: "keypair" | "zelcore" | "chainweaver" | "chainweaver-legacy";
   /** Additional wallet configuration */
   walletConfig?: Record<string, any>;
+  /** Skip wallet initialization (for read-only operations) */
+  skipWallet?: boolean;
 }
 
 export interface SignerInfo {
@@ -46,9 +55,15 @@ export class WalletManager {
   /**
    * Initialize wallet based on configuration
    */
-  async initialize(): Promise<Wallet> {
+  async initialize(): Promise<Wallet | null> {
     if (this.wallet) {
       return this.wallet;
+    }
+
+    // Skip wallet if configured for read-only operations
+    if (this.signingConfig.skipWallet) {
+      logger.debug("Skipping wallet initialization (read-only mode)");
+      return null;
     }
 
     // Try different initialization methods in order of preference
@@ -60,6 +75,13 @@ export class WalletManager {
       (await this.tryDesktopWallet());
 
     if (!this.wallet) {
+      // If we have a public key but no private key, create a read-only signer
+      if (this.signingConfig.publicKey) {
+        logger.info("Creating read-only signer with public key");
+        this.setupReadOnlySigner(this.signingConfig.publicKey, this.signingConfig.account);
+        return null;
+      }
+
       throw new Error("Unable to initialize wallet. Please provide signing credentials.");
     }
 
@@ -156,6 +178,12 @@ export class WalletManager {
 
     logger.debug("Initializing keypair wallet from provided private key");
 
+    // Validate private key format
+    if (!/^[0-9a-fA-F]{64}$/.test(this.signingConfig.privateKey)) {
+      logger.error("Invalid private key format. Expected 64-character hexadecimal string.");
+      throw new Error("Invalid private key format");
+    }
+
     // Get network configuration from config
     const networkConfig = this.config.networks?.[this.network];
     const networkId = networkConfig?.networkId || "testnet04";
@@ -249,8 +277,9 @@ export class WalletManager {
       message: "Select wallet type:",
       options: [
         { value: "keypair", label: "Keypair (Private Key)" },
+        { value: "generate", label: "Generate New Keypair" },
         { value: "zelcore", label: "Zelcore Desktop" },
-        { value: "chainweaver", label: "Chainweaver Desktop" },
+        { value: "chainweaver-legacy", label: "Chainweaver Desktop (Legacy)" },
       ],
     });
 
@@ -261,26 +290,67 @@ export class WalletManager {
     switch (walletType) {
       case "keypair":
         return this.setupKeypairWalletInteractive();
+      case "generate":
+        return this.generateNewKeypairInteractive();
       case "zelcore":
-      case "chainweaver":
-        throw new Error(`${walletType} desktop wallet integration is planned but not yet implemented`);
+        return this.setupZelcoreWalletInteractive();
+      case "chainweaver-legacy":
+        return this.setupChainweaverLegacyInteractive();
       default:
         throw new Error(`Wallet type ${walletType} not supported`);
     }
   }
 
   private async setupKeypairWalletInteractive(): Promise<Wallet> {
-    const privateKey = await text({
-      message: "Enter private key (hex):",
-      placeholder: "e.g., 251a920c403ae8c8f65f59142316af3c82b631fba46ddea92ee8c95035bd2898",
+    const inputMethod = await select({
+      message: "How would you like to provide the private key?",
+      options: [
+        { value: "paste", label: "Paste private key" },
+        { value: "env", label: "Use environment variable" },
+      ],
     });
 
-    if (isCancel(privateKey)) {
-      throw new Error("Private key input cancelled");
+    if (isCancel(inputMethod)) {
+      throw new Error("Input method selection cancelled");
+    }
+
+    let privateKey: string;
+
+    if (inputMethod === "env") {
+      const envVar = await text({
+        message: "Enter environment variable name:",
+        placeholder: "e.g., PACT_PRIVATE_KEY",
+        defaultValue: "PACT_PRIVATE_KEY",
+      });
+
+      if (isCancel(envVar)) {
+        throw new Error("Environment variable input cancelled");
+      }
+
+      privateKey = process.env[envVar as string] || "";
+      if (!privateKey) {
+        throw new Error(`Environment variable ${envVar} not found or empty`);
+      }
+    } else {
+      const keyInput = await text({
+        message: "Enter private key (hex):",
+        placeholder: "e.g., 251a920c403ae8c8f65f59142316af3c82b631fba46ddea92ee8c95035bd2898",
+      });
+
+      if (isCancel(keyInput)) {
+        throw new Error("Private key input cancelled");
+      }
+
+      privateKey = keyInput as string;
+    }
+
+    // Validate private key
+    if (!/^[0-9a-fA-F]{64}$/.test(privateKey)) {
+      throw new Error("Invalid private key format. Expected 64-character hexadecimal string.");
     }
 
     const account = await text({
-      message: "Enter account name (optional):",
+      message: "Enter account name (optional, press Enter for k:account):",
       placeholder: "e.g., k:your-public-key or sender00",
     });
 
@@ -288,20 +358,149 @@ export class WalletManager {
       throw new Error("Account input cancelled");
     }
 
-    // Get network configuration from config
+    // Get network configuration
     const networkConfig = this.config.networks?.[this.network];
     const networkId = networkConfig?.networkId || "testnet04";
     const rpcUrlTemplate = networkConfig?.rpcUrl || DEFAULT_TESTNET_RPC_URL;
-    const rpcUrl = rpcUrlTemplate
+    const rpcUrl = (rpcUrlTemplate as string)
       .replace("{networkId}", networkId)
       .replace("{chainId}", networkConfig?.meta?.chainId || "0");
 
+    logger.info("🚀 Creating keypair wallet...");
+
     return new KeypairWallet({
-      privateKey: privateKey as string,
+      privateKey,
       accountName: (account as string) || undefined,
       networkId,
       rpcUrl,
     });
+  }
+
+  /**
+   * Generate a new keypair interactively
+   */
+  private async generateNewKeypairInteractive(): Promise<Wallet> {
+    logger.info("🎆 Generating new keypair...");
+
+    const signer = await KeyPairSigner.generate();
+    const publicKey = signer.address;
+    const privateKey = await exportBase16Key(signer.keyPair.privateKey!);
+
+    logger.success(`✅ New keypair generated`);
+    logger.info(`   Public Key: ${publicKey}`);
+    logger.info(`   🔐 Private Key: ${privateKey}`);
+
+    const saveKey = await confirm({
+      message: "Would you like to save the private key to a file?",
+    });
+
+    if (!isCancel(saveKey) && saveKey) {
+      const filename = await text({
+        message: "Enter filename to save private key:",
+        placeholder: "e.g., my-wallet.key",
+        defaultValue: "wallet.key",
+      });
+
+      if (!isCancel(filename)) {
+        const { writeFileSync } = await import("node:fs");
+        const { resolve } = await import("node:path");
+        const keyFile = resolve(process.cwd(), filename as string);
+        writeFileSync(keyFile, privateKey, "utf-8");
+        logger.success(`💾 Private key saved to: ${keyFile}`);
+        logger.warn(`⚠️ Keep this file secure and never commit it to version control!`);
+      }
+    }
+
+    const account = await text({
+      message: "Enter account name (optional, press Enter for k:account):",
+      placeholder: "e.g., sender00 or custom-name",
+    });
+
+    if (isCancel(account)) {
+      throw new Error("Account input cancelled");
+    }
+
+    // Get network configuration
+    const networkConfig = this.config.networks?.[this.network];
+    const networkId = networkConfig?.networkId || "testnet04";
+    const rpcUrlTemplate = networkConfig?.rpcUrl || DEFAULT_TESTNET_RPC_URL;
+    const rpcUrl = (rpcUrlTemplate as string)
+      .replace("{networkId}", networkId)
+      .replace("{chainId}", networkConfig?.meta?.chainId || "0");
+
+    return new KeypairWallet({
+      privateKey,
+      accountName: (account as string) || undefined,
+      networkId,
+      rpcUrl,
+    });
+  }
+
+  /**
+   * Setup Zelcore wallet interactively
+   */
+  private async setupZelcoreWalletInteractive(): Promise<Wallet> {
+    logger.info("📦 Connecting to Zelcore desktop wallet...");
+    logger.info("🚨 Make sure Zelcore is running and configured for Kadena");
+
+    const proceed = await confirm({
+      message: "Is Zelcore desktop app running?",
+    });
+
+    if (isCancel(proceed) || !proceed) {
+      throw new Error("Zelcore setup cancelled. Please start Zelcore first.");
+    }
+
+    const networkConfig = this.config.networks?.[this.network];
+    const networkId = networkConfig?.networkId || "testnet04";
+
+    try {
+      const zelcoreWallet = new ZelcoreWallet();
+      await zelcoreWallet.connect(networkId);
+      logger.success("✅ Connected to Zelcore wallet");
+      return zelcoreWallet;
+    } catch (error) {
+      logger.error("❌ Failed to connect to Zelcore:", error);
+      logger.info("💡 Troubleshooting:");
+      logger.info("   1. Make sure Zelcore desktop is running");
+      logger.info("   2. Check that Kadena is enabled in Zelcore");
+      logger.info("   3. Verify Zelcore is listening on port 9467");
+      throw error;
+    }
+  }
+
+  /**
+   * Setup Chainweaver Legacy wallet interactively
+   */
+  private async setupChainweaverLegacyInteractive(): Promise<Wallet> {
+    logger.info("🏛️ Connecting to Chainweaver desktop wallet...");
+    logger.info("🚨 Make sure Chainweaver is running");
+
+    const proceed = await confirm({
+      message: "Is Chainweaver desktop app running?",
+    });
+
+    if (isCancel(proceed) || !proceed) {
+      throw new Error("Chainweaver setup cancelled. Please start Chainweaver first.");
+    }
+
+    const networkConfig = this.config.networks?.[this.network];
+    const networkId = networkConfig?.networkId || "testnet04";
+
+    try {
+      const chainweaverWallet = new ChainweaverLegacyWallet();
+      await chainweaverWallet.connect(networkId);
+      logger.success("✅ Connected to Chainweaver wallet");
+      logger.info("🔔 Note: You'll need to approve transactions in Chainweaver when signing");
+      return chainweaverWallet;
+    } catch (error) {
+      logger.error("❌ Failed to connect to Chainweaver:", error);
+      logger.info("💡 Troubleshooting:");
+      logger.info("   1. Make sure Chainweaver desktop is running");
+      logger.info("   2. Check that Chainweaver is listening on port 9467");
+      logger.info("   3. Try restarting Chainweaver");
+      throw error;
+    }
   }
 
   private async tryDesktopWallet(): Promise<Wallet | null> {
@@ -313,11 +512,23 @@ export class WalletManager {
 
     logger.debug(`Attempting to connect to ${walletType} wallet`);
 
+    const networkConfig = this.config.networks?.[this.network];
+    const networkId = networkConfig?.networkId || "testnet04";
+
     switch (walletType) {
       case "zelcore":
-        throw new Error("Zelcore desktop wallet integration is planned but not yet implemented");
+        logger.info("Connecting to Zelcore desktop wallet...");
+        const zelcoreWallet = new ZelcoreWallet();
+        await zelcoreWallet.connect(networkId);
+        return zelcoreWallet;
+
       case "chainweaver":
-        throw new Error("Chainweaver desktop wallet integration is planned but not yet implemented");
+      case "chainweaver-legacy":
+        logger.info("Connecting to Chainweaver desktop wallet...");
+        const chainweaverWallet = new ChainweaverLegacyWallet();
+        await chainweaverWallet.connect(networkId);
+        return chainweaverWallet;
+
       default:
         throw new Error(`Unknown wallet type: ${walletType}`);
     }
@@ -343,6 +554,27 @@ export class WalletManager {
       publicKey: account.startsWith("k:") ? account.slice(2) : walletAccount.publicKey,
       capabilities: [],
     };
+  }
+
+  /**
+   * Setup a read-only signer (no wallet, just public key)
+   */
+  private setupReadOnlySigner(publicKey: string, account?: string): void {
+    // Validate public key format
+    if (!/^[0-9a-fA-F]{64}$/.test(publicKey)) {
+      throw new Error("Invalid public key format. Expected 64-character hexadecimal string.");
+    }
+
+    // Generate k: account if not provided
+    const kAccount = account || `k:${publicKey}`;
+
+    this.currentSigner = {
+      account: kAccount,
+      publicKey,
+      capabilities: [],
+    };
+
+    logger.info(`Read-only signer configured: ${kAccount}`);
   }
 
   private async selectAccount(availableAccounts: string[]): Promise<string> {
@@ -386,14 +618,33 @@ export class WalletManager {
    * Create signing configuration from CLI arguments and environment
    */
   static createSigningConfig(args: Record<string, any> = {}): SigningConfig {
+    // Use CLI parser to handle various argument formats
+    const parsedArgs = parseWalletArgs(args);
+
+    // Set defaults
+    const privateKeyEnv = parsedArgs.privateKeyEnv || "PACT_PRIVATE_KEY";
+    const accountEnv = parsedArgs.accountEnv || "PACT_ACCOUNT";
+
+    // Determine if we should use interactive mode
+    const hasCredentials =
+      parsedArgs.privateKey ||
+      parsedArgs.publicKey ||
+      process.env[privateKeyEnv];
+
+    const interactive = parsedArgs.interactive !== undefined
+      ? parsedArgs.interactive
+      : (!hasCredentials && !parsedArgs.skipWallet);
+
     return {
-      privateKey: args["privateKey"] || args["key"],
-      account: args["account"] || args["from"],
-      privateKeyEnv: args["privateKeyEnv"] || "PACT_PRIVATE_KEY",
-      accountEnv: args["accountEnv"] || "PACT_ACCOUNT",
-      interactive: args["interactive"] || (!args["privateKey"] && !process.env["PACT_PRIVATE_KEY"]),
-      walletType: args["wallet"] || args["walletType"],
+      privateKey: parsedArgs.privateKey,
+      publicKey: parsedArgs.publicKey,
+      account: parsedArgs.account,
+      privateKeyEnv,
+      accountEnv,
+      interactive,
+      walletType: parsedArgs.walletType,
       walletConfig: args["walletConfig"] || {},
+      skipWallet: parsedArgs.skipWallet,
     };
   }
 
@@ -403,18 +654,29 @@ export class WalletManager {
   static validateSigningConfig(config: SigningConfig): string[] {
     const errors: string[] = [];
 
+    // Skip validation if wallet is disabled
+    if (config.skipWallet) {
+      return errors;
+    }
+
     // Check if we have any signing method available
     const hasPrivateKey = !!(config.privateKey || (config.privateKeyEnv && process.env[config.privateKeyEnv]));
+    const hasPublicKey = !!config.publicKey;
     const hasWalletType = !!config.walletType;
     const hasInteractive = !!config.interactive;
 
-    if (!hasPrivateKey && !hasWalletType && !hasInteractive) {
-      errors.push("No signing method configured. Provide privateKey, walletType, or enable interactive mode.");
+    if (!hasPrivateKey && !hasPublicKey && !hasWalletType && !hasInteractive) {
+      errors.push("No signing method configured. Provide privateKey, publicKey, walletType, or enable interactive mode.");
     }
 
     // Validate private key format if provided
     if (config.privateKey && !/^[0-9a-fA-F]{64}$/.test(config.privateKey)) {
       errors.push("Private key must be a 64-character hexadecimal string");
+    }
+
+    // Validate public key format if provided
+    if (config.publicKey && !/^[0-9a-fA-F]{64}$/.test(config.publicKey)) {
+      errors.push("Public key must be a 64-character hexadecimal string");
     }
 
     // Validate account format if provided

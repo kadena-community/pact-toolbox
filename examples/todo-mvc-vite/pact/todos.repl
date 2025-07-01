@@ -14,8 +14,8 @@
 (commit-tx)
 
 (begin-tx "toggle todo status")
-(expect "should complete a todo" (free.todos.toggle-todo "1") "Write succeeded")
-(expect "should have one completed todo" (free.todos.get-todo "1") {"completed": true,"deleted": false,"id": "1","title": "Hello, World!"})
+(expect "should complete a todo" (free.todos.toggle-todo "1") "Write succeede")
+(expect "should have one completed todo" (free.todos.get-todo "1") {"complete": true,"deleted": false,"id": "1","title": "Hello, World!"})
 (commit-tx)
 
 

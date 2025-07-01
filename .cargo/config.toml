@@ -42,3 +42,12 @@ rustflags = [
 # See https://x.com/Brooooook_lyn/status/1895848334692401270
 [target.'cfg(target_env = "gnu")']
 rustflags = ["-C", "link-args=-Wl,-z,nodelete"]
+
+# Musl targets need special handling for napi-rs
+[target.x86_64-unknown-linux-musl]
+linker = "zig"
+rustflags = ["-C", "target-feature=-crt-static", "-C", "link-args=-lc"]
+
+[target.aarch64-unknown-linux-musl]
+linker = "zig"
+rustflags = ["-C", "target-feature=-crt-static", "-C", "link-args=-lc"]

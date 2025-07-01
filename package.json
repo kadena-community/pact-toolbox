@@ -6,7 +6,8 @@
   "workspaces": [
     "packages/*",
     "apps/*",
-    "examples/*"
+    "examples/*",
+    "crates/*"
   ],
   "scripts": {
     "dev": "turbo watch build --filter=./packages/*",
@@ -29,19 +30,20 @@
   },
   "license": "MIT",
   "devDependencies": {
-    "@changesets/cli": "^2.29.5",
+    "@changesets/cli": "^2.29.7",
     "@pact-toolbox/prettier-config": "workspace:*",
     "husky": "^9.1.7",
-    "oxlint": "^1.3.0",
+    "oxlint": "^1.16.0",
     "pact-toolbox": "workspace:*",
     "prettier": "^3.6.2",
-    "tsdown": "^0.12.9",
-    "tsx": "^4.20.3",
-    "turbo": "^2.5.4",
-    "typescript": "^5.8.3",
+    "source-map": "^0.7.6",
+    "tsdown": "^0.15.2",
+    "tsx": "^4.20.5",
+    "turbo": "^2.5.6",
+    "typescript": "^5.9.2",
     "vitest": "^3.2.4"
   },
-  "packageManager": "pnpm@10.12.4",
+  "packageManager": "pnpm@10.17.0",
   "engineStrict": true,
   "engines": {
     "node": ">=22.0.0",
@@ -52,7 +54,7 @@
   "pnpm": {
     "overrides": {
       "pact-toolbox": "workspace:*",
-      "whatwg-url": "^14.2.0"
+      "whatwg-url": "^15.1.0"
     },
     "onlyBuiltDependencies": [
       "@parcel/watcher",
@@ -63,6 +65,7 @@
       "cpu-features",
       "esbuild",
       "protobufjs",
+      "secp256k1",
       "sharp",
       "ssh2",
       "tree-sitter",
@@ -70,8 +73,5 @@
       "unrs-resolver"
     ]
   },
-  "prettier": "@pact-toolbox/prettier-config",
-  "dependencies": {
-    "source-map": "^0.7.4"
-  }
+  "prettier": "@pact-toolbox/prettier-config"
 }

@@ -1,23 +1,13 @@
-// Core components
-export { PactWalletModal } from "./components/wallet-modal";
-export { PactWalletSelector } from "./components/wallet-selector";
-export { PactWalletConnect } from "./components/wallet-connect-button";
-export { ModalManager } from "./modal-manager";
+// Core SolidJS components
+export { WalletSelector } from "./components/wallet-selector";
+export { WalletConnectButton } from "./components/wallet-connect-button";
+export { NetworkSelector } from "./components/network-selector";
+export * from "./wallet-ui-manager";
 
-// Define all components for web components registration
-export async function defineWalletComponents() {
-  // Components will auto-register via @customElement decorator
-  // This function ensures they are loaded
-  const promises = [
-    import("./components/wallet-modal"),
-    import("./components/wallet-selector"),
-    import("./components/wallet-connect-button"),
-  ];
+// Initialize global styles from ui-shared
+import { initializeGlobalStyles } from "@pact-toolbox/ui-shared";
 
-  return Promise.all(promises);
-}
-
-// Auto-register if in browser environment
-if (typeof window !== "undefined" && typeof window.customElements !== "undefined") {
-  defineWalletComponents();
+// Auto-initialize global styles if in browser environment
+if (typeof window !== "undefined") {
+  initializeGlobalStyles();
 }

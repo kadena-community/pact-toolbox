@@ -1,0 +1,47 @@
+{
+  "name": "@pact-toolbox/wallet-metamask-snap",
+  "version": "1.0.0-beta.1",
+  "description": "MetaMask Snap adapter for Pact Toolbox",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsdown",
+    "clean": "rm -rf dist node_modules/.cache",
+    "dev": "tsdown --watch",
+    "test": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@pact-toolbox/types": "workspace:*",
+    "@pact-toolbox/utils": "workspace:*",
+    "@pact-toolbox/wallet-core": "workspace:*"
+  },
+  "devDependencies": {
+    "@pact-toolbox/tsconfig": "workspace:*",
+    "@pact-toolbox/tsdown": "workspace:*",
+    "@pact-toolbox/vitest-config": "workspace:*",
+    "@types/node": "^24.5.2",
+    "tsdown": "^0.15.2",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/salamaashoush/pact-toolbox.git",
+    "directory": "packages/wallet-adapter-metamask-snap"
+  }
+}

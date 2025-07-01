@@ -1,4 +1,4 @@
-import type { DeployContractOptions, PactToolboxClient } from "@pact-toolbox/runtime";
+import type { DeploymentOptions, PactDeployer } from "@pact-toolbox/deployer";
 import { join } from "pathe";
 
 import { logger } from "@pact-toolbox/node-utils";
@@ -14,23 +14,23 @@ import { deployPrelude as deployPreludeDefinition, shouldDeployPrelude } from ".
  *
  * @param dep - The PactDependency object to deploy.
  * @param preludeDir - The directory where the dependency is located.
- * @param client - The PactToolboxClient instance.
+ * @param deployer - The PactDeployer instance.
  * @param params - Deployment options.
  */
 export async function deployPactDependency(
   dep: PactDependency,
   preludeDir: string,
-  client: PactToolboxClient,
-  params: DeployContractOptions = {},
+  deployer: PactDeployer,
+  params: DeploymentOptions = {},
 ): Promise<void> {
   const { group, requires, name } = dep;
   const contractPath = join(preludeDir, group || "root", name);
   if (Array.isArray(requires)) {
     for (const req of requires) {
-      await deployPactDependency(req, preludeDir, client, params);
+      await deployPactDependency(req, preludeDir, deployer, params);
     }
   }
-  await client.deployContract(contractPath, params);
+  await deployer.deploy(contractPath, params);
 }
 
 /**
@@ -49,10 +49,12 @@ export async function deployPreludes(config: CommonPreludeOptions, downloadIfMis
     sorted.map(async (p) => {
       if (!isPreludeDownloaded(p, preludesDir)) {
         if (downloadIfMissing) {
-          await downloadPrelude(p, preludesDir, config.client, sorted);
+          await downloadPrelude(p, preludesDir, config.deployer, sorted);
         } else {
           throw new Error(`Prelude ${p.name} not found, make sure to download it first`);
         }
+      } else {
+        logger.debug(`Prelude ${p.name} already downloaded`);
       }
     }),
   );
@@ -63,8 +65,10 @@ export async function deployPreludes(config: CommonPreludeOptions, downloadIfMis
   // deploy all preludes
   await Promise.all(
     sorted.map(async (p) => {
-      if (await shouldDeployPrelude(p, config.client)) {
-        await deployPreludeDefinition(p, config.client);
+      console.log("Considering deployment of prelude:", p.name);
+      if (await shouldDeployPrelude(p, config.deployer)) {
+        console.log("Deployment conditions met for prelude:", p.name);
+        await deployPreludeDefinition(p, config.deployer);
         logger.success(`Deployed prelude: ${p.name}`);
       }
     }),

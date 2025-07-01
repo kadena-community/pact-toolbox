@@ -1,10 +1,8 @@
-import { existsSync } from "fs";
 import { defineCommand } from "citty";
-import { join } from "pathe";
 
 import { resolveConfig } from "@pact-toolbox/config";
 import { generateGasStation } from "@pact-toolbox/fabricator";
-import { logger, writeFile } from "@pact-toolbox/node-utils";
+import { logger, writeFile, existsSync, join } from "@pact-toolbox/node-utils";
 
 export const stationCommand = defineCommand({
   meta: {

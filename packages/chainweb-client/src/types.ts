@@ -10,12 +10,16 @@ export interface NetworkConfig {
   /** Chain ID (e.g., '0', '1', '2', etc.) */
   chainId: string;
   /** Chainweb API endpoint or Pact API endpoint */
-  rpcUrl: (networkId: string, chainId: string) => string;
+  rpcUrl: string | ((networkId: string, chainId: string) => string);
   /** Request timeout in milliseconds (default: 30000) */
   timeout?: number;
   /** Custom headers to include in requests */
   headers?: Record<string, string>;
 }
+
+export type ResolvedNetworkConfig = Required<NetworkConfig> & {
+  rpcUrl: (networkId: string, chainId: string) => string;
+};
 
 /**
  * Transaction send result
@@ -25,18 +29,6 @@ export interface SendResult {
   requestKeys: string[];
   /** Raw response from server */
   response: any;
-}
-
-/**
- * Transaction listen result
- */
-export interface ListenResult {
-  /** Request key */
-  requestKey: string;
-  /** Transaction result */
-  result: TransactionResult;
-  /** Transaction metadata */
-  metadata?: any;
 }
 
 /**
@@ -193,6 +185,30 @@ export interface HealthCheck {
 }
 
 /**
+ * SPV proof request
+ */
+export interface SpvRequest {
+  /** Target chain ID */
+  targetChainId: string;
+  /** Request key to create proof for */
+  requestKey: string;
+}
+
+/**
+ * SPV proof response
+ */
+export interface SpvProof {
+  /** SPV proof data */
+  proof: string;
+  /** Target chain ID */
+  targetChainId: string;
+  /** Source chain ID */
+  sourceChainId: string;
+  /** Request key */
+  requestKey: string;
+}
+
+/**
  * Request configuration
  */
 export interface RequestConfig {
@@ -205,7 +221,6 @@ export interface RequestConfig {
   /** Abort signal */
   signal?: AbortSignal;
 }
-
 
 /**
  * ChainwebClient error

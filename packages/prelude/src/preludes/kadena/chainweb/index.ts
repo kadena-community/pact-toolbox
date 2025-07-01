@@ -1,5 +1,5 @@
 import type { PreludeDefinition } from "../../../types";
-import { repository, file, namespace, deploymentGroup, keysetTemplate, deploymentConditions } from "../../../utils";
+import { repository, file, namespace, deploymentGroup, keysetTemplate, DeploymentConditions } from "../../../utils";
 
 // Define the chainweb prelude using the new system
 export const chainwebDefinition: PreludeDefinition = {
@@ -18,14 +18,6 @@ export const chainwebDefinition: PreludeDefinition = {
     namespace("util", ["util-ns-admin", "util-ns-users"]),
   ],
 
-  keysetTemplates: [
-    keysetTemplate("ns-admin-keyset", []),
-    keysetTemplate("ns-operate-keyset", []),
-    keysetTemplate("ns-genesis-keyset", [], "="), // Empty for genesis with = predicate
-    keysetTemplate("util-ns-admin", "admin"),
-    keysetTemplate("util-ns-users", "user"),
-  ],
-
   deploymentGroups: [
     deploymentGroup(
       "core",
@@ -38,22 +30,28 @@ export const chainwebDefinition: PreludeDefinition = {
       ],
       {
         namespace: "root",
+        keysetTemplates: [
+          keysetTemplate("ns-admin-keyset", "admin"),
+          keysetTemplate("ns-operate-keyset", "admin"),
+          keysetTemplate("ns-genesis-keyset", [], "="), // Empty for genesis with = predicate
+        ],
       },
     ),
-
     deploymentGroup(
       "utilities",
       [file("util-ns.pact", { path: "util/util-ns.pact" }), file("guards.pact", { path: "util/guards.pact" })],
       {
         namespace: "util",
+        keysetTemplates: [keysetTemplate("util-ns-users", "user"), keysetTemplate("util-ns-admin", "admin")],
         dependsOn: ["core"],
       },
     ),
   ],
 
-  deploymentConditions: deploymentConditions.combine(
-    deploymentConditions.skipOnChainweb(),
-    deploymentConditions.ifContractsMissing(["coin"]),
+  deploymentConditions: DeploymentConditions.some(
+    DeploymentConditions.skipOnChainweb(),
+    DeploymentConditions.ifContractsMissing(["coin"]),
+    DeploymentConditions.ifNamespacesMissing(["user", "free", "kadena"]),
   ),
 
   replTemplate: `

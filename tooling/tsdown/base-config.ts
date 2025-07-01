@@ -18,7 +18,7 @@ export function getBaseConfig(platform: Platform, formats: Options["format"][], 
     __BROWSER__: `${platform === "browser"}`,
     __NODEJS__: `${platform === "node"}`,
     __REACTNATIVE__: `${platform === "native"}`,
-    __VERSION__: `"${env.npm_package_version}"`,
+    __VERSION__: `"${env["npm_package_version"]}"`,
   };
   return [true, false]
     .flatMap<Options | null>((isDebugBuild) =>

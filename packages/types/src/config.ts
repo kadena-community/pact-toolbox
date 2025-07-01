@@ -1,13 +1,13 @@
-import type { ChainId, IKeyPair } from "@kadena/types";
-
-import type { PactKeyset } from "./pact";
+import type { ChainId, PactKeyset } from "./pact";
 
 export interface GetRpcUrlParams {
   chainId?: string;
   networkId?: string;
 }
 
-export interface KeyPair extends IKeyPair {
+export interface KeyPair {
+  publicKey: string;
+  secretKey: string;
   account: string | `k:${string}`;
 }
 

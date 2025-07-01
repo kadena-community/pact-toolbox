@@ -1,7 +1,7 @@
 {
   "name": "@pact-toolbox/ui-shared",
   "version": "0.1.0",
-  "description": "Shared UI components and styles for Pact Toolbox using Lit",
+  "description": "Shared UI components and styles for Pact Toolbox using SolidJS",
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.js",
@@ -9,48 +9,42 @@
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
+      "solid": "./src/index.ts",
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "default": "./dist/index.js"
-    },
-    "./styles": {
-      "types": "./dist/styles/index.d.ts",
-      "import": "./dist/styles/index.js",
-      "default": "./dist/styles/index.js"
-    },
-    "./themes": {
-      "types": "./dist/themes/index.d.ts",
-      "import": "./dist/themes/index.js",
-      "default": "./dist/themes/index.js"
-    },
-    "./components/*": {
-      "types": "./dist/components/*.d.ts",
-      "import": "./dist/components/*.js",
-      "default": "./dist/components/*.js"
     }
   },
   "files": [
     "dist"
   ],
   "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch",
+    "build": "vite build",
+    "dev": "vite build --watch",
+    "serve": "vite",
     "clean": "rm -rf dist",
     "lint": "oxlint",
-    "test": "vitest run",
-    "test:watch": "vitest",
+    "test": "vitest",
+    "test:watch": "vitest --watch",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "lit": "^3.3.0"
+    "clsx": "^2.1.1",
+    "goober": "^2.1.16",
+    "solid-js": "^1.9.9"
   },
   "devDependencies": {
     "@pact-toolbox/tsconfig": "workspace:*",
     "@pact-toolbox/tsdown": "workspace:*",
-    "@pact-toolbox/vitest-config": "workspace:*",
-    "@types/node": "^24.0.7",
-    "tsdown": "^0.12.9",
-    "typescript": "^5.8.3",
+    "@solidjs/testing-library": "^0.8.10",
+    "@testing-library/jest-dom": "^6.8.0",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/node": "^24.5.2",
+    "jsdom": "^27.0.0",
+    "typescript": "^5.9.2",
+    "vite": "^7.1.6",
+    "vite-plugin-dts": "^4.5.4",
+    "vite-plugin-solid": "^2.11.8",
     "vitest": "^3.2.4"
   },
   "private": false,

@@ -157,3 +157,60 @@ export default defineConfig({
 
 - **Important Notes**:
   - Never commit or push anything until explicitly mentioned
+
+## Code Guidelines
+
+- **Versioning and File Naming**:
+  - Never create duplicate versions with suffixes like "*-refactored.*" or "-enhanced"
+  - Always implement improvements directly in the main version of the file/code
+
+## CRITICAL: Migration Guidelines
+
+**NEVER do migrations like this:**
+- Delete files then recreate from memory
+- Make massive changes without testing
+- Mix framework code (e.g., Lit + SolidJS) incorrectly
+- Ignore user warnings about problems
+- Continue making changes after user indicates something is wrong
+- Do 1:1 mechanical translation of old patterns
+- Try to preserve old framework's patterns in new framework
+
+**ALWAYS do migrations like this:**
+1. Study the target framework's best practices and patterns FIRST
+2. Understand how the new framework wants things done
+3. Rewrite using the NEW framework's paradigm while maintaining functionality
+4. Create parallel implementations alongside originals
+5. Test EACH component individually after changes
+6. Never delete original files until migration is verified working
+7. Use TodoWrite to meticulously track every single step
+8. Stop IMMEDIATELY when user indicates any problem
+
+**Key Migration Principles:**
+- **Maintain functionality, not code structure** - The end result should do the same thing but implemented the RIGHT way for the new framework
+- **Embrace new patterns** - Use the new framework's idioms and best practices, not old patterns forced into new syntax
+- **Improve where possible** - Migration is an opportunity to modernize and improve, not just translate
+
+**Example - Lit to SolidJS:**
+- Lit `@customElement` decorators → SolidJS functional components
+- Lit `@property` decorators → SolidJS props and signals
+- Lit lifecycle methods → SolidJS createEffect, onMount, onCleanup
+- Lit's shadow DOM → SolidJS's simpler component model
+- Lit's template strings → SolidJS JSX
+- Lit's imperative updates → SolidJS reactive primitives
+
+**Migration Testing Protocol:**
+- Run `pnpm build` after each component migration
+- Run `pnpm test` to verify functionality preserved
+- Check that all exports still work
+- Verify UI components render correctly
+- Test all event handlers and state management
+
+**If user says "you deleted things without migrating":**
+- STOP immediately
+- Restore deleted files
+- Start over with proper migration approach
+
+**If user says migration is "terrible" or "wrong":**
+- Understand you likely did mechanical translation instead of proper rewrite
+- Review the new framework's documentation
+- Start fresh with new framework's best practices

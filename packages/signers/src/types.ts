@@ -4,7 +4,7 @@ import type { PactCommand, PartiallySignedTransaction } from "@pact-toolbox/type
 // Core types for signature handling
 export type SignatureDictionary = Readonly<Record<Address, SignatureBytes>>;
 
-// Message types for arbitrary data signing
+// Message types for arbitrary data signings
 export type SignableMessage = Readonly<{
   content: Uint8Array;
   signatures: SignatureDictionary;

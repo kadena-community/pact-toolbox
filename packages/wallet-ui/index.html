@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pact Wallet UI Demo</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: #f5f5f5;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: white;
+      padding: 40px;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    h1 {
+      margin: 0 0 20px;
+      color: #0066cc;
+    }
+
+    .demo-section {
+      margin: 40px 0;
+    }
+
+    .demo-section h2 {
+      margin: 0 0 20px;
+      color: #333;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      background: #0066cc;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    button:hover {
+      background: #0052a3;
+    }
+
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+
+    .output {
+      margin-top: 20px;
+      padding: 20px;
+      background: #f5f5f5;
+      border-radius: 8px;
+      font-family: monospace;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    .theme-selector {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="theme-selector">
+    <button id="toggle-theme">🌙 Toggle Theme</button>
+  </div>
+
+  <div class="container">
+    <h1>Pact Wallet UI Demo</h1>
+    <p>This demo showcases the cross-framework wallet UI components for pact-toolbox.</p>
+
+    <div class="demo-section">
+      <h2>Wallet UI Manager</h2>
+      <div class="button-group">
+        <button id="show-wallet-selector">Show Wallet Selector</button>
+        <button id="show-network-selector">Show Network Selector</button>
+      </div>
+      <div id="modal-output" class="output" style="display: none;"></div>
+    </div>
+
+    <div class="demo-section">
+      <h2>Theme Demo</h2>
+      <div class="button-group">
+        <button id="set-light">Light Theme</button>
+        <button id="set-dark">Dark Theme</button>
+      </div>
+      <div id="theme-output" class="output" style="display: none;"></div>
+    </div>
+  </div>
+
+  <script type="module">
+    (async () => {
+      try {
+        const { createWalletUIManager } = await import('./dist/index.js?v=' + Date.now());
+        const { WalletManager } = await import('@pact-toolbox/wallet-adapters');
+        const { KeypairWalletProvider } = await import('@pact-toolbox/wallet-core');
+
+        // Initialize a proper wallet manager first
+        const walletManager = new WalletManager({
+          enableWalletUI: true,
+          walletUItheme: 'light'
+        });
+
+        // Register wallet providers
+        walletManager.register('keypair', new KeypairWalletProvider());
+
+        // Initialize the wallet manager
+        await walletManager.initialize();
+
+        // IMPORTANT: Set the wallet manager globally so wallet UI components can access it
+        window.__PACT_WALLET_MANAGER__ = walletManager;
+
+        // Initialize wallet UI manager with the proper wallet manager
+        const walletUIManager = createWalletUIManager({
+          theme: 'light'
+        });
+        walletUIManager.initialize(walletManager);
+
+        // Make walletUIManager available globally for the event handlers
+        window.walletUIManager = walletUIManager;
+      } catch (error) {
+        console.error('Failed to initialize wallet system:', error);
+        window.lastError = error.message;
+      }
+    })();
+
+    // Wait for initialization and set up event handlers
+    document.addEventListener('DOMContentLoaded', () => {
+      // Theme toggle
+      let currentTheme = 'light';
+      document.getElementById('toggle-theme').addEventListener('click', () => {
+        if (!window.walletUIManager) return;
+        currentTheme = currentTheme === 'light' ? 'dark' : 'light';
+        window.walletUIManager.setTheme(currentTheme);
+        document.getElementById('toggle-theme').textContent = currentTheme === 'light' ? '🌙 Toggle Theme' : '☀️ Toggle Theme';
+      });
+
+      // Modal demos
+      document.getElementById('show-wallet-selector').addEventListener('click', async () => {
+        const output = document.getElementById('modal-output');
+        output.style.display = 'block';
+        output.textContent = 'Opening wallet selector...';
+
+        try {
+          if (!window.walletUIManager) {
+            throw new Error('Wallet UI Manager not initialized');
+          }
+          const walletId = await window.walletUIManager.showWalletSelector();
+          output.textContent = walletId
+            ? `Selected wallet: ${walletId}`
+            : 'Wallet selection cancelled';
+        } catch (error) {
+          console.error('HTML: Error in showWalletSelector:', error);
+          output.textContent = `Error: ${error.message}`;
+        }
+      });
+
+      // Network selector demo
+      document.getElementById('show-network-selector').addEventListener('click', async () => {
+        const output = document.getElementById('modal-output');
+        output.style.display = 'block';
+        output.textContent = 'Opening network selector...';
+
+        try {
+          if (!window.walletUIManager) {
+            throw new Error('Wallet UI Manager not initialized');
+          }
+          const networkId = await window.walletUIManager.showNetworkSelector();
+          output.textContent = networkId
+            ? `Selected network: ${networkId}`
+            : 'Network selection cancelled';
+        } catch (error) {
+          output.textContent = `Error: ${error.message}`;
+        }
+      });
+
+      // Theme demo
+      document.getElementById('set-light').addEventListener('click', () => {
+        if (!window.walletUIManager) return;
+        window.walletUIManager.setTheme('light');
+        document.getElementById('theme-output').style.display = 'block';
+        document.getElementById('theme-output').textContent = 'Theme set to light';
+      });
+
+      document.getElementById('set-dark').addEventListener('click', () => {
+        if (!window.walletUIManager) return;
+        window.walletUIManager.setTheme('dark');
+        document.getElementById('theme-output').style.display = 'block';
+        document.getElementById('theme-output').textContent = 'Theme set to dark';
+      });
+    });
+  </script>
+</body>
+</html>

@@ -28,12 +28,24 @@ vi.mock("@pact-toolbox/config", () => ({
   getNetworkPort: vi.fn().mockReturnValue(8080),
 }));
 
-vi.mock("@pact-toolbox/runtime", () => ({
-  PactToolboxClient: vi.fn().mockImplementation(() => ({
+vi.mock("@pact-toolbox/deployer", () => ({
+  PactDeployer: vi.fn().mockImplementation(() => ({
     context: { getCurrentNetwork: vi.fn() },
     getNetworkConfig: vi.fn(),
     isContractDeployed: vi.fn().mockResolvedValue(false),
-    deployCode: vi.fn().mockResolvedValue({}),
+    deploy: vi.fn().mockResolvedValue({}),
+    getChainwebClient: vi.fn().mockReturnValue({
+      // Mock ChainwebClient instance
+    }),
+  })),
+  createPactDeployer: vi.fn().mockImplementation(() => ({
+    context: { getCurrentNetwork: vi.fn() },
+    getNetworkConfig: vi.fn(),
+    isContractDeployed: vi.fn().mockResolvedValue(false),
+    deploy: vi.fn().mockResolvedValue({}),
+    getChainwebClient: vi.fn().mockReturnValue({
+      // Mock ChainwebClient instance
+    }),
   })),
 }));
 

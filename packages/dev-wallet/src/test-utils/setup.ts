@@ -97,11 +97,11 @@ if (typeof document !== 'undefined') {
   Object.assign(document, mockDocument);
 }
 
-// Add beforeEach hook to clear mocks
-beforeEach(() => {
+// Note: beforeEach should be used in individual test files
+export const setupTestEnvironment = () => {
   localStorageMock.clear();
   vi.clearAllMocks();
-});
+};
 
 // Export all test helpers
 export * from './test-helpers';

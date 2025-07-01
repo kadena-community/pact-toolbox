@@ -1,4 +1,6 @@
-import type { PactToolboxClient } from "@pact-toolbox/runtime";
+import type { PactDeployer } from "@pact-toolbox/deployer";
+import type { PactCapability } from "@pact-toolbox/types";
+import type { DeploymentCondition } from "./utils";
 
 // Core prelude definition system
 export interface RepositoryConfig {
@@ -40,7 +42,11 @@ export interface DeploymentGroup {
   /** Whether this group is optional */
   optional?: boolean;
   /** Condition function to determine if deployment is needed */
-  shouldDeploy?: (client: PactToolboxClient) => Promise<boolean>;
+  shouldDeploy?: (deployer: PactDeployer) => Promise<boolean>;
+  /** keysets templates */
+  keysetTemplates?: KeysetTemplate[];
+  /** capabilities or capability templates */
+  capabilities?: PactCapability[];
 }
 
 export interface KeysetTemplate {
@@ -78,30 +84,23 @@ export interface PreludeDefinition {
   deploymentGroups: DeploymentGroup[];
 
   /** Global deployment conditions */
-  deploymentConditions?: {
-    /** Skip if running on these network types */
-    skipOnNetworks?: ("chainweb" | "pact-server" | "local")[];
-    /** Only deploy if these contracts are missing */
-    requireMissingContracts?: string[];
-    /** Only deploy if these namespaces are missing */
-    requireMissingNamespaces?: string[];
-  };
+  deploymentConditions?: DeploymentCondition;
 
   /** REPL initialization script template */
   replTemplate?: string;
 
   /** Custom deployment hooks */
   hooks?: {
-    beforeDeploy?: (client: PactToolboxClient) => Promise<void>;
-    afterDeploy?: (client: PactToolboxClient) => Promise<void>;
-    onError?: (client: PactToolboxClient, error: Error) => Promise<void>;
+    beforeDeploy?: (deployer: PactDeployer) => Promise<void>;
+    afterDeploy?: (deployer: PactDeployer) => Promise<void>;
+    onError?: (deployer: PactDeployer, error: Error) => Promise<void>;
   };
 }
 
 export interface CommonPreludeOptions {
   contractsDir: string;
   preludes?: (PreludeDefinition | string)[];
-  client: PactToolboxClient;
+  deployer: PactDeployer;
 }
 
 // Internal dependency type for backward compatibility with download system

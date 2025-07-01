@@ -43,5 +43,8 @@ export async function resolvePreludes({
     }) ?? [],
   );
 
+  // Mark cache as resolved after successfully loading preludes
+  __PRELUDES_CACHE__.resolved = true;
+  
   return __PRELUDES_CACHE__;
 }

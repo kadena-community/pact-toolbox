@@ -12,17 +12,21 @@
 import crypto from "uncrypto";
 
 /**
- * Represents a read-only view of a Uint8Array.
- * Used for function parameters that should not modify the input array.
+ * A read-only variant of `Uint8Array`.
+ *
+ * This type prevents modifications to the array by omitting mutable methods such as `copyWithin`,
+ * `fill`, `reverse`, `set`, and `sort`, while still allowing indexed access to elements.
+ *
+ * @example
+ * ```ts
+ * const bytes: ReadonlyUint8Array = new Uint8Array([1, 2, 3]);
+ * console.log(bytes[0]); // 1
+ * bytes[0] = 42; // Type error: Cannot assign to '0' because it is a read-only property.
+ * ```
  */
-export interface ReadonlyUint8Array {
-  readonly [index: number]: number;
-  readonly length: number;
-  readonly byteLength: number;
-  readonly byteOffset: number;
-  readonly buffer: ArrayBufferLike;
-  [Symbol.iterator](): IterableIterator<number>;
-  slice(start?: number, end?: number): Uint8Array;
+type TypedArrayMutableProperties = "copyWithin" | "fill" | "reverse" | "set" | "sort";
+export interface ReadonlyUint8Array extends Omit<Uint8Array, TypedArrayMutableProperties> {
+  readonly [n: number]: number;
 }
 
 /**
@@ -383,5 +387,32 @@ export function assertByteArrayOffsetIsNotOutOfRange(
 export function assertValidBaseString(alphabet: string, testValue: string, givenValue: string = testValue): void {
   if (!testValue.match(new RegExp(`^[${alphabet}]*$`))) {
     throw new Error(`Invalid base${alphabet.length} string: ${givenValue}`);
+  }
+}
+
+/**
+ * Asserts that Web Crypto API is available for cryptographic operations.
+ *
+ * This function verifies that the environment supports the Web Crypto API
+ * by checking for secure context and the availability of crypto.subtle.
+ * It's a general assertion for Web Crypto support.
+ *
+ * @throws {Error} When Web Crypto API is not available
+ * @throws {Error} When not in a secure context (browser only)
+ *
+ * @example
+ * ```typescript
+ * try {
+ *   assertWebCrypto();
+ *   // Safe to use Web Crypto API
+ * } catch (error) {
+ *   console.error("Web Crypto not available:", error.message);
+ * }
+ * ```
+ */
+export function assertWebCrypto(): void {
+  assertIsSecureContext();
+  if (typeof crypto === "undefined" || typeof crypto.subtle === "undefined") {
+    throw new Error("Web Crypto API is not available");
   }
 }

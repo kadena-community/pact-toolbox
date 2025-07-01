@@ -24,6 +24,9 @@ export function TodoList() {
   } = useQuery({
     queryKey: ["todos/readTodos"],
     queryFn: getAllTodos,
+    retry: false, // Don't retry on failure
+    refetchOnWindowFocus: false, // Don't refetch when window gains focus
+    staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
   });
 
   const toggleMutation = useMutation({

@@ -1,3 +1,4 @@
+import { vi } from "vitest";
 // Mock browser APIs that Lit might use
 global.customElements = {
   define: vi.fn(),

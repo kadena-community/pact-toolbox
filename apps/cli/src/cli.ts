@@ -12,7 +12,19 @@
  */
 
 import { defineCommand, runMain } from "citty";
+import { logger } from "@pact-toolbox/node-utils";
 import packageJson from "../package.json" with { type: "json" };
+
+// Add global error handler
+process.on("unhandledRejection", (reason) => {
+  logger.error("Unhandled Rejection:", reason);
+  process.exit(1);
+});
+
+process.on("uncaughtException", (error) => {
+  logger.error("Uncaught Exception:", error);
+  process.exit(1);
+});
 
 /**
  * Main CLI command definition with all subcommands
@@ -21,7 +33,7 @@ import packageJson from "../package.json" with { type: "json" };
  * - doctor: System health check and dependency verification
  * - init: Initialize a new Pact project
  * - start: Start local development network
- * - prelude: Generate TypeScript types from Pact contracts
+ * - prelude: Download and manage Pact preludes
  * - run: Execute Pact scripts and deployments
  * - test: Run Pact contract tests
  * - generate: Generate boilerplate code for contracts and modules
@@ -31,6 +43,42 @@ const main = defineCommand({
     name: "pact-toolbox",
     description: "A comprehensive toolkit for Pact smart contract development on Kadena blockchain",
     version: packageJson.version,
+  },
+  args: {
+    version: {
+      type: "boolean",
+      name: "version",
+      alias: "v",
+      description: "Show version information",
+      required: false,
+    },
+    help: {
+      type: "boolean",
+      name: "help",
+      alias: "h",
+      description: "Show help information",
+      required: false,
+    },
+  },
+  run: async ({ args }) => {
+    if (args.version) {
+      console.log(`Pact Toolbox v${packageJson.version}`);
+      process.exit(0);
+    }
+
+    // Show help by default if no subcommand
+    logger.box(
+      `Pact Toolbox v${packageJson.version}\n\n` +
+      "Available commands:\n" +
+      "  init       - Initialize a new Pact project\n" +
+      "  doctor     - Check system requirements\n" +
+      "  start      - Start local DevNet\n" +
+      "  prelude    - Download Pact preludes\n" +
+      "  run        - Execute Pact scripts\n" +
+      "  test       - Run tests\n" +
+      "  generate   - Generate code templates\n\n" +
+      "Run 'pact-toolbox <command> --help' for more info"
+    );
   },
   subCommands: {
     doctor: async () => (await import("./commands/doctor")).doctorCommand,
@@ -43,4 +91,7 @@ const main = defineCommand({
   },
 });
 
-runMain(main);
+runMain(main).catch((error) => {
+  logger.error("CLI Error:", error);
+  process.exit(1);
+});

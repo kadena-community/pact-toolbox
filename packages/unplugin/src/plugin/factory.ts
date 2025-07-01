@@ -1,6 +1,7 @@
 import type { UnpluginFactory, UnpluginInstance } from "unplugin";
 import type { ConfigEnv, UserConfig } from "vite";
 import { createUnplugin } from "unplugin";
+import { isTest, isDevelopment, isProduction } from "@pact-toolbox/utils";
 
 import {
   getDefaultNetworkConfig,
@@ -10,7 +11,7 @@ import {
   type NetworkConfig,
   type PactToolboxConfigObj,
 } from "@pact-toolbox/config";
-import { PactToolboxClient } from "@pact-toolbox/runtime";
+import { createPactDeployer, PactDeployer } from "@pact-toolbox/deployer";
 import { writeFile, logger } from "@pact-toolbox/node-utils";
 import path from "node:path";
 import type { PluginOptions } from "./types";
@@ -25,6 +26,7 @@ import { cleanupTransformer } from "../transform";
  * @param options Plugin options including transformation hooks.
  * @returns An instance of the Unplugin.
  */
+//@ts-expect-error FIX ME LATER
 export const unpluginFactory: UnpluginFactory<PluginOptions | undefined> = (options = {}) => {
   const { startNetwork = true } = options;
   const cache = new PactTransformCache(options.cacheSize || 1000);
@@ -33,29 +35,16 @@ export const unpluginFactory: UnpluginFactory<PluginOptions | undefined> = (opti
 
   let resolvedConfig: PactToolboxConfigObj;
   let networkConfig: NetworkConfig;
-  let client: PactToolboxClient | undefined = options.client;
+  let deployer: PactDeployer | undefined = options.deployer;
   let network: PactToolboxNetwork | null = null;
 
   // Update environment flags based on Vite command
-  let isTest = process.env.NODE_ENV === "test";
   let isServe = false;
   // Initialize the transformer with visitor
   const transformPactToJS = createPactToJSTransformer({
     generateTypes: true,
-    debug: process.env.NODE_ENV === "development",
+    debug: isDevelopment(),
   });
-
-  /**
-   * Sets up the global context for the runtime
-   */
-  const setupGlobalContext = () => {
-    if (client && !(globalThis as any).__PACT_TOOLBOX_CONTEXT__) {
-      (globalThis as any).__PACT_TOOLBOX_CONTEXT__ = {
-        network: client.context,
-        getNetworkConfig: () => client?.getNetworkConfig(),
-      };
-    }
-  };
 
   /**
    * Asynchronous function to handle server configuration.
@@ -63,10 +52,16 @@ export const unpluginFactory: UnpluginFactory<PluginOptions | undefined> = (opti
   const configureServer = async () => {
     try {
       resolvedConfig = await toolboxConfigPromise;
+      logger.debug("Unplugin configureServer - resolved config:", {
+        downloadPreludes: resolvedConfig.downloadPreludes,
+        deployPreludes: resolvedConfig.deployPreludes,
+        preludes: resolvedConfig.preludes,
+      });
       networkConfig = getDefaultNetworkConfig(resolvedConfig);
-      client = new PactToolboxClient(resolvedConfig);
+      deployer = createPactDeployer(resolvedConfig);
 
-      if (startNetwork && isLocalNetwork(networkConfig) && (!isTest || isServe)) {
+      if (startNetwork && isLocalNetwork(networkConfig) && (!isTest() || isServe)) {
+        logger.debug("Creating and starting network from unplugin...");
         // Create and start the network using the simplified API
         // Network will automatically register cleanup handlers for Ctrl+C, SIGTERM etc.
         network = await createNetwork(resolvedConfig, {
@@ -75,13 +70,17 @@ export const unpluginFactory: UnpluginFactory<PluginOptions | undefined> = (opti
           registerCleanup: true,
         });
 
-        // Ensure the global context is set
-        setupGlobalContext();
-
         // Call onReady hook if provided
         if (options.onReady) {
-          await options.onReady(client);
+          await options.onReady(deployer);
         }
+      } else {
+        logger.debug("Not starting network:", {
+          startNetwork,
+          isLocal: isLocalNetwork(networkConfig),
+          isTest: isTest(),
+          isServe,
+        });
       }
     } catch (error) {
       logger.error("Error during server configuration:", error);
@@ -98,17 +97,15 @@ export const unpluginFactory: UnpluginFactory<PluginOptions | undefined> = (opti
     try {
       resolvedConfig = await toolboxConfigPromise;
 
-      if (!isTest) {
+      if (!isTest()) {
         // Inject multi-network configuration
         const multiNetworkConfig = getSerializableMultiNetworkConfig(resolvedConfig, {
           isDev: mode !== "production",
-          isTest,
+          isTest: isTest(),
         });
 
         config.define = config.define || {};
-        // Check if globalThis has updated config at build time
-        const configValue = (globalThis as any).__PACT_TOOLBOX_NETWORKS__ || JSON.stringify(multiNetworkConfig);
-        config.define["globalThis.__PACT_TOOLBOX_NETWORKS__"] = configValue;
+        config.define["__PACT_TOOLBOX_NETWORKS__"] = JSON.stringify(multiNetworkConfig);
       }
     } catch (error) {
       logger.error("Error during config resolution:", error);
@@ -145,7 +142,7 @@ export const unpluginFactory: UnpluginFactory<PluginOptions | undefined> = (opti
       // Check if contracts are deployed
       const isDeployed =
         modules.length > 0
-          ? (await Promise.all(modules.map((m) => client?.isContractDeployed(m.path)))).every(Boolean)
+          ? (await Promise.all(modules.map((m) => deployer?.isContractDeployed(m.path)))).every(Boolean)
           : false;
 
       // Convert modules to ModuleInfo format for cache (simplified since transform module interface is basic)
@@ -223,18 +220,18 @@ export const unpluginFactory: UnpluginFactory<PluginOptions | undefined> = (opti
    * @param isDeployed Flag indicating if the contract is already deployed.
    */
   const deployContract = async (id: string, src: string, isDeployed: boolean) => {
-    if (!client) {
-      logger.error("PactToolboxClient is not initialized.");
+    if (!deployer) {
+      logger.error("PactDeployer is not initialized.");
       return;
     }
 
-    const contractName = path.basename(id);
+    const contractName = path.basename(id, ".pact");
     logger.info(`Deploying contract ${contractName}...`);
 
-    // Deploy the contract
-    return client
-      .deployCode(src, {
-        builder: {
+    // Deploy the contract using PactDeployer's deploy method with custom data
+    return deployer
+      .deploy(contractName, {
+        data: {
           upgrade: isDeployed,
           init: !isDeployed,
         },
@@ -257,15 +254,13 @@ export const unpluginFactory: UnpluginFactory<PluginOptions | undefined> = (opti
       resolvedConfig = await toolboxConfigPromise;
       const serializableNetworkConfig = getSerializableMultiNetworkConfig(resolvedConfig);
 
-      // Check if globalThis has updated config at build time
-      const configValue = (globalThis as any).__PACT_TOOLBOX_NETWORKS__ || JSON.stringify(serializableNetworkConfig);
-
+      // Define build-time constants
       const definePlugin = new DefinePlugin({
-        "globalThis.__PACT_TOOLBOX_NETWORKS__": configValue,
+        __PACT_TOOLBOX_NETWORKS__: JSON.stringify(serializableNetworkConfig),
       });
 
-      if (!client) {
-        client = new PactToolboxClient(resolvedConfig);
+      if (!deployer) {
+        deployer = createPactDeployer(resolvedConfig);
       }
 
       if (!networkConfig) {
@@ -281,11 +276,8 @@ export const unpluginFactory: UnpluginFactory<PluginOptions | undefined> = (opti
           registerCleanup: true,
         });
 
-        // Ensure the global context is set
-        setupGlobalContext();
-
         if (options.onReady) {
-          await options.onReady(client);
+          await options.onReady(deployer);
         }
       }
 
@@ -313,16 +305,14 @@ export const unpluginFactory: UnpluginFactory<PluginOptions | undefined> = (opti
       networkConfig = getDefaultNetworkConfig(resolvedConfig);
 
       const serializableNetworkConfig = getSerializableMultiNetworkConfig(resolvedConfig);
-      // Check if globalThis has updated config at build time
-      const configValue = (globalThis as any).__PACT_TOOLBOX_NETWORKS__ || JSON.stringify(serializableNetworkConfig);
-
+      // Define build-time constants
       build.initialOptions.define = {
         ...build.initialOptions.define,
-        "globalThis.__PACT_TOOLBOX_NETWORKS__": configValue,
+        __PACT_TOOLBOX_NETWORKS__: JSON.stringify(serializableNetworkConfig),
       };
 
       // For esbuild in dev mode, start the network
-      if (startNetwork && isLocalNetwork(networkConfig) && !isTest) {
+      if (startNetwork && isLocalNetwork(networkConfig) && !isTest()) {
         network = await createNetwork(resolvedConfig, {
           autoStart: true,
           detached: true,
@@ -330,20 +320,12 @@ export const unpluginFactory: UnpluginFactory<PluginOptions | undefined> = (opti
         });
 
         // Initialize client if not already done
-        if (!client) {
-          client = new PactToolboxClient(resolvedConfig);
-        }
-
-        // Ensure the global context is set
-        if (client && !(globalThis as any).__PACT_TOOLBOX_CONTEXT__) {
-          (globalThis as any).__PACT_TOOLBOX_CONTEXT__ = {
-            network: client.context,
-            getNetworkConfig: () => client?.getNetworkConfig(),
-          };
+        if (!deployer) {
+          deployer = createPactDeployer(resolvedConfig);
         }
 
         if (options.onReady) {
-          await options.onReady(client);
+          await options.onReady(deployer);
         }
       }
     } catch (error) {

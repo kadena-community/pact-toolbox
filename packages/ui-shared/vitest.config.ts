@@ -1,10 +1,25 @@
-import baseConfig from "@pact-toolbox/vitest-config/react";
-import { defineConfig } from "vitest/config";
+import { defineConfig } from 'vitest/config';
+import solid from 'vite-plugin-solid';
 
 export default defineConfig({
-  ...baseConfig,
+  plugins: [solid()],
   test: {
-    ...baseConfig.test,
     environment: 'jsdom',
+    globals: true,
+    setupFiles: ['./src/test/setup.ts'],
+    transformMode: {
+      web: [/\.[jt]sx?$/]
+    },
+    deps: {
+      registerNodeLoader: true,
+      inline: [/solid-js/, /goober/]
+    },
+    threads: false
   },
+  resolve: {
+    conditions: ['development', 'browser'],
+  },
+  esbuild: {
+    jsx: 'preserve'
+  }
 });

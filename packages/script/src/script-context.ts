@@ -1,16 +1,14 @@
 import type { PactToolboxConfigObj } from "@pact-toolbox/config";
-import type { PactToolboxClient } from "@pact-toolbox/runtime";
-import type { Wallet } from "@pact-toolbox/wallet-adapters";
+import type { PactDeployer } from "@pact-toolbox/deployer";
 import { logger } from "@pact-toolbox/node-utils";
-import { CoinService, MarmaladeService, NamespaceService } from "@pact-toolbox/kda";
+import type { CoinContract, MarmaladeContract } from "@pact-toolbox/kda";
 import type { WalletManager, SignerInfo } from "./wallet-manager";
 import type { NamespaceHandler } from "./namespace-handler";
-import { DeploymentHelper } from "./deployment";
 import type { ChainId } from "@pact-toolbox/types";
 
 export interface ScriptContext<Args = Record<string, unknown>> {
   // Core components
-  client: PactToolboxClient;
+  deployer: PactDeployer;
   config: PactToolboxConfigObj;
   network: string;
   chainId: string;
@@ -18,93 +16,59 @@ export interface ScriptContext<Args = Record<string, unknown>> {
   logger: typeof logger;
 
   // Wallet and signing
-  wallet: Wallet | null;
-  walletManager: WalletManager;
+  wallet: WalletManager;
   currentSigner: SignerInfo | null;
 
-  // KDA services (from @pact-toolbox/kda)
-  coinService: CoinService;
-  marmaladeService: MarmaladeService;
-  namespaceService: NamespaceService;
+  // Namespace management
+  namespace: NamespaceHandler;
 
-  // Deployment utilities
-  deployments: DeploymentHelper;
+  // KDA services (from @pact-toolbox/kda)
+  coin: CoinContract;
+  marmalade: MarmaladeContract;
 }
 
 export class ScriptContextBuilder<Args = Record<string, unknown>> {
-  private client: PactToolboxClient;
+  private deployer: PactDeployer;
   private config: PactToolboxConfigObj;
   private network: string;
   private chainId: ChainId;
   private args: Args;
-  private walletManager: WalletManager;
-  private namespaceHandler: NamespaceHandler;
+  private wallet: WalletManager;
+  private namespace: NamespaceHandler;
+  private coin: CoinContract;
+  private marmalade: MarmaladeContract;
 
   constructor(
-    client: PactToolboxClient,
+    deployer: PactDeployer,
     config: PactToolboxConfigObj,
     network: string,
     chainId: ChainId,
     args: Args,
-    walletManager: WalletManager,
-    namespaceHandler: NamespaceHandler,
+    wallet: WalletManager,
+    namespace: NamespaceHandler,
+    coin: CoinContract,
+    marmalade: MarmaladeContract,
   ) {
-    this.client = client;
+    this.deployer = deployer;
     this.config = config;
     this.network = network;
     this.chainId = chainId;
     this.args = args;
-    this.walletManager = walletManager;
-    this.namespaceHandler = namespaceHandler;
+    this.wallet = wallet;
+    this.namespace = namespace;
+    this.coin = coin;
+    this.marmalade = marmalade;
   }
 
   async build(): Promise<ScriptContext<Args>> {
     logger.info(`Building script context for network: ${this.network}, chain: ${this.chainId}`);
 
-    // Get current wallet and signer
-    const wallet = this.walletManager.getWallet();
-    const currentSigner = this.walletManager.getCurrentSigner();
-
-    // Get network context from the client
-    const networkContext = this.client.getContext();
-
-    // Set wallet if available
-    if (wallet) {
-      networkContext.setWallet(wallet as any);
-    }
-
-    // Initialize KDA services with proper configuration
-    const coinService = new CoinService({
-      context: networkContext,
-      defaultChainId: this.chainId,
-      wallet: wallet as any,
-    });
-
-    const marmaladeService = new MarmaladeService({
-      context: networkContext,
-      defaultChainId: this.chainId,
-      wallet: wallet as any,
-    });
-
-    const namespaceService = new NamespaceService({
-      context: networkContext,
-      defaultChainId: this.chainId,
-    });
-
-    // Initialize deployment helper
-    const deployments = new DeploymentHelper(
-      this.client,
-      this.config,
-      this.network,
-      this.walletManager,
-      this.namespaceHandler,
-    );
-
-    // Deployment helper is ready to use
+    // Get current signer
+    const currentSigner = this.wallet.getCurrentSigner();
 
     const scriptContext: ScriptContext<Args> = {
       // Core components
-      client: this.client,
+      deployer: this.deployer,
       config: this.config,
       network: this.network,
       chainId: this.chainId,
@@ -112,17 +76,15 @@ export class ScriptContextBuilder<Args = Record<string, unknown>> {
       logger,
 
       // Wallet and signing
-      wallet,
-      walletManager: this.walletManager,
+      wallet: this.wallet,
       currentSigner,
 
-      // KDA services
-      coinService,
-      marmaladeService,
-      namespaceService,
+      // Namespace management
+      namespace: this.namespace,
 
-      // Deployment utilities
-      deployments,
+      // KDA services - injected via constructor
+      coin: this.coin,
+      marmalade: this.marmalade,
     };
 
     logger.success(`Script context created successfully`);
@@ -134,13 +96,25 @@ export class ScriptContextBuilder<Args = Record<string, unknown>> {
  * Create a script context builder
  */
 export function createScriptContextBuilder<Args = Record<string, unknown>>(
-  client: PactToolboxClient,
+  deployer: PactDeployer,
   config: PactToolboxConfigObj,
   network: string,
   chainId: ChainId,
   args: Args,
-  walletManager: WalletManager,
-  namespaceHandler: NamespaceHandler,
+  wallet: WalletManager,
+  namespace: NamespaceHandler,
+  coin: CoinContract,
+  marmalade: MarmaladeContract,
 ): ScriptContextBuilder<Args> {
-  return new ScriptContextBuilder(client, config, network, chainId, args, walletManager, namespaceHandler);
+  return new ScriptContextBuilder(
+    deployer,
+    config,
+    network,
+    chainId,
+    args,
+    wallet,
+    namespace,
+    coin,
+    marmalade,
+  );
 }

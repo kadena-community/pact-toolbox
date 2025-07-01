@@ -2,7 +2,10 @@ import jscodeshift from "jscodeshift";
 
 interface Plugin {
   name: string;
-  transform?(code: string, id: string): Promise<{ code: string; map?: any } | null> | { code: string; map?: any } | null;
+  transform?(
+    code: string,
+    id: string,
+  ): Promise<{ code: string; map?: any } | null> | { code: string; map?: any } | null;
 }
 
 function replaceDev(source: string): string {

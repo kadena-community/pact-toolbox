@@ -2,7 +2,7 @@ import type { NetworkConfig, PactToolboxConfigObj } from "@pact-toolbox/config";
 
 import { isLocalNetwork, getNetworkPort } from "@pact-toolbox/config";
 import { PactToolboxNetwork, createNetwork as createPactToolboxNetworkInstance } from "@pact-toolbox/network";
-import { PactToolboxClient } from "@pact-toolbox/runtime";
+import { PactDeployer } from "@pact-toolbox/deployer";
 import { logger, isPortTaken } from "@pact-toolbox/node-utils";
 
 import type { PluginOptions } from "./types";
@@ -10,7 +10,7 @@ import type { PluginOptions } from "./types";
 interface StartOptions {
   isTest: boolean;
   isServe: boolean;
-  client: PactToolboxClient;
+  deployer: PactDeployer;
   networkConfig: NetworkConfig;
 }
 
@@ -30,22 +30,22 @@ export async function stopRunningNetwork(): Promise<void> {
 
 interface StartToolboxNetworkResult {
   network: PactToolboxNetwork | null;
-  client: PactToolboxClient;
+  deployer: PactDeployer;
 }
 
 export async function createPactToolboxNetwork(
-  { isServe, isTest, client, networkConfig }: StartOptions,
+  { isServe, isTest, deployer, networkConfig }: StartOptions,
   toolboxConfig: PactToolboxConfigObj,
   { startNetwork = true, onReady }: PluginOptions = {},
 ): Promise<StartToolboxNetworkResult> {
   // Skip network startup if not serving, in test mode, not a local network, or startNetwork is false
   if (!isServe || isTest || !isLocalNetwork(networkConfig) || !startNetwork) {
     if (isServe && !isTest && onReady) {
-      await onReady(client);
+      await onReady(deployer);
     }
     return {
       network: null,
-      client,
+      deployer,
     };
   }
 
@@ -53,11 +53,11 @@ export async function createPactToolboxNetwork(
   if (runningNetwork) {
     logger.debug("Network already running, reusing existing instance");
     if (onReady) {
-      await onReady(client);
+      await onReady(deployer);
     }
     return {
       network: runningNetwork,
-      client,
+      deployer,
     };
   }
 
@@ -69,11 +69,11 @@ export async function createPactToolboxNetwork(
     if (portInUse) {
       logger.debug(`Port ${port} is already in use, assuming network is running`);
       if (onReady) {
-        await onReady(client);
+        await onReady(deployer);
       }
       return {
         network: null,
-        client,
+        deployer,
       };
     }
   } catch (error) {
@@ -85,7 +85,7 @@ export async function createPactToolboxNetwork(
     logger.info(`Starting network ${networkConfig.name || "local"}...`);
 
     const network = await createPactToolboxNetworkInstance(toolboxConfig, {
-      client,
+      deployer,
       logAccounts: true,
       detached: true,
       autoStart: true,
@@ -99,7 +99,7 @@ export async function createPactToolboxNetwork(
     // Call onReady callback if provided
     if (onReady) {
       try {
-        await onReady(client);
+        await onReady(deployer);
       } catch (error) {
         logger.error("onReady callback failed:", error);
       }
@@ -107,7 +107,7 @@ export async function createPactToolboxNetwork(
 
     return {
       network,
-      client,
+      deployer,
     };
   } catch (error) {
     logger.error(`Failed to start network:`, error);
@@ -119,12 +119,12 @@ export async function createPactToolboxNetwork(
 
     // Network is already running, continue without error
     if (onReady) {
-      await onReady(client);
+      await onReady(deployer);
     }
 
     return {
       network: null,
-      client,
+      deployer,
     };
   }
 }

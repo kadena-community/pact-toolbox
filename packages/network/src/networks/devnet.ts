@@ -4,7 +4,7 @@
 
 import type { DevNetworkConfig } from "@pact-toolbox/config";
 import type { Logger } from "@pact-toolbox/node-utils";
-import type { PactToolboxClient } from "@pact-toolbox/runtime";
+import type { PactDeployer } from "@pact-toolbox/deployer";
 import type { DevNetServiceDefinition, NetworkApi, NetworkStartOptions } from "../types";
 
 import { ContainerOrchestrator } from "@pact-toolbox/docker";
@@ -29,14 +29,14 @@ export class DevNetNetwork implements NetworkApi {
 
   private orchestrator: ContainerOrchestrator;
   private config: DevNetworkConfig;
-  private client: PactToolboxClient;
+  private deployer: PactDeployer;
   private logger: Logger;
   private definition: DevNetServiceDefinition;
   private _statelessPort?: number;
 
-  constructor(config: DevNetworkConfig, client: PactToolboxClient, logger: Logger = defaultLogger) {
+  constructor(config: DevNetworkConfig, deployer: PactDeployer, logger: Logger = defaultLogger) {
     this.config = config;
-    this.client = client;
+    this.deployer = deployer;
     this.logger = logger;
 
     // Validate port

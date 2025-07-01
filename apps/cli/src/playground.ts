@@ -20,12 +20,12 @@ async function main() {
       network: "local",
     });
     await local.start();
-    await local.client.deployContract("hello-world.pact");
-    const signer = local.client.getSignerKeys();
-    await local.client
+    await local.deployer.deploy("hello-world");
+    const signer = local.deployer.getSignerKeys();
+    await local.deployer
       .execution('(free.hello-world.say-hello "Salama")')
       .withSigner(signer.publicKey)
-      .sign()
+      .sign(local.wallet)
       .submitAndListen();
     await local.stop();
   });
@@ -53,12 +53,12 @@ async function main() {
       network: "devnetOnDemand",
     });
     await devnetOnDemand.start();
-    await devnetOnDemand.client.deployContract("hello-world.pact");
-    const signer = devnetOnDemand.client.getSignerKeys();
-    await devnetOnDemand.client
+    await devnetOnDemand.deployer.deploy("hello-world");
+    const signer = devnetOnDemand.deployer.getSignerKeys();
+    await devnetOnDemand.deployer
       .execution('(free.hello-world.say-hello "Salama")')
       .withSigner(signer.publicKey)
-      .sign()
+      .sign(devnetOnDemand.wallet)
       .submitAndListen();
 
     await devnetOnDemand.stop();
@@ -70,12 +70,12 @@ async function main() {
       network: "devnet",
     });
     await devnet.start();
-    await devnet.client.deployContract("hello-world.pact");
-    const signer = devnet.client.getSignerKeys();
-    await devnet.client
+    await devnet.deployer.deploy("hello-world");
+    const signer = devnet.deployer.getSignerKeys();
+    await devnet.deployer
       .execution('(free.hello-world.say-hello "Salama")')
       .withSigner(signer.publicKey)
-      .sign()
+      .sign(devnet.wallet)
       .submitAndListen();
 
     await devnet.stop();

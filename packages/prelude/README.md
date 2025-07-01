@@ -31,14 +31,17 @@ pnpm add @pact-toolbox/prelude
 
 ```typescript
 import { downloadAllPreludes, deployPreludes } from "@pact-toolbox/prelude";
-import { PactToolboxClient } from "@pact-toolbox/runtime";
+import { PactDeployer } from "@pact-toolbox/deployer";
 
-// Setup client and config
-const client = new PactToolboxClient();
+// Setup deployer and config
+const deployer = new PactDeployer({
+  contractsDir: "./contracts",
+  network: "development"
+});
 const config = {
   contractsDir: "./contracts",
   preludes: ["kadena/chainweb", "kadena/marmalade"],
-  client,
+  deployer,
 };
 
 // Download preludes with smart caching
@@ -135,10 +138,10 @@ const myPrelude: PreludeDefinition = {
 
   // Lifecycle hooks
   hooks: {
-    beforeDeploy: async (client) => {
+    beforeDeploy: async (deployer) => {
       console.log("🚀 Starting deployment...");
     },
-    afterDeploy: async (client) => {
+    afterDeploy: async (deployer) => {
       console.log("✅ Deployment completed!");
     },
     onError: async (client, error) => {
@@ -178,9 +181,9 @@ const extendedGroup = deploymentGroup(
     namespace: "my-namespace",
     dependsOn: ["core-contracts"], // Deploy after core
     optional: true, // Can skip if deployment fails
-    shouldDeploy: async (client) => {
+    shouldDeploy: async (deployer) => {
       // Custom deployment condition
-      const exists = await client.isContractDeployed("my-namespace.base-contract");
+      const exists = await deployer.isContractDeployed("my-namespace.base-contract");
       return exists;
     },
   },
@@ -381,7 +384,7 @@ const group = deploymentGroup("core", [file1, file2], {
   namespace: "my-namespace",
   dependsOn: ["other-group"],
   optional: false,
-  shouldDeploy: async (client) => {
+  shouldDeploy: async (deployer) => {
     // Custom deployment logic
     return true;
   },
@@ -472,8 +475,8 @@ const complexPrelude: PreludeDefinition = {
       namespace: "extensions",
       dependsOn: ["core-contracts"],
       optional: true,
-      shouldDeploy: async (client) => {
-        const hasCore = await client.isContractDeployed("core.main-contract");
+      shouldDeploy: async (deployer) => {
+        const hasCore = await deployer.isContractDeployed("core.main-contract");
         return hasCore;
       },
     }),
@@ -521,11 +524,11 @@ const complexPrelude: PreludeDefinition = {
   `.trim(),
 
   hooks: {
-    beforeDeploy: async (client) => {
+    beforeDeploy: async (deployer) => {
       console.log("🚀 Starting complex deployment sequence...");
       // Pre-deployment validation
     },
-    afterDeploy: async (client) => {
+    afterDeploy: async (deployer) => {
       console.log("✅ Complex deployment completed successfully!");
       // Post-deployment verification
     },

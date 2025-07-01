@@ -1,7 +1,8 @@
 import { defu } from "defu";
+import { isTest } from "@pact-toolbox/utils";
 
 import type { ChainwebNetworkConfig, DevNetworkConfig, PactServerConfig, PactServerNetworkConfig } from "./config";
-import { defaultKeyPairs, defaultKeysets, defaultMeta } from "./defaults";
+import { DEFAULT_GAS_LIMIT, DEFAULT_KEY_PAIRS, DEFAULT_KEYSETS, defaultMeta } from "./defaults";
 import { createChainwebRpcUrl } from "./utils";
 import {
   validatePactServerConfig,
@@ -26,12 +27,12 @@ export const DEFAULT_TESTNET_RPC_URL: string = createChainwebRpcUrl({
 export function createPactServerConfig(overrides?: Partial<PactServerConfig>): Required<PactServerConfig> {
   const defaults = {
     port: 9091,
-    logDir: ".pact-toolbox/pact/logs",
-    persistDir: ".pact-toolbox/pact/persist",
+    logDir: ".pact-toolbox/pact/{version}/logs",
+    persistDir: ".pact-toolbox/pact/{version}/persist",
     verbose: true,
     pragmas: [],
     execConfig: ["DisablePact44", "AllowReadInLocal"],
-    gasLimit: 150000,
+    gasLimit: DEFAULT_GAS_LIMIT,
     gasRate: 0.01,
     entity: "entity",
   };
@@ -65,8 +66,8 @@ export function createPactServerNetworkConfig(overrides?: Partial<PactServerNetw
     type: "pact-server" as const,
     rpcUrl: "http://localhost:{port}",
     networkId: "development",
-    keyPairs: defaultKeyPairs,
-    keysets: defaultKeysets,
+    keyPairs: DEFAULT_KEY_PAIRS,
+    keysets: DEFAULT_KEYSETS,
     senderAccount: "sender00",
     autoStart: true,
     serverConfig: createPactServerConfig(),
@@ -79,7 +80,7 @@ export function createPactServerNetworkConfig(overrides?: Partial<PactServerNetw
 
   // Skip validation during build/test to avoid circular dependencies
   // Validation will be done when the config is actually used
-  if (process.env["NODE_ENV"] !== "test" && typeof globalThis !== "undefined" && !(globalThis as any).__vitest__) {
+  if (!isTest()) {
     validateNetworkConfig(config);
   }
 
@@ -106,8 +107,8 @@ export function createDevNetNetworkConfig(overrides?: Partial<DevNetworkConfig>)
     type: "chainweb-devnet" as const,
     rpcUrl: createChainwebRpcUrl(),
     networkId: "development",
-    keyPairs: defaultKeyPairs,
-    keysets: defaultKeysets,
+    keyPairs: DEFAULT_KEY_PAIRS,
+    keysets: DEFAULT_KEYSETS,
     senderAccount: "sender00",
     autoStart: true,
     containerConfig: {
@@ -141,7 +142,7 @@ export function createDevNetNetworkConfig(overrides?: Partial<DevNetworkConfig>)
 
   // Skip validation during build/test to avoid circular dependencies
   // Validation will be done when the config is actually used
-  if (process.env["NODE_ENV"] !== "test" && typeof globalThis !== "undefined" && !(globalThis as any).__vitest__) {
+  if (!isTest()) {
     validateNetworkConfig(config);
   }
 
@@ -186,7 +187,7 @@ export function createChainwebNetworkConfig(overrides?: Partial<ChainwebNetworkC
 
   // Skip validation during build/test to avoid circular dependencies
   // Validation will be done when the config is actually used
-  if (process.env["NODE_ENV"] !== "test" && typeof globalThis !== "undefined" && !(globalThis as any).__vitest__) {
+  if (!isTest()) {
     validateNetworkConfig(config);
   }
 
@@ -215,7 +216,7 @@ export function createTestNetNetworkConfig(overrides?: Partial<ChainwebNetworkCo
 
   // Skip validation during build/test to avoid circular dependencies
   // Validation will be done when the config is actually used
-  if (process.env["NODE_ENV"] !== "test" && typeof globalThis !== "undefined" && !(globalThis as any).__vitest__) {
+  if (!isTest()) {
     validateNetworkConfig(config);
   }
 
@@ -247,7 +248,7 @@ export function createMainNetNetworkConfig(overrides?: Partial<ChainwebNetworkCo
 
   // Skip validation during build/test to avoid circular dependencies
   // Validation will be done when the config is actually used
-  if (process.env["NODE_ENV"] !== "test" && typeof globalThis !== "undefined" && !(globalThis as any).__vitest__) {
+  if (!isTest()) {
     validateNetworkConfig(config);
   }
 

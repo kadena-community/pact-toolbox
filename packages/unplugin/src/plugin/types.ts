@@ -1,4 +1,4 @@
-import type { PactToolboxClient } from "@pact-toolbox/runtime";
+import type { PactDeployer } from "@pact-toolbox/deployer";
 
 /**
  * Interface representing cached transformation data.
@@ -11,8 +11,8 @@ export interface CachedTransform {
 }
 
 export interface PluginOptions {
-  onReady?: (runtime: PactToolboxClient) => Promise<void>;
+  onReady?: (deployer: PactDeployer) => Promise<void>;
   startNetwork?: boolean;
-  client?: PactToolboxClient;
+  deployer?: PactDeployer;
   cacheSize?: number;
 }

@@ -1,7 +1,7 @@
 import type { PactToolboxConfigObj } from "@pact-toolbox/config";
 
 import { getDefaultNetworkConfig, isLocalNetwork, resolveConfig } from "@pact-toolbox/config";
-import { PactToolboxClient } from "@pact-toolbox/runtime";
+import { PactDeployer } from "@pact-toolbox/deployer";
 import { logger, writeFile } from "@pact-toolbox/node-utils";
 
 import { createPactToJSTransformer } from "./transform";
@@ -9,7 +9,7 @@ import { prettyPrintError } from "./plugin/utils";
 
 const cache = {
   resolvedConfig: undefined as PactToolboxConfigObj | undefined,
-  client: undefined as PactToolboxClient | undefined,
+  deployer: undefined as PactDeployer | undefined,
 };
 const transformPactToJS = createPactToJSTransformer({
   debug: process.env["DEBUG"] === "true" || process.env["DEBUG"] === "1" || process.env.NODE_ENV === "development",
@@ -20,24 +20,28 @@ async function transformAndDeploy(id: string, src: string) {
     cache.resolvedConfig = await resolveConfig();
   }
 
-  if (!cache.client) {
-    cache.client = new PactToolboxClient(cache.resolvedConfig);
+  if (!cache.deployer) {
+    cache.deployer = new PactDeployer(cache.resolvedConfig);
   }
 
   const { code, types, modules, sourceMap } = await transformPactToJS(src, id);
   try {
-    const client = cache.client;
+    const deployer = cache.deployer;
     const isDeployed =
       modules.length > 0
-        ? (await Promise.all(modules.map((m) => client?.isContractDeployed(m.path)))).every(Boolean)
+        ? (await Promise.all(modules.map((m) => deployer?.isContractDeployed(m.path)))).every(Boolean)
         : false;
     await writeFile(`${id}.d.ts`, types);
     // TODO: Deploy only in dev mode
     const networkConfig = getDefaultNetworkConfig(cache.resolvedConfig);
     if (isLocalNetwork(networkConfig)) {
       logger.info(`[pactLoader] Deploying contract ${id} to ${networkConfig.name}`);
-      await client.deployCode(src, {
-        builder: {
+      // Extract contract name from module path
+      const contractName = modules[0]?.path || id;
+      // Use the deploy method from PactDeployer with custom data
+      await deployer.deploy(contractName, {
+        skipIfAlreadyDeployed: isDeployed,
+        data: {
           upgrade: isDeployed,
           init: !isDeployed,
         },

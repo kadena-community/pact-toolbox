@@ -2,15 +2,15 @@ import type { PactToolboxConfigObj } from "@pact-toolbox/config";
 
 import { resolveConfig } from "@pact-toolbox/config";
 import { PactToolboxNetwork } from "@pact-toolbox/network";
-import { PactToolboxClient } from "@pact-toolbox/runtime";
+import { PactDeployer } from "@pact-toolbox/deployer";
 import { logger } from "@pact-toolbox/node-utils";
 import type { Wallet } from "@pact-toolbox/wallet-core";
-import { configureWalletUI } from "@pact-toolbox/transaction";
+import { setupWalletManager } from "@pact-toolbox/wallet-manager";
 
 import { injectNetworkConfig, updatePorts } from "./utils";
 
 export interface PactTestEnv {
-  client: PactToolboxClient;
+  deployer: PactDeployer;
   stop: () => Promise<void>;
   start: () => Promise<void>;
   restart: () => Promise<void>;
@@ -21,7 +21,7 @@ export interface PactTestEnv {
 
 export interface CreatePactTestEnvOptions {
   network?: string;
-  client?: PactToolboxClient;
+  deployer?: PactDeployer;
   configOverrides?: Partial<PactToolboxConfigObj>;
   config?: Required<PactToolboxConfigObj>;
   isStateless?: boolean;
@@ -31,11 +31,11 @@ export interface CreatePactTestEnvOptions {
 
 export async function createPactTestEnv({
   network,
-  client,
+  deployer,
   config,
   configOverrides,
-  privateKey,
-  accountName,
+  privateKey: _privateKey,
+  accountName: _accountName,
 }: CreatePactTestEnvOptions = {}): Promise<PactTestEnv> {
   logger.pauseLogs();
 
@@ -65,49 +65,49 @@ export async function createPactTestEnv({
     throw new Error(`Network configuration for '${defaultNetworkKey}' not found`);
   }
 
-  // Dynamic import to avoid resolution issues in test environment
-  const { KeypairWallet } = await import("@pact-toolbox/wallet-adapters/keypair");
+  // Initialize wallet system with test configuration
+  // {
+  //   wallets: {
+  //     keypair: {
+  //       deterministic: true,
+  //       privateKey: privateKey,
+  //       accountName: accountName || "test-account",
+  //     },
+  //   },
+  //   preferences: {
+  //     autoConnect: false, // We'll manually connect
+  //   },
+  //   ui: {
+  //     showOnConnect: false, // No UI in tests
+  //   },
+  // }
+  const walletSystem = await setupWalletManager();
 
-  // Create keypair wallet for testing
-  const wallet = new KeypairWallet({
-    networkId: networkConfig.networkId || "development",
-    rpcUrl: networkConfig.rpcUrl || "http://localhost:8080",
-    privateKey: privateKey || undefined, // Will generate if not provided
-    accountName: accountName || undefined,
-    chainId: "0",
-  });
+  // Connect to keypair wallet
+  const wallet = await walletSystem.connect();
 
-  // Connect the wallet
-  await wallet.connect();
-
-  // Configure wallet UI to use the test wallet automatically
-  configureWalletUI({
-    showUI: false, // Disable UI in tests
-    walletSelector: async () => wallet, // Always return the test wallet
-  });
-
-  if (!client) {
-    client = new PactToolboxClient(config);
+  if (!deployer) {
+    deployer = new PactDeployer(config);
   }
 
   // Set the wallet in the network context
-  const context = client.getContext();
-  if (context && typeof context.setWallet === "function") {
-    context.setWallet(wallet);
-  }
+  // const context = deployer.getContext();
+  // if (context && typeof context.setWallet === "function") {
+  //   context.setWallet(wallet);
+  // }
 
   const localNetwork = new PactToolboxNetwork(config, {
-    client,
+    deployer,
     detached: true,
     logAccounts: false,
     stateless: true,
   });
 
   return {
-    start: async () => localNetwork.start(),
-    stop: async () => localNetwork.stop(),
-    restart: async () => localNetwork.restart(),
-    client,
+    start: () => localNetwork.start(),
+    stop: () => localNetwork.stop(),
+    restart: () => localNetwork.restart(),
+    deployer,
     config,
     wallet,
     network: localNetwork,

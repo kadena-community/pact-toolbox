@@ -38,7 +38,7 @@ module.exports = {
 /*
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { helloWorld } from '../contracts/hello-world.pact';
-import { createPactToolboxClient } from '@pact-toolbox/runtime';
+import { createPactToolboxClient } from '@pact-toolbox/deployer';
 
 describe('Hello World Contract', () => {
   let client;

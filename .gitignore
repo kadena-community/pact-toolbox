@@ -46,8 +46,6 @@ ehthumbs.db
 Thumbs.db
 
 # Editor files
-.vscode/
-.idea/
 *.swp
 *.swo
 *.tmp
@@ -145,3 +143,4 @@ test-results/
 
 # intentionally ignored for now to avoid committing by mistake
 private/
+.playwright-mcp/
