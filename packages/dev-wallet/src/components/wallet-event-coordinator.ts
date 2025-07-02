@@ -1,6 +1,7 @@
-import type { Account, Network } from "../types";
+import type { Account, Network, PendingTransaction } from "../types";
 import { WalletStateManager } from "../services/wallet-state-manager";
 import { errorHandler } from "../utils/error-handler";
+import { uiLogger } from "../utils/logger";
 
 /**
  * Centralized event coordination for wallet events
@@ -17,7 +18,7 @@ export class WalletEventCoordinator {
    * Setup all event listeners
    */
   setup(): void {
-    console.log('Setting up wallet event coordination...');
+    uiLogger.operation('Event coordination setup', 'start');
     
     // Setup event listeners
     this.addListener("toolbox-navigate", this.handleNavigation);
@@ -38,21 +39,21 @@ export class WalletEventCoordinator {
     this.addListener("settings-changed", this.handleSettingsChanged);
     this.addListener("reset-connection-state", this.handleResetConnectionState);
 
-    console.log('Wallet event coordination setup complete');
+    uiLogger.operation('Event coordination setup', 'success');
   }
 
   /**
    * Cleanup all event listeners
    */
   cleanup(): void {
-    console.log('Cleaning up wallet event coordination...');
+    uiLogger.operation('Event coordination cleanup', 'start');
     
     for (const [eventType, listener] of this.eventListeners) {
       document.removeEventListener(eventType, listener);
     }
     
     this.eventListeners.clear();
-    console.log('Wallet event coordination cleanup complete');
+    uiLogger.operation('Event coordination cleanup', 'success');
   }
 
   /**
@@ -69,10 +70,10 @@ export class WalletEventCoordinator {
    */
   private async handleNavigation(event: Event): Promise<void> {
     try {
-      const customEvent = event as CustomEvent<{ screen: any }>;
-      const screen = customEvent.detail.screen;
+      const customEvent = event as CustomEvent<{ screen: string }>;
+      const screen = customEvent.detail.screen as import('../types').WalletScreen;
       
-      console.log('Navigation requested:', screen);
+      uiLogger.debug('Navigation requested', { screen });
       await this.stateManager.setCurrentScreen(screen);
     } catch (error) {
       await errorHandler.handle(error as Error, {
@@ -90,7 +91,7 @@ export class WalletEventCoordinator {
       const customEvent = event as CustomEvent<{ account: Account }>;
       const account = customEvent.detail.account;
       
-      console.log('Account selected:', account.address);
+      uiLogger.debug('Account selected', { address: account.address });
       await this.stateManager.setSelectedAccount(account);
     } catch (error) {
       await errorHandler.handle(error as Error, {
@@ -108,7 +109,7 @@ export class WalletEventCoordinator {
       const customEvent = event as CustomEvent<{ network: Network }>;
       const network = customEvent.detail.network;
       
-      console.log('Network changed:', network.id);
+      uiLogger.debug('Network changed', { networkId: network.id });
       await this.stateManager.setActiveNetwork(network);
     } catch (error) {
       await errorHandler.handle(error as Error, {
@@ -123,10 +124,10 @@ export class WalletEventCoordinator {
    */
   private async handleSignRequested(event: Event): Promise<void> {
     try {
-      const customEvent = event as CustomEvent<{ transaction: any }>;
+      const customEvent = event as CustomEvent<{ transaction: PendingTransaction }>;
       const transaction = customEvent.detail.transaction;
       
-      console.log('Sign requested for transaction:', transaction);
+      uiLogger.debug('Sign requested', { transaction });
       
       const state = this.stateManager.getState();
       
@@ -137,13 +138,13 @@ export class WalletEventCoordinator {
 
       // Navigate based on connection state
       if (!state.selectedAccount || state.isConnecting) {
-        console.log('Not connected, showing connect screen first');
+        uiLogger.debug('Not connected, showing connect screen first');
         await this.stateManager.updateState({
           currentScreen: "connect",
           isConnecting: true,
         });
       } else {
-        console.log('Already connected, showing sign screen');
+        uiLogger.debug('Already connected, showing sign screen');
         await this.stateManager.setCurrentScreen("sign");
       }
     } catch (error) {
@@ -159,7 +160,7 @@ export class WalletEventCoordinator {
    */
   private async handleConnectRequested(_event: Event): Promise<void> {
     try {
-      console.log('Connect requested');
+      uiLogger.debug('Connect requested');
       await this.stateManager.updateState({
         currentScreen: "connect",
         isConnecting: true,
@@ -178,7 +179,7 @@ export class WalletEventCoordinator {
   private async handleConnectApproved(event: Event): Promise<void> {
     try {
       const customEvent = event as CustomEvent<{ account: Account }>;
-      console.log('Connect approved for account:', customEvent.detail.account?.address);
+      uiLogger.debug('Connect approved', { address: customEvent.detail.account?.address });
       
       const state = this.stateManager.getState();
       
@@ -208,7 +209,7 @@ export class WalletEventCoordinator {
    */
   private async handleConnectCancelled(_event: Event): Promise<void> {
     try {
-      console.log('Connect cancelled');
+      uiLogger.debug('Connect cancelled');
       await this.stateManager.updateState({
         currentScreen: "transactions",
         isConnecting: false,
@@ -227,7 +228,7 @@ export class WalletEventCoordinator {
    */
   private async handleCloseWallet(_event: Event): Promise<void> {
     try {
-      console.log('Wallet close requested');
+      uiLogger.debug('Wallet close requested');
       
       // Import and use modal manager to hide the wallet
       const { ModalManager } = await import("../ui/modal-manager");
@@ -245,7 +246,7 @@ export class WalletEventCoordinator {
    */
   private async handleSignApproved(_event: Event): Promise<void> {
     try {
-      console.log('Sign approved - clearing pending transaction');
+      uiLogger.debug('Sign approved - clearing pending transaction');
       await this.stateManager.updateState({
         pendingTransaction: undefined,
         currentScreen: "transactions",
@@ -263,7 +264,7 @@ export class WalletEventCoordinator {
    */
   private async handleSignRejected(_event: Event): Promise<void> {
     try {
-      console.log('Sign rejected - clearing pending transaction');
+      uiLogger.debug('Sign rejected - clearing pending transaction');
       await this.stateManager.updateState({
         pendingTransaction: undefined,
         currentScreen: "transactions",
@@ -282,7 +283,7 @@ export class WalletEventCoordinator {
   private async handleTransactionAdded(event: Event): Promise<void> {
     try {
       const customEvent = event as CustomEvent;
-      console.log('Transaction added event received:', customEvent.detail);
+      uiLogger.debug('Transaction added event received', { detail: customEvent.detail });
       
       // The transaction service handles the actual addition,
       // we just need to trigger a state refresh if needed
@@ -301,7 +302,7 @@ export class WalletEventCoordinator {
   private async handleTransactionUpdated(event: Event): Promise<void> {
     try {
       const customEvent = event as CustomEvent;
-      console.log('Transaction updated event received:', customEvent.detail);
+      uiLogger.debug('Transaction updated event received', { detail: customEvent.detail });
       
       // Update transaction status in state
       const { transactionId, status, result } = customEvent.detail;
@@ -322,7 +323,7 @@ export class WalletEventCoordinator {
       const customEvent = event as CustomEvent<{ account: Account }>;
       const account = customEvent.detail.account;
       
-      console.log('Account created event received:', account.address);
+      uiLogger.debug('Account created event received', { address: account.address });
       await this.stateManager.addAccount(account);
     } catch (error) {
       await errorHandler.handle(error as Error, {
@@ -337,7 +338,7 @@ export class WalletEventCoordinator {
    */
   private async handleWalletDataCleared(_event: Event): Promise<void> {
     try {
-      console.log('Wallet data cleared event received');
+      uiLogger.debug('Wallet data cleared event received');
       await this.stateManager.clearAllData();
     } catch (error) {
       await errorHandler.handle(error as Error, {
@@ -352,7 +353,7 @@ export class WalletEventCoordinator {
    */
   private async handleWalletExportRequested(_event: Event): Promise<void> {
     try {
-      console.log('Wallet export requested');
+      uiLogger.debug('Wallet export requested');
       
       // Use the settings service to handle export
       const { SettingsService } = await import("../services/settings-service");
@@ -370,7 +371,7 @@ export class WalletEventCoordinator {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
       
-      console.log('Wallet data exported successfully');
+      uiLogger.operation('Wallet export', 'success');
     } catch (error) {
       await errorHandler.handle(error as Error, {
         component: 'WalletEventCoordinator',
@@ -384,10 +385,10 @@ export class WalletEventCoordinator {
    */
   private async handleSettingsChanged(event: Event): Promise<void> {
     try {
-      const customEvent = event as CustomEvent<{ settings: any }>;
+      const customEvent = event as CustomEvent<{ settings: import('../types').DevWalletSettings }>;
       const settings = customEvent.detail.settings;
       
-      console.log('Settings changed event received:', settings);
+      uiLogger.debug('Settings changed event received', { settings });
       await this.stateManager.updateState({ settings });
     } catch (error) {
       await errorHandler.handle(error as Error, {
@@ -402,7 +403,7 @@ export class WalletEventCoordinator {
    */
   private async handleResetConnectionState(_event: Event): Promise<void> {
     try {
-      console.log('Reset connection state requested');
+      uiLogger.debug('Reset connection state requested');
       await this.stateManager.updateState({
         isConnecting: false,
         pendingTransaction: undefined,

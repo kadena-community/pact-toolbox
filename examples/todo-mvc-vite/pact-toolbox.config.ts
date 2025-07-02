@@ -7,7 +7,7 @@ import {
 } from "pact-toolbox";
 
 export default defineConfig({
-  defaultNetwork: "devnet",
+  defaultNetwork: "pactServer",
   preludes: ["kadena/chainweb"],
   downloadPreludes: true,
   deployPreludes: true,

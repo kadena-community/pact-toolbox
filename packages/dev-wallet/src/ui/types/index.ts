@@ -18,8 +18,8 @@ export interface Transaction {
   timestamp: number;
   chainId: string;
   capability?: string;
-  data?: any;
-  result?: any;
+  data?: Record<string, unknown>;
+  result?: import('../../types').TransactionResult;
   updatedAt?: number;
 }
 
@@ -41,6 +41,6 @@ export interface WalletState {
   transactions: Transaction[];
   networks: Network[];
   activeNetwork?: Network;
-  pendingTransaction?: any;
+  pendingTransaction?: import('../../types').PendingTransaction;
   isConnecting?: boolean;
 }

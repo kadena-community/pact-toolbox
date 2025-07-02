@@ -29,6 +29,7 @@ export interface KeypairWalletConfig {
  * Simplified Keypair wallet implementation
  */
 export class KeypairWallet extends BaseWallet {
+  readonly id = "keypair";
   private keyPairSigner: KeyPairSigner | null = null;
   private config: KeypairWalletConfig;
 

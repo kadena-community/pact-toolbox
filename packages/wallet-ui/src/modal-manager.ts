@@ -1,4 +1,4 @@
-import { walletService } from "@pact-toolbox/wallet-adapters";
+import { getWalletSystem } from "@pact-toolbox/wallet-adapters";
 import "./components/wallet-modal";
 import "./components/wallet-selector";
 import "@pact-toolbox/ui-shared";
@@ -147,10 +147,11 @@ export class ModalManager {
 
   async connectWallet(walletId?: string): Promise<boolean> {
     try {
+      const walletSystem = await getWalletSystem();
       if (walletId === "auto" || !walletId) {
-        await walletService.autoConnect();
+        await walletSystem.autoConnect();
       } else {
-        await walletService.connect(walletId);
+        await walletSystem.connect(walletId);
       }
       return true;
     } catch (error) {

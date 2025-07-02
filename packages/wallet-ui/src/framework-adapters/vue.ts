@@ -90,9 +90,10 @@ export function useAutoConnect() {
 
   onMounted(async () => {
     try {
-      const { walletService } = await import("@pact-toolbox/wallet-adapters");
+      const { getWalletSystem } = await import("@pact-toolbox/wallet-adapters");
 
-      if (!walletService.getPrimaryWallet()) {
+      const walletSystem = await getWalletSystem();
+      if (!walletSystem.getPrimary()) {
         const walletId = await modalManager.showWalletSelector();
         if (walletId) {
           await modalManager.connectWallet(walletId);

@@ -5,6 +5,9 @@ export default defineConfig({
     // Main entry
     index: "src/index.ts",
 
+    // React-specific entry
+    react: "src/react.ts",
+
     // Individual wallet providers as separate entries
     ecko: "src/providers/ecko/index.ts",
     chainweaver: "src/providers/chainweaver/index.ts",
@@ -24,19 +27,23 @@ export default defineConfig({
     "@pact-toolbox/types",
     "@pact-toolbox/signers",
     "@pact-toolbox/crypto",
+    "@pact-toolbox/dev-wallet",
+    "@pact-toolbox/wallet-ui",
     "@walletconnect/modal",
     "@walletconnect/sign-client",
     "@walletconnect/utils",
     "@walletconnect/types",
     "magic-sdk",
+    "react",
   ],
 
   // Output structure will be:
   // dist/index.js (main export)
-  // dist/ecko.js (@pact-toolbox/wallet/ecko)
-  // dist/chainweaver.js (@pact-toolbox/wallet/chainweaver)
-  // dist/zelcore.js (@pact-toolbox/wallet/zelcore)
-  // dist/walletconnect.js (@pact-toolbox/wallet/walletconnect)
-  // dist/keypair.js (@pact-toolbox/wallet/keypair)
-  // dist/magic.js (@pact-toolbox/wallet/magic)
+  // dist/react.js (@pact-toolbox/wallet-adapters/react)
+  // dist/ecko.js (@pact-toolbox/wallet-adapters/ecko)
+  // dist/chainweaver.js (@pact-toolbox/wallet-adapters/chainweaver)
+  // dist/zelcore.js (@pact-toolbox/wallet-adapters/zelcore)
+  // dist/walletconnect.js (@pact-toolbox/wallet-adapters/walletconnect)
+  // dist/keypair.js (@pact-toolbox/wallet-adapters/keypair)
+  // dist/magic.js (@pact-toolbox/wallet-adapters/magic)
 });

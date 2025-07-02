@@ -37,6 +37,7 @@
   "dependencies": {
     "@pact-toolbox/chainweb-client": "workspace:*",
     "@pact-toolbox/crypto": "workspace:*",
+    "@pact-toolbox/kda": "workspace:*",
     "@pact-toolbox/signers": "workspace:*",
     "@pact-toolbox/types": "workspace:*",
     "@pact-toolbox/ui-shared": "workspace:*",
@@ -47,9 +48,9 @@
   "devDependencies": {
     "@pact-toolbox/tsconfig": "workspace:*",
     "@pact-toolbox/tsdown": "workspace:*",
-    "@playwright/test": "^1.53.1",
+    "@playwright/test": "^1.53.2",
     "jsdom": "^26.1.0",
-    "playwright": "^1.53.1",
+    "playwright": "^1.53.2",
     "vite": "^7.0.0",
     "vitest": "^3.2.4"
   },

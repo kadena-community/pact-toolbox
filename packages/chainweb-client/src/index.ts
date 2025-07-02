@@ -25,6 +25,8 @@ export type {
   RequestConfig,
   ChainwebErrorCode,
   SignedTransaction,
+  SpvRequest,
+  SpvProof,
 } from "./types";
 
 // Error class

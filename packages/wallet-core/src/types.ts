@@ -38,6 +38,9 @@ export interface WalletAccount {
  * Simplified wallet interface combining all wallet functionality
  */
 export interface Wallet {
+  /** Wallet provider ID */
+  readonly id?: string;
+  
   /** Check if wallet is installed/available */
   isInstalled(): boolean;
 
@@ -59,6 +62,13 @@ export interface Wallet {
   /** Sign transaction(s) */
   sign(tx: PartiallySignedTransaction): Promise<SignedTransaction>;
   sign(txs: PartiallySignedTransaction[]): Promise<SignedTransaction[]>;
+
+  /** 
+   * Partially sign transaction(s) - only sign for signers this wallet controls
+   * This is optional - wallets that don't implement it will use regular sign()
+   */
+  partialSign?(tx: PartiallySignedTransaction): Promise<PartiallySignedTransaction>;
+  partialSign?(txs: PartiallySignedTransaction[]): Promise<PartiallySignedTransaction[]>;
 }
 
 /**
@@ -105,53 +115,6 @@ export type WalletErrorType =
   | "NETWORK_MISMATCH"
   | "TIMEOUT"
   | "UNKNOWN";
-
-/**
- * Wallet error class
- */
-export class WalletError extends Error {
-  public readonly type: WalletErrorType;
-  public readonly cause?: unknown;
-
-  constructor(type: WalletErrorType, message: string, cause?: unknown) {
-    super(message);
-    this.name = "WalletError";
-    this.type = type;
-    this.cause = cause;
-  }
-
-  static notFound(walletId: string): WalletError {
-    return new WalletError("NOT_FOUND", `Wallet "${walletId}" not found or not installed`);
-  }
-
-  static notConnected(walletId: string): WalletError {
-    return new WalletError("NOT_CONNECTED", `Wallet "${walletId}" is not connected`);
-  }
-
-  static connectionFailed(reason: string): WalletError {
-    return new WalletError("CONNECTION_FAILED", `Connection failed: ${reason}`);
-  }
-
-  static userRejected(operation: string): WalletError {
-    return new WalletError("USER_REJECTED", `User rejected ${operation}`);
-  }
-
-  static signingFailed(reason: string): WalletError {
-    return new WalletError("SIGNING_FAILED", `Transaction signing failed: ${reason}`);
-  }
-
-  static networkMismatch(expected: string, actual: string): WalletError {
-    return new WalletError("NETWORK_MISMATCH", `Network mismatch: expected ${expected}, got ${actual}`);
-  }
-
-  static timeout(operation: string, timeout: number): WalletError {
-    return new WalletError("TIMEOUT", `${operation} timed out after ${timeout}ms`);
-  }
-
-  static unknown(message: string, cause?: unknown): WalletError {
-    return new WalletError("UNKNOWN", message, cause);
-  }
-}
 
 /**
  * Wallet events

@@ -63,10 +63,16 @@ export const unpluginFactory: UnpluginFactory<PluginOptions | undefined> = (opti
   const configureServer = async () => {
     try {
       resolvedConfig = await toolboxConfigPromise;
+      logger.debug("Unplugin configureServer - resolved config:", {
+        downloadPreludes: resolvedConfig.downloadPreludes,
+        deployPreludes: resolvedConfig.deployPreludes,
+        preludes: resolvedConfig.preludes,
+      });
       networkConfig = getDefaultNetworkConfig(resolvedConfig);
       client = new PactToolboxClient(resolvedConfig);
 
       if (startNetwork && isLocalNetwork(networkConfig) && (!isTest || isServe)) {
+        logger.debug("Creating and starting network from unplugin...");
         // Create and start the network using the simplified API
         // Network will automatically register cleanup handlers for Ctrl+C, SIGTERM etc.
         network = await createNetwork(resolvedConfig, {
@@ -82,6 +88,8 @@ export const unpluginFactory: UnpluginFactory<PluginOptions | undefined> = (opti
         if (options.onReady) {
           await options.onReady(client);
         }
+      } else {
+        logger.debug("Not starting network:", { startNetwork, isLocal: isLocalNetwork(networkConfig), isTest, isServe });
       }
     } catch (error) {
       logger.error("Error during server configuration:", error);

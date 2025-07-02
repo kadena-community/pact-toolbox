@@ -1,14 +1,20 @@
-import type { Wallet, WalletMetadata, WalletProvider } from "@pact-toolbox/wallet-core";
+import type { Wallet, WalletMetadata } from "@pact-toolbox/wallet-core";
+import { BaseWalletProvider } from "@pact-toolbox/wallet-core";
 import { ZelcoreWallet } from "./wallet";
 import type { ZelcoreConnectionOptions } from "./types";
 
 /**
  * Provider for Zelcore wallet
  */
-export class ZelcoreWalletProvider implements WalletProvider {
+export class ZelcoreWalletProvider extends BaseWalletProvider {
+  static id = "zelcore";
+  static autoRegister = true;
+  static priority = 25;
+
   private connectionOptions: ZelcoreConnectionOptions | undefined = undefined;
 
   constructor(options?: { connectionOptions?: ZelcoreConnectionOptions }) {
+    super();
     if (options?.connectionOptions) {
       this.connectionOptions = options.connectionOptions;
     }
@@ -29,7 +35,7 @@ export class ZelcoreWalletProvider implements WalletProvider {
    * so we always return true and handle connection errors later
    */
   async isAvailable(): Promise<boolean> {
-    try {
+    return this.safeIsAvailable(async () => {
       // Try to fetch from Zelcore's port
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 1000);
@@ -46,9 +52,7 @@ export class ZelcoreWalletProvider implements WalletProvider {
       clearTimeout(timeoutId);
 
       return response !== null && response.ok;
-    } catch {
-      return false;
-    }
+    });
   }
 
   /**

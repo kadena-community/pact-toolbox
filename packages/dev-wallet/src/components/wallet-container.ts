@@ -1,18 +1,23 @@
 import { LitElement, html, css } from "lit";
-import { customElement, state } from "lit/decorators.js";
+import { customElement, state, property } from "lit/decorators.js";
 import { baseStyles } from "@pact-toolbox/ui-shared";
 import { themeMapping } from "../ui/styles/theme-mapping";
 import type { WalletState } from "../types/enhanced-types";
 import { WalletStateManager } from "../services/wallet-state-manager";
+import { AccountService } from "../services/account-service";
+import { SettingsService } from "../services/settings-service";
+import { TransactionService } from "../services/transaction-service";
 import { WalletEventCoordinator } from "./wallet-event-coordinator";
 import { ScreenRouter } from "./screen-router";
 import { AutoLockManager } from "./auto-lock-manager";
 import { errorHandler } from "../utils/error-handler";
+import type { PactToolboxContext } from "@pact-toolbox/types";
+import { uiLogger } from "../utils/logger";
 import "../ui/components/wallet-header";
 import "../ui/components/bottom-navigation";
 
 /**
- * Refactored wallet container with separated concerns
+ * Refactored wallet container with improved state management
  */
 @customElement("toolbox-wallet-container")
 export class ToolboxWalletContainerRefactored extends LitElement {
@@ -24,6 +29,9 @@ export class ToolboxWalletContainerRefactored extends LitElement {
     isLocked: false,
     lastActivity: Date.now(),
   };
+
+  @property({ type: Object })
+  networkContext?: PactToolboxContext;
 
   private stateManager: WalletStateManager;
   private eventCoordinator: WalletEventCoordinator;
@@ -149,19 +157,38 @@ export class ToolboxWalletContainerRefactored extends LitElement {
 
   constructor() {
     super();
-    this.stateManager = new WalletStateManager();
+    
+    // Initialize services
+    const accountService = new AccountService();
+    const settingsService = new SettingsService();
+    const transactionService = new TransactionService();
+    
+    // Initialize state manager with services
+    this.stateManager = new WalletStateManager(
+      accountService,
+      settingsService,
+      transactionService
+    );
+    
     this.eventCoordinator = new WalletEventCoordinator(this.stateManager);
     this.screenRouter = new ScreenRouter();
     this.autoLockManager = new AutoLockManager(this.stateManager);
+    
+    // State is handled by the walletState property
   }
 
   override async connectedCallback() {
     super.connectedCallback();
 
     try {
+      // Set network context if provided
+      if (this.networkContext) {
+        this.setNetworkContext(this.networkContext);
+      }
+      
       // Subscribe to state changes
-      this.unsubscribeFromState = this.stateManager.subscribe((state) => {
-        this.walletState = state;
+      this.unsubscribeFromState = this.stateManager.subscribe((newState: WalletState) => {
+        this.walletState = newState;
       });
 
       // Setup event coordination
@@ -173,9 +200,9 @@ export class ToolboxWalletContainerRefactored extends LitElement {
       // Initialize wallet state
       await this.stateManager.initialize();
 
-      console.log("Wallet container initialized successfully");
+      uiLogger.operation('Wallet container initialization', 'success');
     } catch (error) {
-      console.error("Failed to initialize wallet container:", error);
+      uiLogger.operation('Wallet container initialization', 'error', { error });
       await errorHandler.handle(error as Error, {
         component: "ToolboxWalletContainerRefactored",
         operation: "connectedCallback",
@@ -197,7 +224,7 @@ export class ToolboxWalletContainerRefactored extends LitElement {
     // Cleanup auto-lock
     this.autoLockManager.cleanup();
 
-    console.log("Wallet container disconnected");
+    uiLogger.debug("Wallet container disconnected");
   }
 
   /**
@@ -240,6 +267,15 @@ export class ToolboxWalletContainerRefactored extends LitElement {
       });
     }
   };
+
+  /**
+   * Set network context for blockchain operations
+   */
+  setNetworkContext(context: PactToolboxContext): void {
+    this.networkContext = context;
+    this.stateManager.setNetworkContext(context);
+    uiLogger.debug('Network context set on wallet container');
+  }
 
   override render() {
     // Show loading state during initialization

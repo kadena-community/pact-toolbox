@@ -108,9 +108,10 @@ export function AutoConnectWallet({ children }: { children?: React.ReactNode }) 
     const checkConnection = async () => {
       try {
         // Check if wallet is already connected
-        const { walletService } = await import("@pact-toolbox/wallet-adapters");
+        const { getWalletSystem } = await import("@pact-toolbox/wallet-adapters");
 
-        if (!walletService.getPrimaryWallet()) {
+        const walletSystem = await getWalletSystem();
+        if (!walletSystem.getPrimary()) {
           // No wallet connected, show selector
           const walletId = await modalManager.showWalletSelector();
           if (walletId) {

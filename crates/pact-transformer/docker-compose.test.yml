@@ -1,0 +1,106 @@
+version: '3.8'
+
+services:
+  # Test x86_64-unknown-linux-gnu
+  test-x64-gnu:
+    image: ghcr.io/napi-rs/napi-rs/nodejs-rust:lts-debian
+    volumes:
+      - ../..:/build
+    working_dir: /build
+    command: |
+      bash -c "
+        set -e
+        corepack disable || true
+        apt-get update && apt-get install -y libc6-dev build-essential curl xz-utils
+        curl -fsSL https://ziglang.org/download/0.13.0/zig-linux-x86_64-0.13.0.tar.xz | tar -xJ -C /usr/local --strip-components=1
+        rustup target add x86_64-unknown-linux-gnu
+        cd crates/pact-transformer
+        npm install -g pnpm@10.12.4
+        pnpm install --frozen-lockfile
+        export CC_x86_64_unknown_linux_gnu=gcc
+        export AR_x86_64_unknown_linux_gnu=ar
+        export CFLAGS_x86_64_unknown_linux_gnu='-D_GNU_SOURCE -D_DEFAULT_SOURCE'
+        export CPPFLAGS_x86_64_unknown_linux_gnu='-D_GNU_SOURCE -D_DEFAULT_SOURCE'
+        export CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=gcc
+        export RUSTFLAGS='-C link-arg=-Wl,--no-as-needed'
+        pnpm build --target x86_64-unknown-linux-gnu
+        strip *.node
+        pnpm test
+      "
+
+  # Test x86_64-unknown-linux-musl
+  test-x64-musl:
+    image: node:22-alpine
+    volumes:
+      - ../..:/build
+    working_dir: /build
+    command: |
+      sh -c "
+        set -e
+        apk add --no-cache curl rust cargo npm file python3 make g++ gcc musl-dev linux-headers git xz
+        curl -fsSL https://ziglang.org/download/0.13.0/zig-linux-x86_64-0.13.0.tar.xz | tar -xJ -C /usr/local --strip-components=1
+        corepack disable || true
+        npm install -g pnpm@10.12.4
+        cd crates/pact-transformer
+        pnpm install --frozen-lockfile
+        rustup target add x86_64-unknown-linux-musl || true
+        pnpm build --target x86_64-unknown-linux-musl
+        strip *.node
+        pnpm test
+      "
+
+  # Test aarch64-unknown-linux-gnu
+  test-arm64-gnu:
+    image: node:22-slim
+    platform: linux/arm64
+    volumes:
+      - ../..:/build
+    working_dir: /build
+    command: |
+      bash -c "
+        set -e
+        export DEBIAN_FRONTEND=noninteractive
+        apt-get update
+        apt-get install -y ca-certificates gnupg curl build-essential gcc-aarch64-linux-gnu xz-utils rustup
+        rustup default stable
+        rustup target add aarch64-unknown-linux-gnu
+        corepack disable || true
+        npm install -g pnpm@10.12.4
+        cd crates/pact-transformer
+        pnpm config set supportedArchitectures.cpu 'arm64'
+        pnpm config set supportedArchitectures.libc 'glibc'
+        pnpm install --frozen-lockfile
+        export CC_aarch64_unknown_linux_gnu=aarch64-linux-gnu-gcc
+        export AR_aarch64_unknown_linux_gnu=aarch64-linux-gnu-ar
+        export CFLAGS_aarch64_unknown_linux_gnu='-D_GNU_SOURCE -D_DEFAULT_SOURCE'
+        export CPPFLAGS_aarch64_unknown_linux_gnu='-D_GNU_SOURCE -D_DEFAULT_SOURCE'
+        export CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc
+        export RUSTFLAGS='-C link-arg=-Wl,--no-as-needed'
+        pnpm build --target aarch64-unknown-linux-gnu
+        aarch64-linux-gnu-strip *.node || strip *.node
+        export LD_LIBRARY_PATH=/usr/lib/aarch64-linux-gnu:/lib/aarch64-linux-gnu
+        pnpm test
+      "
+
+  # Test aarch64-unknown-linux-musl
+  test-arm64-musl:
+    image: node:lts-alpine
+    platform: linux/arm64
+    volumes:
+      - ../..:/build
+    working_dir: /build
+    command: |
+      sh -c "
+        set -e
+        apk add --no-cache npm file python3 make g++ gcc musl-dev linux-headers git curl rust cargo xz
+        corepack disable || true
+        npm install -g pnpm@10.12.4
+        cd crates/pact-transformer
+        pnpm config set supportedArchitectures.cpu 'arm64'
+        pnpm config set supportedArchitectures.libc 'musl'
+        pnpm install --frozen-lockfile
+        rustup target add aarch64-unknown-linux-musl || true
+        pnpm build --target aarch64-unknown-linux-musl
+        strip *.node
+        DEBUG=napi:* pnpm test
+      "

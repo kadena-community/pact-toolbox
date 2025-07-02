@@ -61,8 +61,18 @@
   "devDependencies": {
     "@napi-rs/cli": "^2.18.4",
     "@pact-toolbox/vitest-config": "workspace:*",
-    "@types/node": "^24.0.7",
+    "@types/node": "^24.0.8",
     "typescript": "^5.8.3",
     "vitest": "^3.2.4"
+  },
+  "optionalDependencies": {
+    "@pact-toolbox/pact-transformer-darwin-arm64": "0.1.0",
+    "@pact-toolbox/pact-transformer-darwin-x64": "0.1.0",
+    "@pact-toolbox/pact-transformer-linux-arm64-gnu": "0.1.0",
+    "@pact-toolbox/pact-transformer-linux-arm64-musl": "0.1.0",
+    "@pact-toolbox/pact-transformer-linux-x64-gnu": "0.1.0",
+    "@pact-toolbox/pact-transformer-linux-x64-musl": "0.1.0",
+    "@pact-toolbox/pact-transformer-win32-arm64-msvc": "0.1.0",
+    "@pact-toolbox/pact-transformer-win32-x64-msvc": "0.1.0"
   }
 }

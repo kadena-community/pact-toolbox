@@ -1,4 +1,5 @@
-import type { Wallet, WalletMetadata, WalletProvider } from "@pact-toolbox/wallet-core";
+import type { Wallet, WalletMetadata } from "@pact-toolbox/wallet-core";
+import { BaseWalletProvider } from "@pact-toolbox/wallet-core";
 import { KeypairWallet, type KeypairWalletConfig } from "./wallet";
 
 /**
@@ -9,32 +10,47 @@ export interface KeypairProviderConfig extends Partial<KeypairWalletConfig> {
   deterministic?: boolean;
   /** Seed for deterministic key generation */
   seed?: string;
+  /** Whether to show DevWallet UI (defaults to auto-detect based on network) */
+  showUI?: boolean;
+  /** Force DevWallet usage even in non-browser environments */
+  forceDevWallet?: boolean;
 }
 
 /**
  * Provider for the built-in KeypairWallet
  */
-export class KeypairWalletProvider implements WalletProvider {
+export class KeypairWalletProvider extends BaseWalletProvider {
+  static id = "keypair";
+  static autoRegister = true;
+  static priority = 10; // Lower priority than browser extensions
+
   readonly metadata: WalletMetadata;
   private config: KeypairProviderConfig;
 
   constructor(config: KeypairProviderConfig = {}) {
+    super();
     this.config = config;
 
-    // Adjust metadata based on environment
+    // Adjust metadata based on environment and configuration
     const isBrowser = typeof window !== "undefined" && typeof document !== "undefined";
+    const hasUI = isBrowser && (this.config.showUI !== false);
+    
     this.metadata = {
       id: "keypair",
-      name: isBrowser ? "Development Wallet" : "Keypair Wallet",
-      description: isBrowser
-        ? "Development wallet with key management UI"
+      name: hasUI ? "Development Wallet" : "Keypair Wallet",
+      description: hasUI
+        ? "Development wallet with key management UI for local networks"
         : "Built-in keypair-based wallet for development and testing",
       type: "built-in",
-      icon: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEyIDJDNi40NzcgMiAyIDYuNDc3IDIgMTJDMiAxNy41MjMgNi40NzcgMjIgMTIgMjJDMTcuNTIzIDIyIDIyIDE3LjUyMyAyMiAxMkMyMiA2LjQ3NyAxNy41MjMgMiAxMiAyWiIgZmlsbD0iIzAwNjdEQiIvPgo8cGF0aCBkPSJNMTIgNkw5IDlIMTBWMTJIOVYxNEgxMFYxN0g5TDEyIDIwTDE1IDE3SDE0VjE0SDE1VjEySDE0VjlIMTVMMTIgNloiIGZpbGw9IndoaXRlIi8+Cjwvc3ZnPg==",
-      features: isBrowser
+      icon: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEyIDJDNi40NzcgMiAyIDYuNDc3IDIgMTJDMiAxNy41MjMgNi40NzcgMjIgMTIgMjJDMTcuNTIzIDIyIDIyIDE3LjUyzIBNkMyMiA2LjQ3NyAxNy41MjMgMiAxMiAyWiIgZmlsbD0iIzAwNjdEQiIvPgo8cGF0aCBkPSJNMTIgNkw5IDlIMTBWMTJIOVYxNEgxMFYxN0g5TDEyIDIwTDE1IDE3SDE0VjE0SDE1VjEySDE0VjlIMTVMMTIgNloiIGZpbGw9IndoaXRlIi8+Cjwvc3ZnPg==",
+      features: hasUI
         ? ["sign", "batch-sign", "key-management", "ui-approval", "deterministic-keys", "export-keys"]
         : ["sign", "batch-sign", "deterministic-keys", "export-keys"],
     };
+  }
+
+  configure(config: KeypairProviderConfig): void {
+    this.config = { ...this.config, ...config };
   }
 
   /**
@@ -42,6 +58,23 @@ export class KeypairWalletProvider implements WalletProvider {
    */
   async isAvailable(): Promise<boolean> {
     return true;
+  }
+
+  /**
+   * Check if configured for local network
+   */
+  private isLocalNetwork(): boolean {
+    const networkId = this.config.networkId || "development";
+    const rpcUrl = this.config.rpcUrl || "";
+    
+    // Check if it's a local network based on networkId or rpcUrl
+    return (
+      networkId === "development" ||
+      networkId === "fast-development" ||
+      rpcUrl.includes("localhost") ||
+      rpcUrl.includes("127.0.0.1") ||
+      rpcUrl.includes("0.0.0.0")
+    );
   }
 
   /**
@@ -56,26 +89,26 @@ export class KeypairWalletProvider implements WalletProvider {
         // Try to use DevWallet for better browser experience
         const { DevWallet } = await import("@pact-toolbox/dev-wallet");
 
-        // If private key is provided, use the static factory method
-        if (this.config.privateKey) {
-          return await DevWallet.fromPrivateKey(this.config.privateKey, {
-            networkId: this.config.networkId || "development",
-            networkName: this.config.networkName,
-            rpcUrl: this.config.rpcUrl || "http://localhost:8080/chainweb/0.0/development/chain/0/pact",
-            showUI: true, // Enable UI in browser
-            storagePrefix: "pact-toolbox-wallet",
-            accountName: this.config.accountName,
-          });
-        }
+        // Determine if we should show UI
+        const showUI = this.config.showUI !== undefined 
+          ? this.config.showUI 
+          : this.isLocalNetwork();
 
-        return new DevWallet({
+        const devWalletConfig = {
           networkId: this.config.networkId || "development",
           networkName: this.config.networkName,
           rpcUrl: this.config.rpcUrl || "http://localhost:8080/chainweb/0.0/development/chain/0/pact",
-          showUI: true, // Enable UI in browser
+          showUI,
           storagePrefix: "pact-toolbox-wallet",
           accountName: this.config.accountName,
-        });
+        };
+
+        // If private key is provided, use the static factory method
+        if (this.config.privateKey) {
+          return await DevWallet.fromPrivateKey(this.config.privateKey, devWalletConfig);
+        }
+
+        return new DevWallet(devWalletConfig);
       } catch {
         console.debug("DevWallet not available, falling back to basic KeypairWallet");
       }

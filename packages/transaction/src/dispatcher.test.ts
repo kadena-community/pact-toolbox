@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import type { MultiNetworkConfig, Transaction, ChainId } from "@pact-toolbox/types";
 import { execution } from "./builder";
-import { createToolboxNetworkContext } from "./network";
+import { getStore, resetStore, createConfig } from "@pact-toolbox/context";
 
 // Mock the chainweb-client functions
 vi.mock("@pact-toolbox/chainweb-client", async (importOriginal) => {

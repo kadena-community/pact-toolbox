@@ -215,7 +215,7 @@ export class ToolboxWalletFloatingButton extends LitElement {
         if (accounts) {
           try {
             const accountList = JSON.parse(accounts);
-            const account = accountList.find((acc: any) => acc.address === selectedKey);
+            const account = accountList.find((acc: { address: string }) => acc.address === selectedKey);
             if (account) {
               this.accountAddress = account.address;
             }

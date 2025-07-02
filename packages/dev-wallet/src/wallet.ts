@@ -5,14 +5,15 @@ import { KeyPairSigner } from "@pact-toolbox/signers";
 import { finalizeTransaction } from "@pact-toolbox/signers";
 import { exportBase16Key } from "@pact-toolbox/crypto";
 import { DevWalletStorage } from "./storage";
-import type { DevWalletConfig, DevWalletKey, DevWalletTransaction, DevWalletUIEvents } from "./types";
+import type { DevWalletConfig, DevWalletKey, DevWalletTransaction, DevWalletUIEvents, PendingTransaction } from "./types";
+import { walletLogger } from "./utils/logger";
 
 export class DevWallet extends BaseWallet {
   private keyPairSigner: KeyPairSigner | null = null;
   private config: DevWalletConfig;
   private storage: DevWalletStorage;
   private selectedKey: DevWalletKey | null = null;
-  private modalManager?: any; // ModalManager instance for UI
+  private modalManager?: import('./ui/modal-manager').ModalManager; // ModalManager instance for UI
   private modalManagerPromise?: Promise<void>; // Track initialization
 
   constructor(config: DevWalletConfig) {
@@ -28,19 +29,18 @@ export class DevWallet extends BaseWallet {
 
   private async initializeModalManager(): Promise<void> {
     try {
-      console.log("Starting dev wallet UI initialization...");
+      walletLogger.operation("UI initialization", "start");
       // Import UI components first
       await import("./ui");
-      console.log("UI components imported successfully");
+      walletLogger.debug("UI components imported successfully");
 
       const { ModalManager } = await import("./ui/modal-manager");
-      console.log("ModalManager imported successfully");
+      walletLogger.debug("ModalManager imported successfully");
       this.modalManager = ModalManager.getInstance();
       this.modalManager.initialize();
-      console.log("Dev wallet modal manager initialized successfully");
+      walletLogger.operation("Modal manager initialization", "success");
     } catch (error) {
-      console.error("Modal manager not available:", error);
-      console.error("Error details:", error);
+      walletLogger.error("Modal manager not available", { error });
     }
   }
 
@@ -65,10 +65,10 @@ export class DevWallet extends BaseWallet {
   }
 
   async connect(networkId?: string): Promise<WalletAccount> {
-    console.log("DevWallet connect called, shouldUseUI:", this.shouldUseUI());
+    walletLogger.connection("Connect called", { shouldUseUI: this.shouldUseUI() });
     // Check if we have a previously selected key for auto-reconnect
     const savedKeyAddress = await this.storage.getSelectedKey();
-    console.log("Saved key address:", savedKeyAddress);
+    walletLogger.debug("Saved key address found", { savedKeyAddress });
 
     if (this.shouldUseUI() && savedKeyAddress) {
       // Try to auto-reconnect with saved key
@@ -79,7 +79,7 @@ export class DevWallet extends BaseWallet {
         // Auto-reconnect without showing UI
         this.selectedKey = savedKey;
         this.keyPairSigner = await KeyPairSigner.fromPrivateKeyHex(this.selectedKey.privateKey);
-        console.log("Auto-reconnected to dev wallet with saved key");
+        walletLogger.connection("Auto-reconnected with saved key");
       } else {
         // Saved key not found, show UI for selection
         if (this.modalManagerPromise) {
@@ -97,7 +97,7 @@ export class DevWallet extends BaseWallet {
     } else if (this.shouldUseUI()) {
       // No saved key - show UI for key creation/selection
       const keys = await this.storage.getKeys();
-      console.log("No saved key, existing keys count:", keys.length);
+      walletLogger.debug("No saved key found", { existingKeysCount: keys.length });
 
       if (keys.length === 0) {
         // No accounts exist - for auto-connect scenarios, we should fail gracefully
@@ -106,11 +106,11 @@ export class DevWallet extends BaseWallet {
 
       // Have keys but no selected key, show UI for selection
       if (this.modalManagerPromise) {
-        console.log("Waiting for modal manager initialization...");
+        walletLogger.debug("Waiting for modal manager initialization...");
         await this.modalManagerPromise;
       }
 
-      console.log("Showing UI for key selection/creation");
+      walletLogger.ui("Showing key selection/creation interface");
       const selectedKeyData = await this.showUIAndWaitForSelection();
       if (!selectedKeyData) {
         throw WalletError.userRejected("connection");
@@ -128,7 +128,7 @@ export class DevWallet extends BaseWallet {
       address: this.selectedKey!.address,
       publicKey: this.selectedKey!.publicKey,
     };
-    console.log("Wallet connected with account:", this.account);
+    walletLogger.connection("Wallet connected successfully", { account: this.account });
 
     // Save the selected key for persistence
     await this.storage.setSelectedKey(this.selectedKey!.address);
@@ -176,7 +176,7 @@ export class DevWallet extends BaseWallet {
   async sign(
     txOrTxs: PartiallySignedTransaction | PartiallySignedTransaction[],
   ): Promise<SignedTransaction | SignedTransaction[]> {
-    console.log("Sign called, connected:", this.connected, "keyPairSigner:", !!this.keyPairSigner);
+    walletLogger.transaction("Sign called", { connected: this.connected, hasKeyPairSigner: !!this.keyPairSigner });
     if (!this.connected || !this.keyPairSigner) {
       throw WalletError.notConnected("dev-wallet");
     }
@@ -205,8 +205,10 @@ export class DevWallet extends BaseWallet {
       const finalizedTransactions = signed.map(finalizeTransaction);
 
       // Add transaction to history using finalized transaction
-      console.log("Finalized transaction:", finalizedTransactions[0]);
-      console.log("Transaction hash for polling:", finalizedTransactions[0]?.hash);
+      walletLogger.transaction("Transaction finalized", { 
+        transaction: finalizedTransactions[0],
+        hash: finalizedTransactions[0]?.hash 
+      });
       await this.addTransactionToHistory(transactions[0]!, finalizedTransactions[0]!);
 
       return Array.isArray(txOrTxs) ? finalizedTransactions : finalizedTransactions[0]!;
@@ -259,14 +261,14 @@ export class DevWallet extends BaseWallet {
   }
 
   private async showUIAndWaitForSelection(): Promise<DevWalletKey | null> {
-    console.log("showUIAndWaitForSelection called, modalManager:", this.modalManager);
+    walletLogger.ui("Showing selection UI", { hasModalManager: !!this.modalManager });
     return new Promise((resolve) => {
       // Show the modal if available
       if (this.modalManager) {
-        console.log("Showing dev wallet UI");
+        walletLogger.ui("Dev wallet UI displayed");
         this.modalManager.showDevWallet();
       } else {
-        console.error("Modal manager not available in showUIAndWaitForSelection");
+        walletLogger.error("Modal manager not available in showUIAndWaitForSelection");
       }
 
       // Trigger UI connect request
@@ -277,13 +279,13 @@ export class DevWallet extends BaseWallet {
       const handleConnectApproved = (event: Event) => {
         const customEvent = event as DevWalletUIEvents["connect-approved"];
         const { account } = customEvent.detail;
-        console.log("Connect approved event received, account:", account);
+        walletLogger.connection("Connect approved", { account });
         if (account && account.privateKey) {
           cleanup();
           // Don't hide the modal yet - we might need it for signing
           resolve(account);
         } else {
-          console.error("Connect approved but account is missing or has no private key", account);
+          walletLogger.error("Connect approved but invalid account", { account });
         }
       };
 
@@ -307,7 +309,7 @@ export class DevWallet extends BaseWallet {
   }
 
   private async showSigningUI(transaction: PartiallySignedTransaction): Promise<boolean> {
-    console.log("showSigningUI called for transaction:", transaction);
+    walletLogger.ui("Showing signing UI", { transaction });
 
     // Make sure modal is visible
     if (this.modalManager) {
@@ -315,13 +317,30 @@ export class DevWallet extends BaseWallet {
     }
 
     return new Promise((resolve) => {
+      // Parse the transaction to get chainId
+      let chainId = '0';
+      try {
+        const cmd = JSON.parse(transaction.cmd) as PactCommand;
+        chainId = cmd.meta?.chainId || '0';
+      } catch (e) {
+        walletLogger.error("Failed to parse transaction cmd", { error: e });
+      }
+
+      // Create a PendingTransaction from PartiallySignedTransaction
+      const pendingTransaction: PendingTransaction = {
+        id: `pending_${Date.now()}`,
+        request: transaction,
+        timestamp: Date.now(),
+        chainId
+      };
+
       // Trigger sign request event to show the sign screen
       setTimeout(() => {
-        this.dispatchEvent("toolbox-sign-requested", { transaction });
+        this.dispatchEvent("toolbox-sign-requested", { transaction: pendingTransaction });
       }, 100);
 
       const handleSignApproved = (_event: Event) => {
-        console.log("Sign approved event received");
+        walletLogger.transaction("Sign approved");
         cleanup();
         // Hide modal after approval
         if (this.modalManager) {
@@ -331,7 +350,7 @@ export class DevWallet extends BaseWallet {
       };
 
       const handleSignRejected = () => {
-        console.log("Sign rejected event received");
+        walletLogger.transaction("Sign rejected");
         cleanup();
         // Hide modal after rejection
         if (this.modalManager) {
@@ -351,7 +370,7 @@ export class DevWallet extends BaseWallet {
     });
   }
 
-  private async addTransactionToHistory(request: PartiallySignedTransaction, finalizedTx: any): Promise<void> {
+  private async addTransactionToHistory(request: PartiallySignedTransaction, finalizedTx: SignedTransaction): Promise<void> {
     try {
       const cmd = JSON.parse(request.cmd) as PactCommand;
 
@@ -366,7 +385,7 @@ export class DevWallet extends BaseWallet {
         timestamp: Date.now(),
         chainId: cmd.meta?.chainId || "0",
         capability: cmd.signers?.[0]?.clist?.[0]?.name,
-        data: cmd.payload,
+        data: cmd.payload as unknown as Record<string, unknown>,
       };
 
       await this.storage.saveTransaction(newTx);
@@ -377,25 +396,25 @@ export class DevWallet extends BaseWallet {
       }
 
       // Start polling for transaction status if we have a hash
-      console.log("Transaction hash for polling:", finalizedTx.hash);
+      walletLogger.transaction("Starting transaction polling", { hash: finalizedTx.hash });
       if (finalizedTx.hash) {
-        console.log("Starting polling for transaction:", finalizedTx.hash);
+        walletLogger.debug("Background polling started", { hash: finalizedTx.hash });
         // Start polling in the background (don't await)
         this.pollTransactionStatus(finalizedTx.hash, newTx.id).catch((error) => {
-          console.error("Background polling failed:", error);
+          walletLogger.error("Background polling failed", { error });
         });
       } else {
-        console.log("No hash found, skipping polling");
+        walletLogger.warn("No transaction hash found, skipping polling");
       }
     } catch (error) {
-      console.error("Failed to add transaction to history:", error);
+      walletLogger.error("Failed to add transaction to history", { error });
     }
   }
 
   private async pollTransactionStatus(hash: string, transactionId: string): Promise<void> {
     const pollInterval = 5000; // 5 seconds (waitForResult will handle retries)
 
-    console.log(`Starting polling for transaction ${hash}`);
+    walletLogger.operation("Transaction polling", "start", { hash });
 
     try {
       // Get chainweb client from global context or create a new one
@@ -404,10 +423,10 @@ export class DevWallet extends BaseWallet {
 
       if (globalContext && typeof globalContext.getClient === "function") {
         client = globalContext.getClient();
-        console.log("Using global context client");
+        walletLogger.debug("Using global context client");
       } else {
         // Fallback: create a new client
-        console.log("Creating new ChainwebClient for polling");
+        walletLogger.debug("Creating new ChainwebClient for polling");
         const { ChainwebClient } = await import("@pact-toolbox/chainweb-client");
         client = new ChainwebClient({
           networkId: this.config.networkId || "development",
@@ -418,12 +437,11 @@ export class DevWallet extends BaseWallet {
         });
       }
 
-      console.log("Polling with client:", client);
-      console.log("About to call waitForResult with hash:", hash);
+      walletLogger.debug("Starting waitForResult", { client: !!client, hash });
 
       // Poll for transaction result using the chainweb client (this will handle retries internally)
       const result = await client.waitForResult(hash, pollInterval);
-      console.log("Poll result:", result);
+      walletLogger.debug("Poll result received", { result });
 
       // Transaction result found
       const status = result.result?.status === "success" ? "success" : "failure";
@@ -440,12 +458,15 @@ export class DevWallet extends BaseWallet {
         });
       }
 
-      console.log(`Transaction ${hash} completed with status: ${status}`);
+      walletLogger.operation("Transaction polling", "success", { hash, status });
     } catch (error) {
-      console.error(`Error polling transaction ${hash}:`, error);
-      console.error("Error details:", {
-        message: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
+      walletLogger.operation("Transaction polling", "error", { 
+        hash, 
+        error, 
+        details: {
+          message: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined,
+        }
       });
     }
   }
@@ -453,7 +474,7 @@ export class DevWallet extends BaseWallet {
   private async updateTransactionStatus(
     transactionId: string,
     status: "success" | "failure",
-    result?: any,
+    result?: import('./types').TransactionResult,
   ): Promise<void> {
     try {
       const transactions = await this.storage.getTransactions();
@@ -464,7 +485,7 @@ export class DevWallet extends BaseWallet {
       // Save updated transactions
       await this.storage.saveTransactions(updatedTransactions);
     } catch (error) {
-      console.error("Failed to update transaction status:", error);
+      walletLogger.error("Failed to update transaction status", { error });
     }
   }
 
@@ -488,7 +509,7 @@ export class DevWallet extends BaseWallet {
       // Create and append floating button to body
       floatingButton = document.createElement("toolbox-wallet-floating-button");
       document.body.appendChild(floatingButton);
-      console.log("Dev wallet floating button added to DOM");
+      walletLogger.ui("Floating button added to DOM");
     }
   }
 
@@ -535,7 +556,7 @@ export class DevWallet extends BaseWallet {
       this.selectedKey = key;
       this.keyPairSigner = signer;
     } catch (error) {
-      console.error("Failed to initialize from private key:", error);
+      walletLogger.error("Failed to initialize from private key", { error });
     }
   }
 }

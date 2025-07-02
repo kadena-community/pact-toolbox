@@ -1,7 +1,6 @@
 import type { PartiallySignedTransaction, SignedTransaction } from "@pact-toolbox/types";
-import { BaseWallet } from "@pact-toolbox/wallet-core";
-import type { WalletAccount } from "@pact-toolbox/wallet-core";
-import { WalletError } from "@pact-toolbox/wallet-core";
+import { BaseWallet, WalletError, KadenaNetworks } from "@pact-toolbox/wallet-core";
+import type { WalletAccount, NetworkCapabilities } from "@pact-toolbox/wallet-core";
 
 declare global {
   interface Window {
@@ -18,10 +17,12 @@ declare global {
  * Simplified Ecko wallet implementation
  */
 export class EckoWallet extends BaseWallet {
+  readonly id = "ecko";
+  
   constructor() {
     super();
     if (typeof window === "undefined" || !window.kadena?.isKadena) {
-      throw WalletError.notFound("ecko-wallet");
+      throw WalletError.notFound("ecko");
     }
   }
 
@@ -149,6 +150,52 @@ export class EckoWallet extends BaseWallet {
       });
     } finally {
       await super.disconnect();
+    }
+  }
+
+  /**
+   * Get network capabilities
+   */
+  getNetworkCapabilities(): NetworkCapabilities {
+    return {
+      canSwitchNetwork: true,
+      canAddNetwork: false,
+      supportedNetworks: ["mainnet01", "testnet04", "development"],
+    };
+  }
+
+  /**
+   * Switch network
+   */
+  async switchNetwork(networkId: string): Promise<void> {
+    if (!this.connected) {
+      throw WalletError.notConnected(this.id);
+    }
+
+    try {
+      // Ecko uses kda_connect with networkId parameter
+      await window.kadena!.request({
+        method: "kda_connect",
+        networkId,
+      });
+
+      // Update network info
+      const networkResponse = await window.kadena!.request({
+        method: "kda_getNetwork",
+      });
+
+      const netData = networkResponse as any;
+      this.network = {
+        id: netData.networkId,
+        networkId: netData.networkId,
+        name: netData.name || KadenaNetworks[netData.networkId]?.name || netData.networkId,
+        url: netData.url || KadenaNetworks[netData.networkId]?.url || "",
+        explorer: netData.explorerUrl || KadenaNetworks[netData.networkId]?.explorer,
+      };
+    } catch (error) {
+      throw WalletError.connectionFailed(
+        `Failed to switch network: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 }

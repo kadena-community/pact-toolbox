@@ -3,7 +3,7 @@ import { ModalManager } from './modal-manager';
 
 // Mock the wallet service
 vi.mock('@pact-toolbox/wallet-adapters', () => ({
-  walletService: {
+  getWalletSystem: () => ({
     getAvailableWallets: vi.fn().mockResolvedValue([
       { id: 'test-wallet', name: 'Test Wallet', icon: 'icon.png', type: 'browser-extension' },
       { id: 'another-wallet', name: 'Another Wallet', icon: 'icon2.png', type: 'built-in' },
@@ -15,7 +15,7 @@ vi.mock('@pact-toolbox/wallet-adapters', () => ({
     }),
     on: vi.fn(),
     off: vi.fn(),
-  },
+  }),
 }));
 
 // Mock the components
@@ -110,22 +110,24 @@ describe('ModalManager', () => {
 
   describe('wallet connection', () => {
     it('should connect to wallet', async () => {
-      const { walletService } = await import('@pact-toolbox/wallet-adapters');
+      const { getWalletSystem } = await import('@pact-toolbox/wallet-adapters');
       const mockWallet = {
         isInstalled: () => true,
         connect: vi.fn(),
         getAccount: vi.fn().mockResolvedValue({ address: 'k:test', publicKey: 'test' }),
       };
-      (walletService.connect as any).mockResolvedValueOnce(mockWallet);
+      const walletSystem = await getWalletSystem();
+      (walletSystem.connect as any).mockResolvedValueOnce(mockWallet);
       
       const result = await modalManager.connectWallet('test-wallet');
       expect(result).toBe(true);
-      expect(walletService.connect).toHaveBeenCalledWith('test-wallet');
+      expect(walletSystem.connect).toHaveBeenCalledWith('test-wallet');
     });
 
     it('should handle connection errors', async () => {
-      const { walletService } = await import('@pact-toolbox/wallet-adapters');
-      (walletService.connect as any).mockRejectedValueOnce(new Error('Connection failed'));
+      const { getWalletSystem } = await import('@pact-toolbox/wallet-adapters');
+      const walletSystem = await getWalletSystem();
+      (walletSystem.connect as any).mockRejectedValueOnce(new Error('Connection failed'));
       
       const result = await modalManager.connectWallet('test-wallet');
       expect(result).toBe(false);

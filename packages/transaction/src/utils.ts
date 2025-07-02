@@ -17,6 +17,7 @@ import type {
 import { ChainwebClient } from "@pact-toolbox/chainweb-client";
 import { blake2bBase64Url, fastStableStringify, genKeyPair } from "@pact-toolbox/crypto";
 import type { Wallet } from "@pact-toolbox/wallet-core";
+import type { PactToolboxContext } from "@pact-toolbox/types";
 
 /**
  * Clock skew offset in seconds to prevent "Transaction creation time too far in the future" errors.
@@ -86,7 +87,11 @@ export function pactDecimal(amount: string | number): {
 }
 
 export function isToolboxInstalled(): boolean {
-  return !!(globalThis as any).__PACT_TOOLBOX_NETWORKS__ || !!(globalThis as any).__PACT_TOOLBOX_CONTEXT__;
+  return (
+    !!(globalThis as any).__PACT_TOOLBOX_NETWORKS__ ||
+    !!(globalThis as any).__PACT_TOOLBOX_CONTEXT__ ||
+    !!(globalThis as any).__PACT_TOOLBOX_STORE__
+  );
 }
 
 export function getToolboxGlobalNetworkConfig(networkName?: string): SerializableNetworkConfig {
@@ -194,13 +199,20 @@ export function isPactContPayload(payload: PactCmdPayload): payload is PactContP
 
 export function createPactCommandWithDefaults<Payload extends PactCmdPayload>(
   payload: Payload,
-  networkConfig: SerializableNetworkConfig,
+  networkConfig: SerializableNetworkConfig | null,
 ): PactCommand<Payload> {
   return {
     payload,
-    meta: networkConfig.meta,
+    meta: networkConfig?.meta || {
+      chainId: "0",
+      gasLimit: 150000,
+      gasPrice: 1e-8,
+      ttl: 600,
+      creationTime: Math.floor(Date.now() / 1000) - CLOCK_SKEW_OFFSET_SECONDS,
+      sender: "",
+    },
     signers: [],
-    networkId: networkConfig.networkId,
+    networkId: networkConfig?.networkId || "",
     nonce: "",
   };
 }
@@ -289,4 +301,32 @@ export function getSignerKeys(network: SerializableNetworkConfig, signer?: strin
     throw new Error(`Signer ${signer} not found in network config`);
   }
   return signerAccount;
+}
+
+/**
+ * Get network configuration from unified context
+ */
+export function getNetworkConfig(context: PactToolboxContext): SerializableNetworkConfig {
+  const network = context.network;
+  if (!network) {
+    throw new Error("No network selected in context");
+  }
+
+  return {
+    networkId: network.networkId,
+    type: network.type as SerializableNetworkConfig["type"],
+    meta: network.meta || {
+      chainId: network.meta?.chainId || "0",
+      gasLimit: 1000,
+      gasPrice: 0.000001,
+      ttl: 600,
+      creationTime: Math.floor(Date.now() / 1000),
+      sender: "",
+    },
+    rpcUrl: network.rpcUrl,
+    keyPairs: network.keyPairs || [],
+    keysets: network.keysets || {},
+    senderAccount: network.senderAccount || "",
+    name: network.name,
+  };
 }

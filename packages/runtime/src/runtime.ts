@@ -1,6 +1,7 @@
 import type { NetworkConfig, PactToolboxConfigObj } from "@pact-toolbox/config";
 import { logger } from "@pact-toolbox/node-utils";
-import type { PactTransactionBuilder, ToolboxNetworkContext } from "@pact-toolbox/transaction";
+import type { PactTransactionBuilder } from "@pact-toolbox/transaction";
+import type { PactToolboxContext } from "@pact-toolbox/context";
 import type {
   ChainId,
   KeyPair,
@@ -21,7 +22,8 @@ import {
   getSerializableMultiNetworkConfig,
   isPactServerNetworkConfig,
 } from "@pact-toolbox/config";
-import { createToolboxNetworkContext, execution, getKAccountKey } from "@pact-toolbox/transaction";
+import { execution, getKAccountKey } from "@pact-toolbox/transaction";
+import { getStore, createConfig } from "@pact-toolbox/context";
 
 import type { Wallet } from "@pact-toolbox/wallet-core";
 import { getSignerFromEnvVars, isKeyPair } from "./utils";
@@ -103,8 +105,8 @@ export interface LocalOptions {
  * ```
  */
 export class PactToolboxClient {
-  /** The network context that manages connections and configuration */
-  public context: ToolboxNetworkContext;
+  /** The unified context that manages connections and configuration */
+  public context: PactToolboxContext;
 
   /**
    * Creates a new PactToolboxClient instance.
@@ -116,7 +118,7 @@ export class PactToolboxClient {
     private network?: string,
   ) {
     const multiNetworkConfig = getSerializableMultiNetworkConfig(config, { isDev: true, defaultNetwork: network });
-    this.context = createToolboxNetworkContext(multiNetworkConfig, true);
+    this.context = getStore(createConfig({ networks: multiNetworkConfig }));
   }
 
   /**
@@ -126,18 +128,16 @@ export class PactToolboxClient {
    */
   setConfig(config: PactToolboxConfigObj): void {
     this.config = config;
-    this.context = createToolboxNetworkContext(
-      getSerializableMultiNetworkConfig(config, { isDev: true, defaultNetwork: this.network }),
-      true,
-    );
+    const multiNetworkConfig = getSerializableMultiNetworkConfig(config, { isDev: true, defaultNetwork: this.network });
+    this.context.updateConfig({ networks: multiNetworkConfig });
   }
 
   /**
    * Gets the current network context.
    * Provides access to low-level network operations.
-   * @returns The current ToolboxNetworkContext instance
+   * @returns The current PactToolboxContext instance
    */
-  getContext(): ToolboxNetworkContext {
+  getContext(): PactToolboxContext {
     return this.context;
   }
 
@@ -146,7 +146,10 @@ export class PactToolboxClient {
    * @returns The active network configuration
    */
   getNetworkConfig(): SerializableNetworkConfig {
-    return this.context.getCurrentNetworkConfig();
+    if (!this.context.network) {
+      throw new Error("No network selected");
+    }
+    return this.context.network;
   }
 
   /**
@@ -154,7 +157,7 @@ export class PactToolboxClient {
    * @returns True if connected to a Pact server, false otherwise
    */
   isPactServerNetwork(): boolean {
-    return isPactServerNetworkConfig(this.context.getCurrentNetworkConfig());
+    return isPactServerNetworkConfig(this.getNetworkConfig());
   }
 
   /**
@@ -162,7 +165,8 @@ export class PactToolboxClient {
    * @returns True if connected to Chainweb, false otherwise
    */
   isChainwebNetwork(): boolean {
-    return this.context.getNetworkType().includes("chainweb");
+    const network = this.getNetworkConfig();
+    return network.type?.includes("chainweb") || false;
   }
 
   /**
@@ -207,15 +211,23 @@ export class PactToolboxClient {
     if (isKeyPair(signerLike)) {
       return signerLike;
     }
+
+    const network = this.getNetworkConfig();
+    const networkId = network.networkId;
+
     if (typeof signerLike === "string") {
-      return this.context.getSignerKeys(signerLike);
+      // Try to find in network keyPairs
+      const keyPair = network.keyPairs?.find((kp) => kp.account === signerLike || kp.publicKey === signerLike);
+      if (keyPair) return keyPair;
     }
 
     if (typeof signerLike === "object") {
-      return this.context.getSignerKeys(signerLike.address ?? getKAccountKey(signerLike.pubKey));
+      const account = signerLike.address ?? getKAccountKey(signerLike.pubKey);
+      const keyPair = network.keyPairs?.find((kp) => kp.account === account);
+      if (keyPair) return keyPair;
     }
 
-    const fromEnv = getSignerFromEnvVars(this.context.getNetworkId().toUpperCase());
+    const fromEnv = getSignerFromEnvVars(networkId.toUpperCase());
     if (fromEnv?.secretKey && fromEnv?.publicKey) {
       return {
         publicKey: fromEnv.publicKey,
@@ -223,10 +235,18 @@ export class PactToolboxClient {
         account: fromEnv.account ?? getKAccountKey(fromEnv.publicKey),
       };
     }
-    const account =
-      fromEnv?.account ||
-      (fromEnv?.publicKey ? getKAccountKey(fromEnv?.publicKey) : this.context.getSignerKeys().account);
-    return this.context.getSignerKeys(account);
+
+    // Return first available keypair or default
+    if (network.keyPairs && network.keyPairs.length > 0) {
+      return network.keyPairs[0];
+    }
+
+    // Fallback to sender account
+    return {
+      publicKey: "default-public-key",
+      secretKey: "default-secret-key",
+      account: network.senderAccount || "sender00",
+    };
   }
 
   /**
@@ -249,17 +269,18 @@ export class PactToolboxClient {
     if (typeof walletLike === "object" && walletLike !== null && "getAccount" in walletLike && "sign" in walletLike) {
       return walletLike;
     }
-    const wallet = this.context.getWallet();
+    const wallet = this.context.wallet;
     if (wallet && !walletLike) {
       return wallet;
     }
     const signer = this.getSignerKeys(walletLike);
+    const network = this.getNetworkConfig();
     return new KeypairWallet({
-      networkId: this.context.getNetworkId(),
-      rpcUrl: this.context.getNetworkConfig().rpcUrl,
+      networkId: network.networkId,
+      rpcUrl: network.rpcUrl,
       accountName: signer.account,
-      chainId: this.context.getMeta().chainId,
-      networkName: this.context.getNetworkConfig().name,
+      chainId: network.meta.chainId,
+      networkName: network.name,
       privateKey: signer.secretKey,
     });
   }
@@ -286,20 +307,21 @@ export class PactToolboxClient {
     // Get sender account safely - use default if no signer keys available
     let sender: string;
     try {
-      sender = this.context.getSignerKeys().account;
+      sender = this.getSignerKeys().account;
     } catch {
-      // If no signer keys in context, use sender00 as default
-      sender = "sender00";
+      // If no signer keys available, use sender account from network config
+      const network = this.getNetworkConfig();
+      sender = network.senderAccount || "sender00";
     }
 
-    return execution<Result>(command, this.context)
-      .withContext(this.context)
+    const network = this.getNetworkConfig();
+    return execution<Result>(command)
       .withMeta({
         ...defaultMeta,
-        ...this.context.getMeta(),
+        ...network.meta,
         sender,
       })
-      .withNetworkId(this.context.getNetworkId());
+      .withNetworkId(network.networkId);
   }
 
   /**
@@ -335,7 +357,7 @@ export class PactToolboxClient {
     chainId?: ChainId | ChainId[],
   ): Promise<PactTransactionDescriptor | PactTransactionDescriptor[] | string | string[]> {
     const { preflight, listen = true, skipSign, wallet: walletLike, builder } = options;
-    let txBuilder = this.execution<string>(code).withContext(this.context);
+    let txBuilder = this.execution<string>(code);
     const wallet = this.getWallet(walletLike);
     if (typeof builder === "function") {
       await builder(txBuilder);
@@ -344,6 +366,7 @@ export class PactToolboxClient {
     }
 
     if (skipSign) {
+      // Build without adding any signers
       return listen
         ? txBuilder.build().submitAndListen(chainId as any, preflight)
         : txBuilder.build().submit(chainId as any, preflight);
@@ -354,7 +377,7 @@ export class PactToolboxClient {
       txBuilder = txBuilder.withSigner(signer.publicKey, (signFor) => [signFor("coin.GAS")]);
     } else {
       // If no explicit signer provided, add the default signer with gas capability
-      const defaultSigner = this.context.getSignerKeys();
+      const defaultSigner = this.getSignerKeys();
       txBuilder = txBuilder.withSigner(defaultSigner.publicKey, (signFor) => [signFor("coin.GAS")]);
     }
     const signedTxBuilder = txBuilder.sign(wallet);
@@ -449,9 +472,10 @@ export class PactToolboxClient {
     txBuilder: PactTransactionBuilder<any>,
     data?: TransactionBuilderData,
   ): PactTransactionBuilder<any> {
+    const network = this.getNetworkConfig();
     const {
       senderAccount,
-      chainId = this.context.getMeta().chainId ?? "0",
+      chainId = network.meta.chainId ?? "0",
       init = true,
       namespace,
       keysets,

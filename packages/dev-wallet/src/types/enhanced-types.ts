@@ -1,4 +1,4 @@
-import type { Account, Transaction, Network, WalletScreen, DevWalletSettings } from "../types";
+import type { Account, Transaction, Network, WalletScreen, DevWalletSettings, PendingTransaction } from "../types";
 
 /**
  * Enhanced wallet state with readonly properties for better immutability
@@ -10,7 +10,7 @@ export interface WalletState {
   readonly networks: ReadonlyArray<Network>;
   readonly selectedAccount?: Account;
   readonly activeNetwork?: Network;
-  readonly pendingTransaction?: any;
+  readonly pendingTransaction?: PendingTransaction;
   readonly isConnecting?: boolean;
   readonly settings?: DevWalletSettings;
   readonly isLocked?: boolean;
@@ -24,7 +24,7 @@ export interface WalletEvents {
   'account-selected': { account: Account };
   'account-created': { account: Account };
   'network-changed': { network: Network };
-  'transaction-signed': { transaction: any };
+  'transaction-signed': { transaction: Transaction };
   'transaction-rejected': { reason: string };
   'wallet-locked': { timestamp: number };
   'wallet-unlocked': { timestamp: number };

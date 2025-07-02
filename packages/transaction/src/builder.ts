@@ -13,10 +13,8 @@ import type {
   PartiallySignedTransaction,
   Serializable,
   Transaction,
+  PactToolboxContext,
 } from "@pact-toolbox/types";
-
-import type { ToolboxNetworkContext } from "./network";
-import { getGlobalNetworkContext } from "./network";
 import { PactTransactionDispatcher } from "./dispatcher";
 import {
   createPactCommandWithDefaults,
@@ -24,9 +22,11 @@ import {
   isPactExecPayload,
   signPactCommandWithWallet,
   updatePactCommandSigners,
+  getNetworkConfig,
 } from "./utils";
 import type { Wallet } from "@pact-toolbox/wallet-core";
 import { getWalletWithUI, type WalletUIOptions, getWalletUIConfig } from "./wallet-ui";
+import { collectSignatures } from "./multi-sig";
 
 /**
  * Builder class for creating and configuring Pact transactions
@@ -52,7 +52,7 @@ import { getWalletWithUI, type WalletUIOptions, getWalletUIConfig } from "./wall
  */
 export class PactTransactionBuilder<Payload extends PactCmdPayload, Result = unknown> {
   #cmd: PactCommand<Payload>;
-  #context: ToolboxNetworkContext;
+  #context: PactToolboxContext;
   #builder: (cmd: PactCommand<Payload>) => Promise<Transaction> = async (cmd) => createTransaction(cmd);
 
   /**
@@ -61,9 +61,14 @@ export class PactTransactionBuilder<Payload extends PactCmdPayload, Result = unk
    * @param payload - The Pact command payload (execution or continuation)
    * @param context - Optional network context. Uses global context if not provided
    */
-  constructor(payload: Payload, context?: ToolboxNetworkContext) {
-    this.#context = context ?? getGlobalNetworkContext();
-    this.#cmd = createPactCommandWithDefaults(payload, this.#context.getNetworkConfig());
+  constructor(payload: Payload, context?: PactToolboxContext) {
+    if (context) {
+      this.#context = context;
+      this.#cmd = createPactCommandWithDefaults(payload, getNetworkConfig(this.#context));
+    } else {
+      // Initialize with minimal command, context must be set later
+      this.#cmd = createPactCommandWithDefaults(payload, null);
+    }
   }
 
   /**
@@ -208,7 +213,7 @@ export class PactTransactionBuilder<Payload extends PactCmdPayload, Result = unk
    * @param context - Network context to use
    * @returns This builder instance for chaining
    */
-  withContext(context?: ToolboxNetworkContext): this {
+  withContext(context?: PactToolboxContext): this {
     if (context) {
       this.#context = context;
     }
@@ -221,12 +226,12 @@ export class PactTransactionBuilder<Payload extends PactCmdPayload, Result = unk
    * @param context - Optional network context to use for this build
    * @returns A transaction dispatcher for executing the unsigned transaction
    */
-  build(context?: ToolboxNetworkContext): PactTransactionDispatcher<Payload, Result> {
+  build(context?: PactToolboxContext): PactTransactionDispatcher<Payload, Result> {
     if (context) {
       this.withContext(context);
-    } else {
-      // Always use current global context for latest network state
-      this.#context = getGlobalNetworkContext();
+    }
+    if (!this.#context) {
+      throw new Error("Context must be provided either in constructor or build method");
     }
     this.#builder = (cmd) => Promise.resolve(createTransaction(cmd));
     return new PactTransactionDispatcher(this, this.#context);
@@ -266,13 +271,57 @@ export class PactTransactionBuilder<Payload extends PactCmdPayload, Result = unk
         ...options,
       };
 
+      // Check if we should automatically use dev wallet in development mode
+      let effectiveWalletOrId = walletOrId;
+      const network = this.#context.network;
+      const isLocalNetwork = network?.type === "pact-server" || network?.type === "chainweb-devnet";
+      const shouldUseDevWallet =
+        this.#context.isDevNet || (isLocalNetwork && this.#context.environment === "development");
+
+      console.log(this.#context);
+      if (!walletOrId && shouldUseDevWallet) {
+        console.log("shouldUseDevWallet", shouldUseDevWallet);
+        // Automatically use keypair in development mode
+        effectiveWalletOrId = "keypair";
+      }
+
+      console.log("effectiveWalletOrId", effectiveWalletOrId, mergedOptions, isLocalNetwork);
       // Get wallet with UI integration
-      const wallet = await getWalletWithUI(walletOrId, mergedOptions, {
-        isLocalNetwork: this.#context.isLocalNetwork(),
-        networkId: this.#context.getNetworkId(),
+      const wallet = await getWalletWithUI(effectiveWalletOrId, mergedOptions, {
+        isLocalNetwork,
+        networkId: network?.networkId,
+        context: this.#context,
       });
 
       return signPactCommandWithWallet(cmd, wallet);
+    };
+    return new PactTransactionDispatcher(this, this.#context);
+  }
+
+  /**
+   * Sign the transaction with multiple wallets
+   *
+   * @param wallets - Array of wallets to collect signatures from
+   * @returns A transaction dispatcher for executing the signed transaction
+   *
+   * @example
+   * ```typescript
+   * // Sign with multiple wallets
+   * const result = await execution('(coin.transfer "alice" "bob" 10.0)')
+   *   .withSigner("alice-key", (signFor) => [
+   *     signFor("coin.TRANSFER", "alice", "bob", 10.0)
+   *   ])
+   *   .withSigner("gas-payer-key", (signFor) => [
+   *     signFor("coin.GAS")
+   *   ])
+   *   .multiSign([aliceWallet, gasPayerWallet])
+   *   .submitAndListen();
+   * ```
+   */
+  multiSign(wallets: Wallet[]): PactTransactionDispatcher<Payload, Result> {
+    this.#builder = async (cmd) => {
+      const unsignedTx = createTransaction(cmd);
+      return collectSignatures(unsignedTx, wallets);
     };
     return new PactTransactionDispatcher(this, this.#context);
   }
@@ -333,7 +382,7 @@ export class PactTransactionBuilder<Payload extends PactCmdPayload, Result = unk
  */
 export function execution<Result>(
   code: string,
-  context?: ToolboxNetworkContext,
+  context?: PactToolboxContext,
 ): PactTransactionBuilder<PactExecPayload, Result> {
   return new PactTransactionBuilder(
     {
@@ -369,7 +418,7 @@ export function execution<Result>(
  */
 export function continuation<Result>(
   cont: Partial<PactCont> = {},
-  context?: ToolboxNetworkContext,
+  context?: PactToolboxContext,
 ): PactTransactionBuilder<PactContPayload, Result> {
   return new PactTransactionBuilder(
     {

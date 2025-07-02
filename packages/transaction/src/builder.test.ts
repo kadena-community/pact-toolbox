@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import type { MultiNetworkConfig } from "@pact-toolbox/types";
 import { PactTransactionBuilder, execution, continuation } from "./builder";
-import { createToolboxNetworkContext } from "./network";
+import { getStore, resetStore, createConfig } from "@pact-toolbox/context";
 
 // Mock the global networks configuration
 const mockMultiNetworkConfig: MultiNetworkConfig = {
@@ -39,18 +39,18 @@ const mockMultiNetworkConfig: MultiNetworkConfig = {
 
 describe("PactTransactionBuilder", () => {
   beforeEach(() => {
+    // Reset the store before each test
+    resetStore();
     // Mock the global networks configuration
     (globalThis as any).__PACT_TOOLBOX_NETWORKS__ = mockMultiNetworkConfig;
-    // Clear any existing global context
-    (globalThis as any).__PACT_TOOLBOX_CONTEXT__ = null;
-    (globalThis as any).__PACT_TOOLBOX_NETWORK_CONTEXT__ = null;
+    // Initialize store with config
+    getStore(createConfig({ networks: mockMultiNetworkConfig }));
   });
 
   afterEach(() => {
     // Cleanup global state
+    resetStore();
     delete (globalThis as any).__PACT_TOOLBOX_NETWORKS__;
-    delete (globalThis as any).__PACT_TOOLBOX_CONTEXT__;
-    delete (globalThis as any).__PACT_TOOLBOX_NETWORK_CONTEXT__;
   });
 
   describe("execution", () => {

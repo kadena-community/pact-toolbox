@@ -17,6 +17,7 @@
     "pact:run": "pact-toolbox run"
   },
   "dependencies": {
+    "@pact-toolbox/context": "workspace:*",
     "@pact-toolbox/transaction": "workspace:*",
     "@pact-toolbox/wallet-adapters": "workspace:*",
     "@pact-toolbox/wallet-ui": "workspace:*",
@@ -28,7 +29,7 @@
     "@pact-toolbox/script": "workspace:*",
     "@pact-toolbox/test": "workspace:*",
     "@pact-toolbox/unplugin": "workspace:*",
-    "@playwright/test": "^1.53.1",
+    "@playwright/test": "^1.53.2",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",
     "@types/react": "^19.1.8",

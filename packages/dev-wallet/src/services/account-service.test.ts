@@ -182,7 +182,7 @@ describe('AccountService', () => {
   });
 
   describe('validateAccount', () => {
-    it.skip('should validate correct account', async () => {
+    it('should validate correct account', async () => {
       const account = createMockAccount();
       const result = await accountService.validateAccount(account);
       
@@ -230,7 +230,7 @@ describe('AccountService', () => {
   });
 
   describe('saveAccount', () => {
-    it.skip('should save valid account to storage', async () => {
+    it('should save valid account to storage', async () => {
       const account = createMockAccount();
       mockStorage.saveKey = vi.fn().mockResolvedValue(undefined);
 

@@ -14,6 +14,7 @@ import type {
 import { BaseWallet } from "@pact-toolbox/wallet-core";
 
 export class ZelcoreWallet extends BaseWallet {
+  readonly id = "zelcore";
   private static readonly ZELCORE_URL = "http://127.0.0.1:9467";
   private static readonly SIGN_ENDPOINT = "/v1/sign";
   private static readonly ACCOUNTS_ENDPOINT = "/v1/accounts";
@@ -158,7 +159,7 @@ export class ZelcoreWallet extends BaseWallet {
    */
   private async _signSingle(tx: PartiallySignedTransaction): Promise<SignedTransaction> {
     if (!this.connected || !this.account) {
-      throw WalletError.notConnected("zelcore");
+      throw WalletError.notConnected(this.id);
     }
 
     try {

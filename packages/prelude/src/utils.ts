@@ -1,12 +1,12 @@
 import type { GitInfo } from "giget";
 
 import type {
+  DeploymentGroup,
+  FileSpec,
+  KeysetTemplate,
+  NamespaceConfig,
   PreludeDefinition,
   RepositoryConfig,
-  FileSpec,
-  NamespaceConfig,
-  DeploymentGroup,
-  KeysetTemplate,
 } from "./types";
 
 import type { PactToolboxClient } from "@pact-toolbox/runtime";
@@ -168,7 +168,14 @@ export function repository(
 /**
  * Factory function for creating file specifications
  */
-export function file(name: string, options?: { path?: string; checksum?: string; version?: string }): FileSpec {
+export function file(
+  name: string,
+  options?: {
+    path?: string;
+    checksum?: string;
+    version?: string;
+  },
+): FileSpec {
   return {
     name,
     path: options?.path || name,

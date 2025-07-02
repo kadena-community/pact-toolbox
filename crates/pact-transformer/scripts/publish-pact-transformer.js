@@ -48,7 +48,7 @@ async function publishPlatformPackages() {
     
     try {
       console.log(`Publishing ${packageName}...`);
-      execSync(`npm publish ${packagePath} --access public`, { 
+      execSync(`npm publish ${packagePath} --access public --provenance`, { 
         stdio: 'inherit',
         cwd: process.cwd()
       });
@@ -74,7 +74,7 @@ async function publishMainPackage() {
   
   try {
     console.log(`Publishing main package ${packageName}...`);
-    execSync('npm publish --access public', { stdio: 'inherit' });
+    execSync('npm publish --access public --provenance', { stdio: 'inherit' });
     console.log(`Successfully published ${packageName}`);
     return true;
   } catch (error) {

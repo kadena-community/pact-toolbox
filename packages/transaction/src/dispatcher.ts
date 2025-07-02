@@ -1,8 +1,6 @@
-import type { ChainId, PactCmdPayload, Transaction, PactTransactionDescriptor } from "@pact-toolbox/types";
+import type { ChainId, PactCmdPayload, Transaction, PactTransactionDescriptor, PactToolboxContext } from "@pact-toolbox/types";
 import type { PactTransactionBuilder } from "./builder";
 import { ALL_CHAINS } from "./constant";
-import type { ToolboxNetworkContext } from "./network";
-import { createToolboxNetworkContext } from "./network";
 import { dirtyReadOrFail, localOrFail, submit, submitAndListen, type Client } from "@pact-toolbox/chainweb-client";
 
 type PactTransactionDispatcherType = "dirtyRead" | "local" | "submitAndListen" | "submit";
@@ -47,13 +45,14 @@ async function dispatchTransaction<
 }
 
 export class PactTransactionDispatcher<Payload extends PactCmdPayload, Result = unknown> {
-  #context: ToolboxNetworkContext;
+  #context: PactToolboxContext;
 
   constructor(
     private builder: PactTransactionBuilder<Payload, Result>,
-    context?: ToolboxNetworkContext,
+    context: PactToolboxContext,
   ) {
-    this.#context = context ?? createToolboxNetworkContext();
+    // Context is now required
+    this.#context = context;
   }
 
   submit(chainId?: ChainId, preflight?: boolean, client?: Client): Promise<PactTransactionDescriptor>;

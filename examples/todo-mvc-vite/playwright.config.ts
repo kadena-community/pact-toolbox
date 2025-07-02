@@ -2,10 +2,10 @@ import { defineConfig, devices } from "@playwright/test";
 
 export default defineConfig({
   testDir: "./tests",
-  fullyParallel: true,
+  fullyParallel: false, // Changed to false to avoid concurrent pact server issues
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
+  workers: 1, // Use single worker to avoid pact server conflicts
   reporter: "html",
   use: {
     baseURL: "http://localhost:5173",
@@ -20,8 +20,9 @@ export default defineConfig({
   ],
 
   webServer: {
-    command: "pnpm dev",
+    command: "rm -rf .pact-toolbox && pnpm dev",
     url: "http://localhost:5173",
     reuseExistingServer: !process.env.CI,
+    timeout: 120000, // Increased timeout for pact server startup
   },
 });
