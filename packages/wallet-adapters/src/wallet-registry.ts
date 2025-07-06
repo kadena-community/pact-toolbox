@@ -1,5 +1,7 @@
 import type { WalletProvider } from "@pact-toolbox/wallet-core";
 import { isBrowser, isTestEnvironment } from "./environment";
+import { register, resolve } from "@pact-toolbox/utils";
+import { TOKENS } from "@pact-toolbox/types";
 
 /**
  * Wallet provider factory function
@@ -22,11 +24,26 @@ export interface WalletProviderConstructor {
 export class WalletRegistry {
   private static providers = new Map<string, WalletProviderFactory>();
   private static initialized = false;
+  
+  // Register self in DI container on first use
+  private static ensureRegistered() {
+    try {
+      resolve(TOKENS.WalletRegistry);
+    } catch {
+      // Not registered yet, register now
+      register(TOKENS.WalletRegistry, {
+        register: this.register.bind(this),
+        get: (name: string) => this.providers.get(name),
+        list: () => this.getProviderIds()
+      });
+    }
+  }
 
   /**
    * Register a wallet provider factory
    */
   static register(id: string, factory: WalletProviderFactory): void {
+    this.ensureRegistered();
     this.providers.set(id, factory);
   }
 

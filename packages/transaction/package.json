@@ -53,18 +53,16 @@
   "dependencies": {
     "@pact-toolbox/chainweb-client": "workspace:*",
     "@pact-toolbox/crypto": "workspace:*",
+    "@pact-toolbox/network-config": "workspace:*",
     "@pact-toolbox/signers": "workspace:*",
-    "@pact-toolbox/utils": "workspace:*",
-    "@pact-toolbox/wallet-adapters": "workspace:*",
-    "@pact-toolbox/wallet-core": "workspace:*",
-    "@pact-toolbox/wallet-ui": "workspace:*"
+    "@pact-toolbox/types": "workspace:*",
+    "@pact-toolbox/utils": "workspace:*"
   },
   "devDependencies": {
     "@pact-toolbox/oxlint-config": "workspace:*",
     "@pact-toolbox/prettier-config": "workspace:*",
     "@pact-toolbox/tsconfig": "workspace:*",
     "@pact-toolbox/tsdown": "workspace:*",
-    "@pact-toolbox/types": "workspace:*",
     "@pact-toolbox/vitest-config": "workspace:*",
     "@vitest/coverage-v8": "^3.2.4",
     "oxlint": "^1.4.0",

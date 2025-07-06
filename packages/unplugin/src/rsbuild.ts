@@ -1,7 +1,7 @@
 import type { RsbuildPlugin } from "@rsbuild/core";
 
 import { getDefaultNetworkConfig, getSerializableMultiNetworkConfig, resolveConfig } from "@pact-toolbox/config";
-import { PactToolboxClient } from "@pact-toolbox/runtime";
+import { PactToolboxClient } from "@pact-toolbox/deployer";
 
 import type { PluginOptions } from "./plugin/types";
 import { PLUGIN_NAME } from "./plugin/utils";

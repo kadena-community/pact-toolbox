@@ -1,4 +1,4 @@
-import type { WalletNetwork } from "./types";
+import type { WalletNetwork } from "@pact-toolbox/types";
 
 /**
  * Common Kadena networks

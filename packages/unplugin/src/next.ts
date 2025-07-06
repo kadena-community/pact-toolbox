@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 
 import { getSerializableMultiNetworkConfig, resolveConfig } from "@pact-toolbox/config";
 import { logger } from "@pact-toolbox/node-utils";
-import { PactToolboxClient } from "@pact-toolbox/runtime";
+import { PactToolboxClient } from "@pact-toolbox/deployer";
 
 import type { PluginOptions } from "./plugin/types";
 import { PactToolboxNetwork, createNetwork } from "@pact-toolbox/network";

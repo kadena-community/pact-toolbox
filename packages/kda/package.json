@@ -67,7 +67,6 @@
     "@pact-toolbox/config": "workspace:*",
     "@pact-toolbox/oxlint-config": "workspace:*",
     "@pact-toolbox/prettier-config": "workspace:*",
-    "@pact-toolbox/test": "workspace:*",
     "@pact-toolbox/tsconfig": "workspace:*",
     "@pact-toolbox/tsdown": "workspace:*",
     "@pact-toolbox/vitest-config": "workspace:*",

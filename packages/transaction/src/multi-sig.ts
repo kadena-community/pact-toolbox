@@ -3,8 +3,8 @@ import type {
   SignedTransaction,
   TransactionSig,
   TransactionFullSig,
+  Wallet,
 } from "@pact-toolbox/types";
-import type { Wallet } from "@pact-toolbox/wallet-core";
 import { isFullySignedTransaction } from "@pact-toolbox/signers";
 import { toBase64Url } from "@pact-toolbox/crypto";
 
@@ -28,30 +28,30 @@ import { toBase64Url } from "@pact-toolbox/crypto";
  */
 export async function collectSignatures(
   transaction: PartiallySignedTransaction,
-  wallets: Wallet[],
+  signers: Wallet[],
 ): Promise<SignedTransaction> {
   const cmd = JSON.parse(transaction.cmd);
-  const signers = cmd.signers || [];
+  const cmdSigners = cmd.signers || [];
 
   // Initialize signatures array with partial sigs
-  const signatures: TransactionSig[] = signers.map((signer: any) => ({
+  const signatures: TransactionSig[] = cmdSigners.map((signer: any) => ({
     pubKey: signer.pubKey,
     sig: undefined,
   }));
 
-  // Collect signatures from each wallet
-  for (const wallet of wallets) {
-    const account = await wallet.getAccount();
+  // Collect signatures from each signer
+  for (const signer of signers) {
+    const account = await signer.getAccount();
 
     // Find which signers this wallet controls
-    const controlledIndices = signers
-      .map((signer: any, index: number) => ({ signer, index }))
-      .filter(({ signer }: any) => signer.pubKey === account.publicKey)
+    const controlledIndices = cmdSigners
+      .map((cmdSigner: any, index: number) => ({ cmdSigner, index }))
+      .filter(({ cmdSigner }: any) => cmdSigner.pubKey === account.publicKey)
       .map(({ index }: any) => index);
 
     if (controlledIndices.length > 0) {
       // Sign the transaction
-      const signed = await wallet.sign(transaction);
+      const signed = await signer.sign(transaction);
 
       // Extract signatures for controlled signers
       controlledIndices.forEach((index: number) => {

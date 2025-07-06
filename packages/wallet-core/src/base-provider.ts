@@ -1,4 +1,4 @@
-import type { ConnectOptions, Wallet, WalletMetadata, WalletProvider } from "./types";
+import type { ConnectOptions, Wallet, WalletMetadata, WalletProvider } from "@pact-toolbox/types";
 
 /**
  * Base class for wallet providers with auto-registration support

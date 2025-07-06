@@ -13,20 +13,43 @@ import type {
   PartiallySignedTransaction,
   Serializable,
   Transaction,
-  PactToolboxContext,
 } from "@pact-toolbox/types";
+import type { NetworkConfigProvider } from "@pact-toolbox/network-config";
+import { resolve } from "@pact-toolbox/utils";
+import { TOKENS } from "@pact-toolbox/types";
 import { PactTransactionDispatcher } from "./dispatcher";
 import {
   createPactCommandWithDefaults,
   createTransaction,
   isPactExecPayload,
-  signPactCommandWithWallet,
+  signPactCommandWithSigner,
   updatePactCommandSigners,
-  getNetworkConfig,
 } from "./utils";
-import type { Wallet } from "@pact-toolbox/wallet-core";
-import { getWalletWithUI, type WalletUIOptions, getWalletUIConfig } from "./wallet-ui";
+import { getSigner, type SigningOptions } from "./signer";
+import type { Wallet } from "@pact-toolbox/types";
 import { collectSignatures } from "./multi-sig";
+import { createDefaultNetworkProvider } from "./default-provider";
+
+/**
+ * Options for configuring a PactTransactionBuilder
+ */
+export interface TransactionBuilderOptions {
+  /** Network configuration provider. Uses global provider if not specified. */
+  networkProvider?: NetworkConfigProvider;
+}
+
+/**
+ * Get the current transaction defaults from DI container
+ */
+function getTransactionDefaults(): TransactionBuilderOptions {
+  try {
+    const defaults = resolve(TOKENS.TransactionDefaults);
+    return { ...defaults } as TransactionBuilderOptions;
+  } catch {
+    // Return empty defaults if not configured
+    return {};
+  }
+}
 
 /**
  * Builder class for creating and configuring Pact transactions
@@ -52,23 +75,40 @@ import { collectSignatures } from "./multi-sig";
  */
 export class PactTransactionBuilder<Payload extends PactCmdPayload, Result = unknown> {
   #cmd: PactCommand<Payload>;
-  #context: PactToolboxContext;
+  #networkProvider: NetworkConfigProvider;
   #builder: (cmd: PactCommand<Payload>) => Promise<Transaction> = async (cmd) => createTransaction(cmd);
 
   /**
    * Create a new transaction builder
    *
    * @param payload - The Pact command payload (execution or continuation)
-   * @param context - Optional network context. Uses global context if not provided
+   * @param options - Configuration options for the builder
    */
-  constructor(payload: Payload, context?: PactToolboxContext) {
-    if (context) {
-      this.#context = context;
-      this.#cmd = createPactCommandWithDefaults(payload, getNetworkConfig(this.#context));
+  constructor(payload: Payload, options?: TransactionBuilderOptions) {
+    const opts = { ...getTransactionDefaults(), ...options };
+    
+    // Get network provider from options, DI container, or use default
+    if (opts.networkProvider) {
+      this.#networkProvider = opts.networkProvider;
     } else {
-      // Initialize with minimal command, context must be set later
-      this.#cmd = createPactCommandWithDefaults(payload, null);
+      try {
+        this.#networkProvider = resolve(TOKENS.NetworkProvider);
+      } catch {
+        // Use default provider for development if no provider is configured
+        console.warn(
+          "No network provider configured. Using default development network (http://localhost:8080). " +
+          "For production, configure a network provider using the DI container: " +
+          "register(TOKENS.NetworkProvider, provider)"
+        );
+        this.#networkProvider = createDefaultNetworkProvider();
+      }
     }
+    
+    // Use network provider to get current network
+    const networkConfig = this.#networkProvider.getCurrentNetwork ? 
+      this.#networkProvider.getCurrentNetwork() : 
+      this.#networkProvider.get();
+    this.#cmd = createPactCommandWithDefaults(payload, networkConfig);
   }
 
   /**
@@ -207,95 +247,58 @@ export class PactTransactionBuilder<Payload extends PactCmdPayload, Result = unk
     return this;
   }
 
-  /**
-   * Set the network context for this transaction
-   *
-   * @param context - Network context to use
-   * @returns This builder instance for chaining
-   */
-  withContext(context?: PactToolboxContext): this {
-    if (context) {
-      this.#context = context;
-    }
-    return this;
-  }
 
   /**
    * Build the transaction without signing (returns unsigned transaction)
    *
-   * @param context - Optional network context to use for this build
    * @returns A transaction dispatcher for executing the unsigned transaction
    */
-  build(context?: PactToolboxContext): PactTransactionDispatcher<Payload, Result> {
-    if (context) {
-      this.withContext(context);
-    }
-    if (!this.#context) {
-      throw new Error("Context must be provided either in constructor or build method");
-    }
+  build(): PactTransactionDispatcher<Payload, Result> {
     this.#builder = (cmd) => Promise.resolve(createTransaction(cmd));
-    return new PactTransactionDispatcher(this, this.#context);
+    return new PactTransactionDispatcher(this, this.#networkProvider);
   }
 
   /**
-   * Sign the transaction using a wallet
+   * Sign the transaction using a signer
    *
-   * @param walletOrId - Wallet instance, wallet ID, or undefined to show wallet selector
-   * @param options - UI options for wallet selection and approval
+   * @param signerOrOptions - TransactionSigner instance or signing options
    * @returns A transaction dispatcher for executing the signed transaction
    *
    * @example
    * ```typescript
-   * // Show wallet selector in browser (default behavior)
+   * // Use default signer (configured externally)
    * const result = await execution('(coin.get-balance "alice")')
    *   .sign()
    *   .submitAndListen();
    *
-   * // Use specific wallet
+   * // Use specific signer
    * const result = await execution('(coin.transfer "alice" "bob" 10.0)')
    *   .withSigner("alice-key", (signFor) => [signFor("coin.TRANSFER", "alice", "bob", 10.0)])
-   *   .sign(myWallet)
+   *   .sign(mySigner)
    *   .submitAndListen();
    *
-   * // Disable UI and require explicit wallet
+   * // Pass options to signer provider
    * const result = await execution('(coin.get-balance "alice")')
-   *   .sign("keypair", { showUI: false })
+   *   .sign({ showUI: false, walletId: "keypair" })
    *   .submitAndListen();
    * ```
    */
-  sign(walletOrId?: Wallet | string, options?: WalletUIOptions): PactTransactionDispatcher<Payload, Result> {
+  sign(signerOrOptions?: Wallet | SigningOptions): PactTransactionDispatcher<Payload, Result> {
     this.#builder = async (cmd) => {
-      // Merge options with global config
-      const mergedOptions: WalletUIOptions = {
-        ...getWalletUIConfig(),
-        ...options,
-      };
-
-      // Check if we should automatically use dev wallet in development mode
-      let effectiveWalletOrId = walletOrId;
-      const network = this.#context.network;
-      const isLocalNetwork = network?.type === "pact-server" || network?.type === "chainweb-devnet";
-      const shouldUseDevWallet =
-        this.#context.isDevNet || (isLocalNetwork && this.#context.environment === "development");
-
-      console.log(this.#context);
-      if (!walletOrId && shouldUseDevWallet) {
-        console.log("shouldUseDevWallet", shouldUseDevWallet);
-        // Automatically use keypair in development mode
-        effectiveWalletOrId = "keypair";
+      let signer: Wallet;
+      
+      if (signerOrOptions && typeof signerOrOptions === 'object' && 'sign' in signerOrOptions && 'getAccount' in signerOrOptions) {
+        // It's a Wallet instance
+        signer = signerOrOptions as Wallet;
+      } else {
+        // It's options or undefined, get signer from provider
+        const options = signerOrOptions as SigningOptions | undefined;
+        signer = await getSigner(options);
       }
 
-      console.log("effectiveWalletOrId", effectiveWalletOrId, mergedOptions, isLocalNetwork);
-      // Get wallet with UI integration
-      const wallet = await getWalletWithUI(effectiveWalletOrId, mergedOptions, {
-        isLocalNetwork,
-        networkId: network?.networkId,
-        context: this.#context,
-      });
-
-      return signPactCommandWithWallet(cmd, wallet);
+      return signPactCommandWithSigner(cmd, signer);
     };
-    return new PactTransactionDispatcher(this, this.#context);
+    return new PactTransactionDispatcher(this, this.#networkProvider);
   }
 
   /**
@@ -318,12 +321,12 @@ export class PactTransactionBuilder<Payload extends PactCmdPayload, Result = unk
    *   .submitAndListen();
    * ```
    */
-  multiSign(wallets: Wallet[]): PactTransactionDispatcher<Payload, Result> {
+  multiSign(signers: Wallet[]): PactTransactionDispatcher<Payload, Result> {
     this.#builder = async (cmd) => {
       const unsignedTx = createTransaction(cmd);
-      return collectSignatures(unsignedTx, wallets);
+      return collectSignatures(unsignedTx, signers);
     };
-    return new PactTransactionDispatcher(this, this.#context);
+    return new PactTransactionDispatcher(this, this.#networkProvider);
   }
 
   /**
@@ -359,7 +362,6 @@ export class PactTransactionBuilder<Payload extends PactCmdPayload, Result = unk
  *
  * @template Result - The expected result type from the execution
  * @param code - Pact code to execute
- * @param context - Optional network context to use
  * @returns A new transaction builder for the execution
  *
  * @example
@@ -382,8 +384,11 @@ export class PactTransactionBuilder<Payload extends PactCmdPayload, Result = unk
  */
 export function execution<Result>(
   code: string,
-  context?: PactToolboxContext,
+  options?: TransactionBuilderOptions,
 ): PactTransactionBuilder<PactExecPayload, Result> {
+  // Merge global defaults with provided options
+  const mergedOptions = { ...globalTransactionOptions, ...options };
+    
   return new PactTransactionBuilder(
     {
       exec: {
@@ -391,7 +396,7 @@ export function execution<Result>(
         data: {},
       },
     },
-    context,
+    mergedOptions,
   );
 }
 
@@ -400,7 +405,6 @@ export function execution<Result>(
  *
  * @template Result - The expected result type from the continuation
  * @param cont - Continuation configuration (pactId, step, rollback, etc.)
- * @param context - Optional network context to use
  * @returns A new transaction builder for the continuation
  *
  * @example
@@ -418,8 +422,11 @@ export function execution<Result>(
  */
 export function continuation<Result>(
   cont: Partial<PactCont> = {},
-  context?: PactToolboxContext,
+  options?: TransactionBuilderOptions,
 ): PactTransactionBuilder<PactContPayload, Result> {
+  // Merge global defaults with provided options
+  const mergedOptions = { ...globalTransactionOptions, ...options };
+    
   return new PactTransactionBuilder(
     {
       cont: {
@@ -430,6 +437,6 @@ export function continuation<Result>(
         ...cont,
       },
     } as PactContPayload,
-    context,
+    mergedOptions,
   );
 }

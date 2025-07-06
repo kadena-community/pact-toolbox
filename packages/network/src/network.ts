@@ -13,7 +13,7 @@ import {
   isPactServerNetworkConfig,
 } from "@pact-toolbox/config";
 import { deployPreludes, downloadAllPreludes } from "@pact-toolbox/prelude";
-import { PactToolboxClient } from "@pact-toolbox/runtime";
+import { PactToolboxClient } from "@pact-toolbox/deployer";
 import { logger as defaultLogger, cleanupOnExit } from "@pact-toolbox/node-utils";
 import { getUuid } from "@pact-toolbox/utils";
 

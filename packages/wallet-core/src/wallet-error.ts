@@ -1,5 +1,4 @@
-// Re-export type from types.ts for convenience
-export type { WalletErrorType } from "./types";
+import type { WalletErrorType } from "@pact-toolbox/types";
 
 /**
  * User-friendly error messages
@@ -53,7 +52,7 @@ export class WalletError extends Error implements WalletErrorInfo {
       type: "NOT_FOUND",
       message: `Wallet "${walletId}" not found or not installed`,
       userMessage: `${walletName} is not installed or not available`,
-      action: installLinks[walletId] 
+      action: installLinks[walletId]
         ? `Install ${walletName} from ${installLinks[walletId]}`
         : `Make sure ${walletName} is installed and running`,
       retryable: true,
@@ -73,22 +72,23 @@ export class WalletError extends Error implements WalletErrorInfo {
   static connectionFailed(reason: string, walletId?: string): WalletError {
     const commonReasons: Record<string, string> = {
       "User rejected": "You cancelled the connection request",
-      "Timeout": "Connection timed out. Please try again",
+      Timeout: "Connection timed out. Please try again",
       "Network error": "Network error. Please check your connection",
       "Desktop app not running": "Please make sure the desktop app is running",
     };
 
-    const userMessage = Object.entries(commonReasons).find(([key]) => 
-      reason.toLowerCase().includes(key.toLowerCase())
-    )?.[1] || "Unable to connect to wallet";
+    const userMessage =
+      Object.entries(commonReasons).find(([key]) => reason.toLowerCase().includes(key.toLowerCase()))?.[1] ||
+      "Unable to connect to wallet";
 
     return new WalletError({
       type: "CONNECTION_FAILED",
       message: `Connection failed: ${reason}`,
       userMessage,
-      action: walletId === "chainweaver" || walletId === "zelcore"
-        ? "Make sure the desktop application is running"
-        : "Please try connecting again",
+      action:
+        walletId === "chainweaver" || walletId === "zelcore"
+          ? "Make sure the desktop application is running"
+          : "Please try connecting again",
       retryable: true,
     });
   }
@@ -133,13 +133,16 @@ export class WalletError extends Error implements WalletErrorInfo {
   }
 
   static unknown(message: string, cause?: unknown): WalletError {
-    return new WalletError({
-      type: "UNKNOWN",
-      message,
-      userMessage: "An unexpected error occurred",
-      action: "Please try again or contact support",
-      retryable: true,
-    }, cause);
+    return new WalletError(
+      {
+        type: "UNKNOWN",
+        message,
+        userMessage: "An unexpected error occurred",
+        action: "Please try again or contact support",
+        retryable: true,
+      },
+      cause,
+    );
   }
 }
 

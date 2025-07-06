@@ -1,5 +1,4 @@
-import type { PartiallySignedTransaction, SignedTransaction } from "@pact-toolbox/types";
-import type { Wallet, WalletAccount, WalletNetwork } from "./types";
+import type { PartiallySignedTransaction, SignedTransaction, Wallet, WalletAccount, WalletNetwork } from "@pact-toolbox/types";
 import type { NetworkAwareWallet, NetworkCapabilities } from "./network";
 import { getNetworkById, getDefaultNetwork } from "./network";
 

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NamespaceService } from "./namespace-service";
-import { execution, type ToolboxNetworkContext } from "@pact-toolbox/transaction";
+import { execution, type PactToolboxContext } from "@pact-toolbox/transaction";
 import type { PactKeyset } from "@pact-toolbox/types";
 import * as pact from "./pact";
 
@@ -29,7 +29,7 @@ const mockExecution = vi.mocked(execution);
 
 describe("NamespaceService", () => {
   let namespaceService: NamespaceService;
-  let mockContext: ToolboxNetworkContext;
+  let mockContext: PactToolboxContext;
 
   const validKeyset: PactKeyset = {
     keys: ["a1b2c3d4e5f6789012345678901234567890123456789012345678901234567890".slice(0, 64)],
@@ -47,7 +47,7 @@ describe("NamespaceService", () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
-    mockContext = {} as ToolboxNetworkContext;
+    mockContext = {} as PactToolboxContext;
 
     namespaceService = new NamespaceService({
       context: mockContext,

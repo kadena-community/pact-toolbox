@@ -7,7 +7,7 @@ import { resolve } from "pathe";
 
 import { resolveConfig } from "@pact-toolbox/config";
 import { createNetwork } from "@pact-toolbox/network";
-import { PactToolboxClient } from "@pact-toolbox/runtime";
+import { PactToolboxClient } from "@pact-toolbox/deployer";
 import { logger, defu, cleanupOnExit } from "@pact-toolbox/node-utils";
 
 import type { ScriptContext } from "./script-context";

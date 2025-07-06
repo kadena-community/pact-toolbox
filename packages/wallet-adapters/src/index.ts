@@ -1,4 +1,4 @@
-// Core types and interfaces from wallet-core
+// Core types and interfaces from types package
 export type {
   AutoConnectOptions,
   ConnectOptions,
@@ -9,12 +9,14 @@ export type {
   WalletMetadata,
   WalletNetwork,
   WalletProvider,
-} from "@pact-toolbox/wallet-core";
+} from "@pact-toolbox/types";
 
+// Implementation classes from wallet-core
 export { WalletError, BaseWallet, detectBrowserExtension } from "@pact-toolbox/wallet-core";
 
 // Core services
 export { WalletRegistry } from "./wallet-registry";
+export { WalletManager, createWalletManager } from "./wallet-manager";
 
 // Persistence
 export {
@@ -47,3 +49,5 @@ if (isBrowser() && !isTestEnvironment()) {
 }
 
 export * from "./config";
+export { type SigningOptions, type WalletUIOptions, getWalletWithUI, setupTransactionIntegration } from "./transaction-integration";
+export { setupWalletDI } from "./setup-di";

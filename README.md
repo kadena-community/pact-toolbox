@@ -190,6 +190,32 @@ pnpm docs:build
 pnpm docs:preview
 ```
 
+## 🏗️ Architecture
+
+### Dependency Injection
+
+Pact Toolbox uses a lightweight dependency injection container for managing global state and services. This provides clean separation of concerns and makes testing easier.
+
+```typescript
+import { setupWalletDI } from '@pact-toolbox/wallet-adapters';
+import { register, TOKENS } from '@pact-toolbox/utils';
+
+// Configure services at app startup
+await setupWalletDI({
+  wallets: {
+    chainweaver: true,
+    walletconnect: { projectId: 'your-project-id' }
+  }
+});
+
+// Services are automatically available throughout your app
+const tx = await execution('(coin.transfer "alice" "bob" 10.0)')
+  .sign()  // Uses configured wallet system
+  .submitAndListen();
+```
+
+See [DI-CONTAINER.md](./DI-CONTAINER.md) for detailed documentation.
+
 ## 🤝 Contributing
 
 We welcome contributions! Please see our [Contributing Guide](./CONTRIBUTING.md) for details.

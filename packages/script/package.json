@@ -46,10 +46,10 @@
   },
   "dependencies": {
     "@pact-toolbox/config": "workspace:*",
+    "@pact-toolbox/deployer": "workspace:*",
     "@pact-toolbox/kda": "workspace:*",
     "@pact-toolbox/network": "workspace:*",
     "@pact-toolbox/node-utils": "workspace:*",
-    "@pact-toolbox/runtime": "workspace:*",
     "@pact-toolbox/transaction": "workspace:*",
     "@pact-toolbox/types": "workspace:*",
     "@pact-toolbox/utils": "workspace:*",

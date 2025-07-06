@@ -8,7 +8,7 @@ import {
   createPactCommandWithDefaults,
   createTransaction,
   updatePactCommandSigners,
-  signPactCommandWithWallet,
+  signPactCommandWithSigner,
   isPactExecPayload,
   isPactContPayload,
   getToolboxGlobalMultiNetworkConfig,
@@ -281,7 +281,7 @@ describe("Utils", () => {
     });
   });
 
-  describe("signPactCommandWithWallet", () => {
+  describe("signPactCommandWithSigner", () => {
     it("should sign command with wallet", async () => {
       const command: PactCommand<PactExecPayload> = {
         payload: { exec: { code: "test", data: {} } },
@@ -303,7 +303,7 @@ describe("Utils", () => {
         }),
       };
 
-      const result = await signPactCommandWithWallet(command, mockWallet as any);
+      const result = await signPactCommandWithSigner(command, mockWallet as any);
 
       expect(mockWallet.sign).toHaveBeenCalled();
       expect(result).toEqual({
@@ -334,7 +334,7 @@ describe("Utils", () => {
         }),
       };
 
-      await signPactCommandWithWallet(command, mockWallet as any);
+      await signPactCommandWithSigner(command, mockWallet as any);
 
       expect(command.signers).toHaveLength(1);
       expect(command.signers[0]?.pubKey).toBe("alice-key");

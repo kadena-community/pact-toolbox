@@ -11,10 +11,6 @@ overrides:
 importers:
 
   .:
-    dependencies:
-      source-map:
-        specifier: ^0.7.4
-        version: 0.7.4
     devDependencies:
       '@changesets/cli':
         specifier: ^2.29.5
@@ -34,6 +30,9 @@ importers:
       prettier:
         specifier: ^3.6.2
         version: 3.6.2
+      source-map:
+        specifier: ^0.7.4
+        version: 0.7.4
       tsdown:
         specifier: ^0.12.9
         version: 0.12.9(publint@0.3.12)(typescript@5.8.3)
@@ -55,6 +54,9 @@ importers:
       '@pact-toolbox/config':
         specifier: workspace:*
         version: link:../../packages/config
+      '@pact-toolbox/deployer':
+        specifier: workspace:*
+        version: link:../../packages/deployer
       '@pact-toolbox/docker':
         specifier: workspace:*
         version: link:../../packages/docker
@@ -73,9 +75,6 @@ importers:
       '@pact-toolbox/prelude':
         specifier: workspace:*
         version: link:../../packages/prelude
-      '@pact-toolbox/runtime':
-        specifier: workspace:*
-        version: link:../../packages/runtime
       '@pact-toolbox/script':
         specifier: workspace:*
         version: link:../../packages/script
@@ -203,9 +202,9 @@ importers:
 
   examples/todo-mvc-nextjs:
     dependencies:
-      '@pact-toolbox/runtime':
+      '@pact-toolbox/deployer':
         specifier: workspace:*
-        version: link:../../packages/runtime
+        version: link:../../packages/deployer
       '@pact-toolbox/transaction':
         specifier: workspace:*
         version: link:../../packages/transaction
@@ -386,6 +385,9 @@ importers:
 
   packages/config:
     dependencies:
+      '@pact-toolbox/network-config':
+        specifier: workspace:*
+        version: link:../network-config
       c12:
         specifier: ^3.0.4
         version: 3.0.4(magicast@0.3.5)
@@ -582,6 +584,73 @@ importers:
       tinybench:
         specifier: ^4.0.1
         version: 4.0.1
+      tsdown:
+        specifier: ^0.12.9
+        version: 0.12.9(publint@0.3.12)(typescript@5.8.3)
+      tsx:
+        specifier: ^4.20.3
+        version: 4.20.3
+      typescript:
+        specifier: ^5.8.3
+        version: 5.8.3
+      vitest:
+        specifier: ^3.2.4
+        version: 3.2.4(@types/debug@4.1.12)(@types/node@24.0.8)(happy-dom@18.0.1)(jiti@2.4.2)(jsdom@26.1.0)(lightningcss@1.30.1)(sass-embedded@1.89.0)(terser@5.37.0)(tsx@4.20.3)(yaml@2.8.0)
+
+  packages/deployer:
+    dependencies:
+      '@pact-toolbox/chainweb-client':
+        specifier: workspace:*
+        version: link:../chainweb-client
+      '@pact-toolbox/config':
+        specifier: workspace:*
+        version: link:../config
+      '@pact-toolbox/network-config':
+        specifier: workspace:*
+        version: link:../network-config
+      '@pact-toolbox/node-utils':
+        specifier: workspace:*
+        version: link:../node-utils
+      '@pact-toolbox/transaction':
+        specifier: workspace:*
+        version: link:../transaction
+      '@pact-toolbox/types':
+        specifier: workspace:*
+        version: link:../types
+      '@pact-toolbox/utils':
+        specifier: workspace:*
+        version: link:../utils
+      '@pact-toolbox/wallet-adapters':
+        specifier: workspace:*
+        version: link:../wallet-adapters
+      '@pact-toolbox/wallet-core':
+        specifier: workspace:*
+        version: link:../wallet-core
+      pathe:
+        specifier: ^2.0.3
+        version: 2.0.3
+    devDependencies:
+      '@kadena/types':
+        specifier: ^0.7.0
+        version: 0.7.0
+      '@pact-toolbox/prettier-config':
+        specifier: workspace:*
+        version: link:../../tooling/prettier
+      '@pact-toolbox/tsconfig':
+        specifier: workspace:*
+        version: link:../../tooling/tsconfig
+      '@pact-toolbox/tsdown':
+        specifier: workspace:*
+        version: link:../../tooling/tsdown
+      '@pact-toolbox/vitest-config':
+        specifier: workspace:*
+        version: link:../../tooling/vitest
+      oxlint:
+        specifier: ^1.4.0
+        version: 1.4.0
+      prettier:
+        specifier: ^3.6.2
+        version: 3.6.2
       tsdown:
         specifier: ^0.12.9
         version: 0.12.9(publint@0.3.12)(typescript@5.8.3)
@@ -833,9 +902,6 @@ importers:
       '@pact-toolbox/prettier-config':
         specifier: workspace:*
         version: link:../../tooling/prettier
-      '@pact-toolbox/test':
-        specifier: workspace:*
-        version: link:../test
       '@pact-toolbox/tsconfig':
         specifier: workspace:*
         version: link:../../tooling/tsconfig
@@ -869,6 +935,9 @@ importers:
       '@pact-toolbox/config':
         specifier: workspace:*
         version: link:../config
+      '@pact-toolbox/deployer':
+        specifier: workspace:*
+        version: link:../deployer
       '@pact-toolbox/docker':
         specifier: workspace:*
         version: link:../docker
@@ -878,9 +947,6 @@ importers:
       '@pact-toolbox/prelude':
         specifier: workspace:*
         version: link:../prelude
-      '@pact-toolbox/runtime':
-        specifier: workspace:*
-        version: link:../runtime
       '@pact-toolbox/utils':
         specifier: workspace:*
         version: link:../utils
@@ -912,6 +978,34 @@ importers:
       tsx:
         specifier: ^4.20.3
         version: 4.20.3
+      typescript:
+        specifier: ^5.8.3
+        version: 5.8.3
+      vitest:
+        specifier: ^3.2.4
+        version: 3.2.4(@types/debug@4.1.12)(@types/node@24.0.8)(happy-dom@18.0.1)(jiti@2.4.2)(jsdom@26.1.0)(lightningcss@1.30.1)(sass-embedded@1.89.0)(terser@5.37.0)(tsx@4.20.3)(yaml@2.8.0)
+
+  packages/network-config:
+    dependencies:
+      '@pact-toolbox/types':
+        specifier: workspace:*
+        version: link:../types
+    devDependencies:
+      '@pact-toolbox/tsconfig':
+        specifier: workspace:*
+        version: link:../../tooling/tsconfig
+      '@pact-toolbox/tsdown':
+        specifier: workspace:*
+        version: link:../../tooling/tsdown
+      '@pact-toolbox/vitest-config':
+        specifier: workspace:*
+        version: link:../../tooling/vitest
+      '@types/node':
+        specifier: ^24.0.8
+        version: 24.0.8
+      tsdown:
+        specifier: ^0.12.9
+        version: 0.12.9(publint@0.3.12)(typescript@5.8.3)
       typescript:
         specifier: ^5.8.3
         version: 5.8.3
@@ -1016,12 +1110,12 @@ importers:
       '@pact-toolbox/config':
         specifier: workspace:*
         version: link:../config
+      '@pact-toolbox/deployer':
+        specifier: workspace:*
+        version: link:../deployer
       '@pact-toolbox/prettier-config':
         specifier: workspace:*
         version: link:../../tooling/prettier
-      '@pact-toolbox/runtime':
-        specifier: workspace:*
-        version: link:../runtime
       '@pact-toolbox/tsconfig':
         specifier: workspace:*
         version: link:../../tooling/tsconfig
@@ -1056,69 +1150,14 @@ importers:
         specifier: ^3.2.4
         version: 3.2.4(@types/debug@4.1.12)(@types/node@24.0.8)(happy-dom@18.0.1)(jiti@2.4.2)(jsdom@26.1.0)(lightningcss@1.30.1)(sass-embedded@1.89.0)(terser@5.37.0)(tsx@4.20.3)(yaml@2.8.0)
 
-  packages/runtime:
-    dependencies:
-      '@pact-toolbox/config':
-        specifier: workspace:*
-        version: link:../config
-      '@pact-toolbox/node-utils':
-        specifier: workspace:*
-        version: link:../node-utils
-      '@pact-toolbox/transaction':
-        specifier: workspace:*
-        version: link:../transaction
-      '@pact-toolbox/types':
-        specifier: workspace:*
-        version: link:../types
-      '@pact-toolbox/wallet-adapters':
-        specifier: workspace:*
-        version: link:../wallet-adapters
-      '@pact-toolbox/wallet-core':
-        specifier: workspace:*
-        version: link:../wallet-core
-      pathe:
-        specifier: ^2.0.3
-        version: 2.0.3
-    devDependencies:
-      '@kadena/types':
-        specifier: ^0.7.0
-        version: 0.7.0
-      '@pact-toolbox/prettier-config':
-        specifier: workspace:*
-        version: link:../../tooling/prettier
-      '@pact-toolbox/tsconfig':
-        specifier: workspace:*
-        version: link:../../tooling/tsconfig
-      '@pact-toolbox/tsdown':
-        specifier: workspace:*
-        version: link:../../tooling/tsdown
-      '@pact-toolbox/vitest-config':
-        specifier: workspace:*
-        version: link:../../tooling/vitest
-      oxlint:
-        specifier: ^1.4.0
-        version: 1.4.0
-      prettier:
-        specifier: ^3.6.2
-        version: 3.6.2
-      tsdown:
-        specifier: ^0.12.9
-        version: 0.12.9(publint@0.3.12)(typescript@5.8.3)
-      tsx:
-        specifier: ^4.20.3
-        version: 4.20.3
-      typescript:
-        specifier: ^5.8.3
-        version: 5.8.3
-      vitest:
-        specifier: ^3.2.4
-        version: 3.2.4(@types/debug@4.1.12)(@types/node@24.0.8)(happy-dom@18.0.1)(jiti@2.4.2)(jsdom@26.1.0)(lightningcss@1.30.1)(sass-embedded@1.89.0)(terser@5.37.0)(tsx@4.20.3)(yaml@2.8.0)
-
   packages/script:
     dependencies:
       '@pact-toolbox/config':
         specifier: workspace:*
         version: link:../config
+      '@pact-toolbox/deployer':
+        specifier: workspace:*
+        version: link:../deployer
       '@pact-toolbox/kda':
         specifier: workspace:*
         version: link:../kda
@@ -1128,9 +1167,6 @@ importers:
       '@pact-toolbox/node-utils':
         specifier: workspace:*
         version: link:../node-utils
-      '@pact-toolbox/runtime':
-        specifier: workspace:*
-        version: link:../runtime
       '@pact-toolbox/transaction':
         specifier: workspace:*
         version: link:../transaction
@@ -1241,15 +1277,15 @@ importers:
       '@pact-toolbox/config':
         specifier: workspace:*
         version: link:../config
+      '@pact-toolbox/deployer':
+        specifier: workspace:*
+        version: link:../deployer
       '@pact-toolbox/network':
         specifier: workspace:*
         version: link:../network
       '@pact-toolbox/node-utils':
         specifier: workspace:*
         version: link:../node-utils
-      '@pact-toolbox/runtime':
-        specifier: workspace:*
-        version: link:../runtime
       '@pact-toolbox/transaction':
         specifier: workspace:*
         version: link:../transaction
@@ -1305,21 +1341,15 @@ importers:
       '@pact-toolbox/crypto':
         specifier: workspace:*
         version: link:../crypto
+      '@pact-toolbox/network-config':
+        specifier: workspace:*
+        version: link:../network-config
       '@pact-toolbox/signers':
         specifier: workspace:*
         version: link:../signers
       '@pact-toolbox/utils':
         specifier: workspace:*
         version: link:../utils
-      '@pact-toolbox/wallet-adapters':
-        specifier: workspace:*
-        version: link:../wallet-adapters
-      '@pact-toolbox/wallet-core':
-        specifier: workspace:*
-        version: link:../wallet-core
-      '@pact-toolbox/wallet-ui':
-        specifier: workspace:*
-        version: link:../wallet-ui
     devDependencies:
       '@pact-toolbox/oxlint-config':
         specifier: workspace:*
@@ -1427,6 +1457,9 @@ importers:
       '@pact-toolbox/config':
         specifier: workspace:*
         version: link:../config
+      '@pact-toolbox/deployer':
+        specifier: workspace:*
+        version: link:../deployer
       '@pact-toolbox/network':
         specifier: workspace:*
         version: link:../network
@@ -1436,9 +1469,6 @@ importers:
       '@pact-toolbox/pact-transformer':
         specifier: workspace:*
         version: link:../../crates/pact-transformer
-      '@pact-toolbox/runtime':
-        specifier: workspace:*
-        version: link:../runtime
       '@pact-toolbox/utils':
         specifier: workspace:*
         version: link:../utils
@@ -1532,6 +1562,10 @@ importers:
         version: 5.99.9(esbuild@0.25.0)
 
   packages/utils:
+    dependencies:
+      '@pact-toolbox/types':
+        specifier: workspace:*
+        version: link:../types
     devDependencies:
       '@kadena/types':
         specifier: ^0.7.0
@@ -1584,9 +1618,6 @@ importers:
       '@pact-toolbox/crypto':
         specifier: workspace:*
         version: link:../crypto
-      '@pact-toolbox/dev-wallet':
-        specifier: workspace:*
-        version: link:../dev-wallet
       '@pact-toolbox/signers':
         specifier: workspace:*
         version: link:../signers
@@ -1622,6 +1653,9 @@ importers:
         specifier: ^3.2.4
         version: 3.2.4(@types/debug@4.1.12)(@types/node@24.0.8)(happy-dom@18.0.1)(jiti@2.4.2)(jsdom@26.1.0)(lightningcss@1.30.1)(sass-embedded@1.89.0)(terser@5.37.0)(tsx@4.20.3)(yaml@2.8.0)
     optionalDependencies:
+      '@pact-toolbox/dev-wallet':
+        specifier: workspace:*
+        version: link:../dev-wallet
       '@walletconnect/modal':
         specifier: ^2.7.0
         version: 2.7.0(@types/react@19.1.8)(react@19.1.0)

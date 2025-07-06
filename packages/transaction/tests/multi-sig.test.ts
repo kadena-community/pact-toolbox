@@ -1,57 +1,15 @@
-import { describe, it, expect, vi } from "vitest";
-import { collectSignatures, mergeSignatures, isFullySigned } from "../src/multi-sig";
-import type { Wallet } from "@pact-toolbox/wallet-core";
+import { describe, it, expect } from "vitest";
+import { collectSignatures, mergeSignatures } from "../src/multi-sig";
 import type { PartiallySignedTransaction, TransactionSig } from "@pact-toolbox/types";
+import { isFullySignedTransaction as isFullySigned } from "@pact-toolbox/signers";
+import { createMockSigner } from "./test-helpers";
 
-// Mock wallet factory
-function createMockWallet(publicKey: string, canSign = true): Wallet {
-  return {
-    isInstalled: vi.fn().mockReturnValue(true),
-    getAccount: vi.fn().mockResolvedValue({
-      publicKey,
-      address: `k:${publicKey}`,
-    }),
-    getNetwork: vi.fn().mockResolvedValue({
-      id: "test",
-      networkId: "development",
-      name: "Test Network",
-      url: "http://localhost:8080",
-    }),
-    sign: vi.fn().mockImplementation(async (tx: PartiallySignedTransaction) => {
-      if (!canSign) {
-        throw new Error("Wallet cannot sign");
-      }
-
-      const cmd = JSON.parse(tx.cmd);
-      const signers = cmd.signers || [];
-
-      // Create signatures only for signers this wallet controls
-      const sigs: TransactionSig[] = signers.map((signer: any, index: number) => {
-        if (signer.pubKey === publicKey) {
-          return { sig: `${publicKey}-signature-${index}`, pubKey: signer.pubKey };
-        }
-        return tx.sigs?.[index] || { pubKey: signer.pubKey, sig: undefined };
-      });
-
-      return {
-        ...tx,
-        sigs,
-      };
-    }),
-    connect: vi.fn().mockResolvedValue({
-      publicKey,
-      address: `k:${publicKey}`,
-    }),
-    disconnect: vi.fn().mockResolvedValue(undefined),
-    isConnected: vi.fn().mockResolvedValue(true),
-  };
-}
 
 describe("Multi-Signature Transaction Support", () => {
   describe("collectSignatures", () => {
-    it("should collect signatures from all wallets", async () => {
-      const aliceWallet = createMockWallet("alice-key");
-      const bobWallet = createMockWallet("bob-key");
+    it("should collect signatures from all signers", async () => {
+      const aliceWallet = createMockSigner("alice-key");
+      const bobWallet = createMockSigner("bob-key");
 
       const tx: PartiallySignedTransaction = {
         cmd: JSON.stringify({
@@ -71,9 +29,9 @@ describe("Multi-Signature Transaction Support", () => {
       expect(signedTx.sigs[1]).toEqual({ sig: "bob-key-signature-1", pubKey: "bob-key" });
     });
 
-    it("should work with wallets in any order", async () => {
-      const aliceWallet = createMockWallet("alice-key");
-      const bobWallet = createMockWallet("bob-key");
+    it("should work with signers in any order", async () => {
+      const aliceWallet = createMockSigner("alice-key");
+      const bobWallet = createMockSigner("bob-key");
 
       const tx: PartiallySignedTransaction = {
         cmd: JSON.stringify({
@@ -86,7 +44,7 @@ describe("Multi-Signature Transaction Support", () => {
         ],
       };
 
-      // Test with reversed wallet order
+      // Test with reversed signer order
       const signedTx = await collectSignatures(tx, [bobWallet, aliceWallet]);
 
       expect(signedTx.sigs).toHaveLength(2);
@@ -95,8 +53,8 @@ describe("Multi-Signature Transaction Support", () => {
     });
 
     it("should throw error if required signatures are missing", async () => {
-      const aliceWallet = createMockWallet("alice-key");
-      // Bob wallet is missing
+      const aliceWallet = createMockSigner("alice-key");
+      // Bob signer is missing
 
       const tx: PartiallySignedTransaction = {
         cmd: JSON.stringify({
@@ -114,8 +72,8 @@ describe("Multi-Signature Transaction Support", () => {
       );
     });
 
-    it("should handle multiple signers with same wallet", async () => {
-      const aliceWallet = createMockWallet("alice-key");
+    it("should handle multiple signers with same signer", async () => {
+      const aliceWallet = createMockSigner("alice-key");
 
       const tx: PartiallySignedTransaction = {
         cmd: JSON.stringify({

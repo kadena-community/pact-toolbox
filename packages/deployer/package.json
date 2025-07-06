@@ -1,5 +1,5 @@
 {
-  "name": "@pact-toolbox/runtime",
+  "name": "@pact-toolbox/deployer",
   "version": "0.2.0",
   "repository": "kadena-community/pact-toolbox",
   "author": "Salama Ashoush <salamaashoush@gmail.com>",
@@ -45,10 +45,13 @@
     "typecheck": "tsc --noEmit --skipLibCheck"
   },
   "dependencies": {
+    "@pact-toolbox/chainweb-client": "workspace:*",
     "@pact-toolbox/config": "workspace:*",
-    "@pact-toolbox/context": "workspace:*",
+    "@pact-toolbox/network-config": "workspace:*",
     "@pact-toolbox/node-utils": "workspace:*",
     "@pact-toolbox/transaction": "workspace:*",
+    "@pact-toolbox/types": "workspace:*",
+    "@pact-toolbox/utils": "workspace:*",
     "@pact-toolbox/wallet-adapters": "workspace:*",
     "@pact-toolbox/wallet-core": "workspace:*",
     "pathe": "^2.0.3"

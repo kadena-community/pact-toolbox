@@ -1,5 +1,5 @@
-import { EventEmitter } from "@pact-toolbox/utils";
-import type { PartiallySignedTransaction, SignedTransaction } from "@pact-toolbox/types";
+import { EventEmitter, resolve, register } from "@pact-toolbox/utils";
+import type { PartiallySignedTransaction, SignedTransaction, TOKENS } from "@pact-toolbox/types";
 import type { 
   Wallet, 
   WalletProvider, 
@@ -99,9 +99,8 @@ export class WalletSystem extends EventEmitter<WalletEvents> {
         const { ModalManager: MM } = await import("@pact-toolbox/wallet-ui" as string);
         ModalManager = MM;
         this.modalManager = ModalManager.getInstance();
-      } catch (_error) {
-        // UI package not available, continue without UI
-        console.debug("Wallet UI not available, continuing without modal support");
+      } catch (error) {
+        console.debug("Wallet UI not available:", error);
       }
     }
 
@@ -109,193 +108,120 @@ export class WalletSystem extends EventEmitter<WalletEvents> {
   }
 
   /**
-   * Connect to a wallet
-   * - No parameters: Shows UI selector
-   * - String parameter: Connects to specific wallet
-   * - Options parameter: Advanced control
+   * Get available wallet providers
    */
-  async connect(walletIdOrOptions?: string | ConnectOptions & { walletId?: string }): Promise<Wallet> {
-    await this.ensureInitialized();
-
-    // Handle different parameter types
-    if (typeof walletIdOrOptions === "string") {
-      // Direct connection to specific wallet
-      return this.connectWallet(walletIdOrOptions);
-    }
-
-    const options = walletIdOrOptions || {};
-    
-    // If wallet ID provided in options, connect directly
-    if (options.walletId) {
-      return this.connectWallet(options.walletId, options);
-    }
-
-    // In test environment, always use keypair
-    if (isTestEnvironment()) {
-      return this.connectWallet("keypair", options);
-    }
-    
-    // Otherwise show UI selector if available
-    if (this.modalManager) {
-      const selectedId = await this.modalManager.showWalletSelector();
-      if (!selectedId) {
-        throw new Error("No wallet selected");
-      }
-      return this.connectWallet(selectedId, options);
-    }
-
-    // No UI available, try auto-connect
-    return this.autoConnect();
+  getProviders(): WalletProvider[] {
+    return Array.from(this.providers.values());
   }
 
   /**
-   * Ensure a wallet is connected (get existing or connect new)
+   * Get provider by ID
    */
-  async ensure(options?: ConnectOptions): Promise<Wallet> {
-    await this.ensureInitialized();
-
-    // Check if already connected
-    if (this.primaryWallet) {
-      return this.primaryWallet;
-    }
-
-    // Try to connect
-    return this.connect(options);
+  getProvider(id: string): WalletProvider | undefined {
+    return this.providers.get(id);
   }
 
   /**
-   * Auto-connect to the best available wallet
+   * Get available wallet metadata
    */
-  async autoConnect(options?: AutoConnectOptions): Promise<Wallet> {
-    await this.ensureInitialized();
-
-    const preferences = getWalletPreferences();
-    const mergedOptions: AutoConnectOptions = {
-      preferredWallets: preferences.preferredOrder,
-      ...options,
-    };
-
-    return this.autoConnectWallet(mergedOptions);
-  }
-
-  /**
-   * Disconnect wallet(s)
-   */
-  async disconnect(walletId?: string): Promise<void> {
-    if (walletId) {
-      await this.disconnectWallet(walletId);
-    } else {
-      // Disconnect all
-      const walletIds = Array.from(this.connectedWallets.keys());
-      for (const id of walletIds) {
-        await this.disconnectWallet(id);
-      }
-    }
-  }
-
-  /**
-   * Get available wallets
-   */
-  async getAvailable(): Promise<WalletMetadata[]> {
-    await this.ensureInitialized();
-    const providers = Array.from(this.providers.values());
-    const availabilityChecks = await Promise.all(
-      providers.map(async (provider) => ({
-        provider,
-        isAvailable: await provider.isAvailable().catch(() => false),
-      })),
-    );
-
-    return availabilityChecks.filter(({ isAvailable }) => isAvailable).map(({ provider }) => provider.metadata);
+  getAvailableWallets(): WalletMetadata[] {
+    return this.getProviders().map(p => p.metadata);
   }
 
   /**
    * Get connected wallets
    */
-  getConnected(): Wallet[] {
+  getConnectedWallets(): Wallet[] {
     return Array.from(this.connectedWallets.values());
   }
 
   /**
    * Get primary wallet
    */
-  getPrimary(): Wallet | null {
+  getPrimaryWallet(): Wallet | null {
     return this.primaryWallet;
   }
 
   /**
    * Set primary wallet
    */
-  setPrimary(wallet: Wallet): void {
-    if (wallet && !Array.from(this.connectedWallets.values()).includes(wallet)) {
-      throw new Error("Cannot set disconnected wallet as primary");
-    }
-    this.primaryWallet = wallet;
-  }
-
-  /**
-   * Subscribe to wallet events (inherited from EventEmitter)
-   */
-
-  /**
-   * Get connection status
-   */
-  getStatus() {
-    const primaryWalletId = this.getPrimaryWalletId();
-    return {
-      connected: this.connectedWallets.size > 0,
-      primaryWalletId,
-      connectedWallets: Array.from(this.connectedWallets.keys()),
-    };
-  }
-
-  /**
-   * Update preferences
-   */
-  updatePreferences(preferences: Partial<WalletPreferences>): void {
-    const current = getWalletPreferences();
-    saveWalletPreferences({ ...current, ...preferences });
-  }
-
-  /**
-   * Ensure system is initialized
-   */
-  private async ensureInitialized(): Promise<void> {
-    if (!this.initialized) {
-      await this.initialize();
-    }
-  }
-
-  /**
-   * Connect to a specific wallet
-   */
-  private async connectWallet(walletId: string, options: ConnectOptions = {}): Promise<Wallet> {
-    try {
-      // Check if already connected and not forcing reconnection
-      if (!options.force && this.connectedWallets.has(walletId)) {
-        const wallet = this.connectedWallets.get(walletId)!;
-        const isConnected = await wallet.isConnected(options.networkId);
-        if (isConnected) {
-          return wallet;
+  setPrimaryWallet(walletOrId: Wallet | string): void {
+    if (typeof walletOrId === "string") {
+      const wallet = this.connectedWallets.get(walletOrId);
+      if (!wallet) {
+        throw WalletError.notConnected(walletOrId);
+      }
+      this.primaryWallet = wallet;
+    } else {
+      // Verify the wallet is connected
+      let found = false;
+      for (const wallet of this.connectedWallets.values()) {
+        if (wallet === walletOrId) {
+          found = true;
+          break;
         }
       }
+      if (!found) {
+        throw WalletError.notConnected("wallet");
+      }
+      this.primaryWallet = walletOrId;
+    }
 
-      // Get provider
-      const provider = this.providers.get(walletId);
-      if (!provider) {
-        throw WalletError.notFound(walletId);
+    // Emit event
+    this.emit("primaryChanged", this.primaryWallet);
+  }
+
+  /**
+   * Connect to a wallet
+   */
+  async connect(options: ConnectOptions = {}): Promise<Wallet> {
+    await this.initialize();
+
+    // Determine which wallet to connect
+    let walletId: string | undefined = options.walletId;
+
+    if (!walletId) {
+      // If no wallet specified, try auto-connect
+      const autoConnectResult = await this.autoConnectWallet(options);
+      if (autoConnectResult) {
+        return autoConnectResult;
       }
 
-      // Check availability
-      const isAvailable = await provider.isAvailable();
-      if (!isAvailable) {
-        throw WalletError.notFound(walletId);
+      // If auto-connect didn't work and we have UI, show selector
+      if (this.modalManager && !options.silent) {
+        walletId = await this.modalManager.showWalletSelector() || undefined;
+        if (!walletId) {
+          throw WalletError.userRejected("No wallet selected");
+        }
+      } else {
+        throw WalletError.notFound(
+          "No wallet specified and no UI available. " +
+          "Either provide a walletId in options, enable UI, or ensure a wallet is already connected."
+        );
       }
+    }
 
-      // Create and connect wallet
-      const wallet = await provider.createWallet();
-      
-      // Set wallet ID if not already set - this is safe since id is optional
+    // Get the provider
+    const provider = this.providers.get(walletId);
+    if (!provider) {
+      const available = Array.from(this.providers.keys()).join(", ");
+      throw WalletError.notFound(
+        `Wallet provider '${walletId}' not found. Available wallets: ${available || "none"}. ` +
+        `Make sure the wallet is properly configured in setupWalletDI().`
+      );
+    }
+
+    // Check if already connected
+    const existing = this.connectedWallets.get(walletId);
+    if (existing) {
+      return existing;
+    }
+
+    try {
+      // Create wallet instance
+      const wallet = provider.createWallet();
+
+      // Assign wallet ID if not already set
       if (!wallet.id) {
         // Type assertion is necessary here since we're setting an optional readonly property
         (wallet as { id?: string }).id = walletId;
@@ -347,98 +273,71 @@ export class WalletSystem extends EventEmitter<WalletEvents> {
       if (persisted?.lastWalletId && persisted.autoConnect !== false) {
         try {
           const provider = this.providers.get(persisted.lastWalletId);
-          if (provider && await provider.isAvailable()) {
-            return await this.connectWallet(persisted.lastWalletId, options);
+          if (provider && provider.isAvailable()) {
+            return await this.connect({ ...options, walletId: persisted.lastWalletId, silent: true });
           }
-        } catch {
-          // Continue to other options if persisted wallet fails
-        }
-      }
-
-      // In test environment, only use keypair
-      if (isTestEnvironment()) {
-        return await this.connectWallet("keypair", options);
-      }
-      
-      // For auto-connect, prioritize keypair wallet for development
-      const providers = Array.from(this.providers.values());
-      let preferredOrder = options.preferredWallets || ["keypair"];
-
-      // Try preferred wallets first
-      const errors: Error[] = [];
-
-      for (const walletId of preferredOrder) {
-        const provider = this.providers.get(walletId);
-        if (!provider) continue;
-
-        try {
-          // Only check availability for non-keypair wallets to avoid connection errors
-          if (walletId !== "keypair") {
-            const isAvailable = await provider.isAvailable();
-            if (!isAvailable) continue;
-          }
-
-          return await this.connectWallet(walletId, options);
         } catch (error) {
-          errors.push(error as Error);
-          if (!options.skipUnavailable) {
-            throw error;
-          }
+          console.debug("Failed to auto-connect persisted wallet:", error);
         }
       }
 
-      // If preferred wallets failed, try others (except those that might cause connection errors)
-      const skipWallets = new Set(["chainweaver", "zelcore"]); // Skip wallets that try to connect to localhost ports
-      const remainingProviders = providers.filter(
-        (p) => !preferredOrder.includes(p.metadata.id) && !skipWallets.has(p.metadata.id),
-      );
+      // Try injected wallets by priority
+      const injectedProviders = this.getProviders()
+        .filter(p => p.metadata.type === "injected" && p.isAvailable())
+        .sort((a, b) => (b.metadata.priority || 0) - (a.metadata.priority || 0));
 
-      for (const provider of remainingProviders) {
+      for (const provider of injectedProviders) {
         try {
-          const isAvailable = await provider.isAvailable();
-          if (!isAvailable) continue;
-
-          return await this.connectWallet(provider.metadata.id, options);
+          return await this.connect({ ...options, walletId: provider.metadata.id, silent: true });
         } catch (error) {
-          errors.push(error as Error);
-          if (!options.skipUnavailable) {
-            throw error;
-          }
+          console.debug(`Failed to auto-connect ${provider.metadata.id}:`, error);
         }
       }
 
-      // All wallets failed
-      throw WalletError.connectionFailed(
-        `Failed to connect to any wallet. Errors: ${errors.map((e) => e.message).join(", ")}`,
-      );
+      // No wallet could be auto-connected
+      throw WalletError.notFound("No wallet available for auto-connect");
     } catch (error) {
-      const walletError = error instanceof WalletError ? error : WalletError.unknown("Auto-connect failed", error);
-
-      this.emit("error", walletError);
-      throw walletError;
+      if (options.fallbackToManual && this.modalManager) {
+        const walletId = await this.modalManager.showWalletSelector();
+        if (walletId) {
+          return await this.connect({ ...options, walletId });
+        }
+      }
+      throw error;
     }
   }
 
   /**
    * Disconnect a wallet
    */
-  private async disconnectWallet(walletId: string): Promise<void> {
-    try {
-      const wallet = this.connectedWallets.get(walletId);
-      if (!wallet) {
-        return; // Already disconnected
+  async disconnect(walletId?: string): Promise<void> {
+    // If no ID provided, disconnect primary wallet
+    if (!walletId) {
+      if (!this.primaryWallet) {
+        throw WalletError.notConnected("primary");
       }
+      walletId = this.getPrimaryWalletId();
+      if (!walletId) {
+        throw WalletError.notFound("Could not determine primary wallet ID");
+      }
+    }
 
-      // Disconnect wallet
+    const wallet = this.connectedWallets.get(walletId);
+    if (!wallet) {
+      throw WalletError.notConnected(walletId);
+    }
+
+    try {
+      // Disconnect the wallet
       await wallet.disconnect();
 
       // Remove from connected wallets
       this.connectedWallets.delete(walletId);
 
-      // Update primary wallet if needed
-      if (this.primaryWallet === wallet) {
-        const remaining = Array.from(this.connectedWallets.values());
-        this.primaryWallet = remaining[0] || null;
+      // If this was the primary wallet, clear it
+      if (wallet === this.primaryWallet) {
+        this.primaryWallet = null;
+        this.emit("primaryChanged", null);
       }
 
       // Clear persistence if this was the last wallet
@@ -499,8 +398,11 @@ export class WalletSystem extends EventEmitter<WalletEvents> {
   }
 }
 
+// Singleton instance for backward compatibility
+let defaultWalletSystem: WalletSystem | null = null;
+
 /**
- * Create a wallet system instance
+ * Create a new wallet system instance
  */
 export async function createWalletSystem(config?: TypeSafeWalletConfig): Promise<WalletSystem> {
   const system = new WalletSystem(config);
@@ -509,16 +411,27 @@ export async function createWalletSystem(config?: TypeSafeWalletConfig): Promise
 }
 
 /**
- * Default wallet system instance (singleton)
- */
-let defaultSystem: WalletSystem | null = null;
-
-/**
- * Get or create the default wallet system
+ * Get the wallet system from DI container or create a singleton
+ * 
+ * This function tries to get the wallet system from the DI container first.
+ * If not found, it maintains a singleton instance for backward compatibility.
  */
 export async function getWalletSystem(config?: TypeSafeWalletConfig): Promise<WalletSystem> {
-  if (!defaultSystem) {
-    defaultSystem = await createWalletSystem(config);
+  try {
+    // Try to get from DI container first
+    return resolve(TOKENS.WalletSystem) as WalletSystem;
+  } catch {
+    // Fall back to singleton pattern
+    if (!defaultWalletSystem) {
+      defaultWalletSystem = await createWalletSystem(config);
+      
+      // Try to register it in DI container for future use
+      try {
+        register(TOKENS.WalletSystem, defaultWalletSystem);
+      } catch {
+        // Ignore if registration fails
+      }
+    }
+    return defaultWalletSystem;
   }
-  return defaultSystem;
 }

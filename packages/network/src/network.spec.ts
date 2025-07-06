@@ -4,7 +4,7 @@ import type { PactToolboxConfigObj } from "@pact-toolbox/config";
 // Mock first before imports
 vi.mock("@pact-toolbox/config");
 vi.mock("@pact-toolbox/prelude");
-vi.mock("@pact-toolbox/runtime");
+vi.mock("@pact-toolbox/deployer");
 vi.mock("@pact-toolbox/node-utils");
 vi.mock("@pact-toolbox/utils");
 vi.mock("./networks/pactServer");

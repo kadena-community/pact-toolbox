@@ -2,7 +2,7 @@ import type { PactToolboxConfigObj } from "@pact-toolbox/config";
 
 import { resolveConfig } from "@pact-toolbox/config";
 import { PactToolboxNetwork } from "@pact-toolbox/network";
-import { PactToolboxClient } from "@pact-toolbox/runtime";
+import { PactToolboxClient } from "@pact-toolbox/deployer";
 import { logger } from "@pact-toolbox/node-utils";
 import type { Wallet } from "@pact-toolbox/wallet-core";
 import { configureWalletUI } from "@pact-toolbox/transaction";

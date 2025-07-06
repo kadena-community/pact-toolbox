@@ -1,5 +1,6 @@
 import type { Wallet } from "@pact-toolbox/wallet-core";
 import { ChainwebClient } from "@pact-toolbox/chainweb-client";
+import type { IStore } from "@pact-toolbox/types";
 import type { ContextConfig, ContextState, PactToolboxContext, SerializableNetworkConfig } from "./types";
 import { eventBus } from "./events";
 import { initializeWalletSystem, createWalletModal } from "./wallet-integration";
@@ -7,7 +8,7 @@ import type { WalletSystem } from "@pact-toolbox/wallet-adapters";
 
 let globalStore: PactToolboxStore | null = null;
 
-export class PactToolboxStore implements PactToolboxContext {
+export class PactToolboxStore implements PactToolboxContext, IStore {
   private _state: ContextState;
   private _config: ContextConfig;
   private _walletSystem?: WalletSystem;

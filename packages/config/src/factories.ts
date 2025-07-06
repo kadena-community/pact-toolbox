@@ -1,7 +1,7 @@
 import { defu } from "defu";
 
 import type { ChainwebNetworkConfig, DevNetworkConfig, PactServerConfig, PactServerNetworkConfig } from "./config";
-import { defaultKeyPairs, defaultKeysets, defaultMeta } from "./defaults";
+import { DEFAULT_GAS_LIMIT, DEFAULT_KEY_PAIRS, DEFAULT_KEYSETS, defaultMeta } from "./defaults";
 import { createChainwebRpcUrl } from "./utils";
 import {
   validatePactServerConfig,
@@ -31,7 +31,7 @@ export function createPactServerConfig(overrides?: Partial<PactServerConfig>): R
     verbose: true,
     pragmas: [],
     execConfig: ["DisablePact44", "AllowReadInLocal"],
-    gasLimit: 150000,
+    gasLimit: DEFAULT_GAS_LIMIT,
     gasRate: 0.01,
     entity: "entity",
   };
@@ -65,8 +65,8 @@ export function createPactServerNetworkConfig(overrides?: Partial<PactServerNetw
     type: "pact-server" as const,
     rpcUrl: "http://localhost:{port}",
     networkId: "development",
-    keyPairs: defaultKeyPairs,
-    keysets: defaultKeysets,
+    keyPairs: DEFAULT_KEY_PAIRS,
+    keysets: DEFAULT_KEYSETS,
     senderAccount: "sender00",
     autoStart: true,
     serverConfig: createPactServerConfig(),
@@ -106,8 +106,8 @@ export function createDevNetNetworkConfig(overrides?: Partial<DevNetworkConfig>)
     type: "chainweb-devnet" as const,
     rpcUrl: createChainwebRpcUrl(),
     networkId: "development",
-    keyPairs: defaultKeyPairs,
-    keysets: defaultKeysets,
+    keyPairs: DEFAULT_KEY_PAIRS,
+    keysets: DEFAULT_KEYSETS,
     senderAccount: "sender00",
     autoStart: true,
     containerConfig: {

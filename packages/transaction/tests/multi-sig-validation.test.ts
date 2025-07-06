@@ -1,7 +1,8 @@
-import { describe, it, expect, vi } from "vitest";
-import { collectSignatures, mergeSignatures, isFullySigned } from "../src/multi-sig";
-import type { Wallet } from "@pact-toolbox/wallet-core";
+import { describe, it, expect } from "vitest";
+import { collectSignatures, mergeSignatures } from "../src/multi-sig";
 import type { PartiallySignedTransaction, TransactionSig, TransactionFullSig } from "@pact-toolbox/types";
+import { isFullySignedTransaction as isFullySigned } from "@pact-toolbox/signers";
+import { createMockSigner } from "./test-helpers";
 
 describe("Multi-Signature Validation Tests", () => {
   describe("collectSignatures validation", () => {
@@ -23,8 +24,8 @@ describe("Multi-Signature Validation Tests", () => {
         ],
       };
 
-      // Create wallets that return specific signatures
-      const aliceWallet: Wallet = {
+      // Create signers that return specific signatures
+      const alicesigner: signer = {
         isInstalled: vi.fn().mockReturnValue(true),
         getAccount: vi.fn().mockResolvedValue({ publicKey: "alice-key", address: "k:alice-key" }),
         getNetwork: vi
@@ -43,7 +44,7 @@ describe("Multi-Signature Validation Tests", () => {
         isConnected: vi.fn().mockResolvedValue(true),
       };
 
-      const bobWallet: Wallet = {
+      const bobsigner: signer = {
         isInstalled: vi.fn().mockReturnValue(true),
         getAccount: vi.fn().mockResolvedValue({ publicKey: "bob-key", address: "k:bob-key" }),
         getNetwork: vi
@@ -62,7 +63,7 @@ describe("Multi-Signature Validation Tests", () => {
         isConnected: vi.fn().mockResolvedValue(true),
       };
 
-      const charlieWallet: Wallet = {
+      const charliesigner: signer = {
         isInstalled: vi.fn().mockReturnValue(true),
         getAccount: vi.fn().mockResolvedValue({ publicKey: "charlie-key", address: "k:charlie-key" }),
         getNetwork: vi
@@ -81,7 +82,7 @@ describe("Multi-Signature Validation Tests", () => {
         isConnected: vi.fn().mockResolvedValue(true),
       };
 
-      const signedTx = await collectSignatures(tx, [aliceWallet, bobWallet, charlieWallet]);
+      const signedTx = await collectSignatures(tx, [alicesigner, bobsigner, charliesigner]);
 
       // Verify all signatures are collected
       expect(signedTx.sigs).toHaveLength(3);
@@ -94,8 +95,8 @@ describe("Multi-Signature Validation Tests", () => {
       expect(signedTx.cmd).toBe(tx.cmd);
     });
 
-    it("should handle wallets that sign multiple indices", async () => {
-      // Transaction where one wallet controls multiple signers
+    it("should handle signers that sign multiple indices", async () => {
+      // Transaction where one signer controls multiple signers
       const tx: PartiallySignedTransaction = {
         cmd: JSON.stringify({
           signers: [
@@ -112,7 +113,7 @@ describe("Multi-Signature Validation Tests", () => {
         ],
       };
 
-      const aliceWallet: Wallet = {
+      const alicesigner: signer = {
         isInstalled: vi.fn().mockReturnValue(true),
         getAccount: vi.fn().mockResolvedValue({ publicKey: "alice-key", address: "k:alice-key" }),
         getNetwork: vi
@@ -131,7 +132,7 @@ describe("Multi-Signature Validation Tests", () => {
         isConnected: vi.fn().mockResolvedValue(true),
       };
 
-      const bobWallet: Wallet = {
+      const bobsigner: signer = {
         isInstalled: vi.fn().mockReturnValue(true),
         getAccount: vi.fn().mockResolvedValue({ publicKey: "bob-key", address: "k:bob-key" }),
         getNetwork: vi
@@ -150,7 +151,7 @@ describe("Multi-Signature Validation Tests", () => {
         isConnected: vi.fn().mockResolvedValue(true),
       };
 
-      const signedTx = await collectSignatures(tx, [aliceWallet, bobWallet]);
+      const signedTx = await collectSignatures(tx, [alicesigner, bobsigner]);
 
       // Verify all signatures are correctly placed
       expect(signedTx.sigs).toHaveLength(3);
@@ -172,8 +173,8 @@ describe("Multi-Signature Validation Tests", () => {
         ],
       };
 
-      // Only provide alice wallet
-      const aliceWallet: Wallet = {
+      // Only provide alice signer
+      const alicesigner: signer = {
         isInstalled: vi.fn().mockReturnValue(true),
         getAccount: vi.fn().mockResolvedValue({ publicKey: "alice-key", address: "k:alice-key" }),
         getNetwork: vi
@@ -192,7 +193,7 @@ describe("Multi-Signature Validation Tests", () => {
         isConnected: vi.fn().mockResolvedValue(true),
       };
 
-      await expect(collectSignatures(tx, [aliceWallet])).rejects.toThrow(
+      await expect(collectSignatures(tx, [alicesigner])).rejects.toThrow(
         "Missing signatures from signers at indices: 1, 2",
       );
     });
@@ -376,8 +377,8 @@ describe("Multi-Signature Validation Tests", () => {
         ],
       };
 
-      // Create wallets for keys 2 and 4 only
-      const wallet2: Wallet = {
+      // Create signers for keys 2 and 4 only
+      const signer2: signer = {
         isInstalled: vi.fn().mockReturnValue(true),
         getAccount: vi.fn().mockResolvedValue({ publicKey: "key-2", address: "k:key-2" }),
         getNetwork: vi
@@ -398,7 +399,7 @@ describe("Multi-Signature Validation Tests", () => {
         isConnected: vi.fn().mockResolvedValue(true),
       };
 
-      const wallet4: Wallet = {
+      const signer4: signer = {
         isInstalled: vi.fn().mockReturnValue(true),
         getAccount: vi.fn().mockResolvedValue({ publicKey: "key-4", address: "k:key-4" }),
         getNetwork: vi
@@ -420,7 +421,7 @@ describe("Multi-Signature Validation Tests", () => {
       };
 
       // This should fail because not all signatures are collected
-      await expect(collectSignatures(tx, [wallet2, wallet4])).rejects.toThrow(
+      await expect(collectSignatures(tx, [signer2, signer4])).rejects.toThrow(
         "Missing signatures from signers at indices: 0, 2, 4",
       );
     });
@@ -434,7 +435,7 @@ describe("Multi-Signature Validation Tests", () => {
         sigs: [{ pubKey: "alice-key", sig: undefined }],
       };
 
-      const wallet: Wallet = {
+      const signer: signer = {
         isInstalled: vi.fn().mockReturnValue(true),
         getAccount: vi.fn().mockResolvedValue({ publicKey: "alice-key", address: "k:alice-key" }),
         getNetwork: vi
@@ -449,7 +450,7 @@ describe("Multi-Signature Validation Tests", () => {
         isConnected: vi.fn().mockResolvedValue(true),
       };
 
-      const signedTx = await collectSignatures(tx, [wallet]);
+      const signedTx = await collectSignatures(tx, [signer]);
 
       // Hash should be converted to base64url string
       expect(typeof signedTx.hash).toBe("string");

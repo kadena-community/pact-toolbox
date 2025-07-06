@@ -50,6 +50,7 @@
     "typecheck": "tsc --noEmit --skipLibCheck"
   },
   "dependencies": {
+    "@pact-toolbox/network-config": "workspace:*",
     "c12": "^3.0.4",
     "defu": "^6.1.4",
     "pathe": "^2.0.3",

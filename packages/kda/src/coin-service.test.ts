@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { CoinService } from "./coin-service";
-import { execution, type ToolboxNetworkContext } from "@pact-toolbox/transaction";
+import { execution, type PactToolboxContext } from "@pact-toolbox/transaction";
 
 // Mock the transaction module
 vi.mock("@pact-toolbox/transaction", () => ({
@@ -11,7 +11,7 @@ const mockExecution = vi.mocked(execution);
 
 describe("CoinService", () => {
   let coinService: CoinService;
-  let mockContext: ToolboxNetworkContext;
+  let mockContext: PactToolboxContext;
 
   beforeEach(() => {
     vi.clearAllMocks();

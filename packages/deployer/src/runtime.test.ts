@@ -53,7 +53,7 @@ vi.mock("@pact-toolbox/wallet-adapters/keypair", () => {
   };
 });
 
-describe("@pact-toolbox/runtime", () => {
+describe("@pact-toolbox/deployer", () => {
   let mockConfig: PactToolboxConfigObj;
   let mockDispatcher: any;
   let mockBuilder: any;

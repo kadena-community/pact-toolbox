@@ -1,4 +1,4 @@
-import type { PactToolboxClient } from "@pact-toolbox/runtime";
+import type { PactToolboxClient } from "@pact-toolbox/deployer";
 import type { PactKeyset } from "@pact-toolbox/types";
 import { NamespaceService, pact } from "@pact-toolbox/kda";
 import { logger, readFile } from "@pact-toolbox/node-utils";

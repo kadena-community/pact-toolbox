@@ -5,7 +5,7 @@
 import type { PactServerConfig, PactServerNetworkConfig } from "@pact-toolbox/config";
 import type { ChildProcessWithoutNullStreams } from "child_process";
 import type { Logger } from "@pact-toolbox/node-utils";
-import type { PactToolboxClient } from "@pact-toolbox/runtime";
+import type { PactToolboxClient } from "@pact-toolbox/deployer";
 import type { NetworkApi, NetworkStartOptions } from "../types";
 
 import { rm } from "node:fs/promises";

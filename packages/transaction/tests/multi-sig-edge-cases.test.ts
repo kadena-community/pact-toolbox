@@ -1,7 +1,7 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 import { collectSignatures, mergeSignatures } from "../src/multi-sig";
-import type { Wallet } from "@pact-toolbox/wallet-core";
 import type { PartiallySignedTransaction, TransactionSig } from "@pact-toolbox/types";
+import { createMockSigner } from "./test-helpers";
 
 describe("Multi-Signature Edge Cases", () => {
   it("should handle empty signers array", async () => {
@@ -17,7 +17,7 @@ describe("Multi-Signature Edge Cases", () => {
     expect(signedTx.hash).toBe("test-hash");
   });
 
-  it("should handle wallet that doesn't control any signers", async () => {
+  it("should handle signer that doesn't control any signers", async () => {
     const tx: PartiallySignedTransaction = {
       cmd: JSON.stringify({
         signers: [{ pubKey: "alice-key" }],
@@ -26,7 +26,7 @@ describe("Multi-Signature Edge Cases", () => {
       sigs: [{ pubKey: "alice-key", sig: undefined }],
     };
 
-    // Bob wallet doesn't control any signers
+    // Bob signer doesn't control any signers
     const bobWallet: Wallet = {
       isInstalled: vi.fn().mockReturnValue(true),
       getAccount: vi.fn().mockResolvedValue({ publicKey: "bob-key", address: "k:bob-key" }),
@@ -45,7 +45,7 @@ describe("Multi-Signature Edge Cases", () => {
     await expect(collectSignatures(tx, [bobWallet])).rejects.toThrow("Missing signatures from signers at indices: 0");
   });
 
-  it("should handle wallet that returns extra signatures", async () => {
+  it("should handle signer that returns extra signatures", async () => {
     const tx: PartiallySignedTransaction = {
       cmd: JSON.stringify({
         signers: [{ pubKey: "alice-key" }],
@@ -55,7 +55,7 @@ describe("Multi-Signature Edge Cases", () => {
     };
 
     // Wallet returns more signatures than expected
-    const wallet: Wallet = {
+    const signer: Wallet = {
       isInstalled: vi.fn().mockReturnValue(true),
       getAccount: vi.fn().mockResolvedValue({ publicKey: "alice-key", address: "k:alice-key" }),
       getNetwork: vi
@@ -73,14 +73,14 @@ describe("Multi-Signature Edge Cases", () => {
       isConnected: vi.fn().mockResolvedValue(true),
     };
 
-    const signedTx = await collectSignatures(tx, [wallet]);
+    const signedTx = await collectSignatures(tx, [signer]);
 
     // Should only include the expected signature
     expect(signedTx.sigs).toHaveLength(1);
     expect(signedTx.sigs[0]).toEqual({ sig: "alice-sig", pubKey: "alice-key" });
   });
 
-  it("should handle wallet that returns signatures in wrong order", async () => {
+  it("should handle signer that returns signatures in wrong order", async () => {
     const tx: PartiallySignedTransaction = {
       cmd: JSON.stringify({
         signers: [{ pubKey: "alice-key" }, { pubKey: "bob-key" }, { pubKey: "charlie-key" }],
@@ -176,7 +176,7 @@ describe("Multi-Signature Edge Cases", () => {
       sigs: [{ pubKey: "alice-key", sig: undefined }],
     };
 
-    const wallet: Wallet = {
+    const signer: Wallet = {
       isInstalled: vi.fn().mockReturnValue(true),
       getAccount: vi.fn().mockResolvedValue({ publicKey: "alice-key", address: "k:alice-key" }),
       getNetwork: vi
@@ -191,7 +191,7 @@ describe("Multi-Signature Edge Cases", () => {
       isConnected: vi.fn().mockResolvedValue(true),
     };
 
-    const signedTx = await collectSignatures(tx, [wallet]);
+    const signedTx = await collectSignatures(tx, [signer]);
 
     // Check hash is valid base64url (no padding, uses - and _ instead of + and /)
     expect(signedTx.hash).toMatch(/^[A-Za-z0-9_-]+$/);
@@ -209,14 +209,14 @@ describe("Multi-Signature Edge Cases", () => {
       sigs: [{ pubKey: "alice-key", sig: undefined }],
     };
 
-    const wallet: Wallet = {
+    const signer: Wallet = {
       isInstalled: vi.fn().mockReturnValue(true),
       getAccount: vi.fn().mockResolvedValue({ publicKey: "alice-key", address: "k:alice-key" }),
       getNetwork: vi
         .fn()
         .mockResolvedValue({ id: "test", networkId: "development", name: "Test", url: "http://localhost" }),
       sign: vi.fn().mockImplementation(async (tx: PartiallySignedTransaction) => {
-        // Mutate the input (bad wallet behavior)
+        // Mutate the input (bad signer behavior)
         const originalSigs = tx.sigs;
         tx.sigs = [];
 
@@ -231,8 +231,8 @@ describe("Multi-Signature Edge Cases", () => {
       isConnected: vi.fn().mockResolvedValue(true),
     };
 
-    // Should still work despite wallet mutating input
-    const signedTx = await collectSignatures(tx, [wallet]);
+    // Should still work despite signer mutating input
+    const signedTx = await collectSignatures(tx, [signer]);
     expect(signedTx.sigs).toHaveLength(1);
     expect(signedTx.sigs[0]).toEqual({ sig: "alice-sig", pubKey: "alice-key" });
   });

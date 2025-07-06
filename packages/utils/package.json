@@ -51,6 +51,9 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit --skipLibCheck"
   },
+  "dependencies": {
+    "@pact-toolbox/types": "workspace:*"
+  },
   "devDependencies": {
     "@kadena/types": "^0.7.0",
     "@pact-toolbox/prettier-config": "workspace:*",

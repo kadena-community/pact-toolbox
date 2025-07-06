@@ -2,7 +2,7 @@
  * Network API types for Pact Toolbox
  */
 
-import type { PactToolboxClient } from "@pact-toolbox/runtime";
+import type { PactToolboxClient } from "@pact-toolbox/deployer";
 
 /**
  * Network types supported by Pact Toolbox

@@ -35,6 +35,7 @@
     "oxlint": "^1.4.0",
     "pact-toolbox": "workspace:*",
     "prettier": "^3.6.2",
+    "source-map": "^0.7.4",
     "tsdown": "^0.12.9",
     "tsx": "^4.20.3",
     "turbo": "^2.5.4",
@@ -70,8 +71,5 @@
       "unrs-resolver"
     ]
   },
-  "prettier": "@pact-toolbox/prettier-config",
-  "dependencies": {
-    "source-map": "^0.7.4"
-  }
+  "prettier": "@pact-toolbox/prettier-config"
 }

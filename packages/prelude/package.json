@@ -54,12 +54,12 @@
   },
   "peerDependencies": {
     "@pact-toolbox/config": "workspace:*",
-    "@pact-toolbox/runtime": "workspace:*"
+    "@pact-toolbox/deployer": "workspace:*"
   },
   "devDependencies": {
     "@pact-toolbox/config": "workspace:*",
+    "@pact-toolbox/deployer": "workspace:*",
     "@pact-toolbox/prettier-config": "workspace:*",
-    "@pact-toolbox/runtime": "workspace:*",
     "@pact-toolbox/tsconfig": "workspace:*",
     "@pact-toolbox/tsdown": "workspace:*",
     "@pact-toolbox/types": "workspace:*",

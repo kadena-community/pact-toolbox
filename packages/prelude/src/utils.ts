@@ -9,7 +9,7 @@ import type {
   RepositoryConfig,
 } from "./types";
 
-import type { PactToolboxClient } from "@pact-toolbox/runtime";
+import type { PactToolboxClient } from "@pact-toolbox/deployer";
 
 const inputRegex = /^(?<provider>[\w-.]+):(?<repo>[\w.-]+\/[\w.-]+)(?<subdir>[^#]+)?#?(?<ref>[\w./-]+)?/;
 const providerShortcuts: Record<string, string> = {

@@ -1,4 +1,4 @@
-import type { SignedTransaction } from "@pact-toolbox/types";
+import type { SignedTransaction, IChainwebClient } from "@pact-toolbox/types";
 import type {
   NetworkConfig,
   SendResult,
@@ -24,7 +24,7 @@ import { ChainwebClientError } from "./types";
  * Simple, powerful API for interacting with Kadena blockchain.
  * Works across web, Node.js, and React Native environments.
  */
-export class ChainwebClient {
+export class ChainwebClient implements IChainwebClient {
   private config: Required<NetworkConfig>;
 
   constructor(config: NetworkConfig) {

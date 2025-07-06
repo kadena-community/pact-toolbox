@@ -1,53 +1,21 @@
-import { execution, type ToolboxNetworkContext } from "@pact-toolbox/transaction";
-import type { PactKeyset, ChainId, PactTransactionResult } from "@pact-toolbox/types";
-import { blake2b } from "@pact-toolbox/crypto";
-import { validatePrincipalKeyset } from "./pact";
+// Export the legacy version for backward compatibility
+export { NamespaceService, type NamespaceServiceConfig } from "./namespace-service-legacy";
 
-/**
- * Configuration for the NamespaceService
- */
-export interface NamespaceServiceConfig {
-  /** Network context for blockchain operations */
-  context: ToolboxNetworkContext;
-  /** Default chain ID to use when not specified */
-  defaultChainId?: ChainId;
-}
+// Export the new DI-based version
+export { 
+  NamespaceServiceDI, 
+  createNamespaceService,
+  type NamespaceServiceConfigDI,
+  type NamespaceOperationOptions,
+  type CreateNamespaceOptions,
+  type RotateNamespaceOptions,
+  type DefineModuleOptions,
+  type DefineInterfaceOptions,
+  type NamespaceInfo
+} from "./namespace-service-di";
 
-/**
- * Base options for namespace operations
- */
-export interface NamespaceOperationOptions {
-  /** Chain ID for this specific operation */
-  chainId?: ChainId;
-  /** Gas limit override */
-  gasLimit?: number;
-  /** Gas price override */
-  gasPrice?: number;
-  /** Time to live override */
-  ttl?: number;
-}
-
-/**
- * Options for creating a principal namespace
- */
-export interface CreatePrincipalNamespaceOptions extends NamespaceOperationOptions {
-  /** The admin keyset that will control the namespace */
-  adminKeyset: PactKeyset;
-  /** The user keyset that can define modules (defaults to adminKeyset if not provided) */
-  userKeyset?: PactKeyset;
-  /** Optional namespace description */
-  description?: string;
-}
-
-/**
- * Result of namespace operations
- */
-export interface NamespaceResult {
-  /** The namespace name */
-  namespace: string;
-  /** Operation status */
-  status: "success" | "error";
-  /** Transaction result */
+// Re-export the original types for backward compatibility
+export type { CreatePrincipalNamespaceOptions, NamespaceResult } from "./namespace-service-principal";
   transaction?: PactTransactionResult;
   /** Error message if any */
   error?: string;

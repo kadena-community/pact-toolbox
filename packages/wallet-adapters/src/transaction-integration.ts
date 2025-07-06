@@ -1,10 +1,20 @@
-import type { Wallet } from "@pact-toolbox/wallet-core";
-import { getWalletSystem, isTestEnvironment, isBrowser } from "@pact-toolbox/wallet-adapters";
-import { EventEmitter } from "@pact-toolbox/utils";
-import type { ContextEventMap } from "@pact-toolbox/types";
+import type { Wallet } from "@pact-toolbox/types";
+import { getWalletSystem } from "./wallet-system";
+import { isTestEnvironment, isBrowser } from "./environment";
 
 /**
- * Wallet UI integration options for transaction builder
+ * Options for signing
+ */
+export interface SigningOptions {
+  signer?: Wallet;
+  showUI?: boolean;
+  walletId?: string;
+  context?: any;
+  [key: string]: any;
+}
+
+/**
+ * Wallet UI integration options
  */
 export interface WalletUIOptions {
   /**
@@ -23,11 +33,15 @@ export interface WalletUIOptions {
    * Custom wallet selector function
    */
   walletSelector?: () => Promise<Wallet | null>;
+
+  /**
+   * Wallet ID to use
+   */
+  walletId?: string;
 }
 
 /**
  * Default wallet selector using wallet-ui modal
- * This now integrates with the unified context when available
  */
 async function defaultWalletSelector(context?: any): Promise<Wallet | null> {
   // If we have a unified context, use its wallet modal
@@ -41,7 +55,6 @@ async function defaultWalletSelector(context?: any): Promise<Wallet | null> {
 
     // Open the unified context's wallet modal
     return new Promise((resolve) => {
-      // Subscribe to wallet connection events using context's event bus
       const { eventBus } = context;
 
       const handleWalletConnected = ({ wallet }: { wallet: Wallet }) => {
@@ -66,7 +79,7 @@ async function defaultWalletSelector(context?: any): Promise<Wallet | null> {
 
   // Fallback to wallet system behavior
   const walletSystem = await getWalletSystem();
-  const primaryWallet = walletSystem.getPrimary();
+  const primaryWallet = walletSystem.getPrimaryWallet();
   if (primaryWallet) {
     console.log("Using already connected wallet");
     return primaryWallet;
@@ -82,39 +95,31 @@ async function defaultWalletSelector(context?: any): Promise<Wallet | null> {
 }
 
 /**
- * Check if we're in a browser environment
- */
-export function isBrowserEnvironment(): boolean {
-  return isBrowser();
-}
-
-/**
  * Get wallet with UI integration
+ * 
+ * This function is used by the wallet provider registered in the DI container
+ * to handle wallet selection with optional UI.
  */
 export async function getWalletWithUI(
   walletOrId: Wallet | string | undefined,
   options: WalletUIOptions = {},
   context?: { isLocalNetwork?: boolean; networkId?: string; context?: any },
 ): Promise<Wallet> {
-  // Merge with global config first, then destructure
   const mergedOptions = {
-    showUI: isBrowserEnvironment(),
+    showUI: isBrowser(),
     forceUI: false,
     walletSelector: defaultWalletSelector,
-    ...getWalletUIConfig(),
     ...options,
   };
-
-  console.log("mergedOptions", mergedOptions, context);
 
   const { showUI, forceUI, walletSelector } = mergedOptions;
 
   // If wallet is provided and UI is not forced, use it directly
   if (walletOrId && !forceUI) {
-    console.log("Using provided wallet");
     if (typeof walletOrId === "string") {
       const walletSystem = await getWalletSystem();
-      return walletSystem.connect(walletOrId);
+      const wallet = await walletSystem.connect({ walletId: walletOrId });
+      return wallet;
     }
     return walletOrId;
   }
@@ -122,19 +127,17 @@ export async function getWalletWithUI(
   // Check if there's already a connected wallet (unless forceUI is true)
   if (!forceUI) {
     // First check unified context if available
-    if (context?.context) {
+    if (context?.context && 'getWallet' in context.context) {
       const contextWallet = context.context.getWallet();
       if (contextWallet) {
-        console.log("Using wallet from unified context for transaction");
         return contextWallet;
       }
     }
 
     // Then check wallet system
     const walletSystem = await getWalletSystem();
-    const primaryWallet = walletSystem.getPrimary();
+    const primaryWallet = walletSystem.getPrimaryWallet();
     if (primaryWallet) {
-      console.log("Using already connected wallet for transaction");
       return primaryWallet;
     }
   }
@@ -161,7 +164,6 @@ export async function getWalletWithUI(
 
     // Handle provided wallet
     if (typeof walletOrId === "string") {
-      console.log("Using provided wallet");
       const walletSystem = await getWalletSystem();
       return walletSystem.connect({
         walletId: walletOrId,
@@ -171,17 +173,16 @@ export async function getWalletWithUI(
     return walletOrId;
   }
 
-  // Show wallet selector UI (only if no wallet is connected)
+  // Show wallet selector UI
   const wallet = await (walletSelector === defaultWalletSelector
     ? defaultWalletSelector(context?.context)
     : walletSelector());
-  console.log("Wallet selected:", wallet);
   if (!wallet) {
     throw new Error("No wallet selected");
   }
 
   // If using unified context, update the context's wallet
-  if (context?.context && wallet) {
+  if (context?.context && 'setWallet' in context.context && wallet) {
     context.context.setWallet(wallet);
   }
 
@@ -189,20 +190,15 @@ export async function getWalletWithUI(
 }
 
 /**
- * Global UI configuration
+ * Setup transaction integration with wallet system
+ * 
+ * @deprecated This function is no longer needed. The wallet system is now
+ * integrated via the DI container. Use `setupWalletDI()` instead.
  */
-let globalUIConfig: WalletUIOptions = {};
-
-/**
- * Configure global wallet UI behavior
- */
-export function configureWalletUI(options: WalletUIOptions): void {
-  globalUIConfig = { ...globalUIConfig, ...options };
-}
-
-/**
- * Get global UI configuration
- */
-export function getWalletUIConfig(): WalletUIOptions {
-  return globalUIConfig;
+export function setupTransactionIntegration(): void {
+  console.warn(
+    "setupTransactionIntegration() is deprecated. " +
+    "Wallet integration is now handled automatically via the DI container. " + 
+    "Use setupWalletDI() from @pact-toolbox/wallet-adapters instead."
+  );
 }

@@ -1,11 +1,11 @@
 import type { PactToolboxConfigObj } from "@pact-toolbox/config";
-import type { PactToolboxClient } from "@pact-toolbox/runtime";
+import type { PactToolboxClient } from "@pact-toolbox/deployer";
 import type { Wallet } from "@pact-toolbox/wallet-adapters";
 import { logger } from "@pact-toolbox/node-utils";
 import { CoinService, MarmaladeService, NamespaceService } from "@pact-toolbox/kda";
 import type { WalletManager, SignerInfo } from "./wallet-manager";
 import type { NamespaceHandler } from "./namespace-handler";
-import { DeploymentHelper } from "./deployment";
+import { DeploymentHelper } from "@pact-toolbox/deployer";
 import type { ChainId } from "@pact-toolbox/types";
 
 export interface ScriptContext<Args = Record<string, unknown>> {
@@ -96,8 +96,6 @@ export class ScriptContextBuilder<Args = Record<string, unknown>> {
       this.client,
       this.config,
       this.network,
-      this.walletManager,
-      this.namespaceHandler,
     );
 
     // Deployment helper is ready to use

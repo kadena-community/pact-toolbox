@@ -1,4 +1,4 @@
-import type { DeployContractOptions, PactToolboxClient } from "@pact-toolbox/runtime";
+import type { DeployContractOptions, PactToolboxClient } from "@pact-toolbox/deployer";
 import { join } from "pathe";
 
 import { logger } from "@pact-toolbox/node-utils";

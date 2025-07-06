@@ -83,7 +83,7 @@ vi.mock("@pact-toolbox/network", () => ({
   })),
 }));
 
-vi.mock("@pact-toolbox/runtime", () => ({
+vi.mock("@pact-toolbox/deployer", () => ({
   PactToolboxClient: vi.fn().mockImplementation(() => ({
     getContext: vi.fn().mockReturnValue({
       getDefaultSigner: vi.fn(),

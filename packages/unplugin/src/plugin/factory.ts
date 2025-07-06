@@ -10,7 +10,7 @@ import {
   type NetworkConfig,
   type PactToolboxConfigObj,
 } from "@pact-toolbox/config";
-import { PactToolboxClient } from "@pact-toolbox/runtime";
+import { PactToolboxClient } from "@pact-toolbox/deployer";
 import { writeFile, logger } from "@pact-toolbox/node-utils";
 import path from "node:path";
 import type { PluginOptions } from "./types";

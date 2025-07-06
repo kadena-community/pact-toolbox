@@ -1,9 +1,8 @@
-import type { ChainId, PactValue } from "@pact-toolbox/types";
-import type { ToolboxNetworkContext } from "@pact-toolbox/transaction";
+import type { ChainId, PactValue, PactToolboxContext } from "@pact-toolbox/types";
 
 // Common types
 export interface StandardOperationOptions {
-  context?: ToolboxNetworkContext;
+  context?: PactToolboxContext;
   chainId?: ChainId;
   sender?: string;
   gasLimit?: number;

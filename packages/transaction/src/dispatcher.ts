@@ -1,5 +1,7 @@
-import type { ChainId, PactCmdPayload, Transaction, PactTransactionDescriptor, PactToolboxContext } from "@pact-toolbox/types";
+import type { ChainId, PactCmdPayload, Transaction, PactTransactionDescriptor } from "@pact-toolbox/types";
 import type { PactTransactionBuilder } from "./builder";
+import type { NetworkConfigProvider } from "@pact-toolbox/network-config";
+import { ChainwebClient } from "@pact-toolbox/chainweb-client";
 import { ALL_CHAINS } from "./constant";
 import { dirtyReadOrFail, localOrFail, submit, submitAndListen, type Client } from "@pact-toolbox/chainweb-client";
 
@@ -45,14 +47,25 @@ async function dispatchTransaction<
 }
 
 export class PactTransactionDispatcher<Payload extends PactCmdPayload, Result = unknown> {
-  #context: PactToolboxContext;
+  #networkProvider: NetworkConfigProvider;
+  #client?: Client;
 
   constructor(
     private builder: PactTransactionBuilder<Payload, Result>,
-    context: PactToolboxContext,
+    networkProvider: NetworkConfigProvider,
   ) {
-    // Context is now required
-    this.#context = context;
+    this.#networkProvider = networkProvider;
+  }
+
+  private getClient(): Client {
+    if (!this.#client) {
+      const network = this.#networkProvider.getCurrentNetwork();
+      this.#client = new ChainwebClient({
+        networkId: network.networkId,
+        rpcUrl: network.rpcUrl,
+      });
+    }
+    return this.#client;
   }
 
   submit(chainId?: ChainId, preflight?: boolean, client?: Client): Promise<PactTransactionDescriptor>;
@@ -62,17 +75,14 @@ export class PactTransactionDispatcher<Payload extends PactCmdPayload, Result = 
     preflight?: boolean,
     client?: Client,
   ): Promise<PactTransactionDescriptor | PactTransactionDescriptor[]> {
-    client = client || this.#context.getClient();
-    if (!client) {
-      throw new Error("No client provided");
-    }
+    client = client || this.getClient();
     return dispatchTransaction(this.builder, client, "submit", preflight, chainId);
   }
 
   dirtyRead(chainId?: ChainId, client?: Client): Promise<Result>;
   dirtyRead(chainId?: ChainId[], client?: Client): Promise<Result[]>;
   dirtyRead(chainId?: ChainId | ChainId[], client?: Client): Promise<Result | Result[]> {
-    client = client || this.#context.getClient();
+    client = client || this.getClient();
     if (!client) {
       throw new Error("No client provided");
     }
@@ -82,7 +92,7 @@ export class PactTransactionDispatcher<Payload extends PactCmdPayload, Result = 
   local(chainId?: ChainId, client?: Client): Promise<Result>;
   local(chainId?: ChainId[], client?: Client): Promise<Result[]>;
   local(chainId?: ChainId | ChainId[], client?: Client): Promise<Result | Result[]> {
-    client = client || this.#context.getClient();
+    client = client || this.getClient();
     if (!client) {
       throw new Error("No client provided");
     }
@@ -92,7 +102,7 @@ export class PactTransactionDispatcher<Payload extends PactCmdPayload, Result = 
   submitAndListen(chainId?: ChainId, preflight?: boolean, client?: Client): Promise<Result>;
   submitAndListen(chainId?: ChainId[], preflight?: boolean, client?: Client): Promise<Result[]>;
   submitAndListen(chainId?: ChainId | ChainId[], preflight?: boolean, client?: Client): Promise<Result | Result[]> {
-    client = client || this.#context.getClient();
+    client = client || this.getClient();
     if (!client) {
       throw new Error("No client provided");
     }

@@ -48,10 +48,10 @@
   },
   "dependencies": {
     "@pact-toolbox/config": "workspace:*",
+    "@pact-toolbox/deployer": "workspace:*",
     "@pact-toolbox/docker": "workspace:*",
     "@pact-toolbox/node-utils": "workspace:*",
     "@pact-toolbox/prelude": "workspace:*",
-    "@pact-toolbox/runtime": "workspace:*",
     "@pact-toolbox/utils": "workspace:*",
     "pathe": "^2.0.3"
   },
