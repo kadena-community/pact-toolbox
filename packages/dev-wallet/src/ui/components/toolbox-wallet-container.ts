@@ -171,7 +171,7 @@ export class ToolboxWalletContainer extends LitElement {
     };
   };
 
-  private handleSignRequested = (event: CustomEvent<{ transaction: any }>) => {
+  private handleSignRequested = (event: CustomEvent<{ transaction: import('../../types').PendingTransaction }>) => {
     console.log("Sign requested event received:", event.detail);
 
     // Store the pending transaction
@@ -239,8 +239,8 @@ export class ToolboxWalletContainer extends LitElement {
 
   private handleCloseWallet = () => {
     // Import and use modal manager to hide the wallet
-    import("../modal-manager").then(({ ModalManager }) => {
-      ModalManager.getInstance().hideDevWallet();
+    import("../modal-manager").then(({ getDefaultModalManager }) => {
+      getDefaultModalManager().hideDevWallet();
     });
   };
 
@@ -421,10 +421,10 @@ export class ToolboxWalletContainer extends LitElement {
       // Load accounts from network config
       if (networkConfig.keyPairs && networkConfig.keyPairs.length > 0) {
         accounts = networkConfig.keyPairs.map((kp: any, index: number) => ({
-          address: kp.account,
+          address: `k:${kp.publicKey}`,
           publicKey: kp.publicKey,
-          privateKey: kp.secretKey,
-          name: kp.account || `Account ${index + 1}`,
+          privateKey: kp.privateKey || kp.secretKey,
+          name: `Account ${index + 1}`,
           chainId: networkConfig.meta?.chainId || "0",
           balance: 0,
         }));

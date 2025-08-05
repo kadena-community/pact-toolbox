@@ -1,6 +1,14 @@
-import type { PactValue } from "@kadena/types";
+export interface PactDecimal {
+  decimal: string;
+}
 
-export type { PactValue } from "@kadena/types";
+export interface PactInt {
+  int: string;
+}
+
+export type PactLiteral = string | number | PactInt | PactDecimal | boolean | Date;
+
+export type PactValue = PactLiteral | Array<PactValue> | Record<string, any>;
 
 export type Serializable =
   | string
@@ -11,7 +19,7 @@ export type Serializable =
   | Serializable[]
   | { [key: string]: Serializable };
 
-export declare type ChainId =
+export type ChainId =
   | "0"
   | "1"
   | "2"

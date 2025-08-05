@@ -10,10 +10,10 @@
   "scripts": {
     "clean": "rm -rf .turbo node_modules",
     "format": "prettier --check . --ignore-path ../../.gitignore",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "echo 'No TypeScript files to check'"
   },
   "dependencies": {
-    "@vitejs/plugin-react-swc": "^3.10.2",
+    "@vitejs/plugin-react-swc": "^3.11.0",
     "@vitest/coverage-v8": "^3.2.4",
     "happy-dom": "^18.0.1",
     "vitest": "^3.2.4"

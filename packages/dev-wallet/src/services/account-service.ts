@@ -1,18 +1,36 @@
 import { generateKeyPair } from '@pact-toolbox/crypto';
+import { CoinService, type CoinServiceConfig, type CreateAccountOptions } from '@pact-toolbox/kda';
+import type { ChainId, INetworkProvider, ISignerResolver, IChainwebClient } from '@pact-toolbox/types';
 import type { Account, DevWalletKey } from '../types';
 import type { AccountValidationResult } from '../types/enhanced-types';
 import { WalletError } from '../types/error-types';
 import { handleErrors } from '../utils/error-handler';
 import { DevWalletStorage } from '../storage';
+import { accountLogger } from '../utils/logger';
 
 /**
  * Service for managing wallet accounts
  */
 export class AccountService {
   private storage: DevWalletStorage;
+  private coinService?: CoinService;
+  private networkProvider?: INetworkProvider;
+  private signerResolver?: ISignerResolver;
+  private chainwebClient?: IChainwebClient;
 
-  constructor(storage?: DevWalletStorage) {
+  constructor(storage?: DevWalletStorage, config?: Partial<CoinServiceConfig>) {
     this.storage = storage || new DevWalletStorage();
+    if (config) {
+      this.networkProvider = config.networkProvider;
+      this.signerResolver = config.signerResolver;
+      this.chainwebClient = config.chainwebClient;
+      
+      // Initialize CoinService if config is provided
+      this.coinService = new CoinService({
+        ...config,
+        defaultChainId: config.defaultChainId || '0'
+      });
+    }
   }
 
   /**
@@ -21,7 +39,7 @@ export class AccountService {
   @handleErrors({ component: 'AccountService' })
   async generateAccount(name?: string): Promise<Account> {
     try {
-      console.log('Generating new account...');
+      accountLogger.operation('Generate account', 'start');
       
       // Generate key pair
       const keyPair = await generateKeyPair();
@@ -53,10 +71,10 @@ export class AccountService {
         );
       }
 
-      console.log('Account generated successfully:', { address, name: account.name });
+      accountLogger.operation('Generate account', 'success', { address, name: account.name });
       return account;
     } catch (error) {
-      console.error('Failed to generate account:', error);
+      accountLogger.operation('Generate account', 'error', { error });
       throw WalletError.create(
         'CRYPTO_ERROR',
         'Failed to generate new account',
@@ -75,7 +93,7 @@ export class AccountService {
   @handleErrors({ component: 'AccountService' })
   async importAccount(privateKeyHex: string, name?: string): Promise<Account> {
     try {
-      console.log('Importing account from private key...');
+      accountLogger.operation('Import account', 'start');
       
       // Validate private key format
       const validation = await this.validatePrivateKey(privateKeyHex);
@@ -114,10 +132,10 @@ export class AccountService {
         );
       }
 
-      console.log('Account imported successfully:', { address, name: account.name });
+      accountLogger.operation('Import account', 'success', { address, name: account.name });
       return account;
     } catch (error) {
-      console.error('Failed to import account:', error);
+      accountLogger.operation('Import account', 'error', { error });
       if (error instanceof WalletError) {
         throw error;
       }
@@ -237,7 +255,20 @@ export class AccountService {
       };
 
       await this.storage.saveKey(walletKey);
-      console.log('Account saved successfully:', account.address);
+      
+      // Try to create account on blockchain if network context is available
+      if (this.coinService && account.privateKey) {
+        try {
+          await this.createAccountOnBlockchain(walletKey);
+        } catch (error) {
+          accountLogger.warn('Failed to create account on blockchain, but saved locally', { 
+            address: account.address, 
+            error 
+          });
+        }
+      }
+      
+      accountLogger.debug('Account saved successfully', { address: account.address });
     } catch (error) {
       if (error instanceof WalletError) {
         throw error;
@@ -271,10 +302,10 @@ export class AccountService {
         balance: 0,
       }));
 
-      console.log(`Loaded ${accounts.length} accounts from storage`);
+      accountLogger.debug(`Loaded ${accounts.length} accounts from storage`);
       return accounts;
     } catch (error) {
-      console.error('Failed to load accounts:', error);
+      accountLogger.error('Failed to load accounts', { error });
       throw WalletError.create(
         'STORAGE_ERROR',
         'Failed to load accounts from storage',
@@ -303,7 +334,7 @@ export class AccountService {
       }
 
       await this.storage.removeKey(address);
-      console.log('Account removed successfully:', address);
+      accountLogger.operation('Remove account', 'success', { address });
     } catch (error) {
       if (error instanceof WalletError) {
         throw error;
@@ -328,18 +359,96 @@ export class AccountService {
       const accounts = await this.loadAccounts();
       return accounts.some(account => account.address === address);
     } catch (error) {
-      console.error('Failed to check account existence:', error);
+      accountLogger.error('Failed to check account existence', { error });
       return false; // Assume doesn't exist on error
     }
   }
 
   /**
-   * Get account balance (placeholder implementation)
+   * Get account balance from blockchain
    */
-  async getAccountBalance(_address: string): Promise<number> {
-    // TODO: Implement actual balance fetching from blockchain
-    console.warn('Balance fetching not implemented yet');
-    return 0;
+  async getAccountBalance(address: string, chainId: ChainId = '0'): Promise<number> {
+    try {
+      if (!this.coinService) {
+        accountLogger.warn('CoinService not initialized, returning 0 balance');
+        return 0;
+      }
+
+      accountLogger.debug('Fetching balance from blockchain', { address, chainId });
+      
+      const balanceStr = await this.coinService.getBalance(address, { chainId });
+      const balance = parseFloat(balanceStr);
+      
+      accountLogger.debug('Balance fetched successfully', { address, balance });
+      return balance;
+    } catch (error) {
+      // Account might not exist on blockchain yet
+      if (error instanceof Error && error.message.includes('row not found')) {
+        accountLogger.debug('Account not found on blockchain', { address });
+        return 0;
+      }
+      
+      accountLogger.error('Failed to fetch balance', { address, error });
+      return 0;
+    }
+  }
+
+  /**
+   * Create account on blockchain (devnet)
+   */
+  async createAccountOnBlockchain(account: DevWalletKey, chainId: ChainId = '0'): Promise<boolean> {
+    try {
+      if (!this.coinService) {
+        accountLogger.warn('CoinService not initialized');
+        return false;
+      }
+
+      accountLogger.operation('Create account on blockchain', 'start', { address: account.address, chainId });
+      
+      // Check if account already exists
+      const exists = await this.coinService.accountExists(account.address, { chainId });
+      if (exists) {
+        accountLogger.debug('Account already exists on blockchain', { address: account.address });
+        return true;
+      }
+
+      // Create the account with a single key guard
+      const guard = {
+        keys: [account.publicKey],
+        pred: 'keys-all' as const
+      };
+
+      const createOptions: CreateAccountOptions = {
+        account: account.address,
+        guard,
+        chainId,
+        gasLimit: 1000,
+        gasPrice: 0.000001,
+        ttl: 28800
+      };
+
+      await this.coinService.createAccount(createOptions);
+      
+      accountLogger.operation('Create account on blockchain', 'success', { address: account.address });
+      return true;
+    } catch (error) {
+      accountLogger.operation('Create account on blockchain', 'error', { address: account.address, error });
+      return false;
+    }
+  }
+
+  /**
+   * Set network context for blockchain operations
+   */
+  setNetworkContext(config: Partial<CoinServiceConfig>): void {
+    this.networkProvider = config.networkProvider;
+    this.signerResolver = config.signerResolver;
+    this.chainwebClient = config.chainwebClient;
+    this.coinService = new CoinService({
+      ...config,
+      defaultChainId: config.defaultChainId || '0'
+    });
+    accountLogger.debug('Network context updated');
   }
 
   /**

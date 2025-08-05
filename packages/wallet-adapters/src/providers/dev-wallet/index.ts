@@ -1,0 +1,1 @@
+export { DevWalletProvider, type DevWalletProviderConfig } from "./provider";

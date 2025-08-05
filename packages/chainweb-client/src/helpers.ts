@@ -8,7 +8,7 @@ import type {
 } from "@pact-toolbox/types";
 import { finalizeTransaction, isFullySignedTransaction } from "@pact-toolbox/signers";
 import { ChainwebClient } from "./client";
-import type { LocalResult, TransactionResult } from "./types";
+import type { LocalResult, NetworkConfig, TransactionResult } from "./types";
 
 /**
  * Interface defining helper methods for the Chainweb client.
@@ -179,7 +179,7 @@ export async function submitAndListen<T>(
   preflight: boolean = false,
 ): Promise<T | T[]> {
   const transactions = Array.isArray(signedTxs) ? signedTxs : [signedTxs];
-  
+
   if (!transactions.every(isFullySignedTransaction)) {
     throw new Error("Not all transactions are signed");
   }
@@ -190,33 +190,64 @@ export async function submitAndListen<T>(
 
   // For single transaction, use submitAndWait for simplicity
   if (transactions.length === 1) {
-    const result = await getClient(client).submitAndWait(
-      finalizeTransaction(transactions[0]!) as SignedTransaction
-    );
+    const result = await getClient(client).submitAndWait(finalizeTransaction(transactions[0]!) as SignedTransaction);
     return getTxDataOrFail<T>(result);
   }
 
   // For multiple transactions, use batch processing
   const results = await getClient(client).submitBatch(
-    transactions.map((tx) => finalizeTransaction(tx) as SignedTransaction)
+    transactions.map((tx) => finalizeTransaction(tx) as SignedTransaction),
   );
-  
+
   if (results.failures.length > 0) {
-    throw new Error(`Some transactions failed: ${results.failures.map(f => f.error.message).join(', ')}`);
+    throw new Error(`Some transactions failed: ${results.failures.map((f) => f.error.message).join(", ")}`);
   }
-  
+
   return results.successes.map(getTxDataOrFail) as T[];
 }
 
 /**
- * Creates helper functions bound to a specific Chainweb client.
- * @param client - The Chainweb client or a factory function returning a Chainweb client.
- * @returns An object containing helper methods.
+ * Create a client for mainnet
  */
-export function createClientHelpers(client: Client): ChainwebClientHelpers {
-  return {
-    dirtyReadOrFail: (tx) => dirtyReadOrFail(client, tx),
-    localOrFail: (tx) => localOrFail(client, tx),
-    submitAndListen: (tx) => submitAndListen(client, tx),
-  };
+export function createMainnetClient(config?: Partial<NetworkConfig>): ChainwebClient {
+  return new ChainwebClient({
+    networkId: "mainnet01",
+    chainId: "0",
+    rpcUrl: (networkId, chainId) => `https://api.chainweb.com/chainweb/0.0/${networkId}/chain/${chainId}/pact/api/v1`,
+    ...config,
+  });
+}
+
+/**
+ * Create a client for testnet
+ */
+export function createTestnetClient(config?: Partial<NetworkConfig>): ChainwebClient {
+  return new ChainwebClient({
+    networkId: "testnet04",
+    chainId: "0",
+    rpcUrl: (networkId, chainId) =>
+      `https://api.testnet.chainweb.com/chainweb/0.0/${networkId}/chain/${chainId}/pact/api/v1`,
+    ...config,
+  });
+}
+
+/**
+ * Create a client for development/local network
+ */
+export function createDevnetClient(port: number, config?: Partial<NetworkConfig>): ChainwebClient {
+  return new ChainwebClient({
+    networkId: "development",
+    chainId: "0",
+    rpcUrl: (networkId, chainId) => `http://localhost:${port}/chainweb/0.0/${networkId}/chain/${chainId}/pact/api/v1`,
+    ...config,
+  });
+}
+
+export function createPactServerClient(port: number, config?: Partial<NetworkConfig>): ChainwebClient {
+  return new ChainwebClient({
+    networkId: "development",
+    chainId: "0",
+    rpcUrl: () => `http://localhost:${port}/api/v1/local`,
+    ...config,
+  });
 }

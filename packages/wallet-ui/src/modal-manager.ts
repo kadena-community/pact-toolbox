@@ -1,4 +1,4 @@
-import { walletService } from "@pact-toolbox/wallet-adapters";
+import { getWalletSystem } from "@pact-toolbox/wallet-adapters";
 import "./components/wallet-modal";
 import "./components/wallet-selector";
 import "@pact-toolbox/ui-shared";
@@ -12,7 +12,6 @@ export interface ModalManagerOptions {
 }
 
 export class ModalManager {
-  private static instance: ModalManager | null = null;
   private container: HTMLElement | null = null;
   private themeProvider: PactThemeProvider | null = null;
   private modal: PactWalletModal | null = null;
@@ -25,13 +24,6 @@ export class ModalManager {
       theme: "auto",
       ...options,
     };
-  }
-
-  static getInstance(options?: ModalManagerOptions): ModalManager {
-    if (!ModalManager.instance) {
-      ModalManager.instance = new ModalManager(options);
-    }
-    return ModalManager.instance;
   }
 
   initialize(): void {
@@ -147,10 +139,9 @@ export class ModalManager {
 
   async connectWallet(walletId?: string): Promise<boolean> {
     try {
-      if (walletId === "auto" || !walletId) {
-        await walletService.autoConnect();
-      } else {
-        await walletService.connect(walletId);
+      const walletSystem = await getWalletSystem();
+      if (walletId && walletId !== "auto") {
+        await (walletSystem as any).connect({ walletId });
       }
       return true;
     } catch (error) {
@@ -172,9 +163,26 @@ export class ModalManager {
     this.container = null;
     this.modal = null;
     this.initialized = false;
-
-    if (ModalManager.instance === this) {
-      ModalManager.instance = null;
-    }
   }
+}
+
+/**
+ * Creates a new ModalManager instance
+ */
+export function createModalManager(options?: ModalManagerOptions): ModalManager {
+  return new ModalManager(options);
+}
+
+// Default instance for backward compatibility
+let defaultModalManager: ModalManager | null = null;
+
+/**
+ * Gets the default ModalManager instance (for backward compatibility)
+ * @deprecated Use createModalManager() for new code
+ */
+export function getDefaultModalManager(options?: ModalManagerOptions): ModalManager {
+  if (!defaultModalManager) {
+    defaultModalManager = createModalManager(options);
+  }
+  return defaultModalManager;
 }

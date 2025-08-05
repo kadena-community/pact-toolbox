@@ -37,20 +37,22 @@
   "dependencies": {
     "@pact-toolbox/chainweb-client": "workspace:*",
     "@pact-toolbox/crypto": "workspace:*",
+    "@pact-toolbox/kda": "workspace:*",
     "@pact-toolbox/signers": "workspace:*",
     "@pact-toolbox/types": "workspace:*",
     "@pact-toolbox/ui-shared": "workspace:*",
+    "@pact-toolbox/utils": "workspace:*",
     "@pact-toolbox/wallet-core": "workspace:*",
     "idb": "^8.0.3",
-    "lit": "^3.3.0"
+    "lit": "^3.3.1"
   },
   "devDependencies": {
     "@pact-toolbox/tsconfig": "workspace:*",
     "@pact-toolbox/tsdown": "workspace:*",
-    "@playwright/test": "^1.53.1",
+    "@playwright/test": "^1.54.1",
     "jsdom": "^26.1.0",
-    "playwright": "^1.53.1",
-    "vite": "^7.0.0",
+    "playwright": "^1.54.1",
+    "vite": "^7.0.6",
     "vitest": "^3.2.4"
   },
   "license": "MIT",

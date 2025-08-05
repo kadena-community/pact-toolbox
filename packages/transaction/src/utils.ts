@@ -1,6 +1,5 @@
 import type {
   KeyPair,
-  MultiNetworkConfig,
   PactCapability,
   PactCapabilityLike,
   PactCmdPayload,
@@ -16,7 +15,7 @@ import type {
 
 import { ChainwebClient } from "@pact-toolbox/chainweb-client";
 import { blake2bBase64Url, fastStableStringify, genKeyPair } from "@pact-toolbox/crypto";
-import type { Wallet } from "@pact-toolbox/wallet-core";
+import type { Wallet } from "@pact-toolbox/types";
 
 /**
  * Clock skew offset in seconds to prevent "Transaction creation time too far in the future" errors.
@@ -85,99 +84,13 @@ export function pactDecimal(amount: string | number): {
   };
 }
 
-export function isToolboxInstalled(): boolean {
-  return !!(globalThis as any).__PACT_TOOLBOX_NETWORKS__ || !!(globalThis as any).__PACT_TOOLBOX_CONTEXT__;
-}
-
-export function getToolboxGlobalNetworkConfig(networkName?: string): SerializableNetworkConfig {
-  const multiConfig = getToolboxGlobalMultiNetworkConfig();
-  const targetNetwork = networkName || multiConfig.default;
-  const networkConfig = multiConfig.configs[targetNetwork];
-
-  if (!networkConfig) {
-    throw new Error(`Network "${targetNetwork}" not found in configuration`);
-  }
-
-  return networkConfig;
-}
-
-export function getToolboxGlobalMultiNetworkConfig(strict?: boolean): MultiNetworkConfig {
-  if (!isToolboxInstalled() && strict) {
-    throw new Error("Make sure you are using the pact-toolbox bundler plugin, eg `@pact-toolbox/unplugin`");
-  }
-
-  // First check for build-time injected config (prioritize for tests and build-time config)
-  const config = (globalThis as any).__PACT_TOOLBOX_NETWORKS__;
-  if (config) {
-    if ("string" === typeof config) {
-      try {
-        return JSON.parse(config);
-      } catch {
-        throw new Error("Found invalid multi-network config in globalThis");
-      }
-    }
-    return config;
-  }
-
-  // Fallback: check if we have a context with network config
-  const context = (globalThis as any).__PACT_TOOLBOX_CONTEXT__;
-  if (context?.getNetworkConfig) {
-    // Build a multi-network config from the current network context
-    const networkConfig = context.getNetworkConfig();
-    return {
-      default: networkConfig.networkId,
-      environment: networkConfig.environment || "development",
-      configs: {
-        [networkConfig.networkId]: networkConfig,
-      },
-    };
-  }
-
-  // Final fallback - return empty config
-  return {
-    default: "development",
-    environment: "development",
-    configs: {},
-  };
-}
-
-export function validateNetworkForEnvironment(networkName: string): boolean {
-  try {
-    const multiConfig = getToolboxGlobalMultiNetworkConfig();
-    const networkConfig = multiConfig.configs[networkName];
-
-    if (!networkConfig) {
-      return false;
-    }
-
-    // In production, ensure no local networks are accessible
-    if (multiConfig.environment === "production") {
-      const isLocal = networkConfig.type === "pact-server" || networkConfig.type === "chainweb-devnet";
-      if (isLocal) {
-        console.warn(`Network ${networkName} is not available in production environment`);
-        return false;
-      }
-
-      // Ensure no private keys in production
-      if (networkConfig.keyPairs && networkConfig.keyPairs.length > 0) {
-        console.warn(`Network ${networkName} contains sensitive data in production`);
-        return false;
-      }
-    }
-
-    return true;
-  } catch {
-    return false;
-  }
-}
-
 export function createChainwebClient(netWorkConfig: SerializableNetworkConfig): ChainwebClient {
   // Create a function that generates the RPC URL based on networkId and chainId
   const rpcUrl = (networkId: string, chainId: string) => {
     return netWorkConfig.rpcUrl.replace("{networkId}", networkId).replace("{chainId}", chainId);
   };
 
-  return new ChainwebClient({
+  return ChainwebClient.getInstance({
     networkId: netWorkConfig.networkId,
     chainId: netWorkConfig.meta.chainId || "0",
     rpcUrl,
@@ -194,13 +107,20 @@ export function isPactContPayload(payload: PactCmdPayload): payload is PactContP
 
 export function createPactCommandWithDefaults<Payload extends PactCmdPayload>(
   payload: Payload,
-  networkConfig: SerializableNetworkConfig,
+  networkConfig: SerializableNetworkConfig | null,
 ): PactCommand<Payload> {
   return {
     payload,
-    meta: networkConfig.meta,
+    meta: networkConfig?.meta || {
+      chainId: "0",
+      gasLimit: 150000,
+      gasPrice: 1e-8,
+      ttl: 600,
+      creationTime: Math.floor(Date.now() / 1000) - CLOCK_SKEW_OFFSET_SECONDS,
+      sender: "",
+    },
     signers: [],
-    networkId: networkConfig.networkId,
+    networkId: networkConfig?.networkId || "",
     nonce: "",
   };
 }
@@ -268,18 +188,18 @@ export function updatePactCommandSigners<Payload extends PactCmdPayload>(
   return cmd;
 }
 
-export async function signPactCommandWithWallet<Payload extends PactCmdPayload>(
+export async function signPactCommandWithSigner<Payload extends PactCmdPayload>(
   cmd: PactCommand<Payload>,
-  wallet: Wallet,
+  signer: Wallet,
 ): Promise<Transaction> {
   if (cmd.signers.length === 0) {
-    const signer = await wallet.getAccount();
-    cmd = updatePactCommandSigners(cmd, signer.publicKey, (signFor) => [signFor("coin.GAS")]);
-    cmd.meta.sender = signer.address;
+    const account = await signer.getAccount();
+    cmd = updatePactCommandSigners(cmd, account.publicKey, (signFor) => [signFor("coin.GAS")]);
+    cmd.meta.sender = account.address;
   }
 
   const tx = createTransaction(cmd);
-  return wallet.sign(tx);
+  return signer.sign(tx);
 }
 
 export function getSignerKeys(network: SerializableNetworkConfig, signer?: string): KeyPair {

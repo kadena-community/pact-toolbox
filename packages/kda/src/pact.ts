@@ -188,7 +188,7 @@ export function createCapability(name: string, ...args: PactValue[]): { name: st
 /**
  * Helper to create common coin capabilities
  */
-export const coinCapabilities = {
+export const COIN_CAPABILITIES = {
   gas: (): { name: string; args: PactValue[] } => createCapability("coin.GAS"),
   transfer: (from: string, to: string, amount: string): { name: string; args: PactValue[] } =>
     createCapability("coin.TRANSFER", from, to, createDecimal(amount)),

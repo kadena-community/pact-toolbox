@@ -1,7 +1,7 @@
 import type { PactToolboxConfigObj } from "@pact-toolbox/config";
 
 import { getDefaultNetworkConfig, isLocalNetwork, resolveConfig } from "@pact-toolbox/config";
-import { PactToolboxClient } from "@pact-toolbox/runtime";
+import { PactToolboxClient } from "@pact-toolbox/deployer";
 import { logger, writeFile } from "@pact-toolbox/node-utils";
 
 import { createPactToJSTransformer } from "./transform";

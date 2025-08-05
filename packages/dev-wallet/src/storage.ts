@@ -1,13 +1,36 @@
 import { openDB, type IDBPDatabase } from "idb";
+import { encrypt, decrypt } from "@pact-toolbox/crypto";
 import type { DevWalletKey, DevWalletTransaction, DevWalletSettings } from "./types";
 
 export class DevWalletStorage {
   private dbName = "pact-toolbox-dev-wallet";
   private db: IDBPDatabase | null = null;
   private prefix: string;
+  private encryptionPassword?: string;
 
   constructor(prefix = "pact-toolbox-wallet") {
     this.prefix = prefix;
+  }
+
+  /**
+   * Set the encryption password for this session
+   */
+  async setEncryptionPassword(password: string): Promise<void> {
+    this.encryptionPassword = password;
+  }
+
+  /**
+   * Get the encryption password
+   */
+  private getEncryptionPassword(): string | undefined {
+    return this.encryptionPassword;
+  }
+
+  /**
+   * Clear the encryption password from memory
+   */
+  clearEncryptionPassword(): void {
+    this.encryptionPassword = undefined;
   }
 
   private async getDB(): Promise<IDBPDatabase | null> {
@@ -34,24 +57,56 @@ export class DevWalletStorage {
   }
 
   async getKeys(): Promise<DevWalletKey[]> {
+    let keys: DevWalletKey[] = [];
+    
     const db = await this.getDB();
     if (db) {
-      return db.getAll("keys");
-    }
-    
-    // Fallback to localStorage in browser or return empty in Node
-    if (typeof window !== "undefined" && typeof localStorage !== "undefined") {
+      keys = await db.getAll("keys");
+    } else if (typeof window !== "undefined" && typeof localStorage !== "undefined") {
+      // Fallback to localStorage in browser
       const stored = localStorage.getItem(`${this.prefix}-keys`);
-      return stored ? JSON.parse(stored) : [];
+      keys = stored ? JSON.parse(stored) : [];
     }
     
-    return [];
+    // Decrypt private keys if we have a password
+    const password = this.getEncryptionPassword();
+    if (password) {
+      const decryptedKeys = await Promise.all(
+        keys.map(async (key) => {
+          if (key.encryptedPrivateKey && !key.privateKey) {
+            try {
+              const decryptedPrivateKey = await decrypt(key.encryptedPrivateKey, password);
+              return { ...key, privateKey: decryptedPrivateKey };
+            } catch (error) {
+              // If decryption fails, return key without private key
+              console.error("Failed to decrypt key", error);
+              return key;
+            }
+          }
+          return key;
+        })
+      );
+      return decryptedKeys;
+    }
+    
+    return keys;
   }
 
   async saveKey(key: DevWalletKey): Promise<void> {
+    // Create a copy to avoid modifying the original
+    const keyToStore = { ...key };
+
+    // If encryption password is set, encrypt the private key
+    const password = this.getEncryptionPassword();
+    if (password && key.privateKey) {
+      keyToStore.encryptedPrivateKey = await encrypt(key.privateKey, password);
+      // Clear the plain text private key before storage
+      keyToStore.privateKey = "";
+    }
+
     const db = await this.getDB();
     if (db) {
-      await db.put("keys", key);
+      await db.put("keys", keyToStore);
       return;
     }
 
@@ -60,9 +115,9 @@ export class DevWalletStorage {
       const keys = await this.getKeys();
       const existingIndex = keys.findIndex(k => k.address === key.address);
       if (existingIndex >= 0) {
-        keys[existingIndex] = key;
+        keys[existingIndex] = keyToStore;
       } else {
-        keys.push(key);
+        keys.push(keyToStore);
       }
       localStorage.setItem(`${this.prefix}-keys`, JSON.stringify(keys));
     }
@@ -188,6 +243,31 @@ export class DevWalletStorage {
     if (typeof window !== "undefined" && typeof localStorage !== "undefined") {
       localStorage.setItem(`${this.prefix}-settings`, JSON.stringify(settings));
     }
+  }
+
+  /**
+   * Get a specific key by address with decryption
+   */
+  async getKey(address: string): Promise<DevWalletKey | null> {
+    const keys = await this.getKeys();
+    return keys.find(k => k.address === address) || null;
+  }
+
+  /**
+   * Check if we have encrypted keys that need a password
+   */
+  async hasEncryptedKeys(): Promise<boolean> {
+    let keys: DevWalletKey[] = [];
+    
+    const db = await this.getDB();
+    if (db) {
+      keys = await db.getAll("keys");
+    } else if (typeof window !== "undefined" && typeof localStorage !== "undefined") {
+      const stored = localStorage.getItem(`${this.prefix}-keys`);
+      keys = stored ? JSON.parse(stored) : [];
+    }
+    
+    return keys.some(key => key.encryptedPrivateKey && !key.privateKey);
   }
 
   async clearAllData(): Promise<void> {

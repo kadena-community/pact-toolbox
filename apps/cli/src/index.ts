@@ -67,7 +67,7 @@ export {
 
 // Export other packages
 export * from "@pact-toolbox/prelude";
-export * from "@pact-toolbox/runtime";
+export * from "@pact-toolbox/deployer";
 export * from "@pact-toolbox/script";
 export * from "@pact-toolbox/test";
 export * from "@pact-toolbox/node-utils";

@@ -7,7 +7,10 @@
     // Relax some strict settings for optional dependencies and inheritance
     "exactOptionalPropertyTypes": false,
     "noImplicitOverride": false,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "moduleResolution": "Bundler",
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true
   },
   "include": ["src/**/*"],
   "exclude": ["dist", "node_modules", "**/*.test.ts", "**/*.spec.ts"]

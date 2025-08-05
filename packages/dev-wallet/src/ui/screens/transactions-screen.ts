@@ -451,7 +451,7 @@ export class PactToolboxTransactionsScreen extends LitElement {
     return address;
   }
 
-  private formatJsonData(data: any): string {
+  private formatJsonData(data: unknown): string {
     try {
       return JSON.stringify(data, null, 2);
     } catch {

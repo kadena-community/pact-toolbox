@@ -28,7 +28,7 @@ vi.mock("@pact-toolbox/config", () => ({
   getNetworkPort: vi.fn().mockReturnValue(8080),
 }));
 
-vi.mock("@pact-toolbox/runtime", () => ({
+vi.mock("@pact-toolbox/deployer", () => ({
   PactToolboxClient: vi.fn().mockImplementation(() => ({
     context: { getCurrentNetwork: vi.fn() },
     getNetworkConfig: vi.fn(),

@@ -157,3 +157,9 @@ export default defineConfig({
 
 - **Important Notes**:
   - Never commit or push anything until explicitly mentioned
+
+## Code Guidelines
+
+- **Versioning and File Naming**:
+  - Never create duplicate versions with suffixes like "*-refactored.*" or "-enhanced"
+  - Always implement improvements directly in the main version of the file/code

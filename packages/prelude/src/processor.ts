@@ -3,7 +3,7 @@
  * Converts declarative definitions into executable deployment logic
  */
 
-import type { PactToolboxClient } from "@pact-toolbox/runtime";
+import type { PactToolboxClient } from "@pact-toolbox/deployer";
 import { logger } from "@pact-toolbox/node-utils";
 import { join } from "pathe";
 

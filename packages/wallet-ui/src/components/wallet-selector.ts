@@ -1,9 +1,10 @@
 import { LitElement, html, css } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
-import { walletService, type WalletMetadata } from "@pact-toolbox/wallet-adapters";
+import { getWalletSystem, type WalletMetadata } from "@pact-toolbox/wallet-adapters";
 import { baseStyles } from "@pact-toolbox/ui-shared";
 // Import and register shared components
 import "@pact-toolbox/ui-shared";
+import "./wallet-error";
 
 @customElement("pact-wallet-selector")
 export class PactWalletSelector extends LitElement {
@@ -147,7 +148,8 @@ export class PactWalletSelector extends LitElement {
   private async loadWallets() {
     this.loading = true;
     try {
-      this.wallets = await walletService.getAvailableWallets();
+      const walletSystem = await getWalletSystem();
+      this.wallets = await walletSystem.getAvailableWallets();
     } catch (error) {
       this.error = error instanceof Error ? error.message : "Failed to load wallets";
     } finally {
@@ -155,9 +157,10 @@ export class PactWalletSelector extends LitElement {
     }
   }
 
-  private updateConnectionStatus() {
-    const status = walletService.getConnectionStatus();
-    this.connectedWalletIds = status.connectedWallets;
+  private async updateConnectionStatus() {
+    const walletSystem = await getWalletSystem();
+    const connectedWallets = walletSystem.getConnectedWallets();
+    this.connectedWalletIds = connectedWallets.map((w: any) => w.id || '');
   }
 
   private selectWallet(walletId: string) {
@@ -183,7 +186,7 @@ export class PactWalletSelector extends LitElement {
 
   private getWalletIcon(metadata: WalletMetadata): string {
     const icons: Record<string, string> = {
-      "ecko-wallet": "🦎",
+      ecko: "🦎",
       chainweaver: "⛓️",
       zelcore: "🟦",
       walletconnect: "🔗",
@@ -204,7 +207,12 @@ export class PactWalletSelector extends LitElement {
     }
 
     if (this.error) {
-      return html`<div class="error-message">${this.error}</div>`;
+      return html`
+        <pact-wallet-error
+          .error=${this.error}
+          .onRetry=${() => this.loadWallets()}
+        ></pact-wallet-error>
+      `;
     }
 
     const hasWallets = this.wallets.length > 0;

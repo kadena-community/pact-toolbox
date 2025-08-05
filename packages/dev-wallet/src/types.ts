@@ -2,6 +2,7 @@ export interface DevWalletKey {
   address: string;
   publicKey: string;
   privateKey: string;
+  encryptedPrivateKey?: import("@pact-toolbox/crypto").EncryptedData;
   name?: string;
   createdAt: number;
 }
@@ -19,6 +20,10 @@ export interface DevWalletConfig {
   storagePrefix?: string;
   /** Account name */
   accountName?: string;
+  /** Enable encryption for private keys */
+  enableEncryption?: boolean;
+  /** Encryption password (if not provided, one will be generated) */
+  encryptionPassword?: string;
 }
 
 export interface DevWalletTransaction {
@@ -32,22 +37,39 @@ export interface DevWalletTransaction {
   timestamp: number;
   chainId: string;
   capability?: string;
-  data?: any;
-  result?: any;
+  data?: Record<string, unknown>;
+  result?: TransactionResult;
   updatedAt?: number;
+}
+
+export interface TransactionResult {
+  requestKey: string;
+  status: 'success' | 'failure';
+  data?: Record<string, unknown>;
+  error?: {
+    message: string;
+    type?: string;
+  };
 }
 
 export interface DevWalletUIEvents {
   "toolbox-connect-requested": CustomEvent<void>;
-  "toolbox-sign-requested": CustomEvent<{ transaction: any }>;
+  "toolbox-sign-requested": CustomEvent<{ transaction: PendingTransaction }>;
   "connect-approved": CustomEvent<{ account: DevWalletKey }>;
   "connect-cancelled": CustomEvent<void>;
   "sign-approved": CustomEvent<void>;
   "sign-rejected": CustomEvent<void>;
   "toolbox-transaction-added": CustomEvent<{ transaction: DevWalletTransaction }>;
-  "toolbox-transaction-updated": CustomEvent<{ transactionId: string; status: string; result?: any }>;
+  "toolbox-transaction-updated": CustomEvent<{ transactionId: string; status: string; result?: TransactionResult }>;
   "dev-wallet-connected": CustomEvent<{ walletId: string; address: string }>;
   "dev-wallet-disconnected": CustomEvent<{ walletId: string }>;
+}
+
+export interface PendingTransaction {
+  id: string;
+  request: import('@pact-toolbox/types').PartiallySignedTransaction;
+  timestamp: number;
+  chainId: string;
 }
 
 // UI Types (used internally)
@@ -71,8 +93,8 @@ export interface Transaction {
   timestamp: number;
   chainId: string;
   capability?: string;
-  data?: any;
-  result?: any;
+  data?: Record<string, unknown>;
+  result?: TransactionResult;
   updatedAt?: number;
 }
 
@@ -98,7 +120,7 @@ export interface WalletState {
   networks: Network[];
   selectedAccount?: Account;
   activeNetwork?: Network;
-  pendingTransaction?: any;
+  pendingTransaction?: PendingTransaction;
   isConnecting?: boolean;
   settings?: DevWalletSettings;
 }

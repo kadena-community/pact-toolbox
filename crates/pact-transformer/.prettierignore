@@ -1,5 +1,8 @@
 target
-*.node
-npm/
-Cargo.toml
-Cargo.lock
+.yarn
+/*.js
+/*.mjs
+/*.cjs
+/index.js
+index.d.ts
+pnpm-lock.yaml

@@ -61,19 +61,19 @@
     "@pact-toolbox/transaction": "workspace:*",
     "@pact-toolbox/types": "workspace:*",
     "@pact-toolbox/utils": "workspace:*",
-    "@pact-toolbox/wallet-core": "workspace:*"
+    "@pact-toolbox/wallet-core": "workspace:*",
+    "@pact-toolbox/network-config": "workspace:*"
   },
   "devDependencies": {
     "@pact-toolbox/config": "workspace:*",
     "@pact-toolbox/oxlint-config": "workspace:*",
     "@pact-toolbox/prettier-config": "workspace:*",
-    "@pact-toolbox/test": "workspace:*",
     "@pact-toolbox/tsconfig": "workspace:*",
     "@pact-toolbox/tsdown": "workspace:*",
     "@pact-toolbox/vitest-config": "workspace:*",
-    "oxlint": "^1.3.0",
+    "oxlint": "^1.9.0",
     "prettier": "^3.6.2",
-    "tsdown": "^0.12.9",
+    "tsdown": "^0.13.0",
     "tsx": "^4.20.3",
     "typescript": "^5.8.3",
     "vitest": "^3.2.4"

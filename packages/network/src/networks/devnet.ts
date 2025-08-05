@@ -4,7 +4,7 @@
 
 import type { DevNetworkConfig } from "@pact-toolbox/config";
 import type { Logger } from "@pact-toolbox/node-utils";
-import type { PactToolboxClient } from "@pact-toolbox/runtime";
+import type { PactToolboxClient } from "@pact-toolbox/deployer";
 import type { DevNetServiceDefinition, NetworkApi, NetworkStartOptions } from "../types";
 
 import { ContainerOrchestrator } from "@pact-toolbox/docker";

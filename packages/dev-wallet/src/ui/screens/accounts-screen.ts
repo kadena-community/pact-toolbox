@@ -12,6 +12,10 @@ export class PactToolboxAccountsScreen extends LitElement {
   @state() private showCreateDialog = false;
   @state() private importError = "";
   @state() private isGenerating = false;
+  @state() private accountNameInput = "";
+  @state() private privateKeyInput = "";
+  
+  // Component handles account management via properties
 
   static override styles = [
     baseStyles,

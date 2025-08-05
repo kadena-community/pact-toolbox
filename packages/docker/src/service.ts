@@ -12,6 +12,7 @@ import {
   ServiceStatus,
 } from "./types";
 import { getServiceColor } from "./utils";
+import { applyResourceLimits, validateResourceLimits } from "./resource-limits";
 
 interface DockerServiceOptions {
   serviceName?: string;
@@ -34,7 +35,17 @@ export class DockerService {
 
   constructor(config: DockerServiceConfig, options: DockerServiceOptions) {
     this.serviceName = options.serviceName || config.containerName;
-    this.config = config;
+    
+    // Apply default resource limits
+    this.config = applyResourceLimits(config);
+    
+    // Validate resource limits
+    try {
+      validateResourceLimits(this.config);
+    } catch (error) {
+      options.logger.warn(`Resource limit validation warning for ${config.containerName}: ${error}`);
+    }
+    
     this.containerName = config.containerName;
     this.#docker = options.docker;
     this.#networkName = options.networkName;
@@ -329,6 +340,14 @@ export class DockerService {
   }
 
   async start(): Promise<void> {
+    // Log resource limits
+    const resourceInfo = [];
+    if (this.config.memLimit) resourceInfo.push(`Memory: ${this.config.memLimit}`);
+    if (this.config.cpus) resourceInfo.push(`CPUs: ${this.config.cpus}`);
+    if (resourceInfo.length > 0) {
+      this.#logger.debug(`Resource limits: ${resourceInfo.join(", ")}`);
+    }
+    
     this.#logger.start(`Starting service instance...`);
     await this.prepareImage();
     try {
@@ -443,6 +462,7 @@ export class DockerService {
         MemorySwappiness: this.config.memSwappiness,
         OomKillDisable: this.config.oomKillDisable,
         OomScoreAdj: this.config.oomScoreAdj,
+        NanoCpus: this.config.cpus ? this.config.cpus * 1e9 : undefined, // Convert CPU count to nano CPUs
         CpuShares: this.config.cpuShares,
         CpuQuota: this.config.cpuQuota,
         CpuPeriod: this.config.cpuPeriod,

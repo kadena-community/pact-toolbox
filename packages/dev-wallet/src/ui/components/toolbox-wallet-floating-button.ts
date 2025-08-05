@@ -2,7 +2,8 @@ import { LitElement, html, css } from "lit";
 import { customElement, state } from "lit/decorators.js";
 import { baseStyles } from "@pact-toolbox/ui-shared/styles";
 import { themeMapping } from "../styles/theme-mapping";
-import { ModalManager } from "../modal-manager";
+import { getDefaultModalManager } from "../modal-manager";
+import type { ModalManager } from "../modal-manager";
 
 @customElement("toolbox-wallet-floating-button")
 export class ToolboxWalletFloatingButton extends LitElement {
@@ -14,7 +15,7 @@ export class ToolboxWalletFloatingButton extends LitElement {
 
   constructor() {
     super();
-    this.modalManager = ModalManager.getInstance();
+    this.modalManager = getDefaultModalManager();
   }
 
   static override styles = [
@@ -215,7 +216,7 @@ export class ToolboxWalletFloatingButton extends LitElement {
         if (accounts) {
           try {
             const accountList = JSON.parse(accounts);
-            const account = accountList.find((acc: any) => acc.address === selectedKey);
+            const account = accountList.find((acc: { address: string }) => acc.address === selectedKey);
             if (account) {
               this.accountAddress = account.address;
             }

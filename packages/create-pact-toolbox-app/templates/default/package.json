@@ -20,9 +20,9 @@
     "@pact-toolbox/transaction": "latest",
     "@pact-toolbox/wallet-adapters": "latest",
     "@pact-toolbox/wallet-ui": "latest",
-    "@tanstack/react-query": "^5.81.5",
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0"
+    "@tanstack/react-query": "^5.83.0",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1"
   },
   "devDependencies": {
     "@pact-toolbox/config": "latest",
@@ -31,13 +31,13 @@
     "@pact-toolbox/unplugin": "latest",
     "@testing-library/react": "~16.3.0",
     "@testing-library/user-event": "~14.6.1",
-    "@types/react": "^19.1.8",
-    "@types/react-dom": "^19.1.6",
-    "@vitejs/plugin-react-swc": "^3.10.2",
+    "@types/react": "^19.1.9",
+    "@types/react-dom": "^19.1.7",
+    "@vitejs/plugin-react-swc": "^3.11.0",
     "happy-dom": "^18.0.1",
     "pact-toolbox": "latest",
     "typescript": "^5.8.3",
-    "vite": "^7.0.0",
+    "vite": "^7.0.6",
     "vite-tsconfig-paths": "^5.1.4",
     "vitest": "^3.2.4",
     "vitest-dom": "^0.1.1"

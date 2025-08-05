@@ -1,8 +1,9 @@
-import type { DevWalletTransaction } from '../types';
+import type { DevWalletTransaction, TransactionResult } from '../types';
 import type { TransactionStatus } from '../types/enhanced-types';
 import { WalletError } from '../types/error-types';
 import { handleErrors } from '../utils/error-handler';
 import { DevWalletStorage } from '../storage';
+import { transactionLogger } from '../utils/logger';
 
 /**
  * Service for managing wallet transactions
@@ -37,7 +38,7 @@ export class TransactionService {
       // Save to storage
       await this.storage.saveTransaction(newTransaction);
 
-      console.log('Transaction added successfully:', newTransaction.id);
+      transactionLogger.operation('Add transaction', 'success', { id: newTransaction.id });
 
       // Start polling if transaction is pending
       if (newTransaction.status === 'pending' && newTransaction.hash) {
@@ -71,7 +72,7 @@ export class TransactionService {
   async updateTransactionStatus(
     id: string,
     status: TransactionStatus,
-    result?: any
+    result?: TransactionResult
   ): Promise<DevWalletTransaction | null> {
     try {
       const transactions = await this.storage.getTransactions();
@@ -106,7 +107,7 @@ export class TransactionService {
       transactions[transactionIndex] = updatedTransaction;
       await this.storage.saveTransactions(transactions);
 
-      console.log(`Transaction ${id} status updated to:`, status);
+      transactionLogger.info(`Transaction ${id} status updated to: ${status}`);
 
       // Stop polling if transaction is completed
       if (this.isTransactionComplete(status)) {
@@ -183,7 +184,7 @@ export class TransactionService {
         transactions = transactions.slice(0, options.limit);
       }
 
-      console.log(`Retrieved ${transactions.length} transactions from history`);
+      transactionLogger.debug(`Retrieved ${transactions.length} transactions from history`);
       return transactions;
     } catch (error) {
       throw WalletError.create(
@@ -207,7 +208,7 @@ export class TransactionService {
       const transactions = await this.storage.getTransactions();
       return transactions.find(tx => tx.id === id) || null;
     } catch (error) {
-      console.error('Failed to get transaction:', error);
+      transactionLogger.error('Failed to get transaction', { error });
       return null;
     }
   }
@@ -222,7 +223,7 @@ export class TransactionService {
       const filteredTransactions = transactions.filter(tx => tx.id !== id);
 
       if (filteredTransactions.length === transactions.length) {
-        console.warn(`Transaction ${id} not found for removal`);
+        transactionLogger.warn(`Transaction ${id} not found for removal`);
         return false;
       }
 
@@ -231,7 +232,7 @@ export class TransactionService {
       // Stop polling if active
       this.stopPolling(id);
 
-      console.log('Transaction removed successfully:', id);
+      transactionLogger.operation('Remove transaction', 'success', { id });
       return true;
     } catch (error) {
       throw WalletError.create(
@@ -256,13 +257,13 @@ export class TransactionService {
     const pollInterval = interval || this.defaultPollInterval;
     const startTime = Date.now();
 
-    console.log(`Starting polling for transaction ${transactionId} (hash: ${hash})`);
+    transactionLogger.operation('Transaction polling', 'start', { transactionId, hash });
 
     const intervalId = setInterval(async () => {
       try {
         // Check if polling has exceeded max duration
         if (Date.now() - startTime > this.maxPollDuration) {
-          console.warn(`Polling timeout for transaction ${transactionId}`);
+          transactionLogger.warn(`Polling timeout for transaction ${transactionId}`);
           await this.updateTransactionStatus(transactionId, 'expired');
           this.stopPolling(transactionId);
           return;
@@ -272,7 +273,13 @@ export class TransactionService {
         const result = await this.pollTransactionResult(hash);
         
         if (result) {
-          await this.updateTransactionStatus(transactionId, result.status, result.data);
+          // Convert result.data to TransactionResult if needed
+          const transactionResult: TransactionResult | undefined = result.data ? {
+            requestKey: transactionId,
+            status: result.status as 'success' | 'failure',
+            data: result.data,
+          } : undefined;
+          await this.updateTransactionStatus(transactionId, result.status, transactionResult);
           
           // Stop polling if transaction is complete
           if (this.isTransactionComplete(result.status)) {
@@ -280,7 +287,7 @@ export class TransactionService {
           }
         }
       } catch (error) {
-        console.error(`Polling error for transaction ${transactionId}:`, error);
+        transactionLogger.error(`Polling error for transaction ${transactionId}`, { error });
         
         // Don't stop polling on temporary errors, but log them
         if (error instanceof WalletError && error.severity === 'critical') {
@@ -301,7 +308,7 @@ export class TransactionService {
     if (intervalId) {
       clearInterval(intervalId);
       this.pollingIntervals.delete(transactionId);
-      console.log(`Stopped polling for transaction ${transactionId}`);
+      transactionLogger.debug(`Stopped polling for transaction ${transactionId}`);
     }
   }
 
@@ -311,7 +318,7 @@ export class TransactionService {
   stopAllPolling(): void {
     for (const [transactionId, intervalId] of this.pollingIntervals) {
       clearInterval(intervalId);
-      console.log(`Stopped polling for transaction ${transactionId}`);
+      transactionLogger.debug(`Stopped polling for transaction ${transactionId}`);
     }
     this.pollingIntervals.clear();
   }
@@ -386,16 +393,16 @@ export class TransactionService {
     return ['success', 'failure', 'rejected', 'expired'].includes(status);
   }
 
-  private async pollTransactionResult(hash: string): Promise<{ status: TransactionStatus; data?: any } | null> {
+  private async pollTransactionResult(hash: string): Promise<{ status: TransactionStatus; data?: Record<string, unknown> } | null> {
     // TODO: Implement actual transaction polling logic
     // This would typically call the blockchain RPC to check transaction status
-    console.log(`Polling transaction status for hash: ${hash}`);
+    transactionLogger.debug(`Polling transaction status for hash: ${hash}`);
     
     // Placeholder implementation
     return null;
   }
 
-  private dispatchTransactionEvent(eventType: string, detail: any): void {
+  private dispatchTransactionEvent(eventType: string, detail: Record<string, unknown>): void {
     const event = new CustomEvent(eventType, {
       detail,
       bubbles: true,

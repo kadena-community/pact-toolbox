@@ -1,5 +1,6 @@
 import { Injectable, OnDestroy, signal, computed, Component, Output, EventEmitter, inject } from "@angular/core";
-import { ModalManager, type ModalManagerOptions } from "../modal-manager";
+import { getDefaultModalManager, type ModalManagerOptions } from "../modal-manager";
+import type { ModalManager } from "../modal-manager";
 
 @Injectable({
   providedIn: "root",
@@ -18,7 +19,7 @@ export class WalletModalService implements OnDestroy {
   readonly theme = this._theme.asReadonly();
 
   constructor() {
-    this.modalManager = ModalManager.getInstance();
+    this.modalManager = getDefaultModalManager();
   }
 
   initialize(_options?: { modalOptions?: ModalManagerOptions }) {

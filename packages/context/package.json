@@ -1,0 +1,74 @@
+{
+  "name": "@pact-toolbox/context",
+  "version": "0.1.0",
+  "description": "Unified context and configuration system for Pact Toolbox",
+  "author": "salamashoush@gmail.com",
+  "homepage": "https://github.com/kadena-community/pact-toolbox",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kadena-community/pact-toolbox.git",
+    "directory": "packages/context"
+  },
+  "bugs": {
+    "url": "https://github.com/kadena-community/pact-toolbox/issues"
+  },
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./react": {
+      "types": "./dist/react.d.ts",
+      "import": "./dist/react.js",
+      "require": "./dist/react.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsdown",
+    "dev": "tsdown --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "oxlint --import-plugin --deny-warnings",
+    "format": "prettier --write \"src/**/*.{ts,tsx}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx}\""
+  },
+  "dependencies": {
+    "@pact-toolbox/chainweb-client": "workspace:*",
+    "@pact-toolbox/types": "workspace:*",
+    "@pact-toolbox/utils": "workspace:*",
+    "@pact-toolbox/wallet-adapters": "workspace:*",
+    "@pact-toolbox/wallet-core": "workspace:*"
+  },
+  "peerDependencies": {
+    "@pact-toolbox/wallet-ui": "workspace:*",
+    "react": "^18.0.0 || ^19.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@pact-toolbox/wallet-ui": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@pact-toolbox/oxlint-config": "workspace:*",
+    "@pact-toolbox/prettier-config": "workspace:*",
+    "@pact-toolbox/tsconfig": "workspace:*",
+    "@pact-toolbox/tsdown": "workspace:*",
+    "@pact-toolbox/vitest-config": "workspace:*",
+    "@types/react": "^19.1.9",
+    "react": "^19.1.1",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.4"
+  }
+}

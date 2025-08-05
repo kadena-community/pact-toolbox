@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback, createContext, useContext } from "react";
-import { ModalManager, type ModalManagerOptions } from "../modal-manager";
+import { getDefaultModalManager, type ModalManagerOptions } from "../modal-manager";
+import type { ModalManager } from "../modal-manager";
 
 interface WalletModalContextValue {
   modalManager: ModalManager;
@@ -18,7 +19,7 @@ export interface WalletModalProviderProps {
  * Provider component that sets up wallet UI infrastructure
  */
 export function WalletModalProvider({ children, modalOptions }: WalletModalProviderProps) {
-  const [modalManager] = useState(() => ModalManager.getInstance(modalOptions));
+  const [modalManager] = useState(() => getDefaultModalManager(modalOptions));
 
   useEffect(() => {
     // Initialize modal manager
@@ -108,9 +109,10 @@ export function AutoConnectWallet({ children }: { children?: React.ReactNode }) 
     const checkConnection = async () => {
       try {
         // Check if wallet is already connected
-        const { walletService } = await import("@pact-toolbox/wallet-adapters");
+        const { getWalletSystem } = await import("@pact-toolbox/wallet-adapters");
 
-        if (!walletService.getPrimaryWallet()) {
+        const walletSystem = await getWalletSystem();
+        if (!walletSystem.getPrimaryWallet()) {
           // No wallet connected, show selector
           const walletId = await modalManager.showWalletSelector();
           if (walletId) {

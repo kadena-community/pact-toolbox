@@ -99,7 +99,11 @@ export async function runReplTests(
     const testStartTime = Date.now();
     const cleanedFile = file.replace(cwd, "").substring(1);
     try {
-      await execAsync(`pact -t ${file}`);
+      const { stderr, stdout } = await execAsync(`pact -t ${file}`);
+      console.log(stdout);
+      if (stderr) {
+        console.error(stderr);
+      }
       const duration = Date.now() - testStartTime;
       completed++;
       updateSpinner(`[${completed}/${testFiles.length}] Running REPL tests... (${cleanedFile})`);

@@ -2,10 +2,10 @@ import type { PactToolboxConfigObj } from "@pact-toolbox/config";
 
 import { resolveConfig } from "@pact-toolbox/config";
 import { PactToolboxNetwork } from "@pact-toolbox/network";
-import { PactToolboxClient } from "@pact-toolbox/runtime";
+import { PactToolboxClient } from "@pact-toolbox/deployer";
 import { logger } from "@pact-toolbox/node-utils";
 import type { Wallet } from "@pact-toolbox/wallet-core";
-import { configureWalletUI } from "@pact-toolbox/transaction";
+import { getWalletSystem } from "@pact-toolbox/wallet-adapters";
 
 import { injectNetworkConfig, updatePorts } from "./utils";
 
@@ -65,26 +65,25 @@ export async function createPactTestEnv({
     throw new Error(`Network configuration for '${defaultNetworkKey}' not found`);
   }
 
-  // Dynamic import to avoid resolution issues in test environment
-  const { KeypairWallet } = await import("@pact-toolbox/wallet-adapters/keypair");
-
-  // Create keypair wallet for testing
-  const wallet = new KeypairWallet({
-    networkId: networkConfig.networkId || "development",
-    rpcUrl: networkConfig.rpcUrl || "http://localhost:8080",
-    privateKey: privateKey || undefined, // Will generate if not provided
-    accountName: accountName || undefined,
-    chainId: "0",
+  // Initialize wallet system with test configuration
+  const walletSystem = await getWalletSystem({
+    wallets: {
+      keypair: {
+        deterministic: true,
+        privateKey: privateKey,
+        accountName: accountName || "test-account",
+      },
+    },
+    preferences: {
+      autoConnect: false, // We'll manually connect
+    },
+    ui: {
+      showOnConnect: false, // No UI in tests
+    },
   });
 
-  // Connect the wallet
-  await wallet.connect();
-
-  // Configure wallet UI to use the test wallet automatically
-  configureWalletUI({
-    showUI: false, // Disable UI in tests
-    walletSelector: async () => wallet, // Always return the test wallet
-  });
+  // Connect to keypair wallet
+  const wallet = await walletSystem.connect();
 
   if (!client) {
     client = new PactToolboxClient(config);
@@ -104,9 +103,9 @@ export async function createPactTestEnv({
   });
 
   return {
-    start: async () => localNetwork.start(),
-    stop: async () => localNetwork.stop(),
-    restart: async () => localNetwork.restart(),
+    start: () => localNetwork.start(),
+    stop: () => localNetwork.stop(),
+    restart: () => localNetwork.restart(),
     client,
     config,
     wallet,

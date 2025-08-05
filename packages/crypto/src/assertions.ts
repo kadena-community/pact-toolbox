@@ -385,3 +385,30 @@ export function assertValidBaseString(alphabet: string, testValue: string, given
     throw new Error(`Invalid base${alphabet.length} string: ${givenValue}`);
   }
 }
+
+/**
+ * Asserts that Web Crypto API is available for cryptographic operations.
+ *
+ * This function verifies that the environment supports the Web Crypto API
+ * by checking for secure context and the availability of crypto.subtle.
+ * It's a general assertion for Web Crypto support.
+ *
+ * @throws {Error} When Web Crypto API is not available
+ * @throws {Error} When not in a secure context (browser only)
+ *
+ * @example
+ * ```typescript
+ * try {
+ *   assertWebCrypto();
+ *   // Safe to use Web Crypto API
+ * } catch (error) {
+ *   console.error("Web Crypto not available:", error.message);
+ * }
+ * ```
+ */
+export function assertWebCrypto(): void {
+  assertIsSecureContext();
+  if (typeof crypto === "undefined" || typeof crypto.subtle === "undefined") {
+    throw new Error("Web Crypto API is not available");
+  }
+}

@@ -17,52 +17,87 @@
   ],
   "main": "./index.js",
   "types": "./index.d.ts",
+  "browser": "./browser.js",
   "publishConfig": {
     "access": "public"
   },
+  "files": [
+    "index.d.ts",
+    "index.js",
+    "browser.js"
+  ],
   "napi": {
-    "name": "pact-transformer",
-    "triples": {
-      "defaults": true,
-      "additional": [
-        "x86_64-pc-windows-msvc",
-        "x86_64-apple-darwin",
-        "x86_64-unknown-linux-gnu",
-        "x86_64-unknown-linux-musl",
-        "aarch64-unknown-linux-gnu",
-        "aarch64-apple-darwin",
-        "aarch64-unknown-linux-musl",
-        "aarch64-pc-windows-msvc"
-      ]
-    }
+    "binaryName": "pact-transformer",
+    "targets": [
+      "x86_64-apple-darwin",
+      "aarch64-apple-darwin",
+      "x86_64-unknown-linux-gnu",
+      "x86_64-pc-windows-msvc",
+      "x86_64-unknown-linux-musl",
+      "aarch64-unknown-linux-gnu",
+      "i686-pc-windows-msvc",
+      "armv7-unknown-linux-gnueabihf",
+      "aarch64-linux-android",
+      "x86_64-unknown-freebsd",
+      "aarch64-unknown-linux-musl",
+      "aarch64-pc-windows-msvc",
+      "armv7-linux-androideabi",
+      "wasm32-wasi-preview1-threads"
+    ]
   },
   "engines": {
     "node": ">= 20"
   },
   "scripts": {
     "artifacts": "napi artifacts",
+    "bench": "node --import @oxc-node/core/register benchmark/bench.ts",
     "build": "napi build --platform --release",
     "build:debug": "napi build --platform",
-    "dev": "napi build --platform",
+    "format": "run-p format:prettier format:rs format:toml",
+    "format:prettier": "prettier . -w",
+    "format:toml": "taplo format",
+    "format:rs": "cargo fmt",
+    "lint": "oxlint",
     "prepublishOnly": "napi prepublish -t npm",
+    "version": "napi version",
+    "dev": "napi build --platform",
     "prepack": "pnpm run build",
     "release": "pnpm test && pnpm publish",
     "test:watch": "vitest",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit --skipLibCheck",
-    "version": "napi version",
-    "format": "pnpm run format:source && pnpm run format:rs",
-    "format:rs": "cargo fmt",
-    "format:source": "prettier --write .",
-    "format:toml": "taplo format || true",
-    "lint": "oxlint ."
+    "typecheck": "tsc --noEmit --skipLibCheck"
   },
   "dependencies": {},
   "devDependencies": {
-    "@napi-rs/cli": "^2.18.4",
+    "@emnapi/core": "^1.4.5",
+    "@emnapi/runtime": "^1.4.5",
+    "@napi-rs/cli": "^3.0.4",
+    "@napi-rs/wasm-runtime": "^1.0.1",
+    "@oxc-node/core": "^0.0.30",
     "@pact-toolbox/vitest-config": "workspace:*",
-    "@types/node": "^24.0.7",
+    "@taplo/cli": "^0.7.0",
+    "@tybys/wasm-util": "^0.10.0",
+    "@types/node": "^24.1.0",
+    "ava": "^6.4.1",
+    "chalk": "^5.4.1",
+    "emnapi": "^1.4.5",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.1.2",
+    "npm-run-all2": "^8.0.4",
+    "oxlint": "^1.9.0",
+    "prettier": "^3.6.2",
+    "tinybench": "^4.0.1",
     "typescript": "^5.8.3",
     "vitest": "^3.2.4"
+  },
+  "optionalDependencies": {
+    "@pact-toolbox/pact-transformer-darwin-arm64": "0.1.0",
+    "@pact-toolbox/pact-transformer-darwin-x64": "0.1.0",
+    "@pact-toolbox/pact-transformer-linux-arm64-gnu": "0.1.0",
+    "@pact-toolbox/pact-transformer-linux-arm64-musl": "0.1.0",
+    "@pact-toolbox/pact-transformer-linux-x64-gnu": "0.1.0",
+    "@pact-toolbox/pact-transformer-linux-x64-musl": "0.1.0",
+    "@pact-toolbox/pact-transformer-win32-arm64-msvc": "0.1.0",
+    "@pact-toolbox/pact-transformer-win32-x64-msvc": "0.1.0"
   }
 }

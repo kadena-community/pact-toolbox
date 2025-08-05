@@ -14,7 +14,7 @@ export class ContainerOrchestrator {
   constructor(config: OrchestratorConfig) {
     this.#networkName = config.networkName;
     this.#runningServices = new Map();
-    this.#logger = config.logger ?? logger.create({ level: 2 }); // Use warn level (2) to match default logger
+    this.#logger = config.logger ?? logger.create({ level: 3 }); // Use info level (3) to match default logger
     this.#volumes = config.volumes || [];
   }
 
@@ -153,7 +153,7 @@ export class ContainerOrchestrator {
     await this.#getOrCreateNetwork();
     await this.#createVolumes();
     const orderedServiceGroupNames = this.#resolveServiceOrder(serviceConfigs);
-    this.#logger.debug(`Service group startup order: ${orderedServiceGroupNames.join(", ")}`);
+    this.#logger.debug(`Service startup order: ${orderedServiceGroupNames.join(", ")}`);
 
     for (const serviceGroupName of orderedServiceGroupNames) {
       const config = serviceConfigs.find((s) => s.containerName === serviceGroupName)!;

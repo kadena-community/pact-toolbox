@@ -1,11 +1,15 @@
-import type { PartiallySignedTransaction, SignedTransaction } from "@pact-toolbox/types";
-import type { Wallet, WalletAccount, WalletNetwork } from "./types";
+import type { PartiallySignedTransaction, SignedTransaction, Wallet, WalletAccount, WalletNetwork } from "@pact-toolbox/types";
+import type { NetworkAwareWallet, NetworkCapabilities } from "./network";
+import { getNetworkById, getDefaultNetwork } from "./network";
 
 /**
  * Abstract base class for wallet implementations
  * Provides common properties and basic implementations
  */
-export abstract class BaseWallet implements Wallet {
+export abstract class BaseWallet implements Wallet, Partial<NetworkAwareWallet> {
+  /** Wallet provider ID */
+  readonly id?: string;
+  
   protected account: WalletAccount | null = null;
   protected network: WalletNetwork | null = null;
   protected connected = false;
@@ -37,6 +41,27 @@ export abstract class BaseWallet implements Wallet {
     this.connected = false;
     this.account = null;
     this.network = null;
+  }
+
+  /**
+   * Get current network - base implementation
+   */
+  async getCurrentNetwork(): Promise<WalletNetwork> {
+    if (!this.network) {
+      this.network = await this.getNetwork();
+    }
+    return this.network;
+  }
+
+  /**
+   * Get network capabilities - base implementation
+   */
+  getNetworkCapabilities?(): NetworkCapabilities {
+    return {
+      canSwitchNetwork: false,
+      canAddNetwork: false,
+      supportedNetworks: [this.network?.networkId || "mainnet01"],
+    };
   }
 }
 

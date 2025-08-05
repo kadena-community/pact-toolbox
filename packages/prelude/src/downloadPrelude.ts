@@ -1,4 +1,4 @@
-import type { PactToolboxClient } from "@pact-toolbox/runtime";
+import type { PactToolboxClient } from "@pact-toolbox/deployer";
 import { downloadTemplate } from "giget";
 import {
   existsSync,

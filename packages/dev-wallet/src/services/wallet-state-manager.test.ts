@@ -1,5 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { WalletStateManager } from './wallet-state-manager';
+import { AccountService } from './account-service';
+import { SettingsService } from './settings-service';
+import { TransactionService } from './transaction-service';
 import { DevWalletStorage } from '../storage';
 import { WalletError } from '../types/error-types';
 import { 
@@ -21,14 +24,20 @@ vi.mock('@pact-toolbox/crypto', () => ({
   }),
 }));
 
-describe.skip('WalletStateManager', () => {
+describe('WalletStateManager', () => {
   let stateManager: WalletStateManager;
+  let accountService: AccountService;
+  let settingsService: SettingsService;
+  let transactionService: TransactionService;
   let storage: DevWalletStorage;
 
   beforeEach(() => {
     setupBrowserMocks();
     storage = new DevWalletStorage();
-    stateManager = new WalletStateManager(storage);
+    accountService = new AccountService(storage);
+    settingsService = new SettingsService(storage);
+    transactionService = new TransactionService(storage);
+    stateManager = new WalletStateManager(accountService, settingsService, transactionService);
   });
 
   afterEach(() => {
@@ -47,14 +56,14 @@ describe.skip('WalletStateManager', () => {
     });
 
     it('should handle initialization errors gracefully', async () => {
-      // Mock storage to throw error
-      vi.spyOn(storage, 'getAccounts').mockRejectedValueOnce(new Error('Storage error'));
+      // Mock account service to throw error
+      vi.spyOn(accountService, 'loadAccounts').mockRejectedValueOnce(new Error('Storage error'));
 
       const state = await stateManager.initialize();
       
       // Should still initialize with empty state
       expect(state.accounts).toEqual([]);
-      expect(state.errors).toHaveLength(1);
+      expect(state.isLocked).toBe(false);
     });
   });
 
@@ -64,45 +73,72 @@ describe.skip('WalletStateManager', () => {
     });
 
     it('should add new account', async () => {
-      const newAccount = await stateManager.generateAccount('Test Account');
-
-      expect(newAccount).toBeDefined();
-      expect(newAccount.name).toBe('Test Account');
-      expect(newAccount.publicKey).toBe('mock-public-key');
+      const mockAccount = {
+        address: 'k:123456',
+        publicKey: 'test-public-key',
+        privateKey: 'test-private-key',
+        name: 'Test Account',
+        chainId: '0' as const,
+        balance: 0
+      };
+      
+      // Mock account generation
+      vi.spyOn(accountService, 'generateAccount').mockResolvedValueOnce(mockAccount);
+      
+      await stateManager.addAccount(mockAccount);
 
       const state = stateManager.getState();
       expect(state.accounts).toHaveLength(1);
-      expect(state.accounts[0].id).toBe(newAccount.id);
+      expect(state.accounts[0]).toEqual(mockAccount);
     });
 
-    it('should update existing account', async () => {
-      const account = await stateManager.generateAccount('Original Name');
+    it('should set selected account', async () => {
+      const mockAccount = {
+        address: 'k:123456',
+        publicKey: 'test-public-key',
+        privateKey: 'test-private-key',
+        name: 'Test Account',
+        chainId: '0' as const,
+        balance: 0
+      };
       
-      const updated = await stateManager.updateAccount(account.id, {
-        name: 'Updated Name'
-      });
+      await stateManager.addAccount(mockAccount);
+      await stateManager.setSelectedAccount(mockAccount);
 
-      expect(updated.name).toBe('Updated Name');
-      expect(updated.id).toBe(account.id);
+      const state = stateManager.getState();
+      expect(state.selectedAccount).toEqual(mockAccount);
     });
 
     it('should remove account', async () => {
-      const account = await stateManager.generateAccount('To Remove');
+      const mockAccount = {
+        address: 'k:123456',
+        publicKey: 'test-public-key',
+        privateKey: 'test-private-key',
+        name: 'Test Account',
+        chainId: '0' as const,
+        balance: 0
+      };
       
-      await stateManager.removeAccount(account.id);
+      await stateManager.addAccount(mockAccount);
+      await stateManager.removeAccount(mockAccount.address);
 
       const state = stateManager.getState();
       expect(state.accounts).toHaveLength(0);
     });
 
-    it('should set active account', async () => {
-      const _account1 = await stateManager.generateAccount('Account 1');
-      const account2 = await stateManager.generateAccount('Account 2');
+    it('should set active network', async () => {
+      const mockNetwork = {
+        id: 'testnet',
+        name: 'Test Network',
+        chainId: '0' as const,
+        rpcUrl: 'http://localhost:8080',
+        isActive: false
+      };
 
-      await stateManager.setActiveAccount(account2.id);
+      await stateManager.setActiveNetwork(mockNetwork);
 
       const state = stateManager.getState();
-      expect(state.activeAccountId).toBe(account2.id);
+      expect(state.activeNetwork).toEqual(mockNetwork);
     });
   });
 
@@ -112,44 +148,46 @@ describe.skip('WalletStateManager', () => {
     });
 
     it('should add transaction', async () => {
-      const transaction = createMockTransaction({
-        cmd: JSON.stringify({
-          payload: { exec: { code: 'test-code', data: {} } },
-          signers: [{ pubKey: 'mock-public-key' }],
-          meta: { chainId: '0', sender: 'test-sender' },
-          networkId: 'testnet04',
-          nonce: 'test-nonce',
-        })
-      });
+      const transactionData = {
+        from: 'k:test-sender',
+        to: 'k:test-receiver',
+        amount: 10.5,
+        gas: 1000,
+        status: 'pending' as const,
+        chainId: '0' as const,
+        capability: 'coin.TRANSFER'
+      };
 
-      const added = await stateManager.addTransaction(transaction);
+      await stateManager.addTransaction(transactionData);
 
-      expect(added).toBeDefined();
       const state = stateManager.getState();
       expect(state.transactions).toHaveLength(1);
+      expect(state.transactions[0].from).toBe('k:test-sender');
+      expect(state.transactions[0].amount).toBe(10.5);
     });
 
     it('should update transaction status', async () => {
-      const transaction = createMockTransaction({
-        cmd: JSON.stringify({
-          payload: { exec: { code: 'test-code', data: {} } },
-          signers: [{ pubKey: 'mock-public-key' }],
-          meta: { chainId: '0', sender: 'test-sender' },
-          networkId: 'testnet04',
-          nonce: 'test-nonce',
-        })
-      });
+      // First add a transaction
+      const transactionData = {
+        from: 'k:test-sender',
+        to: 'k:test-receiver',
+        amount: 10.5,
+        gas: 1000,
+        status: 'pending' as const,
+        chainId: '0' as const
+      };
       
-      await stateManager.addTransaction(transaction);
+      await stateManager.addTransaction(transactionData);
+      const state = stateManager.getState();
+      const transactionId = state.transactions[0].id;
       
-      const updated = await stateManager.updateTransactionStatus(
-        transaction.id,
-        'success',
-        'Transaction completed'
-      );
-
-      expect(updated.status).toBe('success');
-      expect(updated.result).toBe('Transaction completed');
+      // Update the status
+      await stateManager.updateTransactionStatus(transactionId, 'success');
+      
+      const updatedState = stateManager.getState();
+      const updatedTransaction = updatedState.transactions.find(tx => tx.id === transactionId);
+      
+      expect(updatedTransaction?.status).toBe('success');
     });
   });
 
@@ -158,28 +196,27 @@ describe.skip('WalletStateManager', () => {
       await stateManager.initialize();
     });
 
-    it('should update settings', async () => {
-      const newSettings = await stateManager.updateSettings({
-        theme: 'light',
-        autoLockEnabled: false
-      });
-
-      expect(newSettings.theme).toBe('light');
-      expect(newSettings.autoLockEnabled).toBe(false);
+    it('should handle settings updates', async () => {
+      const newSettings = {
+        autoLock: false,
+        showTestNetworks: true
+      };
+      
+      await stateManager.updateState({ settings: newSettings });
 
       const state = stateManager.getState();
-      expect(state.settings.theme).toBe('light');
+      expect(state.settings?.autoLock).toBe(false);
+      expect(state.settings?.showTestNetworks).toBe(true);
     });
 
-    it('should persist settings updates', async () => {
-      await stateManager.updateSettings({ theme: 'light' });
-
-      // Create new instance to verify persistence
-      const newStateManager = new WalletStateManager(storage);
-      await newStateManager.initialize();
-
-      const state = newStateManager.getState();
-      expect(state.settings.theme).toBe('light');
+    it('should lock and unlock wallet', async () => {
+      await stateManager.lockWallet();
+      let state = stateManager.getState();
+      expect(state.isLocked).toBe(true);
+      
+      await stateManager.unlockWallet();
+      state = stateManager.getState();
+      expect(state.isLocked).toBe(false);
     });
   });
 

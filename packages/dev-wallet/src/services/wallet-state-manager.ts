@@ -1,10 +1,12 @@
-import type { Account, Transaction, Network } from '../types';
+import type { Account, Transaction, Network, TransactionResult } from '../types';
 import type { WalletState, WalletEvents } from '../types/enhanced-types';
 import { WalletError } from '../types/error-types';
 import { handleErrors } from '../utils/error-handler';
 import { AccountService } from './account-service';
 import { SettingsService } from './settings-service';
 import { TransactionService } from './transaction-service';
+import { stateLogger } from '../utils/logger';
+import type { CoinServiceConfig } from '@pact-toolbox/kda';
 
 /**
  * Centralized wallet state management service
@@ -12,18 +14,12 @@ import { TransactionService } from './transaction-service';
 export class WalletStateManager {
   private state: WalletState;
   private listeners: Map<string, ((state: WalletState) => void)[]> = new Map();
-  private accountService: AccountService;
-  private settingsService: SettingsService;
-  private transactionService: TransactionService;
 
   constructor(
-    accountService?: AccountService,
-    settingsService?: SettingsService,
-    transactionService?: TransactionService
+    private readonly accountService: AccountService,
+    private readonly settingsService: SettingsService,
+    private readonly transactionService: TransactionService
   ) {
-    this.accountService = accountService || new AccountService();
-    this.settingsService = settingsService || new SettingsService();
-    this.transactionService = transactionService || new TransactionService();
 
     // Initialize with default state
     this.state = {
@@ -42,7 +38,7 @@ export class WalletStateManager {
   @handleErrors({ component: 'WalletStateManager' })
   async initialize(): Promise<WalletState> {
     try {
-      console.log('Initializing wallet state...');
+      stateLogger.operation('Initialize wallet state', 'start');
 
       // Load data from services
       const [accounts, settings, transactions, networks] = await Promise.all([
@@ -80,12 +76,12 @@ export class WalletStateManager {
         activeNetwork: networks.find(n => n.isActive) || networks[0],
       };
 
-      console.log('Wallet state initialized successfully');
+      stateLogger.operation('Initialize wallet state', 'success');
       this.notifyListeners();
       
       return this.state;
     } catch (error) {
-      console.error('Failed to initialize wallet state:', error);
+      stateLogger.operation('Initialize wallet state', 'error', { error });
       throw WalletError.create(
         'STORAGE_ERROR',
         'Failed to initialize wallet state',
@@ -120,7 +116,7 @@ export class WalletStateManager {
       this.notifyListeners();
       return this.state;
     } catch (error) {
-      console.error('Failed to update state:', error);
+      stateLogger.error('Failed to update state', { error });
       // Revert state on error
       this.state = previousState;
       throw error;
@@ -161,7 +157,7 @@ export class WalletStateManager {
       });
 
       this.dispatchEvent('account-created', { account });
-      console.log('Account added to state:', account.address);
+      stateLogger.debug('Account added to state', { address: account.address });
     } catch (error) {
       throw WalletError.create(
         'STORAGE_ERROR',
@@ -173,6 +169,21 @@ export class WalletStateManager {
         }
       );
     }
+  }
+
+  /**
+   * Set network context for blockchain operations
+   */
+  setNetworkContext(config: Partial<CoinServiceConfig>): void {
+    this.accountService.setNetworkContext(config);
+    stateLogger.debug('Network context set for wallet state manager');
+  }
+
+  /**
+   * Get account balance from blockchain
+   */
+  async getAccountBalance(address: string, chainId?: import('@pact-toolbox/types').ChainId): Promise<number> {
+    return this.accountService.getAccountBalance(address, chainId);
   }
 
   /**
@@ -191,7 +202,7 @@ export class WalletStateManager {
         : this.state.selectedAccount;
 
       await this.updateState({ accounts, selectedAccount });
-      console.log('Account removed from state:', address);
+      stateLogger.debug('Account removed from state', { address });
     } catch (error) {
       throw WalletError.create(
         'STORAGE_ERROR',
@@ -239,7 +250,7 @@ export class WalletStateManager {
       const transactions = [newTransaction, ...this.state.transactions].slice(0, 100); // Keep last 100
       await this.updateState({ transactions: transactions as Transaction[] });
 
-      console.log('Transaction added to state:', newTransaction.id);
+      stateLogger.debug('Transaction added to state', { id: newTransaction.id });
     } catch (error) {
       throw WalletError.create(
         'TRANSACTION_FAILED',
@@ -256,7 +267,7 @@ export class WalletStateManager {
   /**
    * Update transaction status
    */
-  async updateTransactionStatus(id: string, status: Transaction['status'], result?: any): Promise<void> {
+  async updateTransactionStatus(id: string, status: Transaction['status'], result?: TransactionResult): Promise<void> {
     const transactions = this.state.transactions.map(tx => 
       tx.id === id 
         ? { ...tx, status, result, updatedAt: Date.now() }
@@ -277,7 +288,7 @@ export class WalletStateManager {
     });
 
     this.dispatchEvent('wallet-locked', { timestamp: Date.now() });
-    console.log('Wallet locked');
+    stateLogger.info('Wallet locked');
   }
 
   /**
@@ -290,7 +301,7 @@ export class WalletStateManager {
     });
 
     this.dispatchEvent('wallet-unlocked', { timestamp: Date.now() });
-    console.log('Wallet unlocked');
+    stateLogger.info('Wallet unlocked');
   }
 
   /**
@@ -313,7 +324,7 @@ export class WalletStateManager {
       };
 
       this.notifyListeners();
-      console.log('All wallet data cleared');
+      stateLogger.info('All wallet data cleared');
     } catch (error) {
       throw WalletError.create(
         'STORAGE_ERROR',
@@ -428,7 +439,7 @@ export class WalletStateManager {
       try {
         callback(this.state);
       } catch (error) {
-        console.error('Error in state change listener:', error);
+        stateLogger.error('Error in state change listener', { error });
       }
     }
   }

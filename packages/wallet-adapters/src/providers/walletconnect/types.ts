@@ -149,15 +149,6 @@ export interface WalletConnectClient {
 }
 
 /**
- * WalletConnect modal interface
- */
-export interface WalletConnectModal {
-  openModal(params: { uri: string }): void;
-  closeModal(): void;
-  subscribeModal(callback: (state: { open: boolean }) => void): () => void;
-}
-
-/**
  * WalletConnect provider events
  */
 export interface WalletConnectEvents {

@@ -7,13 +7,15 @@ import { resolve } from "pathe";
 
 import { resolveConfig } from "@pact-toolbox/config";
 import { createNetwork } from "@pact-toolbox/network";
-import { PactToolboxClient } from "@pact-toolbox/runtime";
+import { PactToolboxClient, DeploymentHelper } from "@pact-toolbox/deployer";
 import { logger, defu, cleanupOnExit } from "@pact-toolbox/node-utils";
+import { CoinService, MarmaladeService, NamespaceService } from "@pact-toolbox/kda";
 
 import type { ScriptContext } from "./script-context";
 import { createScriptContextBuilder } from "./script-context";
 import { createWalletManager, resolveSigningConfig, type SigningConfig } from "./wallet-manager";
 import { createNamespaceHandler, type NamespaceHandlingOptions } from "./namespace-handler";
+import { runSandboxedScript, type SandboxOptions } from "./sandbox";
 
 export interface ScriptOptions {
   /** Auto-start network before script execution */
@@ -50,6 +52,8 @@ export interface ScriptOptions {
   timeout?: number;
   /** Enable script profiling */
   profile?: boolean;
+  /** Enable sandboxed execution for security */
+  sandbox?: boolean | SandboxOptions;
 }
 
 export interface Script<Args = Record<string, unknown>> extends ScriptOptions {
@@ -148,18 +152,48 @@ export async function runScript(source: string, options: RunScriptOptions = {}):
   }
 
   // Load script definition
-  let scriptObject = await jiti.import(scriptPath);
+  let scriptObject: any;
+  let scriptInstance: Script;
 
-  // Handle ES module default export
-  if (scriptObject && typeof scriptObject === "object" && "default" in scriptObject) {
-    scriptObject = scriptObject.default;
+  // Check if sandboxing is enabled
+  const useSandbox = options.scriptOptions?.sandbox !== false;
+  
+  if (useSandbox) {
+    // For sandboxed execution, we need to load and validate the script differently
+    const sandboxOptions: SandboxOptions = typeof options.scriptOptions?.sandbox === 'object' 
+      ? options.scriptOptions.sandbox 
+      : {
+          timeout: options.scriptOptions?.timeout || 30000,
+          enableConsole: true,
+          cwd: options.cwd,
+        };
+
+    // Read and validate script first
+    const { runSandboxedCode } = await import('./sandbox');
+    const scriptContent = await import('fs/promises').then(fs => fs.readFile(scriptPath, 'utf-8'));
+    
+    // Execute script in sandbox to get its exports
+    scriptObject = await runSandboxedCode(`
+      ${scriptContent}
+      return exports.default || exports || module.exports;
+    `, {}, sandboxOptions);
+
+    scriptInstance = defu(scriptObject, options.scriptOptions) as Script;
+  } else {
+    // Non-sandboxed execution (legacy behavior)
+    scriptObject = await jiti.import(scriptPath);
+
+    // Handle ES module default export
+    if (scriptObject && typeof scriptObject === "object" && "default" in scriptObject) {
+      scriptObject = scriptObject.default;
+    }
+
+    if (typeof scriptObject !== "object" || !scriptObject || typeof (scriptObject as any).run !== "function") {
+      throw new Error(`Script ${source} should export an object with a run method`);
+    }
+
+    scriptInstance = defu(scriptObject, options.scriptOptions) as Script;
   }
-
-  if (typeof scriptObject !== "object" || !scriptObject || typeof (scriptObject as any).run !== "function") {
-    throw new Error(`Script ${source} should export an object with a run method`);
-  }
-
-  const scriptInstance = defu(scriptObject, options.scriptOptions) as Script;
 
   // Apply configuration overrides
   if (scriptInstance.configOverrides) {
@@ -213,8 +247,42 @@ export async function runScript(source: string, options: RunScriptOptions = {}):
     walletManager = createWalletManager(options.config, signingConfig, options.network);
     await walletManager.initialize();
 
-    // Initialize namespace handler
-    namespaceHandler = createNamespaceHandler(options.client, walletManager, chainId);
+    // Get network context from the client
+    const networkContext = options.client.getContext();
+    const wallet = walletManager.getWallet();
+
+    // Set wallet if available
+    if (wallet) {
+      networkContext.setWallet(wallet as any);
+    }
+
+    // Initialize KDA services with proper configuration
+    const coinService = new CoinService({
+      context: networkContext,
+      defaultChainId: chainId as any,
+      wallet: wallet as any,
+    });
+
+    const marmaladeService = new MarmaladeService({
+      context: networkContext,
+      defaultChainId: chainId as any,
+      wallet: wallet as any,
+    });
+
+    const namespaceService = new NamespaceService({
+      context: networkContext,
+      defaultChainId: chainId as any,
+    });
+
+    // Initialize deployment helper
+    const deploymentHelper = new DeploymentHelper(
+      options.client,
+      options.config,
+      options.network,
+    );
+
+    // Initialize namespace handler with injected namespace service
+    namespaceHandler = createNamespaceHandler(options.client, walletManager, namespaceService);
 
     profiler?.end("initialization");
     profiler?.start("network");
@@ -241,6 +309,10 @@ export async function runScript(source: string, options: RunScriptOptions = {}):
       options.args || {},
       walletManager,
       namespaceHandler,
+      coinService,
+      marmaladeService,
+      namespaceService,
+      deploymentHelper,
     );
 
     context = await contextBuilder.build();
@@ -266,16 +338,30 @@ export async function runScript(source: string, options: RunScriptOptions = {}):
 
     profiler?.start("execution");
 
-    // Execute script with timeout
-    if (scriptInstance.timeout) {
-      executionResult = await Promise.race([
-        scriptInstance.run(context),
-        new Promise((_, reject) =>
-          setTimeout(() => reject(new Error("Script execution timeout")), scriptInstance.timeout),
-        ),
-      ]);
+    // Execute script with appropriate method
+    if (useSandbox) {
+      const sandboxOptions: SandboxOptions = typeof scriptInstance.sandbox === 'object' 
+        ? scriptInstance.sandbox 
+        : {
+            timeout: scriptInstance.timeout || 30000,
+            enableConsole: true,
+            cwd: options.cwd,
+          };
+
+      // Execute in sandbox
+      executionResult = await runSandboxedScript(scriptPath, context, sandboxOptions);
     } else {
-      executionResult = await scriptInstance.run(context);
+      // Execute script with timeout
+      if (scriptInstance.timeout) {
+        executionResult = await Promise.race([
+          scriptInstance.run(context),
+          new Promise((_, reject) =>
+            setTimeout(() => reject(new Error("Script execution timeout")), scriptInstance.timeout),
+          ),
+        ]);
+      } else {
+        executionResult = await scriptInstance.run(context);
+      }
     }
 
     profiler?.end("execution");
@@ -497,6 +583,7 @@ export function createDefaultScriptOptions(overrides: Partial<ScriptOptions> = {
       autoCreate: true,
       interactive: false,
     },
+    sandbox: true, // Enable sandboxing by default for security
     ...overrides,
   };
 }

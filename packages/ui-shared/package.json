@@ -42,14 +42,14 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "lit": "^3.3.0"
+    "lit": "^3.3.1"
   },
   "devDependencies": {
     "@pact-toolbox/tsconfig": "workspace:*",
     "@pact-toolbox/tsdown": "workspace:*",
     "@pact-toolbox/vitest-config": "workspace:*",
-    "@types/node": "^24.0.7",
-    "tsdown": "^0.12.9",
+    "@types/node": "^24.1.0",
+    "tsdown": "^0.13.0",
     "typescript": "^5.8.3",
     "vitest": "^3.2.4"
   },

@@ -1,5 +1,6 @@
 import { ref, onMounted, onUnmounted, provide, inject, type InjectionKey } from "vue";
-import { ModalManager, type ModalManagerOptions } from "../modal-manager";
+import { getDefaultModalManager, type ModalManagerOptions } from "../modal-manager";
+import type { ModalManager } from "../modal-manager";
 
 interface WalletModalContext {
   modalManager: ModalManager;
@@ -13,7 +14,7 @@ const WalletModalKey: InjectionKey<WalletModalContext> = Symbol("wallet-modal");
  * Composable to provide wallet modal functionality
  */
 export function provideWalletModal(options?: { modalOptions?: ModalManagerOptions }) {
-  const modalManager = ModalManager.getInstance(options?.modalOptions);
+  const modalManager = getDefaultModalManager(options?.modalOptions);
 
   onMounted(() => {
     modalManager.initialize();
@@ -90,9 +91,10 @@ export function useAutoConnect() {
 
   onMounted(async () => {
     try {
-      const { walletService } = await import("@pact-toolbox/wallet-adapters");
+      const { getWalletSystem } = await import("@pact-toolbox/wallet-adapters");
 
-      if (!walletService.getPrimaryWallet()) {
+      const walletSystem = await getWalletSystem();
+      if (!walletSystem.getPrimaryWallet()) {
         const walletId = await modalManager.showWalletSelector();
         if (walletId) {
           await modalManager.connectWallet(walletId);

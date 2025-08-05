@@ -1,15 +1,18 @@
 import type { RsbuildPlugin } from "@rsbuild/core";
 
 import { getDefaultNetworkConfig, getSerializableMultiNetworkConfig, resolveConfig } from "@pact-toolbox/config";
-import { PactToolboxClient } from "@pact-toolbox/runtime";
+import { PactToolboxClient } from "@pact-toolbox/deployer";
 
 import type { PluginOptions } from "./plugin/types";
 import { PLUGIN_NAME } from "./plugin/utils";
 import { PactToolboxNetwork, createNetwork } from "@pact-toolbox/network";
 import { logger, startSpinner, stopSpinner } from "@pact-toolbox/node-utils";
 import { isLocalNetwork } from "@pact-toolbox/config";
+import { pluginContextManager, generateBuildId } from "./context";
 
 export const pluginPactToolbox = (options?: PluginOptions): RsbuildPlugin => {
+  const buildId = generateBuildId();
+  
   return {
     name: PLUGIN_NAME,
     async setup(api) {
@@ -27,6 +30,9 @@ export const pluginPactToolbox = (options?: PluginOptions): RsbuildPlugin => {
         return; // Skip plugin setup if config fails
       }
       api.onCloseDevServer(async () => {
+        // Clean up plugin context
+        pluginContextManager.remove(buildId);
+        
         if (network) {
           try {
             startSpinner("Shutting down network...");
@@ -51,10 +57,9 @@ export const pluginPactToolbox = (options?: PluginOptions): RsbuildPlugin => {
             isTest: false,
           });
 
-          // Check if globalThis has updated config at build time
-          const configValue = (globalThis as any).__PACT_TOOLBOX_NETWORKS__ || JSON.stringify(multiNetworkConfig);
-
-          config.source.define["globalThis.__PACT_TOOLBOX_NETWORKS__"] = configValue;
+          // Define build-time constants
+          config.source.define["__PACT_TOOLBOX_BUILD_ID__"] = JSON.stringify(buildId);
+          config.source.define["__PACT_TOOLBOX_NETWORKS__"] = JSON.stringify(multiNetworkConfig);
         } catch (error) {
           logger.error("Failed to inject config", error);
         }
@@ -70,12 +75,12 @@ export const pluginPactToolbox = (options?: PluginOptions): RsbuildPlugin => {
             });
             stopSpinner(true, "Network started!");
 
-            // Ensure the global context is set
-            if (client && !(globalThis as any).__PACT_TOOLBOX_CONTEXT__) {
-              (globalThis as any).__PACT_TOOLBOX_CONTEXT__ = {
-                network: client.context,
-                getNetworkConfig: () => client.getNetworkConfig(),
-              };
+            // Set up plugin context
+            if (client) {
+              pluginContextManager.register(buildId, {
+                getClient: () => client,
+                multiNetworkConfig: getSerializableMultiNetworkConfig(toolboxConfig),
+              });
             }
 
             if (options?.onReady) {

@@ -1,4 +1,4 @@
-import { walletService, type Wallet, type WalletAccount } from "@pact-toolbox/wallet-adapters";
+import { getWalletSystem, type Wallet, type WalletAccount } from "@pact-toolbox/wallet-adapters";
 import { LitElement, css, html } from "lit";
 import { customElement, state } from "lit/decorators.js";
 import { baseStyles, truncateAddress } from "@pact-toolbox/ui-shared";
@@ -64,20 +64,25 @@ export class PactWalletConnect extends LitElement {
     super.connectedCallback();
 
     // Check if already connected
-    this.wallet = walletService.getPrimaryWallet();
+    const walletSystem = await getWalletSystem();
+    this.wallet = walletSystem.getPrimaryWallet();
     if (this.wallet) {
       await this.loadAccount();
     }
 
     // Listen for wallet events
-    walletService.on("connected", this.handleWalletConnected);
-    walletService.on("disconnected", this.handleWalletDisconnected);
+    walletSystem.on("connected", this.handleWalletConnected);
+    walletSystem.on("disconnected", this.handleWalletDisconnected);
+
+    // Store walletSystem reference for cleanup
+    (this as any)._walletSystem = walletSystem;
   }
 
-  override disconnectedCallback() {
+  override async disconnectedCallback() {
     super.disconnectedCallback();
-    walletService.off("connected", this.handleWalletConnected);
-    walletService.off("disconnected", this.handleWalletDisconnected);
+    const walletSystem = (this as any)._walletSystem || await getWalletSystem();
+    walletSystem.off("connected", this.handleWalletConnected);
+    walletSystem.off("disconnected", this.handleWalletDisconnected);
   }
 
   private handleWalletConnected = async (wallet: Wallet) => {
@@ -111,20 +116,10 @@ export class PactWalletConnect extends LitElement {
   private async handleDisconnect() {
     if (!this.wallet) return;
 
-    const wallets = walletService.getConnectedWallets();
-    const walletEntry = wallets.find((w) => w === this.wallet);
-
-    if (walletEntry) {
-      // Find wallet ID by checking available wallets
-      const availableWallets = await walletService.getAvailableWallets();
-      const walletMeta = availableWallets.find((_meta) => {
-        // This is a simplified check - in real implementation we'd need a better way
-        return true; // Would need to match by some property
-      });
-
-      if (walletMeta) {
-        await walletService.disconnect(walletMeta.id);
-      }
+    const walletSystem = await getWalletSystem();
+    const walletId = this.wallet.id;
+    if (walletId) {
+      await walletSystem.disconnect(walletId);
     }
   }
 

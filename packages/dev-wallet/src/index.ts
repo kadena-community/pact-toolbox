@@ -23,7 +23,7 @@ export { ScreenRouter } from "./components/screen-router";
 export { AutoLockManager } from "./components/auto-lock-manager";
 
 // Utilities
-export { ErrorHandler, errorHandler, handleErrors } from "./utils/error-handler";
+export { ErrorHandler, createErrorHandler, handleErrors } from "./utils/error-handler";
 
 // Storage (enhanced)
 export { DevWalletStorage } from "./storage";

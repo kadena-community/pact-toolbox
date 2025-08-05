@@ -2,7 +2,7 @@ import type { NetworkConfig, PactToolboxConfigObj } from "@pact-toolbox/config";
 
 import { isLocalNetwork, getNetworkPort } from "@pact-toolbox/config";
 import { PactToolboxNetwork, createNetwork as createPactToolboxNetworkInstance } from "@pact-toolbox/network";
-import { PactToolboxClient } from "@pact-toolbox/runtime";
+import { PactToolboxClient } from "@pact-toolbox/deployer";
 import { logger, isPortTaken } from "@pact-toolbox/node-utils";
 
 import type { PluginOptions } from "./types";

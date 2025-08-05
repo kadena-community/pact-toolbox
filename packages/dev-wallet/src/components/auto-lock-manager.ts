@@ -1,18 +1,20 @@
 import type { WalletStateManager } from "../services/wallet-state-manager";
-import { errorHandler } from "../utils/error-handler";
+import type { ErrorHandler } from "../utils/error-handler";
 
 /**
  * Auto-lock manager for wallet security
  */
 export class AutoLockManager {
   private stateManager: WalletStateManager;
+  private errorHandler?: ErrorHandler;
   private autoLockTimer: NodeJS.Timeout | null = null;
   private activityListeners: Map<string, EventListener> = new Map();
   private isInitialized = false;
   private readonly DEFAULT_LOCK_TIMEOUT = 300000; // 5 minutes in milliseconds
 
-  constructor(stateManager: WalletStateManager) {
+  constructor(stateManager: WalletStateManager, errorHandler?: ErrorHandler) {
     this.stateManager = stateManager;
+    this.errorHandler = errorHandler;
   }
 
   /**
@@ -43,10 +45,14 @@ export class AutoLockManager {
       this.isInitialized = true;
       console.log('Auto-lock manager initialized');
     } catch (error) {
-      await errorHandler.handle(error as Error, {
-        component: 'AutoLockManager',
-        operation: 'initialize',
-      });
+      if (this.errorHandler) {
+        await this.errorHandler.handle(error as Error, {
+          component: 'AutoLockManager',
+          operation: 'initialize',
+        });
+      } else {
+        console.error('Error in AutoLockManager.initialize:', error);
+      }
     }
   }
 
@@ -81,10 +87,14 @@ export class AutoLockManager {
         // Dispatch auto-lock event
         this.dispatchAutoLockEvent();
       } catch (error) {
-        await errorHandler.handle(error as Error, {
-          component: 'AutoLockManager',
-          operation: 'autoLockTrigger',
-        });
+        if (this.errorHandler) {
+          await this.errorHandler.handle(error as Error, {
+            component: 'AutoLockManager',
+            operation: 'autoLockTrigger',
+          });
+        } else {
+          console.error('Error in AutoLockManager.autoLockTrigger:', error);
+        }
       }
     }, lockTimeout);
   }
@@ -210,10 +220,14 @@ export class AutoLockManager {
 
       return false;
     } catch (error) {
-      await errorHandler.handle(error as Error, {
-        component: 'AutoLockManager',
-        operation: 'checkForInactivityLock',
-      });
+      if (this.errorHandler) {
+        await this.errorHandler.handle(error as Error, {
+          component: 'AutoLockManager',
+          operation: 'checkForInactivityLock',
+        });
+      } else {
+        console.error('Error in AutoLockManager.checkForInactivityLock:', error);
+      }
       return false;
     }
   }
@@ -252,10 +266,14 @@ export class AutoLockManager {
       await this.stateManager.lockWallet();
       this.dispatchAutoLockEvent();
     } catch (error) {
-      await errorHandler.handle(error as Error, {
-        component: 'AutoLockManager',
-        operation: 'forceLock',
-      });
+      if (this.errorHandler) {
+        await this.errorHandler.handle(error as Error, {
+          component: 'AutoLockManager',
+          operation: 'forceLock',
+        });
+      } else {
+        console.error('Error in AutoLockManager.forceLock:', error);
+      }
     }
   }
 

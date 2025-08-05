@@ -4,20 +4,12 @@ import { WalletError, type WalletErrorCode, type ErrorRecoveryStrategy, type Err
  * Centralized error handling utility for dev wallet
  */
 export class ErrorHandler {
-  private static instance: ErrorHandler;
   private recoveryStrategies: Map<WalletErrorCode, ErrorRecoveryStrategy> = new Map();
   private errorLog: WalletError[] = [];
   private maxLogSize = 100;
 
-  private constructor() {
+  constructor() {
     this.setupDefaultRecoveryStrategies();
-  }
-
-  static getInstance(): ErrorHandler {
-    if (!ErrorHandler.instance) {
-      ErrorHandler.instance = new ErrorHandler();
-    }
-    return ErrorHandler.instance;
   }
 
   /**
@@ -257,26 +249,32 @@ export class ErrorHandler {
 }
 
 /**
- * Convenience function to get the error handler instance
+ * Create a default error handler instance
  */
-export const errorHandler = ErrorHandler.getInstance();
+export function createErrorHandler(): ErrorHandler {
+  return new ErrorHandler();
+}
 
 /**
  * Decorator for automatic error handling on class methods
+ * Note: Services using this decorator should inject their own ErrorHandler instance
  */
 export function handleErrors(context?: Partial<ErrorContext>) {
   return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
     const originalMethod = descriptor.value;
 
-    descriptor.value = async function (...args: any[]) {
+    descriptor.value = async function (this: any, ...args: any[]) {
       try {
         return await originalMethod.apply(this, args);
       } catch (error) {
-        await errorHandler.handle(error as Error, {
-          ...context,
-          operation: `${target.constructor.name}.${propertyKey}`,
-          component: target.constructor.name,
-        });
+        // If the class has an errorHandler property, use it
+        if (this.errorHandler && typeof this.errorHandler.handle === 'function') {
+          await this.errorHandler.handle(error as Error, {
+            ...context,
+            operation: `${target.constructor.name}.${propertyKey}`,
+            component: target.constructor.name,
+          });
+        }
         throw error;
       }
     };

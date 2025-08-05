@@ -193,6 +193,30 @@ export interface HealthCheck {
 }
 
 /**
+ * SPV proof request
+ */
+export interface SpvRequest {
+  /** Target chain ID */
+  targetChainId: string;
+  /** Request key to create proof for */
+  requestKey: string;
+}
+
+/**
+ * SPV proof response
+ */
+export interface SpvProof {
+  /** SPV proof data */
+  proof: string;
+  /** Target chain ID */
+  targetChainId: string;
+  /** Source chain ID */
+  sourceChainId: string;
+  /** Request key */
+  requestKey: string;
+}
+
+/**
  * Request configuration
  */
 export interface RequestConfig {

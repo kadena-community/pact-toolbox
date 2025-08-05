@@ -12,6 +12,7 @@ import type {
  * Chainweaver wallet implementation
  */
 export class ChainweaverWallet extends BaseWallet {
+  readonly id = "chainweaver";
   private static readonly CHAINWEAVER_URL = "http://127.0.0.1:9467";
   private static readonly QUICKSIGN_ENDPOINT = "/v1/quicksign";
 
@@ -94,7 +95,7 @@ export class ChainweaverWallet extends BaseWallet {
     txOrTxs: PartiallySignedTransaction | PartiallySignedTransaction[],
   ): Promise<SignedTransaction | SignedTransaction[]> {
     if (!this.connected) {
-      throw WalletError.notConnected("chainweaver");
+      throw WalletError.notConnected(this.id);
     }
 
     const transactions = Array.isArray(txOrTxs) ? txOrTxs : [txOrTxs];

@@ -1,11 +1,11 @@
 import type { PactToolboxConfigObj } from "@pact-toolbox/config";
-import type { PactToolboxClient } from "@pact-toolbox/runtime";
+import type { PactToolboxClient } from "@pact-toolbox/deployer";
 import type { Wallet } from "@pact-toolbox/wallet-adapters";
 import { logger } from "@pact-toolbox/node-utils";
-import { CoinService, MarmaladeService, NamespaceService } from "@pact-toolbox/kda";
+import type { CoinService, MarmaladeService, NamespaceService } from "@pact-toolbox/kda";
 import type { WalletManager, SignerInfo } from "./wallet-manager";
 import type { NamespaceHandler } from "./namespace-handler";
-import { DeploymentHelper } from "./deployment";
+import type { DeploymentHelper } from "@pact-toolbox/deployer";
 import type { ChainId } from "@pact-toolbox/types";
 
 export interface ScriptContext<Args = Record<string, unknown>> {
@@ -39,6 +39,10 @@ export class ScriptContextBuilder<Args = Record<string, unknown>> {
   private args: Args;
   private walletManager: WalletManager;
   private namespaceHandler: NamespaceHandler;
+  private coinService: CoinService;
+  private marmaladeService: MarmaladeService;
+  private namespaceService: NamespaceService;
+  private deploymentHelper: DeploymentHelper;
 
   constructor(
     client: PactToolboxClient,
@@ -48,6 +52,10 @@ export class ScriptContextBuilder<Args = Record<string, unknown>> {
     args: Args,
     walletManager: WalletManager,
     namespaceHandler: NamespaceHandler,
+    coinService: CoinService,
+    marmaladeService: MarmaladeService,
+    namespaceService: NamespaceService,
+    deploymentHelper: DeploymentHelper,
   ) {
     this.client = client;
     this.config = config;
@@ -56,6 +64,10 @@ export class ScriptContextBuilder<Args = Record<string, unknown>> {
     this.args = args;
     this.walletManager = walletManager;
     this.namespaceHandler = namespaceHandler;
+    this.coinService = coinService;
+    this.marmaladeService = marmaladeService;
+    this.namespaceService = namespaceService;
+    this.deploymentHelper = deploymentHelper;
   }
 
   async build(): Promise<ScriptContext<Args>> {
@@ -64,43 +76,6 @@ export class ScriptContextBuilder<Args = Record<string, unknown>> {
     // Get current wallet and signer
     const wallet = this.walletManager.getWallet();
     const currentSigner = this.walletManager.getCurrentSigner();
-
-    // Get network context from the client
-    const networkContext = this.client.getContext();
-
-    // Set wallet if available
-    if (wallet) {
-      networkContext.setWallet(wallet as any);
-    }
-
-    // Initialize KDA services with proper configuration
-    const coinService = new CoinService({
-      context: networkContext,
-      defaultChainId: this.chainId,
-      wallet: wallet as any,
-    });
-
-    const marmaladeService = new MarmaladeService({
-      context: networkContext,
-      defaultChainId: this.chainId,
-      wallet: wallet as any,
-    });
-
-    const namespaceService = new NamespaceService({
-      context: networkContext,
-      defaultChainId: this.chainId,
-    });
-
-    // Initialize deployment helper
-    const deployments = new DeploymentHelper(
-      this.client,
-      this.config,
-      this.network,
-      this.walletManager,
-      this.namespaceHandler,
-    );
-
-    // Deployment helper is ready to use
 
     const scriptContext: ScriptContext<Args> = {
       // Core components
@@ -116,13 +91,13 @@ export class ScriptContextBuilder<Args = Record<string, unknown>> {
       walletManager: this.walletManager,
       currentSigner,
 
-      // KDA services
-      coinService,
-      marmaladeService,
-      namespaceService,
+      // KDA services - injected via constructor
+      coinService: this.coinService,
+      marmaladeService: this.marmaladeService,
+      namespaceService: this.namespaceService,
 
-      // Deployment utilities
-      deployments,
+      // Deployment utilities - injected via constructor
+      deployments: this.deploymentHelper,
     };
 
     logger.success(`Script context created successfully`);
@@ -141,6 +116,22 @@ export function createScriptContextBuilder<Args = Record<string, unknown>>(
   args: Args,
   walletManager: WalletManager,
   namespaceHandler: NamespaceHandler,
+  coinService: CoinService,
+  marmaladeService: MarmaladeService,
+  namespaceService: NamespaceService,
+  deploymentHelper: DeploymentHelper,
 ): ScriptContextBuilder<Args> {
-  return new ScriptContextBuilder(client, config, network, chainId, args, walletManager, namespaceHandler);
+  return new ScriptContextBuilder(
+    client,
+    config,
+    network,
+    chainId,
+    args,
+    walletManager,
+    namespaceHandler,
+    coinService,
+    marmaladeService,
+    namespaceService,
+    deploymentHelper,
+  );
 }

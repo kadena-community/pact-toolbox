@@ -1,4 +1,4 @@
-import type { SignedTransaction } from "@pact-toolbox/types";
+import type { SignedTransaction, IChainwebClient } from "@pact-toolbox/types";
 import type {
   NetworkConfig,
   SendResult,
@@ -13,6 +13,8 @@ import type {
   CutInfo,
   HealthCheck,
   RequestConfig,
+  SpvRequest,
+  SpvProof,
 } from "./types";
 import { ChainwebClientError } from "./types";
 
@@ -22,7 +24,8 @@ import { ChainwebClientError } from "./types";
  * Simple, powerful API for interacting with Kadena blockchain.
  * Works across web, Node.js, and React Native environments.
  */
-export class ChainwebClient {
+export class ChainwebClient implements IChainwebClient {
+  static instances = new Map<string, ChainwebClient>();
   private config: Required<NetworkConfig>;
 
   constructor(config: NetworkConfig) {
@@ -31,6 +34,13 @@ export class ChainwebClient {
       headers: {},
       ...config,
     };
+  }
+
+  static getInstance(config: NetworkConfig): ChainwebClient {
+    if (!ChainwebClient.instances.has(config.networkId)) {
+      ChainwebClient.instances.set(config.networkId, new ChainwebClient(config));
+    }
+    return ChainwebClient.instances.get(config.networkId)!;
   }
 
   /**
@@ -146,6 +156,113 @@ export class ChainwebClient {
       },
       config,
     );
+  }
+
+  /**
+   * Alias for send() to match kadena.js API
+   */
+  async submit(transactions: SignedTransaction[], config?: RequestConfig): Promise<SendResult> {
+    return this.send(transactions, config);
+  }
+
+  /**
+   * Submit a single transaction
+   */
+  async submitOne(transaction: SignedTransaction, config?: RequestConfig): Promise<string> {
+    const result = await this.send([transaction], config);
+    const requestKey = result.requestKeys[0];
+    if (!requestKey) {
+      throw ChainwebClientError.transaction("No request key returned from send");
+    }
+    return requestKey;
+  }
+
+  /**
+   * Execute local query with preflight and signature verification
+   */
+  async preflight(command: any, config?: RequestConfig): Promise<LocalResult> {
+    // Add preflight and signature verification flags
+    const preflightCommand = {
+      ...command,
+      preflight: true,
+      signatureVerification: true,
+    };
+    return this.local(preflightCommand, config);
+  }
+
+  /**
+   * Execute local query with signature verification only
+   */
+  async signatureVerification(command: any, config?: RequestConfig): Promise<LocalResult> {
+    // Add signature verification flag
+    const sigVerCommand = {
+      ...command,
+      signatureVerification: true,
+    };
+    return this.local(sigVerCommand, config);
+  }
+
+  /**
+   * Execute dirty read (minimal restrictions)
+   */
+  async dirtyRead(command: any, config?: RequestConfig): Promise<LocalResult> {
+    // Execute with minimal restrictions
+    return this.local(command, config);
+  }
+
+  /**
+   * Run Pact code directly (generates and sends local command)
+   */
+  async runPact(
+    code: string,
+    options: {
+      data?: Record<string, any>;
+      envData?: Record<string, any>;
+      gasLimit?: number;
+      config?: RequestConfig;
+    } = {},
+  ): Promise<LocalResult> {
+    const { data = {}, envData, gasLimit = 150000, config } = options;
+
+    const command = {
+      code,
+      data,
+      ...(envData && { envData }),
+      gasLimit,
+      chainId: this.config.chainId,
+      networkId: this.config.networkId,
+    };
+
+    return this.local(command, config);
+  }
+
+  /**
+   * Alias for poll() to match kadena.js API
+   */
+  async pollStatus(requestKeys: string[], config?: RequestConfig): Promise<PollResponse> {
+    return this.poll(requestKeys, config);
+  }
+
+  /**
+   * Poll for a single transaction result
+   */
+  async pollOne(requestKey: string, config?: RequestConfig): Promise<TransactionResult | null> {
+    const response = await this.poll([requestKey], config);
+    return response[requestKey] || null;
+  }
+
+  /**
+   * Alias for getTransaction() to match kadena.js API
+   */
+  async getStatus(requestKey: string, config?: RequestConfig): Promise<TransactionResult | null> {
+    return this.getTransaction(requestKey, config);
+  }
+
+  /**
+   * Alias for getTransaction() - alternative name
+   */
+  async getPoll(requestKey: string, config?: RequestConfig): Promise<TransactionResult | null> {
+    return this.getTransaction(requestKey, config);
   }
 
   /**
@@ -334,6 +451,66 @@ export class ChainwebClient {
    */
   forNetwork(networkId: string): ChainwebClient {
     return this.withConfig({ networkId });
+  }
+
+  /**
+   * Create SPV proof for cross-chain transaction
+   */
+  async createSpv(request: SpvRequest, config?: RequestConfig): Promise<SpvProof> {
+    const url = this.buildApiUrl("/spv");
+    const payload = {
+      targetChainId: request.targetChainId,
+      requestKey: request.requestKey,
+    };
+
+    const response = await this.makeRequest(
+      url,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...this.config.headers,
+          ...config?.headers,
+        },
+        body: JSON.stringify(payload),
+      },
+      config,
+    );
+
+    return {
+      proof: response,
+      targetChainId: request.targetChainId,
+      sourceChainId: this.config.chainId,
+      requestKey: request.requestKey,
+    };
+  }
+
+  /**
+   * Poll for SPV proof creation (with retries)
+   */
+  async pollCreateSpv(
+    request: SpvRequest,
+    options: {
+      retryCount?: number;
+      retryDelay?: number;
+      config?: RequestConfig;
+    } = {},
+  ): Promise<SpvProof> {
+    const { retryCount = 10, retryDelay = 2000, config } = options;
+    let lastError: Error | undefined;
+
+    for (let i = 0; i < retryCount; i++) {
+      try {
+        return await this.createSpv(request, config);
+      } catch (error) {
+        lastError = error as Error;
+        if (i < retryCount - 1) {
+          await new Promise((resolve) => setTimeout(resolve, retryDelay));
+        }
+      }
+    }
+
+    throw lastError || ChainwebClientError.transaction("Failed to create SPV proof after retries");
   }
 
   /**

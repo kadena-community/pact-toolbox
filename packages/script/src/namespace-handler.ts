@@ -1,6 +1,7 @@
-import type { PactToolboxClient } from "@pact-toolbox/runtime";
+import type { PactToolboxClient } from "@pact-toolbox/deployer";
 import type { PactKeyset } from "@pact-toolbox/types";
-import { NamespaceService, pact } from "@pact-toolbox/kda";
+import type { NamespaceService } from "@pact-toolbox/kda";
+import { pact } from "@pact-toolbox/kda";
 import { logger, readFile } from "@pact-toolbox/node-utils";
 import type { WalletManager } from "./wallet-manager";
 
@@ -54,19 +55,19 @@ export class NamespaceHandler {
   private walletManager: WalletManager;
   private namespaceService: NamespaceService;
 
-  constructor(client: PactToolboxClient, walletManager: WalletManager, chainId: string = "0") {
+  constructor(
+    client: PactToolboxClient,
+    walletManager: WalletManager,
+    namespaceService: NamespaceService,
+  ) {
     this.client = client;
     this.walletManager = walletManager;
+    this.namespaceService = namespaceService;
 
     const wallet = walletManager.getWallet();
     if (!wallet) {
       throw new Error("Wallet manager must be initialized before creating namespace handler");
     }
-
-    this.namespaceService = new NamespaceService({
-      context: client.getContext(),
-      defaultChainId: chainId as any,
-    });
   }
 
   /**
@@ -397,9 +398,9 @@ export class NamespaceHandler {
 export function createNamespaceHandler(
   client: PactToolboxClient,
   walletManager: WalletManager,
-  chainId?: string,
+  namespaceService: NamespaceService,
 ): NamespaceHandler {
-  return new NamespaceHandler(client, walletManager, chainId);
+  return new NamespaceHandler(client, walletManager, namespaceService);
 }
 
 /**

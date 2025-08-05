@@ -1,14 +1,20 @@
-import type { Wallet, WalletMetadata, WalletProvider } from "@pact-toolbox/wallet-core";
+import type { Wallet, WalletMetadata } from "@pact-toolbox/wallet-core";
+import { BaseWalletProvider } from "@pact-toolbox/wallet-core";
 import { ChainweaverWallet } from "./wallet";
 import type { ChainweaverConnectionOptions } from "./types";
 
 /**
  * Provider for Chainweaver wallet
  */
-export class ChainweaverWalletProvider implements WalletProvider {
+export class ChainweaverWalletProvider extends BaseWalletProvider {
+  static id = "chainweaver";
+  static autoRegister = true;
+  static priority = 30;
+
   private connectionOptions: ChainweaverConnectionOptions | undefined = undefined;
 
   constructor(options?: { connectionOptions?: ChainweaverConnectionOptions }) {
+    super();
     if (options?.connectionOptions) {
       this.connectionOptions = options.connectionOptions;
     }
@@ -27,7 +33,7 @@ export class ChainweaverWalletProvider implements WalletProvider {
    * Check if Chainweaver wallet is available
    */
   async isAvailable(): Promise<boolean> {
-    try {
+    return this.safeIsAvailable(async () => {
       // Try to reach Chainweaver's status endpoint
       const response = await fetch("http://127.0.0.1:9467/v1/status", {
         method: "GET",
@@ -35,9 +41,7 @@ export class ChainweaverWalletProvider implements WalletProvider {
       }).catch(() => null);
 
       return response?.ok === true;
-    } catch {
-      return false;
-    }
+    });
   }
 
   /**

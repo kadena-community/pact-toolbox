@@ -5,16 +5,8 @@ import "@pact-toolbox/ui-shared";
  * Manages the display and lifecycle of the dev wallet modal
  */
 export class ModalManager {
-  private static instance: ModalManager;
   private modalElement: LitElement | null = null;
   private initialized = false;
-
-  static getInstance(): ModalManager {
-    if (!ModalManager.instance) {
-      ModalManager.instance = new ModalManager();
-    }
-    return ModalManager.instance;
-  }
 
   /**
    * Initialize the modal manager
@@ -113,4 +105,25 @@ export class ModalManager {
     const container = document.querySelector("#pact-dev-wallet-container") as HTMLElement;
     return !!(container && container.style.display !== "none" && container.style.opacity !== "0");
   }
+}
+
+/**
+ * Creates a new ModalManager instance
+ */
+export function createModalManager(): ModalManager {
+  return new ModalManager();
+}
+
+// Default instance for backward compatibility
+let defaultModalManager: ModalManager | null = null;
+
+/**
+ * Gets the default ModalManager instance (for backward compatibility)
+ * @deprecated Use createModalManager() for new code
+ */
+export function getDefaultModalManager(): ModalManager {
+  if (!defaultModalManager) {
+    defaultModalManager = createModalManager();
+  }
+  return defaultModalManager;
 }

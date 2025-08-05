@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 
 import { getSerializableMultiNetworkConfig, resolveConfig } from "@pact-toolbox/config";
 import { logger } from "@pact-toolbox/node-utils";
-import { PactToolboxClient } from "@pact-toolbox/runtime";
+import { PactToolboxClient } from "@pact-toolbox/deployer";
 
 import type { PluginOptions } from "./plugin/types";
 import { PactToolboxNetwork, createNetwork } from "@pact-toolbox/network";
@@ -131,14 +131,13 @@ function withPactToolbox(options: PluginOptions = {}) {
           ...nextConfig.compiler,
           define: {
             ...nextConfig.compiler?.define,
-            "globalThis.__PACT_TOOLBOX_NETWORKS__":
-              (globalThis as any).__PACT_TOOLBOX_NETWORKS__ ||
-              JSON.stringify(
-                getSerializableMultiNetworkConfig(resolvedConfig, {
-                  isDev: process.env.NODE_ENV !== "production",
-                  isTest: process.env.NODE_ENV === "test",
-                }),
-              ),
+            "__PACT_TOOLBOX_BUILD_ID__": JSON.stringify("nextjs-" + Date.now()),
+            "__PACT_TOOLBOX_NETWORKS__": JSON.stringify(
+              getSerializableMultiNetworkConfig(resolvedConfig, {
+                isDev: process.env.NODE_ENV !== "production",
+                isTest: process.env.NODE_ENV === "test",
+              }),
+            ),
           },
         },
         turbopack: {

@@ -5,12 +5,12 @@ import type {
   WalletConnectOptions,
   WalletConnectSession,
   WalletConnectClient,
-  WalletConnectModal,
   WalletConnectEvents,
   WalletConnectChainId,
   WalletConnectQuicksignResponse,
   WalletConnectMetadata,
 } from "./types";
+// AppKit type will be inferred from the dynamic import
 
 /**
  * WalletConnect wallet implementation
@@ -19,7 +19,7 @@ import { BaseWallet } from "@pact-toolbox/wallet-core";
 
 export class WalletConnectWallet extends BaseWallet {
   private client?: WalletConnectClient;
-  private modal?: WalletConnectModal;
+  private appKit?: any; // AppKit instance from @reown/appkit
   private session?: WalletConnectSession;
   private currentAccounts: string[] = [];
   private options: WalletConnectOptions & { relayUrl: string; networkId: string; metadata: WalletConnectMetadata };
@@ -58,7 +58,7 @@ export class WalletConnectWallet extends BaseWallet {
     try {
       // Dynamic import to avoid bundling WalletConnect when not used
       const { SignClient } = await import("@walletconnect/sign-client");
-      const { WalletConnectModal } = await import("@walletconnect/modal");
+      const { createAppKit } = await import("@reown/appkit");
 
       this.client = await SignClient.init({
         relayUrl: this.options.relayUrl,
@@ -66,10 +66,16 @@ export class WalletConnectWallet extends BaseWallet {
         metadata: this.options.metadata,
       }) as unknown as WalletConnectClient;
 
-      this.modal = new WalletConnectModal({
+      // AppKit is currently focused on EVM chains, so we'll use it primarily for the modal UI
+      // while keeping SignClient for the actual WalletConnect protocol handling
+      this.appKit = await createAppKit({
         projectId: this.options.projectId,
-        chains: [`kadena:${this.options.networkId}`],
-      }) as unknown as WalletConnectModal;
+        metadata: this.options.metadata,
+        networks: [], // No default networks since we're using custom Kadena chain
+        features: {
+          analytics: false,
+        },
+      });
 
       // Setup event listeners
       this.setupEventListeners();
@@ -121,10 +127,9 @@ export class WalletConnectWallet extends BaseWallet {
       this.events.sessionDisconnected?.();
     });
 
-    if (this.modal) {
-      this.modal.subscribeModal((state) => {
-        this.events.modalStateChanged?.(state);
-      });
+    if (this.appKit) {
+      // AppKit event subscription will be handled differently
+      // The modal state is managed internally by AppKit
     }
   }
 
@@ -174,11 +179,11 @@ export class WalletConnectWallet extends BaseWallet {
 
       if (uri) {
         this.events.displayUri?.(uri);
-        this.modal?.openModal({ uri });
+        await this.appKit?.open({ uri });
       }
 
       const session = await approval();
-      this.modal?.closeModal();
+      await this.appKit?.close();
       this.onSessionConnected(session);
 
       // Get the first account as primary signer
@@ -238,7 +243,7 @@ export class WalletConnectWallet extends BaseWallet {
 
       return this.account;
     } catch (error) {
-      this.modal?.closeModal();
+      await this.appKit?.close();
 
       if (error instanceof Error) {
         if (error.message.includes("User rejected") || error.message.includes("rejected")) {
@@ -282,7 +287,7 @@ export class WalletConnectWallet extends BaseWallet {
     await super.disconnect();
     this.session = undefined;
     this.currentAccounts = [];
-    this.modal?.closeModal();
+    await this.appKit?.close();
   }
 
   /**
