@@ -45,11 +45,11 @@
     "@pact-toolbox/prettier-config": "workspace:*",
     "@pact-toolbox/tsconfig": "workspace:*",
     "@types/glob": "^9.0.0",
-    "@types/node": "^24.1.0",
-    "oxlint": "^1.9.0",
+    "@types/node": "^24.2.0",
+    "oxlint": "^1.11.0",
     "prettier": "^3.6.2",
-    "tsdown": "^0.13.0",
-    "typescript": "^5.8.3",
+    "tsdown": "^0.13.4",
+    "typescript": "^5.9.2",
     "vitest": "^3.2.4"
   },
   "prettier": "@pact-toolbox/prettier-config"

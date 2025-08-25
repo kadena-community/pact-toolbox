@@ -18,19 +18,19 @@
   ],
   "author": "salamaashoush@gmail.com",
   "license": "MIT",
-  "packageManager": "pnpm@10.13.1",
+  "packageManager": "pnpm@10.14.0",
   "dependencies": {
-    "@rspress/plugin-shiki": "^1.45.0",
+    "@rspress/plugin-shiki": "^1.45.1",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
-    "rspress": "^1.45.0",
-    "shiki": "^3.8.1"
+    "rspress": "^1.45.1",
+    "shiki": "^3.9.2"
   },
   "devDependencies": {
     "tsx": "^4.20.3",
-    "typedoc": "^0.28.8",
+    "typedoc": "^0.28.9",
     "typedoc-plugin-coverage": "^4.0.1",
-    "typedoc-plugin-markdown": "^4.7.1",
+    "typedoc-plugin-markdown": "^4.8.0",
     "typedoc-plugin-merge-modules": "^7.0.0"
   }
 }

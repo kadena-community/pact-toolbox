@@ -1,5 +1,13 @@
-export { useWallet } from "./use-wallet";
-export type { UseWalletReturn, WalletHookState, WalletHookActions } from "./use-wallet";
+export {
+  WalletProvider,
+  useWallet,
+  usePrimaryWallet,
+  useWalletConnection,
+  useAvailableWallets,
+  useWalletSign,
+  type WalletContextValue,
+  type WalletProviderProps,
+} from "./provider";
 
-export { useNetwork } from "./use-network";
-export type { UseNetworkReturn } from "./use-network";
+// Note: The standalone hooks are available but the provider-based ones are recommended
+// export * from "./hooks";

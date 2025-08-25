@@ -174,7 +174,7 @@ export interface WalletPreferencesConfig {
 /**
  * Complete wallet system configuration
  */
-export interface TypeSafeWalletConfig<W extends WalletConfigurations = WalletConfigurations> {
+export interface WalletConfig<W extends WalletConfigurations = WalletConfigurations> {
   /** Wallet configurations */
   wallets?: W;
   /** UI options */
@@ -187,7 +187,7 @@ export interface TypeSafeWalletConfig<W extends WalletConfigurations = WalletCon
  * Type-safe config builder
  */
 export function defineWalletConfig<W extends WalletConfigurations>(
-  config: TypeSafeWalletConfig<W> & ValidateWalletConfig<W>,
-): TypeSafeWalletConfig<W> {
+  config: WalletConfig<W> & ValidateWalletConfig<W>,
+): WalletConfig<W> {
   return config;
 }

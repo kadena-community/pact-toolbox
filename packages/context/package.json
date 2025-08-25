@@ -68,7 +68,7 @@
     "@pact-toolbox/vitest-config": "workspace:*",
     "@types/react": "^19.1.9",
     "react": "^19.1.1",
-    "typescript": "^5.8.3",
+    "typescript": "^5.9.2",
     "vitest": "^3.2.4"
   }
 }

@@ -70,7 +70,7 @@
     "prepack": "pnpm run build"
   },
   "dependencies": {
-    "@magic-ext/kadena": "^1.4.0",
+    "@magic-ext/kadena": "^1.4.1",
     "@pact-toolbox/chainweb-client": "workspace:*",
     "@pact-toolbox/crypto": "workspace:*",
     "@pact-toolbox/signers": "workspace:*",
@@ -88,18 +88,18 @@
   },
   "devDependencies": {
     "@pact-toolbox/tsdown": "workspace:*",
-    "@types/node": "^24.1.0",
+    "@types/node": "^24.2.0",
     "@types/react": "^19.1.9",
-    "oxlint": "^1.9.0",
+    "oxlint": "^1.11.0",
     "react": "^19.1.1",
-    "typescript": "^5.8.3",
+    "typescript": "^5.9.2",
     "vitest": "^3.2.4"
   },
   "optionalDependencies": {
     "@pact-toolbox/dev-wallet": "workspace:*",
-    "@reown/appkit": "^1.7.17",
-    "@walletconnect/sign-client": "^2.21.5",
-    "magic-sdk": "^29.4.0"
+    "@reown/appkit": "^1.7.18",
+    "@walletconnect/sign-client": "^2.21.7",
+    "magic-sdk": "^29.4.1"
   },
   "keywords": [
     "pact",

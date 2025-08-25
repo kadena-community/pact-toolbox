@@ -1,5 +1,4 @@
 export * from "./chainwebApi";
-export * from "./container";
 export * from "./date";
 export * from "./event-emitter";
 export * from "./event-bus";

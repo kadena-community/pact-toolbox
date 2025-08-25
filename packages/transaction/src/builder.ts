@@ -13,6 +13,7 @@ import type {
   PartiallySignedTransaction,
   Serializable,
   Transaction,
+  WalletLike,
 } from "@pact-toolbox/types";
 import { NetworkConfigProvider } from "@pact-toolbox/network-config";
 import { PactTransactionDispatcher } from "./dispatcher";
@@ -20,11 +21,10 @@ import {
   createPactCommandWithDefaults,
   createTransaction,
   isPactExecPayload,
+  isWalletLike,
   signPactCommandWithSigner,
   updatePactCommandSigners,
 } from "./utils";
-import { getSigner, type SigningOptions } from "./signer";
-import type { Wallet } from "@pact-toolbox/types";
 import { collectSignatures } from "./multi-sig";
 
 /**
@@ -231,29 +231,17 @@ export class PactTransactionBuilder<Payload extends PactCmdPayload, Result = unk
    *   .withSigner("alice-key", (signFor) => [signFor("coin.TRANSFER", "alice", "bob", 10.0)])
    *   .sign(mySigner)
    *   .submitAndListen();
-   *
-   * // Pass options to signer provider
-   * const result = await execution('(coin.get-balance "alice")')
-   *   .sign({ showUI: false, walletId: "keypair" })
-   *   .submitAndListen();
    * ```
    */
-  sign(signerOrOptions?: Wallet | SigningOptions): PactTransactionDispatcher<Payload, Result> {
+  sign(walletLike?: WalletLike): PactTransactionDispatcher<Payload, Result> {
     this.#builder = async (cmd) => {
-      let signer: Wallet;
+      let wallet: WalletLike;
 
-      if (
-        signerOrOptions &&
-        typeof signerOrOptions === "object" &&
-        "sign" in signerOrOptions &&
-        "getAccount" in signerOrOptions
-      ) {
+      if (isWalletLike(walletLike)) {
         // It's a Wallet instance
-        signer = signerOrOptions as Wallet;
+        wallet = walletLike;
       } else {
-        // It's options or undefined, get signer from provider
-        const options = signerOrOptions as SigningOptions | undefined;
-        signer = await getSigner(options);
+        wallet = await getSigner(walletLike);
       }
 
       return signPactCommandWithSigner(cmd, signer);

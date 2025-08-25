@@ -7,9 +7,3 @@ export type {
   ZelcoreAccountsResponse,
   ZelcoreErrorResponse
 } from "./types";
-
-// Auto-register the provider
-import { WalletRegistry } from "../../wallet-registry";
-import { ZelcoreWalletProvider } from "./provider";
-
-WalletRegistry.registerClass(ZelcoreWalletProvider);

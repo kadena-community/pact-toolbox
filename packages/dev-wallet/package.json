@@ -49,10 +49,10 @@
   "devDependencies": {
     "@pact-toolbox/tsconfig": "workspace:*",
     "@pact-toolbox/tsdown": "workspace:*",
-    "@playwright/test": "^1.54.1",
+    "@playwright/test": "^1.54.2",
     "jsdom": "^26.1.0",
-    "playwright": "^1.54.1",
-    "vite": "^7.0.6",
+    "playwright": "^1.54.2",
+    "vite": "^7.1.1",
     "vitest": "^3.2.4"
   },
   "license": "MIT",

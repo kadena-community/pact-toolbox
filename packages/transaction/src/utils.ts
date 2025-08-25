@@ -15,7 +15,7 @@ import type {
 
 import { ChainwebClient } from "@pact-toolbox/chainweb-client";
 import { blake2bBase64Url, fastStableStringify, genKeyPair } from "@pact-toolbox/crypto";
-import type { Wallet } from "@pact-toolbox/types";
+import type { WalletLike } from "@pact-toolbox/types";
 
 /**
  * Clock skew offset in seconds to prevent "Transaction creation time too far in the future" errors.
@@ -190,16 +190,16 @@ export function updatePactCommandSigners<Payload extends PactCmdPayload>(
 
 export async function signPactCommandWithSigner<Payload extends PactCmdPayload>(
   cmd: PactCommand<Payload>,
-  signer: Wallet,
+  wallet: WalletLike,
 ): Promise<Transaction> {
   if (cmd.signers.length === 0) {
-    const account = await signer.getAccount();
+    const account = await wallet.getAccount();
     cmd = updatePactCommandSigners(cmd, account.publicKey, (signFor) => [signFor("coin.GAS")]);
     cmd.meta.sender = account.address;
   }
 
   const tx = createTransaction(cmd);
-  return signer.sign(tx);
+  return wallet.sign(tx);
 }
 
 export function getSignerKeys(network: SerializableNetworkConfig, signer?: string): KeyPair {
@@ -209,4 +209,15 @@ export function getSignerKeys(network: SerializableNetworkConfig, signer?: strin
     throw new Error(`Signer ${signer} not found in network config`);
   }
   return signerAccount;
+}
+
+export function isWalletLike(wallet: unknown): wallet is WalletLike {
+  return typeof wallet === "object" && wallet !== null && "sign" in wallet && "getAccount" in wallet;
+}
+
+export function getWallet(walletLike: WalletLike): Promise<WalletLike> {
+  if (isWalletLike(walletLike)) {
+    return Promise.resolve(walletLike);
+  }
+  return getSigner(walletLike);
 }

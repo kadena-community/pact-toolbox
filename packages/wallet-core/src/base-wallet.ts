@@ -1,6 +1,11 @@
-import type { PartiallySignedTransaction, SignedTransaction, Wallet, WalletAccount, WalletNetwork } from "@pact-toolbox/types";
+import type {
+  PartiallySignedTransaction,
+  SignedTransaction,
+  Wallet,
+  WalletAccount,
+  WalletNetwork,
+} from "@pact-toolbox/types";
 import type { NetworkAwareWallet, NetworkCapabilities } from "./network";
-import { getNetworkById, getDefaultNetwork } from "./network";
 
 /**
  * Abstract base class for wallet implementations
@@ -9,7 +14,7 @@ import { getNetworkById, getDefaultNetwork } from "./network";
 export abstract class BaseWallet implements Wallet, Partial<NetworkAwareWallet> {
   /** Wallet provider ID */
   readonly id?: string;
-  
+
   protected account: WalletAccount | null = null;
   protected network: WalletNetwork | null = null;
   protected connected = false;

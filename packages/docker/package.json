@@ -35,15 +35,15 @@
     "@pact-toolbox/utils": "workspace:*",
     "dockerode": "^4.0.7",
     "tar-fs": "^3.1.0",
-    "yaml": "^2.8.0"
+    "yaml": "^2.8.1"
   },
   "devDependencies": {
     "@types/dockerode": "^3.3.42",
-    "@types/node": "^24.1.0",
+    "@types/node": "^24.2.0",
     "@types/tar-fs": "^2.0.4",
-    "oxlint": "^1.9.0",
-    "tsdown": "^0.13.0",
-    "typescript": "^5.8.3",
+    "oxlint": "^1.11.0",
+    "tsdown": "^0.13.4",
+    "typescript": "^5.9.2",
     "vitest": "^3.2.4"
   },
   "engines": {

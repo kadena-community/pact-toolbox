@@ -1,417 +1,457 @@
 # @pact-toolbox/wallet-adapters
 
-Multi-provider wallet adapter system for Kadena blockchain with a unified API, supporting browser extensions, WalletConnect, Magic Link, and built-in development wallets.
+Unified wallet adapter system for Kadena blockchain wallets. Provides a simple, powerful API for connecting and managing multiple wallet providers.
 
 ## Features
 
-### 🔗 **Universal Wallet Support**
+- 🔌 **Multiple Wallet Support** - Ecko, Chainweaver, Zelcore, WalletConnect, Magic, and Keypair
+- ⚛️ **React Integration** - First-class React hooks and context provider
+- 🔄 **Auto-Reconnection** - Automatic reconnection with exponential backoff
+- 💾 **Persistence** - Remember user's wallet choice across sessions
+- 🎯 **Type-Safe** - Full TypeScript support with strict typing
+- 📦 **Modular** - Tree-shakeable with separate entry points
 
-- **Keypair Wallet**: Built-in wallet using local keypairs for development/testing
-- **Ecko Wallet**: Browser extension integration
-- **Chainweaver**: Official Kadena desktop wallet
-- **Zelcore**: Multi-cryptocurrency wallet
-- **WalletConnect**: Connect mobile wallets via QR code
-- **Magic**: Email-based authentication
-- **Extensible**: Easy to add new wallet providers
+## Installation
 
-### ⚡ **Unified Wallet Interface**
-
-- Consistent API across all wallet providers
-- Automatic wallet detection and availability checking
-- Built-in error handling with typed errors
-- Event-driven architecture for state updates
-
-### 🧪 **Testing & Development**
-
-- Deterministic wallets from seed phrases
-- Static keypair signers for tests
-- Automatic fallback to test wallet
-- Mock wallet providers
-
-### 🔧 **Advanced Features**
-
-- Connection pooling and health checks
-- Real-time wallet discovery
-- Multi-account management
-- Event-driven architecture
-- TypeScript-first design
+```bash
+npm install @pact-toolbox/wallet-adapters
+# or
+pnpm add @pact-toolbox/wallet-adapters
+# or
+yarn add @pact-toolbox/wallet-adapters
+```
 
 ## Quick Start
 
-### Basic Setup
+### Basic Usage (Vanilla TypeScript/JavaScript)
 
 ```typescript
-import { setupWallets, connectWallet } from "@pact-toolbox/wallet-adapters";
-import { execution } from "@pact-toolbox/transaction";
+import { WalletManager, getWallet } from '@pact-toolbox/wallet-adapters';
 
-// Setup wallets with auto-connect
-const wallet = await setupWallets({
-  autoConnect: true,
-  wallets: ["keypair", "ecko", "chainweaver"],
-  preferredWallets: ["ecko", "chainweaver"],
-});
+// Simple approach - just get a wallet
+const wallet = await getWallet({ walletId: 'ecko' });
+const account = await wallet.getAccount();
+console.log('Connected to:', account.address);
 
-// Or manually connect
-const wallet = await connectWallet("ecko");
-console.log(`Connected to ${wallet.metadata.name}`);
-
-// Execute a transaction (wallet UI appears automatically in browser)
-const result = await execution("(+ 1 2)").sign().submitAndListen();
+// Sign a transaction
+const signedTx = await wallet.sign(transaction);
 ```
 
-### Setup with WalletConnect and Magic
-
-Some wallets require additional configuration:
+### Advanced Usage with WalletManager
 
 ```typescript
-import { setupWallets } from "@pact-toolbox/wallet-adapters";
+import { WalletManager } from '@pact-toolbox/wallet-adapters';
 
-await setupWallets({
-  wallets: ["keypair", "walletconnect", "magic"],
-  walletConfigs: {
-    // WalletConnect requires a project ID from https://cloud.walletconnect.com
+// Get the singleton instance
+const manager = WalletManager.getInstance({
+  wallets: {
+    ecko: true,
+    chainweaver: true,
+    zelcore: false, // Disabled
     walletconnect: {
-      projectId: "your-walletconnect-project-id",
-      metadata: {
-        name: "My Kadena App",
-        description: "My awesome Kadena DApp",
-        url: "https://myapp.com",
-        icons: ["https://myapp.com/icon.png"],
-      },
-    },
-    // Magic requires an API key from https://magic.link
-    magic: {
-      magicApiKey: "your-magic-publishable-key",
-      networkId: "mainnet01", // or 'testnet04'
-      chainId: "0",
-      createAccountsOnChain: true,
+      projectId: 'YOUR_PROJECT_ID',
+      // ... other WalletConnect config
     },
   },
-  autoConnect: true,
-  preferredWallets: ["magic", "walletconnect"],
-});
-```
-
-### Transaction Signing
-
-```typescript
-import { getPrimaryWallet } from "@pact-toolbox/wallet-adapters";
-import { execution } from "@pact-toolbox/transaction";
-
-// Get connected wallet
-const wallet = getPrimaryWallet();
-
-// Build and sign transaction
-const result = await execution("(+ 1 2)")
-  .withChainId("0")
-  .sign() // Automatically uses connected wallet
-  .submitAndListen();
-
-console.log("Transaction result:", result);
-```
-
-## Common Usage Patterns
-
-### Local Queries (Read-only)
-
-```typescript
-import { execution } from "@pact-toolbox/transaction";
-
-// Local queries don't require signing
-const balance = await execution('(coin.get-balance "alice")').local();
-
-console.log("Alice's balance:", balance);
-```
-
-### Transactions with Capabilities
-
-```typescript
-import { execution } from "@pact-toolbox/transaction";
-
-// Transfer with capability
-const result = await execution('(coin.transfer "alice" "bob" 10.0)')
-  .withSigner("alice-public-key", (signFor) => [signFor("coin.TRANSFER", "alice", "bob", 10.0)])
-  .sign() // Shows wallet UI
-  .submitAndListen();
-```
-
-### Multi-step Pacts (Continuations)
-
-```typescript
-import { execution, continuation } from "@pact-toolbox/transaction";
-
-// Step 1: Start a multi-step pact
-const step1 = await execution("(my-pact.start-process)").sign().submitAndListen();
-
-// Step 2: Continue the pact
-const step2 = await continuation({
-  pactId: step1.pactId,
-  step: 1,
-  rollback: false,
-})
-  .sign()
-  .submitAndListen();
-```
-
-## Wallet Providers
-
-### Keypair Wallet (Built-in)
-
-Perfect for development, testing, and server-side applications:
-
-```typescript
-import { setupWallets } from "@pact-toolbox/wallet-adapters";
-
-// Setup with keypair wallet
-const wallet = await setupWallets({
-  wallets: ["keypair"],
-  autoConnect: true,
+  autoReconnect: true, // Enable auto-reconnection (default: true)
 });
 
-// The keypair wallet uses keys from your pact-toolbox configuration
-// or generates new ones if none are available
+// Initialize the manager
+await manager.initialize();
+
+// Connect to a specific wallet
+const wallet = await manager.connect({ walletId: 'ecko' });
+
+// Or let the manager auto-detect available wallets
+const wallet = await manager.connect(); // Will try to auto-connect
+
+// Get available wallets
+const availableWallets = manager.getAvailableWallets();
+console.log('Available wallets:', availableWallets);
+
+// Sign transactions with primary wallet
+const signed = await manager.sign(transaction);
+
+// Disconnect
+await manager.disconnect();
 ```
 
-### Browser Extension Wallets
+### React Integration
 
-```typescript
-import { connectWallet } from "@pact-toolbox/wallet-adapters";
+```tsx
+import { WalletProvider, useWallet } from '@pact-toolbox/wallet-adapters/react';
 
-// Connect to Ecko wallet
-const wallet = await connectWallet("ecko");
+// Wrap your app with WalletProvider
+function App() {
+  return (
+    <WalletProvider 
+      config={{
+        wallets: {
+          ecko: true,
+          chainweaver: true,
+        },
+        autoReconnect: true,
+      }}
+    >
+      <YourApp />
+    </WalletProvider>
+  );
+}
 
-// Get accounts
-const accounts = await wallet.getAccounts();
-console.log("Connected accounts:", accounts);
+// Use the wallet hook in your components
+function WalletButton() {
+  const { 
+    wallet, 
+    isConnected, 
+    isConnecting, 
+    connect, 
+    disconnect,
+    sign,
+    error 
+  } = useWallet();
 
-// Sign transaction (usually done through transaction builder)
-const signedTx = await wallet.signTransaction({
-  cmd: pactCommand,
-  networkId: "mainnet01",
-});
-```
-
-## Integration with Transaction Builder
-
-The wallet adapters integrate seamlessly with `@pact-toolbox/transaction`:
-
-```typescript
-import { setupWallets } from "@pact-toolbox/wallet-adapters";
-import { execution } from "@pact-toolbox/transaction";
-
-// Setup wallets first
-await setupWallets({
-  wallets: ["keypair", "ecko", "chainweaver"],
-  autoConnect: true,
-  preferredWallets: ["ecko"],
-});
-
-// Transaction builder will automatically use connected wallet
-const result = await execution('(coin.transfer "alice" "bob" 1.0)')
-  .withSigner("alice-public-key", (signFor) => [signFor("coin.TRANSFER", "alice", "bob", 1.0)])
-  .sign() // Automatically shows wallet UI
-  .submitAndListen();
-
-console.log("Transaction result:", result);
-```
-
-## Testing Setup
-
-### Unit Tests
-
-```typescript
-import { setupWallets, getPrimaryWallet } from "@pact-toolbox/wallet-adapters";
-import { createTestEnv } from "@pact-toolbox/test";
-
-describe("My Contract Tests", () => {
-  const { local, send } = createTestEnv();
-
-  beforeAll(async () => {
-    // Setup test wallet
-    await setupWallets({
-      wallets: ["keypair"],
-      autoConnect: true,
-    });
-  });
-
-  test("should deploy contract", async () => {
-    const result = await send("(module my-contract GOVERNANCE (defcap GOVERNANCE () true))");
-
-    expect(result.status).toBe("success");
-  });
-});
-```
-
-### Integration Tests
-
-```typescript
-import { setupWallets, connectWallet, getPrimaryWallet } from "@pact-toolbox/wallet-adapters";
-
-// Test with fallback wallets
-async function testWithFallback() {
-  try {
-    // Try browser wallet first
-    await connectWallet("ecko");
-  } catch {
-    // Fall back to keypair wallet
-    await setupWallets({
-      wallets: ["keypair"],
-      autoConnect: true,
-    });
+  if (isConnected && wallet) {
+    return (
+      <div>
+        <p>Connected to: {wallet.id}</p>
+        <button onClick={() => disconnect()}>
+          Disconnect
+        </button>
+      </div>
+    );
   }
 
-  // Now use wallet for tests
-  const wallet = getPrimaryWallet();
-  // ... test logic
+  return (
+    <button 
+      onClick={() => connect({ walletId: 'ecko' })}
+      disabled={isConnecting}
+    >
+      {isConnecting ? 'Connecting...' : 'Connect Wallet'}
+    </button>
+  );
 }
 ```
 
-## Advanced Usage
+## Configuration
 
-### Multi-Wallet Management
-
-```typescript
-import { walletService, connectWallet } from "@pact-toolbox/wallet-adapters";
-
-// Connect to multiple wallets
-const eckoWallet = await connectWallet("ecko");
-const chainweaverWallet = await connectWallet("chainweaver");
-
-// Set primary wallet
-walletService.setPrimaryWallet(eckoWallet);
-
-// Get all connected wallets
-const connectedWallets = walletService.getConnectedWallets();
-console.log(
-  `Connected wallets:`,
-  connectedWallets.map((w) => w.metadata.name),
-);
-
-// Disconnect specific wallet
-await walletService.disconnect("chainweaver");
-```
-
-### Custom Wallet Provider
+### Wallet Configuration
 
 ```typescript
-import { WalletProvider, Wallet, BaseWallet } from "@pact-toolbox/wallet-core";
-import { walletService } from "@pact-toolbox/wallet-adapters";
-
-class MyCustomWalletProvider implements WalletProvider {
-  readonly metadata = {
-    id: "my-wallet",
-    name: "My Custom Wallet",
-    description: "Custom wallet implementation",
-    icon: "data:image/svg+xml;base64,...",
-    platforms: ["browser" as const],
-    downloadUrl: "https://mywallet.com",
+interface WalletConfig {
+  // Configure which wallets are available
+  wallets?: {
+    ecko?: boolean | EckoConfig;
+    chainweaver?: boolean | ChainweaverConfig;
+    zelcore?: boolean | ZelcoreConfig;
+    walletconnect?: boolean | WalletConnectConfig;
+    magic?: boolean | MagicConfig;
+    keypair?: boolean | KeypairConfig;
   };
-
-  async isAvailable(): Promise<boolean> {
-    return typeof window !== "undefined" && !!window.myWallet;
-  }
-
-  async createWallet(): Promise<Wallet> {
-    return new MyCustomWallet();
-  }
+  
+  // Auto-reconnection settings
+  autoReconnect?: boolean; // Default: true
+  
+  // User preferences
+  preferences?: {
+    autoConnect?: boolean; // Auto-connect on load
+  };
 }
-
-// Register custom provider
-walletService.register(new MyCustomWalletProvider());
 ```
 
-### Working with Different Networks
+### Example Configurations
 
+#### Enable specific wallets
 ```typescript
-import { connectWallet } from "@pact-toolbox/wallet-adapters";
-import { execution } from "@pact-toolbox/transaction";
-import { createNetwork } from "@pact-toolbox/network";
+const config = {
+  wallets: {
+    ecko: true,
+    chainweaver: true,
+    zelcore: false, // Explicitly disabled
+  }
+};
+```
 
-// Connect wallet
-const wallet = await connectWallet("ecko");
+#### Configure WalletConnect
+```typescript
+const config = {
+  wallets: {
+    walletconnect: {
+      projectId: 'YOUR_PROJECT_ID',
+      metadata: {
+        name: 'My App',
+        description: 'My App Description',
+        url: 'https://myapp.com',
+        icons: ['https://myapp.com/icon.png'],
+      },
+    },
+  },
+};
+```
 
-// Create network contexts
-const mainnet = createNetwork({ networkId: "mainnet01" });
-const testnet = createNetwork({ networkId: "testnet04" });
+#### Configure Magic (Email/Social login)
+```typescript
+const config = {
+  wallets: {
+    magic: {
+      apiKey: 'YOUR_MAGIC_API_KEY',
+      network: 'mainnet',
+    },
+  },
+};
+```
 
-// Use different networks
-const mainnetResult = await execution('(coin.details "alice")', mainnet).withChainId("0").local();
-
-const testnetResult = await execution('(coin.details "alice")', testnet).withChainId("0").local();
+#### Configure Keypair (For testing)
+```typescript
+const config = {
+  wallets: {
+    keypair: {
+      accountName: 'test-account',
+      chains: ['0', '1'],
+      // Optional: provide a private key for deterministic keypair
+      privateKey: '0000000000000000000000000000000000000000000000000000000000000000',
+    },
+  },
+};
 ```
 
 ## API Reference
 
-### Core Interfaces
+### WalletManager
 
-- **`Wallet`**: Main wallet interface for signing and connection (from `@pact-toolbox/wallet-core`)
-- **`WalletProvider`**: Factory for creating wallet instances
-- **`WalletService`**: Central service for wallet management
-- **`WalletMetadata`**: Wallet information and capabilities
+The main class for managing wallet connections.
 
-### Key Functions
+#### Methods
 
-- **`setupWallets()`**: Initialize and optionally auto-connect wallets
-- **`connectWallet()`**: Connect to a specific wallet
-- **`autoConnectWallet()`**: Auto-connect to the best available wallet
-- **`getAvailableWallets()`**: List all available wallet providers
-- **`getConnectedWallets()`**: Get all connected wallets
-- **`getPrimaryWallet()`**: Get the primary wallet for signing
-- **`disconnectWallet()`**: Disconnect a specific wallet
-- **`clearWallets()`**: Disconnect all wallets
+- `getInstance(config?)` - Get the singleton instance
+- `initialize()` - Initialize the manager
+- `register(id, factory)` - Register a custom wallet provider
+- `connect(options?)` - Connect to a wallet
+- `disconnect(walletId?)` - Disconnect a wallet
+- `sign(transaction)` - Sign a transaction with the primary wallet
+- `getPrimaryWallet()` - Get the current primary wallet
+- `setPrimaryWallet(wallet)` - Set the primary wallet
+- `getProviders()` - Get all available providers
+- `getConnectedWallets()` - Get all connected wallets
+- `getAvailableWallets()` - Get metadata for available wallets
 
-## Migration Guide
+#### Events
 
-If you're migrating from an older version:
+The WalletManager extends EventEmitter and emits the following events:
 
-### Wallet Connection
-
-```typescript
-// Old way
-import { WalletManager } from "old-wallet-package";
-const manager = new WalletManager();
-await manager.connect("ecko");
-
-// New way
-import { connectWallet } from "@pact-toolbox/wallet-adapters";
-const wallet = await connectWallet("ecko");
-```
-
-### Transaction Signing
+- `connected` - When a wallet connects
+- `disconnected` - When a wallet disconnects
+- `primaryWalletChanged` - When the primary wallet changes
+- `error` - When an error occurs
 
 ```typescript
-// Old way
-const signedTx = await wallet.signTransaction(pactCommand);
-await submitTransaction(signedTx);
+manager.on('connected', (wallet) => {
+  console.log('Wallet connected:', wallet);
+});
 
-// New way (integrated with transaction builder)
-import { execution } from "@pact-toolbox/transaction";
-const result = await execution('(coin.transfer "alice" "bob" 1.0)')
-  .withSigner("alice-public-key", (signFor) => [signFor("coin.TRANSFER", "alice", "bob", 1.0)])
-  .sign() // Automatically signs with connected wallet
-  .submitAndListen();
+manager.on('error', (error) => {
+  console.error('Wallet error:', error);
+});
 ```
 
-## Key Benefits
+### React Hooks
 
-- **Unified Interface**: Same API for all wallet types
-- **Auto-detection**: Automatically detects available wallets
-- **Type Safety**: Full TypeScript support with detailed types
-- **Lazy Loading**: Wallet providers are loaded on-demand
-- **Error Handling**: Consistent error types across all wallets
-- **Framework Agnostic**: Works with any JavaScript framework
+#### useWallet()
 
-## Browser Support
+Main hook that provides wallet state and actions.
 
-- Chrome/Chromium 90+
-- Firefox 88+
-- Safari 14+
-- Edge 90+
+```typescript
+const {
+  wallet,           // Current connected wallet
+  wallets,          // All connected wallets
+  availableWallets, // Available wallet metadata
+  isConnecting,     // Connection in progress
+  isConnected,      // Connection status
+  error,            // Last error
+  connect,          // Connect function
+  disconnect,       // Disconnect function
+  sign,             // Sign transaction function
+  selectWallet,     // Select primary wallet
+} = useWallet();
+```
+
+#### usePrimaryWallet()
+
+Get just the primary wallet.
+
+```typescript
+const wallet = usePrimaryWallet();
+```
+
+#### useWalletConnection()
+
+Get connection status and actions.
+
+```typescript
+const { isConnected, isConnecting, connect, disconnect } = useWalletConnection();
+```
+
+#### useAvailableWallets()
+
+Get list of available wallets.
+
+```typescript
+const availableWallets = useAvailableWallets();
+```
+
+#### useWalletSign()
+
+Hook for transaction signing.
+
+```typescript
+const { sign, isReady, error } = useWalletSign();
+
+if (isReady) {
+  const signed = await sign(transaction);
+}
+```
+
+## Helper Functions
+
+### getWallet()
+
+Quick helper to get a connected wallet.
+
+```typescript
+import { getWallet } from '@pact-toolbox/wallet-adapters';
+
+// Connect to a specific wallet
+const wallet = await getWallet({ walletId: 'ecko' });
+
+// Auto-connect to the best available wallet
+const wallet = await getWallet();
+```
+
+### getWalletManager()
+
+Get an initialized wallet manager instance.
+
+```typescript
+import { getWalletManager } from '@pact-toolbox/wallet-adapters';
+
+const manager = await getWalletManager({
+  wallets: { ecko: true }
+});
+```
+
+## Custom Wallet Providers
+
+You can register custom wallet providers:
+
+```typescript
+import { WalletManager, BaseWalletProvider } from '@pact-toolbox/wallet-adapters';
+
+class MyCustomWalletProvider extends BaseWalletProvider {
+  metadata = {
+    id: 'my-wallet',
+    name: 'My Custom Wallet',
+    type: 'browser-extension',
+    description: 'My custom wallet provider',
+  };
+
+  async isAvailable() {
+    return typeof window !== 'undefined' && Boolean(window.myWallet);
+  }
+
+  async createWallet() {
+    // Return wallet instance
+    return new MyCustomWallet();
+  }
+}
+
+// Register the provider
+const manager = WalletManager.getInstance();
+manager.register('my-wallet', () => new MyCustomWalletProvider());
+```
+
+## Testing
+
+For testing, use the built-in keypair wallet:
+
+```typescript
+// In test environment
+const manager = WalletManager.getInstance({
+  wallets: {
+    keypair: {
+      accountName: 'test-account',
+      privateKey: '0000000000000000000000000000000000000000000000000000000000000000',
+      deterministic: true, // Same keys every time
+    },
+  },
+});
+
+const wallet = await manager.connect({ walletId: 'keypair' });
+```
+
+## Persistence
+
+The wallet manager automatically persists the user's wallet choice and will attempt to reconnect on page reload:
+
+```typescript
+import { getPersistedWallet, clearPersistedWallet } from '@pact-toolbox/wallet-adapters';
+
+// Get persisted wallet info
+const persisted = getPersistedWallet();
+console.log('Last wallet:', persisted?.lastWalletId);
+
+// Clear persistence
+clearPersistedWallet();
+```
+
+## Error Handling
+
+The package provides a `WalletError` class with specific error types:
+
+```typescript
+import { WalletError } from '@pact-toolbox/wallet-adapters';
+
+try {
+  await manager.connect();
+} catch (error) {
+  if (error instanceof WalletError) {
+    switch (error.type) {
+      case 'NOT_FOUND':
+        console.error('Wallet not found');
+        break;
+      case 'USER_REJECTED':
+        console.error('User rejected connection');
+        break;
+      case 'CONNECTION_FAILED':
+        console.error('Connection failed:', error.message);
+        break;
+      // ... handle other error types
+    }
+  }
+}
+```
+
+## Best Practices
+
+1. **Always initialize the manager before use**
+   ```typescript
+   await manager.initialize();
+   ```
+
+2. **Use React context for React apps**
+   - Wrap your app with `WalletProvider`
+   - Use hooks instead of direct manager access
+
+3. **Handle errors gracefully**
+   - Always wrap wallet operations in try-catch
+   - Show user-friendly error messages
+
+4. **Test with keypair wallet**
+   - Use deterministic keypair for consistent testing
+   - Mock wallet providers in unit tests
+
+5. **Configure only needed wallets**
+   - Disable wallets you don't need to reduce bundle size
+   - Lazy-load wallet providers for better performance
 
 ## License
 
 MIT
-
----
-
-Made with ❤️ by [@salamaashoush](https://github.com/salamaashoush)

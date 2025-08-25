@@ -65,6 +65,12 @@ export interface Wallet {
   sign(txs: PartiallySignedTransaction[]): Promise<SignedTransaction[]>;
 }
 
+export interface WalletLike {
+  getAccount(networkId?: string): Promise<WalletAccount>;
+  sign(tx: PartiallySignedTransaction): Promise<SignedTransaction>;
+  sign(txs: PartiallySignedTransaction[]): Promise<SignedTransaction[]>;
+}
+
 /**
  * Wallet metadata information
  */
@@ -124,6 +130,9 @@ export interface WalletEvents {
   disconnected: (walletId: string) => void;
   /** Error occurred */
   error: (error: Error) => void;
+
+  /** Primary wallet changed */
+  primaryWalletChanged: (wallet: Wallet | null) => void;
 }
 
 /**
@@ -136,6 +145,12 @@ export interface ConnectOptions {
   force?: boolean;
   /** Connection timeout in milliseconds */
   timeout?: number;
+  /** Wallet ID to connect to */
+  walletId?: string;
+  /** Silent mode (no UI) */
+  silent?: boolean;
+  /** Show UI on connect */
+  showUI?: boolean;
 }
 
 /**
