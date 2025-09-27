@@ -1,4 +1,5 @@
 import type { Component } from 'solid-js';
+import type { DevWalletSettings, PendingTransaction } from '../types';
 import { onCleanup, onMount, Show } from 'solid-js';
 import { css } from 'goober';
 import { useToast } from '@pact-toolbox/ui-shared';
@@ -71,21 +72,6 @@ const walletContentStyles = css`
   scrollbar-color: var(--pact-color-border-secondary) var(--pact-color-bg-secondary);
 `;
 
-const screenContainerStyles = css`
-  height: 100%;
-  animation: slideIn 0.3s ease-out;
-
-  @keyframes slideIn {
-    from {
-      opacity: 0;
-      transform: translateX(20px);
-    }
-    to {
-      opacity: 1;
-      transform: translateX(0);
-    }
-  }
-`;
 
 export const WalletContainer: Component = () => {
   let autoLockTimer: NodeJS.Timeout | null = null;
@@ -93,11 +79,12 @@ export const WalletContainer: Component = () => {
 
   // Event handlers using the new SolidJS approach
 
+  const AUTO_LOCK_DURATION = 5 * 60 * 1000; // 5 minutes
   const startAutoLockTimer = () => {
     stopAutoLockTimer();
     autoLockTimer = setTimeout(() => {
       walletActions.lock();
-    }, 300000); // 5 minutes
+    }, AUTO_LOCK_DURATION);
   };
 
   const stopAutoLockTimer = () => {
@@ -112,7 +99,7 @@ export const WalletContainer: Component = () => {
     await initializeWalletStore();
 
     // Setup event listeners for auto-lock
-    const settingsHandler = (settings: any) => {
+    const settingsHandler = (settings: DevWalletSettings) => {
       if (settings.autoLock) {
         startAutoLockTimer();
       } else {
@@ -185,7 +172,7 @@ export const WalletContainer: Component = () => {
       walletActions.setCurrentScreen('connect');
     };
 
-    const signRequestHandler = (transaction: any) => {
+    const signRequestHandler = (transaction: PendingTransaction) => {
       // When a signing is requested, switch to sign screen and set pending transaction
       if (transaction) {
         walletActions.setPendingTransaction(transaction);

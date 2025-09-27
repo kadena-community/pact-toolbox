@@ -24,7 +24,7 @@ import { WalletSelector } from './components/WalletSelector';
 
 // Import context
 import { WalletManagerProvider, useWalletContext } from './context';
-import { createMockWalletManager, createMockWallet } from "./test-utils";
+import { createMockWalletManager } from "./test-utils";
 
 describe('Wallet React Package - Basic Smoke Tests', () => {
   describe('Context Provider', () => {

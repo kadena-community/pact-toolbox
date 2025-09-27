@@ -215,11 +215,12 @@ export class DevWalletManager {
     }
 
     // Show with animation
-    setTimeout(() => {
+    // Small delay to ensure DOM is ready for CSS transition
+    requestAnimationFrame(() => {
       if (this.walletContainer) {
         this.walletContainer.classList.add("visible");
       }
-    }, 10);
+    });
 
     this.visible = true;
 
@@ -234,9 +235,10 @@ export class DevWalletManager {
     if (this.walletContainer) {
       this.walletContainer.classList.remove("visible");
 
-      // Remove after animation
-      setTimeout(() => {
+      // Listen for transition end to cleanup
+      const handleTransitionEnd = () => {
         if (this.walletContainer && this.walletContainer.parentNode) {
+          this.walletContainer.removeEventListener('transitionend', handleTransitionEnd);
           this.walletContainer.parentNode.removeChild(this.walletContainer);
           this.walletContainer = null;
         }
@@ -246,7 +248,8 @@ export class DevWalletManager {
           this.cleanup();
           this.cleanup = null;
         }
-      }, 300);
+      };
+      this.walletContainer.addEventListener('transitionend', handleTransitionEnd);
     }
 
     this.visible = false;

@@ -5,10 +5,7 @@
 
 import type { DeploymentOptions, PactDeployer } from "@pact-toolbox/deployer";
 import { logger } from "@pact-toolbox/node-utils";
-import type { PactTransactionBuilder } from "@pact-toolbox/transaction";
 import { join } from "pathe";
-import { readFile } from "node:fs/promises";
-import { existsSync } from "node:fs";
 
 import type { PreludeDefinition, DeploymentGroup, FileSpec, PactDependency, KeysetTemplate } from "./types";
 import { deployPactDependency } from "./deployPrelude";

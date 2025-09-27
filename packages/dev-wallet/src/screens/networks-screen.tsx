@@ -3,7 +3,7 @@ import { For, Show, createSignal } from 'solid-js';
 import { css } from 'goober';
 import { PactCard, PactBadge, PactButton, PactModal, PactInput, PactIconButton, useToast } from '@pact-toolbox/ui-shared';
 import type { Network } from '../types';
-import { walletActions, walletEventEmitter, getWalletStorage } from '../stores/wallet-store';
+import { walletActions, getWalletStorage } from '../stores/wallet-store';
 
 interface NetworksScreenProps {
   networks: Network[];
@@ -36,9 +36,6 @@ const buttonGroupStyles = css`
   gap: var(--pact-spacing-2);
 `;
 
-const deleteButtonStyles = css`
-  margin-left: auto;
-`;
 
 const networkListStyles = css`
   display: flex;
@@ -148,7 +145,7 @@ export const NetworksScreen: Component<NetworksScreenProps> = (props) => {
       setExplorerUrl('');
       // Reload to show new network
       window.location.reload();
-    } catch (error) {
+    } catch {
       setAddError('Failed to add network');
     }
   };

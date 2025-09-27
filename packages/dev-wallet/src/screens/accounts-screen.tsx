@@ -4,9 +4,8 @@ import { css, keyframes } from 'goober';
 import { PactButton, PactCard, PactModal, PactInput, PactEmptyState, PactIconButton, PactBadge, PactDropdown, PactDropdownItem, PactDropdownDivider, useToast } from '@pact-toolbox/ui-shared';
 import type { Account } from '../types';
 import { genKeyPair } from '@pact-toolbox/crypto';
-import { walletActions, walletEventEmitter, walletState } from '../stores/wallet-store';
-import { KeyPairSigner } from '@pact-toolbox/signers';
-import { exportBase16Key } from '@pact-toolbox/crypto';
+import { getGlobalRegistry } from '../keypair-registry';
+import { walletActions, walletState } from '../stores/wallet-store';
 
 const spin = keyframes`
   from { transform: rotate(0deg); }
@@ -96,16 +95,6 @@ const accountBalanceStyles = css`
   font-weight: var(--pact-font-weight-medium);
 `;
 
-const accountDetailsStyles = css`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 100%;
-`;
-
-const refreshButtonStyles = css`
-  margin-left: var(--pact-spacing-2);
-`;
 
 const actionButtonsStyles = css`
   display: flex;
@@ -266,9 +255,15 @@ export const AccountsScreen: Component<AccountsScreenProps> = (props) => {
     }
 
     try {
-      // Derive public key from private key
-      const signer = await KeyPairSigner.fromPrivateKeyHex(pk);
-      const publicKey = signer.address;
+      // Use registry to create wallet and get public key
+      const registry = getGlobalRegistry();
+      const wallet = await registry.createWalletFromPrivateKey(pk, {
+        networkId: walletState.activeNetwork?.id || 'development',
+        rpcUrl: walletState.activeNetwork?.rpcUrl || 'http://localhost:8080',
+      });
+      // The wallet is already connected in createWalletFromPrivateKey
+      const account = await wallet.connect();
+      const publicKey = account.publicKey;
       const name = accountName() || `Imported Account ${props.accounts.length + 1}`;
 
       const newAccount: Account = {

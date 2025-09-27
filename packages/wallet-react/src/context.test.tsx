@@ -13,11 +13,8 @@ import {
   createMockWallet,
   mockWalletAccount,
   mockWalletNetwork,
-  mockWalletMetadata,
   mockWalletManagerEvents,
-  asyncEvents,
 } from "./test-utils";
-import type { WalletManager } from '@pact-toolbox/wallet-manager';
 
 // Mock the wallet manager import
 vi.mock('@pact-toolbox/wallet-manager', () => ({
@@ -34,7 +31,6 @@ describe('WalletManagerProvider', () => {
 
   afterEach(() => {
     // Clean up global state
-    globalThis = originalGlobalThis;
     delete (globalThis as any).__PACT_WALLET_MANAGER__;
   });
 
@@ -468,7 +464,7 @@ describe('WalletManagerProvider', () => {
         const handleConnect = async () => {
           try {
             await connect('test-wallet');
-          } catch (e) {
+          } catch (_e) {
             // Expected to throw
           }
         };
@@ -534,7 +530,7 @@ describe('WalletManagerProvider', () => {
         const handleDisconnect = async () => {
           try {
             await disconnect('test-wallet');
-          } catch (e) {
+          } catch (_e) {
             // Expected to throw
           }
         };
@@ -596,7 +592,7 @@ describe('WalletManagerProvider', () => {
         const handleSetPrimary = () => {
           try {
             setPrimaryWallet('test-wallet');
-          } catch (e) {
+          } catch (_e) {
             // Expected to throw
           }
         };
@@ -650,7 +646,7 @@ describe('WalletManagerProvider', () => {
         const handleConnect = async () => {
           try {
             await connect();
-          } catch (e) {
+          } catch (_e) {
             return (e as Error).message;
           }
         };
@@ -658,7 +654,7 @@ describe('WalletManagerProvider', () => {
         const handleDisconnect = async () => {
           try {
             await disconnect();
-          } catch (e) {
+          } catch (_e) {
             return (e as Error).message;
           }
         };
@@ -666,7 +662,7 @@ describe('WalletManagerProvider', () => {
         const handleSetPrimary = () => {
           try {
             setPrimaryWallet('test');
-          } catch (e) {
+          } catch (_e) {
             return (e as Error).message;
           }
         };
@@ -809,7 +805,7 @@ describe('WalletManagerProvider', () => {
         const handleConnect = async () => {
           try {
             await connect();
-          } catch (e) {
+          } catch (_e) {
             // Expected to throw
           }
         };
@@ -844,7 +840,7 @@ describe('WalletManagerProvider', () => {
         const handleDisconnect = async () => {
           try {
             await disconnect();
-          } catch (e) {
+          } catch (_e) {
             // Expected to throw
           }
         };
@@ -882,7 +878,7 @@ describe('WalletManagerProvider', () => {
         const handleSetPrimary = () => {
           try {
             setPrimaryWallet('test');
-          } catch (e) {
+          } catch (_e) {
             // Expected to throw
           }
         };

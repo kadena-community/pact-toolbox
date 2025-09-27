@@ -292,7 +292,7 @@ export class CoinContract {
    * Performs a small test transfer first to verify receiver account
    */
   async safeTransfer(options: SafeTransferOptions): Promise<string> {
-    const { from, fromPublicKeys, to, toPublicKeys, amount, chainId, gasLimit, gasPrice, ttl, wallet } = options;
+    const { from, to, toPublicKeys, amount, chainId, gasLimit, gasPrice, ttl, wallet } = options;
     const resolvedChainId = chainId || "0";
     const networkConfig = this.getNetworkConfig();
 

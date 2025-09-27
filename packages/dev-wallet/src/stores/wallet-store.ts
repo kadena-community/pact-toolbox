@@ -10,9 +10,8 @@ import { DevWalletStorage } from '../storage';
 import { EventEmitter } from '@pact-toolbox/utils';
 import { NetworkConfigProvider } from '@pact-toolbox/network-config';
 import { CoinContract } from '@pact-toolbox/kda';
-import { genKeyPair } from '@pact-toolbox/crypto';
 import type { ChainId } from '@pact-toolbox/types';
-import { KeypairWallet } from '@pact-toolbox/wallet-core';
+import { getGlobalRegistry } from '../keypair-registry';
 
 interface WalletEvents {
   'account-selected': (account: Account) => void;
@@ -127,7 +126,7 @@ export async function initializeWalletStore() {
       }
 
       // Fetch balances for accounts
-      accounts = await refreshAccountBalances(accounts, activeNetwork);
+      accounts = await refreshAccountBalances(accounts);
     }
 
     // Load transactions
@@ -176,7 +175,7 @@ export async function initializeWalletStore() {
 
 // Helper function to refresh account balances from blockchain
 // Returns a new array with updated accounts to avoid mutations
-async function refreshAccountBalances(accounts: Account[], network: Network): Promise<Account[]> {
+async function refreshAccountBalances(accounts: Account[]): Promise<Account[]> {
   const coin = getCoinContract();
 
   // Create a new array with copied accounts to avoid mutations
@@ -206,7 +205,7 @@ async function refreshAccountBalances(accounts: Account[], network: Network): Pr
             const details = await coin.getAccountDetails(updatedAccount.address, {
               chainId: (updatedAccount.chainId || '0') as ChainId,
             });
-            updatedAccount.guard = details.guard;
+            updatedAccount.guard = details.guard as unknown as Record<string, unknown>;
           } catch (error) {
             console.error(`Failed to get details for ${updatedAccount.address}:`, error);
           }
@@ -365,7 +364,7 @@ export const walletActions = {
     let accounts = await getWalletStorage().getAccountsForNetwork(network.id);
 
     // Refresh balances for loaded accounts
-    accounts = await refreshAccountBalances(accounts, network);
+    accounts = await refreshAccountBalances(accounts);
 
     // Get selected account for this network
     const selectedAddress = await getWalletStorage().getSelectedAccountForNetwork(network.id);
@@ -412,7 +411,7 @@ export const walletActions = {
     setWalletState(produce(state => {
       const tx = state.transactions.find(t => t.id === transactionId);
       if (tx) {
-        tx.status = status as any;
+        tx.status = status as "pending" | "success" | "failure";
         tx.result = result;
       }
     }));
@@ -490,18 +489,13 @@ export const walletActions = {
     const chainId = (account.chainId || '0') as ChainId;
 
     try {
-      // Create a KeypairWallet for this account
-      const wallet = new KeypairWallet({
-        privateKey: account.privateKey,
+      // Use registry to get or create wallet for this account
+      const registry = getGlobalRegistry();
+      const wallet = await registry.createWalletFromPrivateKey(account.privateKey, {
         networkId: activeNetwork.id,
-        networkName: activeNetwork.name,
         rpcUrl: activeNetwork.rpcUrl,
-        chainId: account.chainId || '0',
         accountName: account.address,
       });
-
-      // Connect the wallet
-      await wallet.connect();
 
       // Create a keyset guard for the account
       const guard = {
@@ -626,7 +620,7 @@ export const walletActions = {
 
       if (exists) {
         const details = await coin.getAccountDetails(account.address, { chainId });
-        updatedAccount.guard = details.guard;
+        updatedAccount.guard = details.guard as unknown as Record<string, unknown>;
       }
 
       // Save to storage
@@ -651,7 +645,7 @@ export const walletActions = {
     }
 
     const accounts = [...walletState.accounts];
-    const updatedAccounts = await refreshAccountBalances(accounts, activeNetwork);
+    const updatedAccounts = await refreshAccountBalances(accounts);
 
     // Update state with refreshed accounts
     setWalletState(produce(state => {
@@ -667,6 +661,10 @@ export const walletActions = {
 
 // Debug: expose wallet state globally
 if (typeof window !== 'undefined') {
-  (window as any).__walletState = walletState;
-  (window as any).__walletActions = walletActions;
+  interface DevWindow extends Window {
+    __walletState?: typeof walletState;
+    __walletActions?: typeof walletActions;
+  }
+  (window as DevWindow).__walletState = walletState;
+  (window as DevWindow).__walletActions = walletActions;
 }

@@ -20,8 +20,7 @@ describe('usePrimaryWallet', () => {
       const mockManager = createMockWalletManager();
       mockManager.getPrimaryWallet = vi.fn().mockReturnValue(null);
 
-      const wrapper = ({ children }: { children: React.ReactNode }) =>
-        createWalletWrapper({ walletManager: mockManager });
+      const wrapper = createWalletWrapper({ walletManager: mockManager });
 
       const { result } = renderHook(() => usePrimaryWallet(), { wrapper });
 
@@ -37,8 +36,7 @@ describe('usePrimaryWallet', () => {
       const mockManager = createMockWalletManager();
       mockManager.getPrimaryWallet = vi.fn().mockReturnValue(mockWallet);
 
-      const wrapper = ({ children }: { children: React.ReactNode }) =>
-        createWalletWrapper({ walletManager: mockManager });
+      const wrapper = createWalletWrapper({ walletManager: mockManager });
 
       const { result } = renderHook(() => usePrimaryWallet(), { wrapper });
 
@@ -72,8 +70,7 @@ describe('usePrimaryWallet', () => {
       const mockManager = createMockWalletManager();
       const setPrimaryWalletSpy = vi.spyOn(mockManager, 'setPrimaryWallet');
 
-      const wrapper = ({ children }: { children: React.ReactNode }) =>
-        createWalletWrapper({ walletManager: mockManager });
+      const wrapper = createWalletWrapper({ walletManager: mockManager });
 
       const { result } = renderHook(() => usePrimaryWallet(), { wrapper });
 
@@ -88,8 +85,7 @@ describe('usePrimaryWallet', () => {
       const mockManager = createMockWalletManager();
       const setPrimaryWalletSpy = vi.spyOn(mockManager, 'setPrimaryWallet');
 
-      const wrapper = ({ children }: { children: React.ReactNode }) =>
-        createWalletWrapper({ walletManager: mockManager });
+      const wrapper = createWalletWrapper({ walletManager: mockManager });
 
       const { result } = renderHook(() => usePrimaryWallet(), { wrapper });
 
@@ -133,8 +129,7 @@ describe('usePrimaryWallet', () => {
       let currentWallet = mockWallet1;
       mockManager.getPrimaryWallet = vi.fn().mockImplementation(() => currentWallet);
 
-      const wrapper = ({ children }: { children: React.ReactNode }) =>
-        createWalletWrapper({ walletManager: mockManager });
+      const wrapper = createWalletWrapper({ walletManager: mockManager });
 
       const { result, rerender } = renderHook(() => usePrimaryWallet(), { wrapper });
 
@@ -153,8 +148,7 @@ describe('usePrimaryWallet', () => {
       const mockManager = createMockWalletManager();
       const setPrimaryWalletSpy = vi.spyOn(mockManager, 'setPrimaryWallet');
 
-      const wrapper = ({ children }: { children: React.ReactNode }) =>
-        createWalletWrapper({ walletManager: mockManager });
+      const wrapper = createWalletWrapper({ walletManager: mockManager });
 
       const { result } = renderHook(() => usePrimaryWallet(), { wrapper });
 
@@ -189,8 +183,7 @@ describe('usePrimaryWallet', () => {
       const mockManager = createMockWalletManager();
       mockManager.getPrimaryWallet = vi.fn().mockReturnValue(mockWallet);
 
-      const wrapper = ({ children }: { children: React.ReactNode }) =>
-        createWalletWrapper({ walletManager: mockManager });
+      const wrapper = createWalletWrapper({ walletManager: mockManager });
 
       const { result } = renderHook(() => usePrimaryWallet(), { wrapper });
 
@@ -217,8 +210,7 @@ describe('usePrimaryWallet', () => {
       const mockWallet = createMockWallet();
       const mockManager = createMockWalletManager();
 
-      const wrapper = ({ children }: { children: React.ReactNode }) =>
-        createWalletWrapper({ walletManager: mockManager });
+      const wrapper = createWalletWrapper({ walletManager: mockManager });
 
       const { result } = renderHook(() => usePrimaryWallet(), { wrapper });
 
@@ -244,8 +236,7 @@ describe('usePrimaryWallet', () => {
       const mockManager = createMockWalletManager();
       mockManager.getPrimaryWallet = vi.fn().mockReturnValue(mockWallet);
 
-      const wrapper = ({ children }: { children: React.ReactNode }) =>
-        createWalletWrapper({ walletManager: mockManager });
+      const wrapper = createWalletWrapper({ walletManager: mockManager });
 
       const { result } = renderHook(() => usePrimaryWallet(), { wrapper });
 
@@ -261,8 +252,7 @@ describe('usePrimaryWallet', () => {
       const mockManager = createMockWalletManager();
       mockManager.getPrimaryWallet = vi.fn().mockReturnValue(mockWallet);
 
-      const wrapper = ({ children }: { children: React.ReactNode }) =>
-        createWalletWrapper({ walletManager: mockManager });
+      const wrapper = createWalletWrapper({ walletManager: mockManager });
 
       const { result } = renderHook(() => usePrimaryWallet(), { wrapper });
 
@@ -274,8 +264,7 @@ describe('usePrimaryWallet', () => {
     it('should provide stable function references', () => {
       const mockManager = createMockWalletManager();
 
-      const wrapper = ({ children }: { children: React.ReactNode }) =>
-        createWalletWrapper({ walletManager: mockManager });
+      const wrapper = createWalletWrapper({ walletManager: mockManager });
 
       const { result, rerender } = renderHook(() => usePrimaryWallet(), { wrapper });
 

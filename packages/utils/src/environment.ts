@@ -288,7 +288,13 @@ export function getTestFramework(): TestFramework {
  * Check if running in any test environment
  */
 export function isTest(): boolean {
-  return getEnvironment() === "test" || getTestFramework() !== "none";
+  // Check NODE_ENV directly to avoid circular dependency with getEnvironment()
+  if (typeof globalThis.process !== "undefined" && globalThis.process.env?.['NODE_ENV'] === "test") {
+    return true;
+  }
+
+  // Check for test framework indicators
+  return getTestFramework() !== "none";
 }
 
 /**

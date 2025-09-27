@@ -1,7 +1,7 @@
 import type { Component } from 'solid-js';
 import { css } from 'goober';
 import { PactCard, PactSwitch, PactButton, useToast } from '@pact-toolbox/ui-shared';
-import { walletState, walletActions, walletEventEmitter } from '../stores/wallet-store';
+import { walletState, walletActions } from '../stores/wallet-store';
 import type { DevWalletSettings } from '../types';
 
 const screenStyles = css`

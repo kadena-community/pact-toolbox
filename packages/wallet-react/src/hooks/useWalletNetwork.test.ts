@@ -20,8 +20,7 @@ describe('useWalletNetwork', () => {
       const mockManager = createMockWalletManager();
       mockManager.getPrimaryWallet = vi.fn().mockReturnValue(mockWallet);
 
-      const wrapper = ({ children }: { children: React.ReactNode }) =>
-        createWalletWrapper({ walletManager: mockManager });
+      const wrapper = createWalletWrapper({ walletManager: mockManager });
 
       const { result } = renderHook(() => useWalletNetwork(), { wrapper });
 
@@ -43,8 +42,7 @@ describe('useWalletNetwork', () => {
       mockManager.getPrimaryWallet = vi.fn().mockReturnValue(mockWallet1);
       mockManager.getConnectedWallets = vi.fn().mockReturnValue([mockWallet1, mockWallet2]);
 
-      const wrapper = ({ children }: { children: React.ReactNode }) =>
-        createWalletWrapper({ walletManager: mockManager });
+      const wrapper = createWalletWrapper({ walletManager: mockManager });
 
       const { result } = renderHook(() => useWalletNetwork('wallet-2'), { wrapper });
 
@@ -65,8 +63,7 @@ describe('useWalletNetwork', () => {
       const mockManager = createMockWalletManager();
       mockManager.getPrimaryWallet = vi.fn().mockReturnValue(mockWallet);
 
-      const wrapper = ({ children }: { children: React.ReactNode }) =>
-        createWalletWrapper({ walletManager: mockManager });
+      const wrapper = createWalletWrapper({ walletManager: mockManager });
 
       const { result } = renderHook(() => useWalletNetwork(), { wrapper });
 
@@ -85,8 +82,7 @@ describe('useWalletNetwork', () => {
       const mockManager = createMockWalletManager();
       mockManager.getPrimaryWallet = vi.fn().mockReturnValue(mockWallet);
 
-      const wrapper = ({ children }: { children: React.ReactNode }) =>
-        createWalletWrapper({ walletManager: mockManager });
+      const wrapper = createWalletWrapper({ walletManager: mockManager });
 
       const { result } = renderHook(() => useWalletNetwork(), { wrapper });
 
@@ -105,8 +101,7 @@ describe('useWalletNetwork', () => {
       const mockManager = createMockWalletManager();
       mockManager.getPrimaryWallet = vi.fn().mockReturnValue(mockWallet);
 
-      const wrapper = ({ children }: { children: React.ReactNode }) =>
-        createWalletWrapper({ walletManager: mockManager });
+      const wrapper = createWalletWrapper({ walletManager: mockManager });
 
       const { result } = renderHook(() => useWalletNetwork(), { wrapper });
 
@@ -120,8 +115,7 @@ describe('useWalletNetwork', () => {
       const mockManager = createMockWalletManager();
       mockManager.getPrimaryWallet = vi.fn().mockReturnValue(null);
 
-      const wrapper = ({ children }: { children: React.ReactNode }) =>
-        createWalletWrapper({ walletManager: mockManager });
+      const wrapper = createWalletWrapper({ walletManager: mockManager });
 
       const { result } = renderHook(() => useWalletNetwork(), { wrapper });
 
@@ -140,8 +134,7 @@ describe('useWalletNetwork', () => {
       mockManager.getPrimaryWallet = vi.fn().mockReturnValue(mockWallet);
       mockManager.getConnectedWallets = vi.fn().mockReturnValue([mockWallet]);
 
-      const wrapper = ({ children }: { children: React.ReactNode }) =>
-        createWalletWrapper({ walletManager: mockManager });
+      const wrapper = createWalletWrapper({ walletManager: mockManager });
 
       const { result } = renderHook(() => useWalletNetwork('non-existent-wallet'), { wrapper });
 
@@ -160,8 +153,7 @@ describe('useWalletNetwork', () => {
       const mockManager = createMockWalletManager();
       mockManager.getPrimaryWallet = vi.fn().mockReturnValue(mockWallet);
 
-      const wrapper = ({ children }: { children: React.ReactNode }) =>
-        createWalletWrapper({ walletManager: mockManager });
+      const wrapper = createWalletWrapper({ walletManager: mockManager });
 
       const { result } = renderHook(() => useWalletNetwork(), { wrapper });
 
@@ -186,8 +178,7 @@ describe('useWalletNetwork', () => {
       const mockManager = createMockWalletManager();
       mockManager.getPrimaryWallet = vi.fn().mockReturnValue(mockWallet);
 
-      const wrapper = ({ children }: { children: React.ReactNode }) =>
-        createWalletWrapper({ walletManager: mockManager });
+      const wrapper = createWalletWrapper({ walletManager: mockManager });
 
       const { result } = renderHook(() => useWalletNetwork(), { wrapper });
 
@@ -215,8 +206,7 @@ describe('useWalletNetwork', () => {
       const mockManager = createMockWalletManager();
       mockManager.getPrimaryWallet = vi.fn().mockReturnValue(mockWallet);
 
-      const wrapper = ({ children }: { children: React.ReactNode }) =>
-        createWalletWrapper({ walletManager: mockManager });
+      const wrapper = createWalletWrapper({ walletManager: mockManager });
 
       const { result } = renderHook(() => useWalletNetwork(), { wrapper });
 
@@ -241,8 +231,7 @@ describe('useWalletNetwork', () => {
       let currentWallet = mockWallet1;
       mockManager.getPrimaryWallet = vi.fn().mockImplementation(() => currentWallet);
 
-      const wrapper = ({ children }: { children: React.ReactNode }) =>
-        createWalletWrapper({ walletManager: mockManager });
+      const wrapper = createWalletWrapper({ walletManager: mockManager });
 
       const { result, rerender } = renderHook(() => useWalletNetwork(), { wrapper });
 
@@ -267,8 +256,7 @@ describe('useWalletNetwork', () => {
       const mockManager = createMockWalletManager();
       mockManager.getPrimaryWallet = vi.fn().mockReturnValue(mockWallet);
 
-      const wrapper = ({ children }: { children: React.ReactNode }) =>
-        createWalletWrapper({ walletManager: mockManager });
+      const wrapper = createWalletWrapper({ walletManager: mockManager });
 
       const { result } = renderHook(() => useWalletNetwork(), { wrapper });
 
@@ -288,8 +276,7 @@ describe('useWalletNetwork', () => {
       const mockManager = createMockWalletManager();
       mockManager.getPrimaryWallet = vi.fn().mockReturnValue(mockWallet);
 
-      const wrapper = ({ children }: { children: React.ReactNode }) =>
-        createWalletWrapper({ walletManager: mockManager });
+      const wrapper = createWalletWrapper({ walletManager: mockManager });
 
       const { result } = renderHook(() => useWalletNetwork(), { wrapper });
 
@@ -306,8 +293,7 @@ describe('useWalletNetwork', () => {
       const mockManager = createMockWalletManager();
       mockManager.getPrimaryWallet = vi.fn().mockReturnValue(mockWallet);
 
-      const wrapper = ({ children }: { children: React.ReactNode }) =>
-        createWalletWrapper({ walletManager: mockManager });
+      const wrapper = createWalletWrapper({ walletManager: mockManager });
 
       const { result } = renderHook(() => useWalletNetwork(), { wrapper });
 
@@ -335,8 +321,7 @@ describe('useWalletNetwork', () => {
       const mockManager = createMockWalletManager();
       mockManager.getPrimaryWallet = vi.fn().mockReturnValue(mockWallet);
 
-      const wrapper = ({ children }: { children: React.ReactNode }) =>
-        createWalletWrapper({ walletManager: mockManager });
+      const wrapper = createWalletWrapper({ walletManager: mockManager });
 
       const { result } = renderHook(() => useWalletNetwork(), { wrapper });
 
@@ -367,8 +352,7 @@ describe('useWalletNetwork', () => {
     it('should accept optional walletId parameter', async () => {
       const mockManager = createMockWalletManager();
 
-      const wrapper = ({ children }: { children: React.ReactNode }) =>
-        createWalletWrapper({ walletManager: mockManager });
+      const wrapper = createWalletWrapper({ walletManager: mockManager });
 
       // Should work without walletId
       const { result: result1 } = renderHook(() => useWalletNetwork(), { wrapper });
@@ -393,8 +377,7 @@ describe('useWalletNetwork', () => {
       const mockManager = createMockWalletManager();
       mockManager.getPrimaryWallet = vi.fn().mockReturnValue(mockWallet);
 
-      const wrapper = ({ children }: { children: React.ReactNode }) =>
-        createWalletWrapper({ walletManager: mockManager });
+      const wrapper = createWalletWrapper({ walletManager: mockManager });
 
       const { result } = renderHook(() => useWalletNetwork(), { wrapper });
 
@@ -410,8 +393,7 @@ describe('useWalletNetwork', () => {
       const mockManager = createMockWalletManager();
       mockManager.getConnectedWallets = vi.fn().mockReturnValue([mockWallet1, mockWallet2]);
 
-      const wrapper = ({ children }: { children: React.ReactNode }) =>
-        createWalletWrapper({ walletManager: mockManager });
+      const wrapper = createWalletWrapper({ walletManager: mockManager });
 
       let walletId = 'wallet-1';
       const { result, rerender } = renderHook(() => useWalletNetwork(walletId), { wrapper });
@@ -441,8 +423,7 @@ describe('useWalletNetwork', () => {
       const mockManager = createMockWalletManager();
       mockManager.getPrimaryWallet = vi.fn().mockReturnValue(mockWallet);
 
-      const wrapper = ({ children }: { children: React.ReactNode }) =>
-        createWalletWrapper({ walletManager: mockManager });
+      const wrapper = createWalletWrapper({ walletManager: mockManager });
 
       const { result } = renderHook(() => useWalletNetwork(), { wrapper });
 
@@ -457,8 +438,7 @@ describe('useWalletNetwork', () => {
       const mockManager = createMockWalletManager();
       mockManager.getPrimaryWallet = vi.fn().mockReturnValue(null);
 
-      const wrapper = ({ children }: { children: React.ReactNode }) =>
-        createWalletWrapper({ walletManager: mockManager });
+      const wrapper = createWalletWrapper({ walletManager: mockManager });
 
       const { result } = renderHook(() => useWalletNetwork(), { wrapper });
 
@@ -475,8 +455,7 @@ describe('useWalletNetwork', () => {
       const mockManager = createMockWalletManager();
       mockManager.getPrimaryWallet = vi.fn().mockReturnValue(mockWallet);
 
-      const wrapper = ({ children }: { children: React.ReactNode }) =>
-        createWalletWrapper({ walletManager: mockManager });
+      const wrapper = createWalletWrapper({ walletManager: mockManager });
 
       const { result, rerender } = renderHook(() => useWalletNetwork(), { wrapper });
 
@@ -504,8 +483,7 @@ describe('useWalletNetwork', () => {
       const mockManager = createMockWalletManager();
       mockManager.getPrimaryWallet = vi.fn().mockReturnValue(mockWallet);
 
-      const wrapper = ({ children }: { children: React.ReactNode }) =>
-        createWalletWrapper({ walletManager: mockManager });
+      const wrapper = createWalletWrapper({ walletManager: mockManager });
 
       const { result } = renderHook(() => useWalletNetwork(), { wrapper });
 

@@ -1,4 +1,11 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
+
+// Mock the manager module to avoid SolidJS server-side rendering issues
+vi.mock('./manager', () => ({
+  getDefaultModalManager: vi.fn().mockReturnValue(undefined),
+  DevWalletManager: vi.fn(),
+}));
+
 import { DevWallet } from "./wallet";
 
 // Mock crypto module
@@ -6,6 +13,10 @@ vi.mock('@pact-toolbox/crypto', () => ({
   generateKeyPair: vi.fn().mockResolvedValue({
     publicKey: 'mock-public-key-test',
     secretKey: 'mock-secret-key-test',
+  }),
+  genKeyPair: vi.fn().mockResolvedValue({
+    publicKey: 'mock-public-key-test',
+    privateKey: 'mock-private-key-test',
   }),
   exportBase16Key: vi.fn().mockImplementation((key: any) => key),
   fromHex: vi.fn().mockReturnValue({
@@ -26,13 +37,25 @@ vi.mock('@pact-toolbox/crypto', () => ({
 describe("DevWallet", () => {
   let wallet: DevWallet;
 
-  beforeEach(() => {
+  beforeEach(async () => {
+    // Clear localStorage to ensure clean state
+    if (typeof localStorage !== 'undefined') {
+      localStorage.clear();
+    }
+
     wallet = new DevWallet({
       networkId: "test",
       networkName: "Test Network",
       rpcUrl: "http://localhost:8080",
       showUI: false,
     });
+  });
+
+  afterEach(async () => {
+    // Disconnect and clear registry
+    if (wallet) {
+      await wallet.disconnect();
+    }
   });
 
   it("should be installed", () => {

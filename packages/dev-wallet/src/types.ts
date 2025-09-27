@@ -1,8 +1,10 @@
+import type { EncryptedData } from "@pact-toolbox/crypto";
+
 export interface DevWalletKey {
   address: string;
   publicKey: string;
   privateKey: string;
-  encryptedPrivateKey?: import("@pact-toolbox/crypto").EncryptedData;
+  encryptedPrivateKey?: EncryptedData;
   name?: string;
   createdAt: number;
 }
@@ -82,7 +84,7 @@ export interface Account {
   balance?: number | string;
   networkId?: string; // Network this account belongs to
   existsOnChain?: boolean; // Whether account exists on blockchain
-  guard?: any; // Account guard from chain
+  guard?: Record<string, unknown>; // Account guard from chain
   discoveredChains?: string[]; // Chains where account was discovered
 }
 

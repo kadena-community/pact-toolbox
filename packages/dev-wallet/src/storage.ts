@@ -40,7 +40,7 @@ export class DevWalletStorage {
 
     if (!this.db) {
       this.db = await openDB(this.dbName, 2, {
-        upgrade(db, oldVersion) {
+        upgrade(db) {
           if (!db.objectStoreNames.contains("keys")) {
             db.createObjectStore("keys", { keyPath: "address" });
           }

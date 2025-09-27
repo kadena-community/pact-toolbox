@@ -435,7 +435,7 @@ export class MarmaladeContract {
    * Offer token for sale (v2)
    */
   async offerToken(options: OfferTokenOptions): Promise<string> {
-    const { tokenId, seller, amount, price, timeout = 3600, chainId, gasLimit, gasPrice, ttl, wallet } = options;
+    const { tokenId, seller, amount, timeout = 3600, chainId, gasLimit, gasPrice, ttl, wallet } = options;
     const resolvedChainId = chainId || this.#defaultChainId;
     const networkConfig = this.getNetworkConfig();
 

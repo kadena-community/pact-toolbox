@@ -87,21 +87,13 @@ const warningStyles = css`
 export const SignScreen: Component<SignScreenProps> = (props) => {
   const [isSigning, setIsSigning] = createSignal(false);
 
-  const handleApprove = async () => {
+  const handleApprove = () => {
     setIsSigning(true);
-    try {
-      // In a real implementation, sign the transaction here
-      await new Promise(resolve => setTimeout(resolve, 1000));
+    walletEventEmitter.emit('sign-approved', props.transaction);
 
-      walletEventEmitter.emit('sign-approved', props.transaction);
-
-      // Auto-close wallet after sign approval
-      getDefaultDevWalletManager().hideDevWallet();
-    } catch (error) {
-      console.error('Failed to sign transaction:', error);
-    } finally {
-      setIsSigning(false);
-    }
+    // Auto-close wallet after sign approval
+    getDefaultDevWalletManager().hideDevWallet();
+    setIsSigning(false);
   };
 
   const handleReject = () => {

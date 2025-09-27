@@ -11,11 +11,9 @@ import type {
   WalletAccount,
   WalletNetwork,
   WalletMetadata,
-  WalletEvents,
-  WalletManagerEvents,
   ConnectOptions
 } from '@pact-toolbox/wallet-core';
-import type { WalletManager, WalletManagerConfig } from '@pact-toolbox/wallet-manager';
+import type { WalletManager } from '@pact-toolbox/wallet-manager';
 import { WalletManagerProvider, type WalletManagerProviderProps, useWalletContext } from './context';
 
 /**

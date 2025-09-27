@@ -1,28 +1,32 @@
 import type { PactCommand, PartiallySignedTransaction, SignedTransaction } from "@pact-toolbox/types";
 import { BaseWallet, WalletError } from "@pact-toolbox/wallet-core";
 import type { WalletAccount } from "@pact-toolbox/wallet-core";
-import { KeyPairSigner } from "@pact-toolbox/signers";
-import { finalizeTransaction } from "@pact-toolbox/signers";
-import { exportBase16Key, generateSecurePassword } from "@pact-toolbox/crypto";
+import { ChainwebClient } from "@pact-toolbox/chainweb-client";
+import { KeypairWallet } from "@pact-toolbox/wallet-core";
+import { getGlobalRegistry } from "./keypair-registry";
+import { generateSecurePassword, genKeyPair } from "@pact-toolbox/crypto";
 import { DevWalletStorage } from "./storage";
 import type {
   DevWalletConfig,
   DevWalletKey,
   DevWalletTransaction,
   PendingTransaction,
+  Account,
+  TransactionResult,
 } from "./types";
 import { walletLogger } from "./utils/logger";
-import type { DevWalletManager as ModalManager } from "./manager";
+import { getDefaultModalManager, type DevWalletManager as ModalManager } from "./manager";
 import { walletEventEmitter } from "./stores/wallet-store";
 
 export class DevWallet extends BaseWallet {
-  private keyPairSigner: KeyPairSigner | null = null;
+  private keypairRegistry = getGlobalRegistry();
   private config: DevWalletConfig;
   private storage: DevWalletStorage;
   private selectedKey: DevWalletKey | null = null;
-  private modalManager?: ModalManager; // ModalManager instance for UI
-  private modalManagerPromise?: Promise<void>; // Track initialization
+  private modalManager?: ModalManager;
+  private modalManagerPromise?: Promise<void>;
   private encryptionEnabled = false;
+  // Don't store password in plain text - only keep it temporarily during operations
   private sessionPassword?: string;
 
   constructor(config: DevWalletConfig) {
@@ -49,9 +53,11 @@ export class DevWallet extends BaseWallet {
   async enableEncryption(password?: string): Promise<void> {
     this.encryptionEnabled = true;
     const pwd = password || generateSecurePassword();
+    // Only store temporarily for current session
     this.sessionPassword = pwd;
     await this.storage.setEncryptionPassword(pwd);
     walletLogger.operation("Encryption enabled", "success");
+    // Password will be cleared on disconnect or after operations
   }
 
   /**
@@ -95,8 +101,6 @@ export class DevWallet extends BaseWallet {
       walletLogger.operation("UI initialization", "start");
       walletLogger.debug("UI components available");
 
-      const { getDefaultModalManager } = await import("./manager");
-      walletLogger.debug("ModalManager imported successfully");
       this.modalManager = getDefaultModalManager();
       this.modalManager.initialize();
       walletLogger.operation("Modal manager initialization", "success");
@@ -148,8 +152,14 @@ export class DevWallet extends BaseWallet {
         // Auto-reconnect without showing UI
         this.selectedKey = savedKey;
         if (this.selectedKey.privateKey) {
-          this.keyPairSigner = await KeyPairSigner.fromPrivateKeyHex(this.selectedKey.privateKey);
+          // Get or create KeypairWallet through registry
+          await this.keypairRegistry.getOrCreateWallet(this.selectedKey, {
+            networkId: networkId || this.config.networkId,
+            rpcUrl: this.config.rpcUrl,
+          });
           walletLogger.connection("Auto-reconnected with saved key");
+          // Clear private key from memory
+          this.selectedKey.privateKey = '';
         } else {
           throw WalletError.userRejected("Failed to decrypt key");
         }
@@ -166,7 +176,13 @@ export class DevWallet extends BaseWallet {
 
         this.selectedKey = selectedKeyData;
         if (this.selectedKey.privateKey) {
-          this.keyPairSigner = await KeyPairSigner.fromPrivateKeyHex(this.selectedKey.privateKey);
+          // Get or create KeypairWallet through registry
+          await this.keypairRegistry.getOrCreateWallet(this.selectedKey, {
+            networkId: networkId || this.config.networkId,
+            rpcUrl: this.config.rpcUrl,
+          });
+          // Clear private key from memory
+          this.selectedKey.privateKey = '';
         } else {
           throw WalletError.userRejected("Failed to decrypt key");
         }
@@ -195,7 +211,13 @@ export class DevWallet extends BaseWallet {
 
       this.selectedKey = selectedKeyData;
       if (this.selectedKey.privateKey) {
-        this.keyPairSigner = await KeyPairSigner.fromPrivateKeyHex(this.selectedKey.privateKey);
+        // Get or create KeypairWallet through registry
+        await this.keypairRegistry.getOrCreateWallet(this.selectedKey, {
+          networkId: networkId || this.config.networkId,
+          rpcUrl: this.config.rpcUrl,
+        });
+        // Clear private key from memory
+        this.selectedKey.privateKey = '';
       } else {
         throw WalletError.userRejected("Failed to decrypt key");
       }
@@ -234,12 +256,63 @@ export class DevWallet extends BaseWallet {
   override async disconnect(): Promise<void> {
     this.connected = false;
     this.account = null;
-    this.selectedKey = null;
-    this.keyPairSigner = null;
+
+    // Clear sensitive data from memory
+    if (this.selectedKey) {
+      this.clearSensitiveData(this.selectedKey);
+      this.selectedKey = null;
+    }
+
+    // Clear session password for security
+    this.sessionPassword = undefined;
+
+    // Clear all KeypairWallet instances from registry
+    await this.keypairRegistry.clear();
 
     // Clear the selected key from storage
     await this.storage.setSelectedKey(null);
+  }
 
+  /**
+   * Securely clear sensitive data from memory
+   */
+  private clearSensitiveData(obj: any): void {
+    if (obj && typeof obj === 'object') {
+      if ('privateKey' in obj && typeof obj.privateKey === 'string') {
+        // Overwrite the string memory (best effort)
+        (obj as any).privateKey = '';
+        delete obj.privateKey;
+      }
+      if ('encryptedPrivateKey' in obj) {
+        delete obj.encryptedPrivateKey;
+      }
+    }
+  }
+
+  /**
+   * Validate private key format
+   */
+  private validatePrivateKey(privateKey: string): boolean {
+    if (!privateKey || typeof privateKey !== 'string') {
+      return false;
+    }
+
+    // Remove any whitespace
+    const cleanKey = privateKey.trim();
+
+    // Check if it's a valid hex string (64 characters for Ed25519)
+    const hexRegex = /^[0-9a-fA-F]{64}$/;
+    if (hexRegex.test(cleanKey)) {
+      return true;
+    }
+
+    // Check if it's base64 (44 characters with optional padding)
+    const base64Regex = /^[A-Za-z0-9+/]{43}=?$/;
+    if (base64Regex.test(cleanKey)) {
+      return true;
+    }
+
+    return false;
   }
 
   async sign(tx: PartiallySignedTransaction): Promise<SignedTransaction>;
@@ -247,8 +320,8 @@ export class DevWallet extends BaseWallet {
   async sign(
     txOrTxs: PartiallySignedTransaction | PartiallySignedTransaction[],
   ): Promise<SignedTransaction | SignedTransaction[]> {
-    walletLogger.transaction("Sign called", { connected: this.connected, hasKeyPairSigner: !!this.keyPairSigner });
-    if (!this.connected || !this.keyPairSigner) {
+    walletLogger.transaction("Sign called", { connected: this.connected });
+    if (!this.connected) {
       throw WalletError.notConnected("dev-wallet");
     }
 
@@ -269,20 +342,69 @@ export class DevWallet extends BaseWallet {
     }
 
     try {
-      const cmds = transactions.map((tx) => JSON.parse(tx.cmd) as PactCommand);
-      const signed = await this.keyPairSigner.signPactCommands(cmds);
+      // Parse the first transaction to get the signer
+      const cmd = JSON.parse(transactions[0]!.cmd) as PactCommand;
+      const signerPublicKey = cmd.signers?.[0]?.pubKey;
 
-      // Finalize transactions to get proper hash and format
-      const finalizedTransactions = signed.map(finalizeTransaction);
+      if (!signerPublicKey) {
+        throw WalletError.signingFailed("No signer found in transaction");
+      }
 
-      // Add transaction to history using finalized transaction
-      walletLogger.transaction("Transaction finalized", {
-        transaction: finalizedTransactions[0],
-        hash: finalizedTransactions[0]?.hash,
-      });
-      await this.addTransactionToHistory(transactions[0]!, finalizedTransactions[0]!);
+      // Find the correct KeypairWallet for this signer
+      let signerWallet: KeypairWallet | undefined;
 
-      return Array.isArray(txOrTxs) ? finalizedTransactions : finalizedTransactions[0]!;
+      // Look through our stored keys to find matching public key
+      const keys = await this.storage.getKeys();
+      const signerKey = keys.find(k => k.publicKey === signerPublicKey);
+
+      if (!signerKey) {
+        throw WalletError.signingFailed(`No key found for signer: ${signerPublicKey}`);
+      }
+
+      // Get or create KeypairWallet for this signer through registry
+      signerWallet = this.keypairRegistry.getWallet(signerKey.address);
+
+      if (!signerWallet) {
+        // Try to get by public key
+        signerWallet = this.keypairRegistry.getWalletByPublicKey(signerKey.publicKey);
+      }
+
+      if (!signerWallet) {
+        // Need to create a new KeypairWallet for this signer
+        if (!signerKey.privateKey) {
+          throw WalletError.signingFailed("Private key not available for signer");
+        }
+
+        signerWallet = await this.keypairRegistry.getOrCreateWallet(signerKey, {
+          networkId: this.config.networkId,
+          rpcUrl: this.config.rpcUrl,
+        });
+
+        // Clear private key from memory
+        signerKey.privateKey = '';
+      }
+
+      // Sign using the correct KeypairWallet
+      let signed: SignedTransaction | SignedTransaction[];
+
+      if (Array.isArray(txOrTxs)) {
+        signed = await signerWallet.sign(txOrTxs);
+      } else {
+        signed = await signerWallet.sign(txOrTxs);
+      }
+
+      // Add transaction to history
+      if (!Array.isArray(signed)) {
+        walletLogger.transaction("Transaction finalized", {
+          transaction: signed,
+          hash: signed.hash,
+        });
+        await this.addTransactionToHistory(transactions[0]!, signed);
+      } else if (signed[0]) {
+        await this.addTransactionToHistory(transactions[0]!, signed[0]);
+      }
+
+      return signed;
     } catch (error) {
       throw WalletError.signingFailed(error instanceof Error ? error.message : String(error));
     }
@@ -298,9 +420,15 @@ export class DevWallet extends BaseWallet {
     if (selectedAddress) {
       const keys = await this.storage.getKeys();
       const key = keys.find((k) => k.address === selectedAddress);
-      if (key) {
+      if (key && key.privateKey) {
         this.selectedKey = key;
-        this.keyPairSigner = await KeyPairSigner.fromPrivateKeyHex(key.privateKey);
+        // Get or create KeypairWallet through registry
+        await this.keypairRegistry.getOrCreateWallet(key, {
+          networkId: this.config.networkId,
+          rpcUrl: this.config.rpcUrl,
+        });
+        // Clear private key from memory after creating wallet
+        key.privateKey = '';
         return;
       }
     }
@@ -308,10 +436,17 @@ export class DevWallet extends BaseWallet {
     // If no selected key, try to get the first key
     const keys = await this.storage.getKeys();
     if (keys.length > 0) {
-      this.selectedKey = keys[0]!;
-      if (this.selectedKey.privateKey) {
-        this.keyPairSigner = await KeyPairSigner.fromPrivateKeyHex(this.selectedKey.privateKey);
-        await this.storage.setSelectedKey(this.selectedKey.address);
+      const firstKey = keys[0]!;
+      if (firstKey.privateKey) {
+        this.selectedKey = firstKey;
+        // Get or create KeypairWallet through registry
+        await this.keypairRegistry.getOrCreateWallet(firstKey, {
+          networkId: this.config.networkId,
+          rpcUrl: this.config.rpcUrl,
+        });
+        await this.storage.setSelectedKey(firstKey.address);
+        // Clear private key from memory after creating wallet
+        firstKey.privateKey = '';
         return;
       } else {
         throw new Error("Cannot use encrypted key without password");
@@ -319,8 +454,7 @@ export class DevWallet extends BaseWallet {
     }
 
     // If no keys exist, generate a new one
-    const newSigner = await KeyPairSigner.generate();
-    const privateKey = await exportBase16Key(newSigner.keyPair.privateKey);
+    const keyPair = await genKeyPair();
 
     // Enable encryption with a generated password if not already enabled
     if (!this.encryptionEnabled && !this.sessionPassword) {
@@ -328,17 +462,23 @@ export class DevWallet extends BaseWallet {
     }
 
     const newKey: DevWalletKey = {
-      address: `k:${newSigner.address}`,
-      publicKey: newSigner.address,
-      privateKey,
+      address: `k:${keyPair.publicKey}`,
+      publicKey: keyPair.publicKey,
+      privateKey: keyPair.privateKey,
       name: "Default Key",
       createdAt: Date.now(),
     };
 
     await this.storage.saveKey(newKey);
     await this.storage.setSelectedKey(newKey.address);
-    this.selectedKey = newKey;
-    this.keyPairSigner = newSigner;
+
+    // Create wallet with this key through registry
+    await this.keypairRegistry.getOrCreateWallet(newKey, {
+      networkId: this.config.networkId,
+      rpcUrl: this.config.rpcUrl,
+    });
+
+    this.selectedKey = { ...newKey, privateKey: '' }; // Don't keep private key in memory
   }
 
   private async showUIAndWaitForSelection(): Promise<DevWalletKey | null> {
@@ -353,18 +493,18 @@ export class DevWallet extends BaseWallet {
       }
 
       // Trigger UI connect request
-      setTimeout(() => {
-        walletEventEmitter.emit('connect-requested');
-      }, 100);
+      walletEventEmitter.emit('connect-requested');
 
-      const handleConnectApproved = (account: any) => {
+      const handleConnectApproved = (account: Account) => {
         walletLogger.connection("Connect approved", { account });
-        if (account && account.privateKey) {
+        // Convert Account to DevWalletKey format if needed
+        const keyAccount = account as unknown as DevWalletKey;
+        if (keyAccount && keyAccount.privateKey) {
           cleanup();
           // Don't hide the modal yet - we might need it for signing
-          resolve(account);
+          resolve(keyAccount);
         } else {
-          walletLogger.error("Connect approved but invalid account", { account });
+          walletLogger.error("Connect approved but invalid account", { account: keyAccount });
         }
       };
 
@@ -414,9 +554,7 @@ export class DevWallet extends BaseWallet {
       };
 
       // Trigger sign request event to show the sign screen
-      setTimeout(() => {
-        walletEventEmitter.emit('sign-requested', pendingTransaction);
-      }, 100);
+      walletEventEmitter.emit('sign-requested', pendingTransaction);
 
       const handleSignApproved = (transaction?: PendingTransaction) => {
         walletLogger.transaction("Sign approved", { transaction });
@@ -494,22 +632,32 @@ export class DevWallet extends BaseWallet {
   }
 
   private async pollTransactionStatus(hash: string, transactionId: string): Promise<void> {
-    const pollInterval = 5000; // 5 seconds (waitForResult will handle retries)
 
     walletLogger.operation("Transaction polling", "start", { hash });
 
     try {
       // Get chainweb client from global context or create a new one
-      let client;
-      const globalContext = (window as any).__PACT_TOOLBOX_CONTEXT__ || (globalThis as any).__PACT_TOOLBOX_CONTEXT__;
+      interface GlobalContext {
+        getClient?: () => ChainwebClient;
+      }
 
-      if (globalContext && typeof globalContext.getClient === "function") {
+      function isGlobalContext(obj: unknown): obj is GlobalContext & { getClient: () => ChainwebClient } {
+        return obj !== null && typeof obj === 'object' && 'getClient' in obj && typeof (obj as any).getClient === 'function';
+      }
+
+      let client: ChainwebClient;
+      const globalContext = typeof window !== 'undefined'
+        ? (window as any).__PACT_TOOLBOX_CONTEXT__
+        : typeof globalThis !== 'undefined'
+          ? (globalThis as any).__PACT_TOOLBOX_CONTEXT__
+          : undefined;
+
+      if (isGlobalContext(globalContext)) {
         client = globalContext.getClient();
         walletLogger.debug("Using global context client");
       } else {
         // Fallback: create a new client
         walletLogger.debug("Creating new ChainwebClient for polling");
-        const { ChainwebClient } = await import("@pact-toolbox/chainweb-client");
         client = new ChainwebClient({
           networkId: this.config.networkId || "development",
           chainId: "0",
@@ -519,24 +667,80 @@ export class DevWallet extends BaseWallet {
         });
       }
 
-      walletLogger.debug("Starting waitForResult", { client: !!client, hash });
+      walletLogger.debug("Starting waitForResult with proper polling", { client: !!client, hash });
 
-      // Poll for transaction result using the chainweb client (this will handle retries internally)
-      const result = await client.waitForResult(hash, pollInterval);
-      walletLogger.debug("Poll result received", { result });
+      // Try to get the result with proper polling and retry logic
+      try {
+        // First try a single poll to see if result is already available
+        const quickResult = await client.pollOne(hash);
+        if (quickResult) {
+          walletLogger.debug("Transaction result received immediately", { result: quickResult });
+          // Process the quick result
+          const status = quickResult.result?.status === "success" ? "success" : "failure";
+          const txResult: TransactionResult = {
+            requestKey: hash,
+            status,
+            data: quickResult.result?.data as Record<string, unknown> | undefined,
+            error: quickResult.result?.error ? {
+              message: typeof quickResult.result.error === 'string' ? quickResult.result.error : quickResult.result.error.message,
+              type: 'error'
+            } : undefined
+          };
 
-      // Transaction result found
-      const status = result.result?.status === "success" ? "success" : "failure";
+          await this.updateTransactionStatus(transactionId, status, txResult);
+          if (this.shouldUseUI()) {
+            this.notifyTransactionUpdated(transactionId, status, txResult);
+          }
+          return;
+        }
 
-      // Update transaction status in storage
-      await this.updateTransactionStatus(transactionId, status, result);
+        // If not immediately available, continue polling with retry logic
+        let attempts = 0;
+        const maxAttempts = 12; // 1 minute with 5s intervals
+        const pollInterval = 5000;
 
-      // Notify UI of status change
-      if (this.shouldUseUI()) {
-        this.notifyTransactionUpdated(transactionId, status, result);
+        while (attempts < maxAttempts) {
+          await new Promise(resolve => setTimeout(resolve, pollInterval));
+          attempts++;
+
+          try {
+            const result = await client.pollOne(hash);
+            if (result) {
+              walletLogger.debug("Transaction result received after polling", { result, attempts });
+
+              const status = result.result?.status === "success" ? "success" : "failure";
+              const txResult: TransactionResult = {
+                requestKey: hash,
+                status,
+                data: result.result?.data as Record<string, unknown> | undefined,
+                error: result.result?.error ? {
+                  message: typeof result.result.error === 'string' ? result.result.error : result.result.error.message,
+                  type: 'error'
+                } : undefined
+              };
+
+              await this.updateTransactionStatus(transactionId, status, txResult);
+              if (this.shouldUseUI()) {
+                this.notifyTransactionUpdated(transactionId, status, txResult);
+              }
+              return;
+            }
+          } catch (pollError) {
+            walletLogger.debug("Poll attempt failed", { attempt: attempts, error: pollError });
+            // Continue trying
+          }
+        }
+
+        // After max attempts, log timeout but don't throw error
+        walletLogger.debug("Transaction polling timed out", { hash, attempts });
+
+      } catch (initialError) {
+        walletLogger.debug("Initial poll failed", { error: initialError });
+        // Still pending, will be retried later
       }
 
-      walletLogger.operation("Transaction polling", "success", { hash, status });
+
+      walletLogger.operation("Transaction polling", "success", { hash });
     } catch (error) {
       walletLogger.operation("Transaction polling", "error", {
         hash,
@@ -552,7 +756,7 @@ export class DevWallet extends BaseWallet {
   private async updateTransactionStatus(
     transactionId: string,
     status: "success" | "failure",
-    result?: import("./types").TransactionResult,
+    result?: TransactionResult,
   ): Promise<void> {
     try {
       const transactions = await this.storage.getTransactions();
@@ -568,10 +772,10 @@ export class DevWallet extends BaseWallet {
   }
 
   private notifyTransactionAdded(transaction: DevWalletTransaction): void {
-    walletEventEmitter.emit('transaction-added', transaction as any);
+    walletEventEmitter.emit('transaction-added', transaction);
   }
 
-  private notifyTransactionUpdated(transactionId: string, status: string, result?: any): void {
+  private notifyTransactionUpdated(transactionId: string, status: string, result?: TransactionResult): void {
     walletEventEmitter.emit('transaction-updated', transactionId, status, result);
   }
 
@@ -614,13 +818,25 @@ export class DevWallet extends BaseWallet {
   }
 
   private async initializeFromPrivateKey(privateKey: string, accountName?: string): Promise<void> {
+    // Validate private key format before proceeding
+    if (!this.validatePrivateKey(privateKey)) {
+      throw new Error("Invalid private key format. Expected 64-character hex string or 44-character base64 string.");
+    }
+
     try {
-      const { KeyPairSigner } = await import("@pact-toolbox/signers");
-      const signer = await KeyPairSigner.fromPrivateKeyHex(privateKey);
+      // Use registry to create wallet and get account info
+      const wallet = await this.keypairRegistry.createWalletFromPrivateKey(privateKey, {
+        networkId: this.config.networkId,
+        rpcUrl: this.config.rpcUrl,
+        accountName,
+      });
+
+      // The wallet is already connected in createWalletFromPrivateKey, but we can call connect to get the account
+      const account = await wallet.connect();
 
       const key: DevWalletKey = {
-        address: accountName ?? `k:${signer.address}`,
-        publicKey: signer.address,
+        address: accountName ?? account.address,
+        publicKey: account.publicKey,
         privateKey,
         name: accountName ?? `Development Key`,
         createdAt: Date.now(),
@@ -630,8 +846,7 @@ export class DevWallet extends BaseWallet {
       await this.storage.saveKey(key);
       await this.storage.setSelectedKey(key.address);
 
-      this.selectedKey = key;
-      this.keyPairSigner = signer;
+      this.selectedKey = { ...key, privateKey: '' }; // Clear private key from memory
     } catch (error) {
       walletLogger.error("Failed to initialize from private key", { error });
     }

@@ -17,8 +17,7 @@ describe('useWalletConnection', () => {
       const mockManager = createMockWalletManager();
       mockManager.getConnectedWallets = vi.fn().mockReturnValue([]);
 
-      const wrapper = ({ children }: { children: React.ReactNode }) =>
-        createWalletWrapper({ walletManager: mockManager });
+      const wrapper = createWalletWrapper({ walletManager: mockManager });
 
       const { result } = renderHook(() => useWalletConnection(), { wrapper });
 
@@ -37,8 +36,7 @@ describe('useWalletConnection', () => {
       const mockManager = createMockWalletManager();
       mockManager.getConnectedWallets = vi.fn().mockReturnValue([mockWallet1, mockWallet2]);
 
-      const wrapper = ({ children }: { children: React.ReactNode }) =>
-        createWalletWrapper({ walletManager: mockManager });
+      const wrapper = createWalletWrapper({ walletManager: mockManager });
 
       const { result } = renderHook(() => useWalletConnection(), { wrapper });
 
@@ -51,8 +49,7 @@ describe('useWalletConnection', () => {
       const mockManager = createMockWalletManager();
       mockManager.connect = vi.fn().mockResolvedValue(mockWallet);
 
-      const wrapper = ({ children }: { children: React.ReactNode }) =>
-        createWalletWrapper({ walletManager: mockManager });
+      const wrapper = createWalletWrapper({ walletManager: mockManager });
 
       const { result } = renderHook(() => useWalletConnection(), { wrapper });
 
@@ -70,8 +67,7 @@ describe('useWalletConnection', () => {
       const mockManager = createMockWalletManager();
       mockManager.connect = vi.fn().mockResolvedValue(mockWallet);
 
-      const wrapper = ({ children }: { children: React.ReactNode }) =>
-        createWalletWrapper({ walletManager: mockManager });
+      const wrapper = createWalletWrapper({ walletManager: mockManager });
 
       const { result } = renderHook(() => useWalletConnection(), { wrapper });
 
@@ -87,8 +83,7 @@ describe('useWalletConnection', () => {
       const mockManager = createMockWalletManager();
       mockManager.connect = vi.fn().mockRejectedValue(error);
 
-      const wrapper = ({ children }: { children: React.ReactNode }) =>
-        createWalletWrapper({ walletManager: mockManager });
+      const wrapper = createWalletWrapper({ walletManager: mockManager });
 
       const { result } = renderHook(() => useWalletConnection(), { wrapper });
 
@@ -111,8 +106,7 @@ describe('useWalletConnection', () => {
       });
       mockManager.connect = vi.fn().mockReturnValue(connectPromise);
 
-      const wrapper = ({ children }: { children: React.ReactNode }) =>
-        createWalletWrapper({ walletManager: mockManager });
+      const wrapper = createWalletWrapper({ walletManager: mockManager });
 
       const { result } = renderHook(() => useWalletConnection(), { wrapper });
 
@@ -138,8 +132,7 @@ describe('useWalletConnection', () => {
       const mockManager = createMockWalletManager();
       mockManager.disconnect = vi.fn().mockResolvedValue(undefined);
 
-      const wrapper = ({ children }: { children: React.ReactNode }) =>
-        createWalletWrapper({ walletManager: mockManager });
+      const wrapper = createWalletWrapper({ walletManager: mockManager });
 
       const { result } = renderHook(() => useWalletConnection(), { wrapper });
 
@@ -154,8 +147,7 @@ describe('useWalletConnection', () => {
       const mockManager = createMockWalletManager();
       mockManager.disconnect = vi.fn().mockResolvedValue(undefined);
 
-      const wrapper = ({ children }: { children: React.ReactNode }) =>
-        createWalletWrapper({ walletManager: mockManager });
+      const wrapper = createWalletWrapper({ walletManager: mockManager });
 
       const { result } = renderHook(() => useWalletConnection(), { wrapper });
 
@@ -196,8 +188,7 @@ describe('useWalletConnection', () => {
       mockManager.getConnectedWallets = vi.fn().mockReturnValue([mockWallet1, mockWallet2]);
       mockManager.disconnect = vi.fn().mockResolvedValue(undefined);
 
-      const wrapper = ({ children }: { children: React.ReactNode }) =>
-        createWalletWrapper({ walletManager: mockManager });
+      const wrapper = createWalletWrapper({ walletManager: mockManager });
 
       const { result } = renderHook(() => useWalletConnection(), { wrapper });
 
@@ -215,8 +206,7 @@ describe('useWalletConnection', () => {
       mockManager.getConnectedWallets = vi.fn().mockReturnValue([]);
       mockManager.disconnect = vi.fn().mockResolvedValue(undefined);
 
-      const wrapper = ({ children }: { children: React.ReactNode }) =>
-        createWalletWrapper({ walletManager: mockManager });
+      const wrapper = createWalletWrapper({ walletManager: mockManager });
 
       const { result } = renderHook(() => useWalletConnection(), { wrapper });
 
@@ -240,8 +230,7 @@ describe('useWalletConnection', () => {
 
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-      const wrapper = ({ children }: { children: React.ReactNode }) =>
-        createWalletWrapper({ walletManager: mockManager });
+      const wrapper = createWalletWrapper({ walletManager: mockManager });
 
       const { result } = renderHook(() => useWalletConnection(), { wrapper });
 
@@ -262,8 +251,7 @@ describe('useWalletConnection', () => {
       let connectedWallets: any[] = [];
       mockManager.getConnectedWallets = vi.fn().mockImplementation(() => connectedWallets);
 
-      const wrapper = ({ children }: { children: React.ReactNode }) =>
-        createWalletWrapper({ walletManager: mockManager });
+      const wrapper = createWalletWrapper({ walletManager: mockManager });
 
       const { result, rerender } = renderHook(() => useWalletConnection(), { wrapper });
 
@@ -281,8 +269,7 @@ describe('useWalletConnection', () => {
     it('should provide stable function references', () => {
       const mockManager = createMockWalletManager();
 
-      const wrapper = ({ children }: { children: React.ReactNode }) =>
-        createWalletWrapper({ walletManager: mockManager });
+      const wrapper = createWalletWrapper({ walletManager: mockManager });
 
       const { result, rerender } = renderHook(() => useWalletConnection(), { wrapper });
 
@@ -319,8 +306,7 @@ describe('useWalletConnection', () => {
     it('should have correct TypeScript types', () => {
       const mockManager = createMockWalletManager();
 
-      const wrapper = ({ children }: { children: React.ReactNode }) =>
-        createWalletWrapper({ walletManager: mockManager });
+      const wrapper = createWalletWrapper({ walletManager: mockManager });
 
       const { result } = renderHook(() => useWalletConnection(), { wrapper });
 
@@ -347,8 +333,7 @@ describe('useWalletConnection', () => {
     it('should accept optional walletId in connect and disconnect', async () => {
       const mockManager = createMockWalletManager();
 
-      const wrapper = ({ children }: { children: React.ReactNode }) =>
-        createWalletWrapper({ walletManager: mockManager });
+      const wrapper = createWalletWrapper({ walletManager: mockManager });
 
       const { result } = renderHook(() => useWalletConnection(), { wrapper });
 
@@ -376,8 +361,7 @@ describe('useWalletConnection', () => {
       mockManager.connect = vi.fn().mockResolvedValue(mockWallet);
       mockManager.disconnect = vi.fn().mockResolvedValue(undefined);
 
-      const wrapper = ({ children }: { children: React.ReactNode }) =>
-        createWalletWrapper({ walletManager: mockManager });
+      const wrapper = createWalletWrapper({ walletManager: mockManager });
 
       const { result } = renderHook(() => useWalletConnection(), { wrapper });
 
@@ -400,8 +384,7 @@ describe('useWalletConnection', () => {
       const mockManager = createMockWalletManager();
       mockManager.connect = vi.fn().mockRejectedValue('Connection failed string');
 
-      const wrapper = ({ children }: { children: React.ReactNode }) =>
-        createWalletWrapper({ walletManager: mockManager });
+      const wrapper = createWalletWrapper({ walletManager: mockManager });
 
       const { result } = renderHook(() => useWalletConnection(), { wrapper });
 
@@ -416,8 +399,7 @@ describe('useWalletConnection', () => {
       const mockManager = createMockWalletManager();
       mockManager.disconnect = vi.fn().mockRejectedValue('Disconnection failed string');
 
-      const wrapper = ({ children }: { children: React.ReactNode }) =>
-        createWalletWrapper({ walletManager: mockManager });
+      const wrapper = createWalletWrapper({ walletManager: mockManager });
 
       const { result } = renderHook(() => useWalletConnection(), { wrapper });
 
@@ -432,8 +414,7 @@ describe('useWalletConnection', () => {
       const mockManager = createMockWalletManager();
       mockManager.connect = vi.fn().mockRejectedValue(new Error('Wallet manager not initialized'));
 
-      const wrapper = ({ children }: { children: React.ReactNode }) =>
-        createWalletWrapper({ walletManager: mockManager });
+      const wrapper = createWalletWrapper({ walletManager: mockManager });
 
       const { result } = renderHook(() => useWalletConnection(), { wrapper });
 

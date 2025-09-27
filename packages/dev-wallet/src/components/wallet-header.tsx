@@ -1,5 +1,5 @@
 import type { Component } from 'solid-js';
-import { Show, For } from 'solid-js';
+import { Show } from 'solid-js';
 import { css } from 'goober';
 import { PactSelect, PactIconButton, type SelectOption } from '@pact-toolbox/ui-shared';
 import type { Account, Network } from '../types';
